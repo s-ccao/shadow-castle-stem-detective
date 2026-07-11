@@ -24,16 +24,28 @@ var fog_cells := {}
 var discovered_fog_cells := {}
 var visible_fog_cells := {}
 var visible_fog_distances := {}
+@onready var enemy = get_node_or_null("enemy")
 
+var astar_grid := AStarGrid2D.new()
+var game_over := false
+var game_over_label: Label
 
 func _ready():
 	create_floor()
 	create_castle_walls()
+	build_navigation_grid()
 	create_fog_cells()
+	create_game_over_ui()
 	move_player_to_cell(Vector2i(2, 2))
+	setup_enemy()
 
 
 func _process(delta):
+	if game_over:
+		if Input.is_key_pressed(KEY_R):
+			get_tree().reload_current_scene()
+		return
+
 	update_fog_of_war()
 
 
@@ -239,3 +251,66 @@ func cell_key(cell: Vector2i) -> String:
 
 func fog_key(fog_cell: Vector2i) -> String:
 	return str(fog_cell.x) + "," + str(fog_cell.y)
+func build_navigation_grid():
+	astar_grid.region = Rect2i(0, 0, MAP_WIDTH, MAP_HEIGHT)
+	astar_grid.cell_size = Vector2(CELL_SIZE, CELL_SIZE)
+	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	astar_grid.update()
+
+	for key in wall_cells.keys():
+		var wall_cell = string_to_cell(key)
+		astar_grid.set_point_solid(wall_cell, true)
+
+
+func find_path(start_cell: Vector2i, end_cell: Vector2i) -> Array:
+	if not is_inside_map(start_cell):
+		return []
+
+	if not is_inside_map(end_cell):
+		return []
+
+	if is_wall(start_cell) or is_wall(end_cell):
+		return []
+
+	return astar_grid.get_id_path(start_cell, end_cell)
+
+
+func setup_enemy():
+	if enemy == null:
+		return
+
+	enemy.position = cell_to_world(Vector2i(29, 21))
+	enemy.setup(self, player)
+
+
+func create_game_over_ui():
+	var canvas = CanvasLayer.new()
+	canvas.layer = 20
+	add_child(canvas)
+
+	game_over_label = Label.new()
+	game_over_label.text = "GAME OVER\nThe murderer caught you.\nPress R to restart."
+	game_over_label.position = Vector2(300, 290)
+	game_over_label.size = Vector2(460, 180)
+	game_over_label.visible = false
+	game_over_label.add_theme_font_size_override("font_size", 32)
+
+	canvas.add_child(game_over_label)
+
+
+func on_player_caught():
+	if game_over:
+		return
+
+	game_over = true
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+	game_over_label.visible = true
+
+
+func string_to_cell(key: String) -> Vector2i:
+	var parts = key.split(",")
+	return Vector2i(int(parts[0]), int(parts[1]))
