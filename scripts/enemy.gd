@@ -21,8 +21,9 @@ func _physics_process(delta):
 	if game_world == null or player == null:
 		return
 
-	if game_world.game_over:
+	if game_world.game_over or game_world.dialogue_active:
 		velocity = Vector2.ZERO
+		move_and_slide()
 		return
 
 	repath_timer -= delta

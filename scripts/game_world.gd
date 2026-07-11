@@ -29,12 +29,26 @@ var visible_fog_distances := {}
 var astar_grid := AStarGrid2D.new()
 var game_over := false
 var game_over_label: Label
+var reputation := 0
+var evidence_collected := false
+var clue_position := Vector2.ZERO
+var clue_node: ColorRect
+
+var ui_layer: CanvasLayer
+var message_panel: Panel
+var message_label: Label
+var button_box: VBoxContainer
+var reputation_label: Label
+var interact_label: Label
+var dialogue_active := false
 
 func _ready():
 	create_floor()
 	create_castle_walls()
 	build_navigation_grid()
+	create_red_stain_clue()
 	create_fog_cells()
+	create_game_ui()
 	create_game_over_ui()
 	move_player_to_cell(Vector2i(2, 2))
 	setup_enemy()
@@ -46,7 +60,15 @@ func _process(delta):
 			get_tree().reload_current_scene()
 		return
 
+	if dialogue_active:
+		update_fog_of_war()
+		return
+
 	update_fog_of_war()
+	update_interaction_prompt()
+
+	if Input.is_key_pressed(KEY_E):
+		try_investigate_clue()
 
 
 func create_floor():
@@ -314,3 +336,183 @@ func on_player_caught():
 func string_to_cell(key: String) -> Vector2i:
 	var parts = key.split(",")
 	return Vector2i(int(parts[0]), int(parts[1]))
+func create_red_stain_clue():
+	clue_position = cell_to_world(Vector2i(4, 3))
+
+	clue_node = ColorRect.new()
+	clue_node.name = "RedStainClue"
+	clue_node.color = Color(0.75, 0.02, 0.04, 1.0)
+	clue_node.size = Vector2(26, 18)
+	clue_node.position = clue_position - clue_node.size / 2
+	clue_node.z_index = 5
+
+	add_child(clue_node)
+
+
+func create_game_ui():
+	ui_layer = CanvasLayer.new()
+	ui_layer.layer = 30
+	add_child(ui_layer)
+
+	reputation_label = Label.new()
+	reputation_label.text = "Reputation: 0"
+	reputation_label.position = Vector2(20, 20)
+	reputation_label.add_theme_font_size_override("font_size", 22)
+	ui_layer.add_child(reputation_label)
+
+	interact_label = Label.new()
+	interact_label.text = "Press E to investigate"
+	interact_label.position = Vector2(380, 700)
+	interact_label.visible = false
+	interact_label.add_theme_font_size_override("font_size", 24)
+	ui_layer.add_child(interact_label)
+
+	message_panel = Panel.new()
+	message_panel.position = Vector2(190, 150)
+	message_panel.size = Vector2(650, 430)
+	message_panel.visible = false
+	ui_layer.add_child(message_panel)
+
+	var margin = MarginContainer.new()
+	margin.position = Vector2(20, 20)
+	margin.size = Vector2(610, 390)
+	message_panel.add_child(margin)
+
+	var layout = VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 14)
+	margin.add_child(layout)
+
+	message_label = Label.new()
+	message_label.text = ""
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message_label.add_theme_font_size_override("font_size", 22)
+	message_label.custom_minimum_size = Vector2(580, 170)
+	layout.add_child(message_label)
+
+	button_box = VBoxContainer.new()
+	button_box.add_theme_constant_override("separation", 10)
+	layout.add_child(button_box)
+
+
+func update_interaction_prompt():
+	if evidence_collected:
+		interact_label.visible = false
+		return
+
+	var distance = player.global_position.distance_to(clue_position)
+	interact_label.visible = distance < 55.0
+
+
+func try_investigate_clue():
+	if evidence_collected:
+		return
+
+	if not interact_label.visible:
+		return
+
+	show_clue_intro()
+
+
+func show_clue_intro():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+	message_label.text = "Dr. Lin:\nThis red liquid looks like blood at first glance, but a good detective never relies on color alone.\n\nWhat do you think caused the red color?"
+
+	add_dialogue_button("I think I know.", show_red_stain_question)
+	add_dialogue_button("I'm not sure. Please explain.", explain_red_stain_without_reward)
+
+
+func show_red_stain_question():
+	clear_buttons()
+
+	message_label.text = "What most likely caused the red color?\n\nChoose carefully. You only get one attempt."
+
+	add_answer_button("A. Real blood exposed to oxygen", false)
+	add_answer_button("B. Indicator solution reacting with a basic cleaner", true)
+	add_answer_button("C. Rust dissolved in water", false)
+	add_answer_button("D. Red paint from the wall", false)
+
+
+func add_answer_button(text: String, is_correct: bool):
+	var button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(560, 42)
+
+	if is_correct:
+		button.pressed.connect(on_red_stain_correct)
+	else:
+		button.pressed.connect(on_red_stain_wrong)
+
+	button_box.add_child(button)
+
+
+func on_red_stain_correct():
+	reputation += 10
+	reputation_label.text = "Reputation: " + str(reputation)
+
+	clear_buttons()
+	message_label.text = "Correct.\n\nDr. Lin:\nExcellent reasoning. The red color is likely caused by an indicator reacting with a basic cleaning substance. This means the stain may have been staged, not left by the victim.\n\nEvidence added: Fake Red Stain"
+
+	collect_red_stain_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func on_red_stain_wrong():
+	clear_buttons()
+	message_label.text = "Not quite.\n\nDr. Lin:\nThe important clue is not just the color. If an indicator solution mixes with a basic cleaner, it can turn red or pink. This stain may be fake.\n\nEvidence added: Fake Red Stain"
+
+	collect_red_stain_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func explain_red_stain_without_reward():
+	clear_buttons()
+	message_label.text = "Dr. Lin:\nThat's okay. A good detective knows when to ask for help.\n\nThe red color may come from an indicator solution reacting with a basic cleaner. So this does not prove it is blood. Someone may have staged the crime scene.\n\nEvidence added: Fake Red Stain"
+
+	collect_red_stain_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func collect_red_stain_evidence():
+	evidence_collected = true
+
+	if clue_node != null:
+		clue_node.color = Color(0.35, 0.02, 0.04, 0.7)
+
+
+func close_message_panel():
+	message_panel.visible = false
+	clear_buttons()
+	end_dialogue_pause()
+
+
+func clear_buttons():
+	for child in button_box.get_children():
+		child.queue_free()
+
+
+func add_dialogue_button(text: String, callback: Callable):
+	var button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(560, 44)
+	button.pressed.connect(callback)
+	button_box.add_child(button)
+func start_dialogue_pause():
+	dialogue_active = true
+
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+
+func end_dialogue_pause():
+	dialogue_active = false
+
+	if not game_over:
+		player.set_physics_process(true)
+
+		if enemy != null:
+			enemy.set_physics_process(true)
