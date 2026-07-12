@@ -50,12 +50,21 @@ var evidence_hint_label: Label
 var butler_position := Vector2.ZERO
 var butler_node: ColorRect
 var current_interaction := ""
+
+var pollen_collected := false
+var pollen_position := Vector2.ZERO
+var pollen_node: ColorRect
+
+var gardener_position := Vector2.ZERO
+var gardener_node: ColorRect
 func _ready():
 	create_floor()
 	create_castle_walls()
 	build_navigation_grid()
 	create_red_stain_clue()
+	create_pollen_clue()
 	create_butler_npc()
+	create_gardener_npc()
 	create_fog_cells()
 	create_game_ui()
 	create_game_over_ui()
@@ -426,7 +435,16 @@ func update_interaction_prompt():
 
 		if clue_distance < 55.0:
 			current_interaction = "red_stain"
-			interact_label.text = "Press E to investigate"
+			interact_label.text = "Press E to investigate red stain"
+			interact_label.visible = true
+			return
+
+	if not pollen_collected:
+		var pollen_distance = player.global_position.distance_to(pollen_position)
+
+		if pollen_distance < 55.0:
+			current_interaction = "pollen"
+			interact_label.text = "Press E to investigate pollen"
 			interact_label.visible = true
 			return
 
@@ -438,12 +456,23 @@ func update_interaction_prompt():
 		interact_label.visible = true
 		return
 
+	var gardener_distance = player.global_position.distance_to(gardener_position)
+
+	if gardener_distance < 55.0:
+		current_interaction = "gardener"
+		interact_label.text = "Press E to talk to Gardener"
+		interact_label.visible = true
+		return
 
 func try_investigate_clue():
 	if current_interaction == "red_stain":
 		show_clue_intro()
+	elif current_interaction == "pollen":
+		show_pollen_intro()
 	elif current_interaction == "butler":
 		show_butler_dialogue()
+	elif current_interaction == "gardener":
+		show_gardener_dialogue()
 
 
 func show_clue_intro():
@@ -635,6 +664,12 @@ func update_evidence_board_text():
 		text += "- Science: The color may come from an indicator reacting with a basic cleaner.\n"
 		text += "- Reasoning: This does not prove it is blood. The scene may have been staged.\n"
 		text += "- Suspect Link: Someone with access to cleaning supplies or chemical materials.\n\n"
+	if evidence_items.has("greenhouse_pollen"):
+		text += "Evidence 2: Greenhouse Pollen\n"
+		text += "- Observation: Yellow pollen was found on a locked door handle.\n"
+		text += "- Science: Pollen grains can connect a person to a specific plant or location.\n"
+		text += "- Reasoning: Someone who recently visited the greenhouse may have touched this door.\n"
+		text += "- Suspect Link: Gardener or anyone who entered the greenhouse.\n\n"
 
 	evidence_label.text = text
 func create_butler_npc():
@@ -658,5 +693,111 @@ func show_butler_dialogue():
 		message_label.text = "Butler:\nI already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nDr. Lin:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue."
 	else:
 		message_label.text = "Butler:\nI was only cleaning the hallway. I did not see anything unusual.\n\nDr. Lin:\nHe may know more than he is saying. We should collect physical evidence before making any accusation."
+
+	add_dialogue_button("Continue", close_message_panel)
+func create_pollen_clue():
+	pollen_position = cell_to_world(Vector2i(17, 6))
+
+	pollen_node = ColorRect.new()
+	pollen_node.name = "PollenClue"
+	pollen_node.color = Color(0.95, 0.78, 0.12, 1.0)
+	pollen_node.size = Vector2(22, 22)
+	pollen_node.position = pollen_position - pollen_node.size / 2
+	pollen_node.z_index = 5
+
+	add_child(pollen_node)
+func create_gardener_npc():
+	gardener_position = cell_to_world(Vector2i(18, 4))
+
+	gardener_node = ColorRect.new()
+	gardener_node.name = "GardenerNPC"
+	gardener_node.color = Color(0.1, 0.55, 0.18, 1.0)
+	gardener_node.size = Vector2(24, 28)
+	gardener_node.position = gardener_position - gardener_node.size / 2
+	gardener_node.z_index = 6
+
+	add_child(gardener_node)
+func show_pollen_intro():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+	message_label.text = "Dr. Lin:\nThere is yellow pollen on the door handle. That may not look important, but pollen can connect a person to a specific place.\n\nWhat do you think this clue tells us?"
+
+	add_dialogue_button("I think I know.", show_pollen_question)
+	add_dialogue_button("I'm not sure. Please explain.", explain_pollen_without_reward)
+
+
+func show_pollen_question():
+	clear_buttons()
+
+	message_label.text = "What is the best scientific use of this pollen evidence?\n\nChoose carefully. You only get one attempt."
+
+	add_pollen_answer_button("A. It proves the door is old", false)
+	add_pollen_answer_button("B. It can link someone to a plant or greenhouse location", true)
+	add_pollen_answer_button("C. It shows the room was recently painted", false)
+	add_pollen_answer_button("D. It means the red liquid is blood", false)
+
+
+func add_pollen_answer_button(text: String, is_correct: bool):
+	var button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(560, 42)
+
+	if is_correct:
+		button.pressed.connect(on_pollen_correct)
+	else:
+		button.pressed.connect(on_pollen_wrong)
+
+	button_box.add_child(button)
+
+
+func on_pollen_correct():
+	reputation += 10
+	reputation_label.text = "Reputation: " + str(reputation)
+
+	clear_buttons()
+	message_label.text = "Correct.\n\nDr. Lin:\nGood reasoning. Pollen grains can help identify where someone has been, especially if the pollen matches a plant from a specific room such as the greenhouse.\n\nEvidence added: Greenhouse Pollen"
+
+	collect_pollen_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func on_pollen_wrong():
+	clear_buttons()
+	message_label.text = "Not quite.\n\nDr. Lin:\nPollen can act like biological trace evidence. If it matches a plant from the greenhouse, it may show that someone recently came from there.\n\nEvidence added: Greenhouse Pollen"
+
+	collect_pollen_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func explain_pollen_without_reward():
+	clear_buttons()
+	message_label.text = "Dr. Lin:\nThat's okay. Pollen is useful because different plants can produce different pollen patterns. If we match this pollen to the greenhouse, it can connect a suspect to that location.\n\nEvidence added: Greenhouse Pollen"
+
+	collect_pollen_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func collect_pollen_evidence():
+	pollen_collected = true
+
+	if not evidence_items.has("greenhouse_pollen"):
+		evidence_items.append("greenhouse_pollen")
+
+	if pollen_node != null:
+		pollen_node.color = Color(0.45, 0.35, 0.05, 0.7)
+
+	update_evidence_board_text()
+func show_gardener_dialogue():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+
+	if evidence_items.has("greenhouse_pollen"):
+		message_label.text = "Gardener:\nPollen? Of course there is pollen in a castle with a greenhouse. That does not prove I did anything.\n\nDr. Lin:\nHe is right that pollen alone is not proof. But if it appears on a locked door handle, it may show that someone from the greenhouse touched it recently."
+	else:
+		message_label.text = "Gardener:\nI was working near the greenhouse earlier. I did not enter the locked rooms.\n\nDr. Lin:\nWe should look for biological trace evidence before deciding whether that is true."
 
 	add_dialogue_button("Continue", close_message_panel)
