@@ -47,11 +47,15 @@ var evidence_label: Label
 var evidence_board_open := false
 var evidence_hint_label: Label
 
+var butler_position := Vector2.ZERO
+var butler_node: ColorRect
+var current_interaction := ""
 func _ready():
 	create_floor()
 	create_castle_walls()
 	build_navigation_grid()
 	create_red_stain_clue()
+	create_butler_npc()
 	create_fog_cells()
 	create_game_ui()
 	create_game_over_ui()
@@ -411,22 +415,35 @@ func create_game_ui():
 
 
 func update_interaction_prompt():
-	if evidence_collected:
-		interact_label.visible = false
+	current_interaction = ""
+	interact_label.visible = false
+
+	if message_panel.visible or evidence_board_open:
 		return
 
-	var distance = player.global_position.distance_to(clue_position)
-	interact_label.visible = distance < 55.0
+	if not evidence_collected:
+		var clue_distance = player.global_position.distance_to(clue_position)
+
+		if clue_distance < 55.0:
+			current_interaction = "red_stain"
+			interact_label.text = "Press E to investigate"
+			interact_label.visible = true
+			return
+
+	var butler_distance = player.global_position.distance_to(butler_position)
+
+	if butler_distance < 55.0:
+		current_interaction = "butler"
+		interact_label.text = "Press E to talk to Butler"
+		interact_label.visible = true
+		return
 
 
 func try_investigate_clue():
-	if evidence_collected:
-		return
-
-	if not interact_label.visible:
-		return
-
-	show_clue_intro()
+	if current_interaction == "red_stain":
+		show_clue_intro()
+	elif current_interaction == "butler":
+		show_butler_dialogue()
 
 
 func show_clue_intro():
@@ -620,3 +637,26 @@ func update_evidence_board_text():
 		text += "- Suspect Link: Someone with access to cleaning supplies or chemical materials.\n\n"
 
 	evidence_label.text = text
+func create_butler_npc():
+	butler_position = cell_to_world(Vector2i(9, 3))
+
+	butler_node = ColorRect.new()
+	butler_node.name = "ButlerNPC"
+	butler_node.color = Color(0.55, 0.35, 0.16, 1.0)
+	butler_node.size = Vector2(24, 28)
+	butler_node.position = butler_position - butler_node.size / 2
+	butler_node.z_index = 6
+
+	add_child(butler_node)
+func show_butler_dialogue():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+
+	if evidence_items.has("fake_red_stain"):
+		message_label.text = "Butler:\nI already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nDr. Lin:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue."
+	else:
+		message_label.text = "Butler:\nI was only cleaning the hallway. I did not see anything unusual.\n\nDr. Lin:\nHe may know more than he is saying. We should collect physical evidence before making any accusation."
+
+	add_dialogue_button("Continue", close_message_panel)
