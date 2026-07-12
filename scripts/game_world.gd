@@ -41,6 +41,11 @@ var button_box: VBoxContainer
 var reputation_label: Label
 var interact_label: Label
 var dialogue_active := false
+var evidence_items: Array[String] = []
+var evidence_panel: Panel
+var evidence_label: Label
+var evidence_board_open := false
+var evidence_hint_label: Label
 
 func _ready():
 	create_floor()
@@ -67,8 +72,11 @@ func _process(delta):
 	update_fog_of_war()
 	update_interaction_prompt()
 
-	if Input.is_key_pressed(KEY_E):
+	if Input.is_action_just_pressed("interact"):
 		try_investigate_clue()
+
+	if Input.is_action_just_pressed("evidence_board"):
+		toggle_evidence_board()
 
 
 func create_floor():
@@ -360,6 +368,12 @@ func create_game_ui():
 	reputation_label.add_theme_font_size_override("font_size", 22)
 	ui_layer.add_child(reputation_label)
 
+	evidence_hint_label = Label.new()
+	evidence_hint_label.text = "B: Evidence Board"
+	evidence_hint_label.position = Vector2(20, 50)
+	evidence_hint_label.add_theme_font_size_override("font_size", 20)
+	ui_layer.add_child(evidence_hint_label)
+
 	interact_label = Label.new()
 	interact_label.text = "Press E to investigate"
 	interact_label.position = Vector2(380, 700)
@@ -392,6 +406,8 @@ func create_game_ui():
 	button_box = VBoxContainer.new()
 	button_box.add_theme_constant_override("separation", 10)
 	layout.add_child(button_box)
+
+	create_evidence_board_ui()
 
 
 func update_interaction_prompt():
@@ -478,8 +494,13 @@ func explain_red_stain_without_reward():
 func collect_red_stain_evidence():
 	evidence_collected = true
 
+	if not evidence_items.has("fake_red_stain"):
+		evidence_items.append("fake_red_stain")
+
 	if clue_node != null:
 		clue_node.color = Color(0.35, 0.02, 0.04, 0.7)
+
+	update_evidence_board_text()
 
 
 func close_message_panel():
@@ -516,3 +537,86 @@ func end_dialogue_pause():
 
 		if enemy != null:
 			enemy.set_physics_process(true)
+
+func create_evidence_board_ui():
+	evidence_panel = Panel.new()
+	evidence_panel.position = Vector2(230, 110)
+	evidence_panel.size = Vector2(570, 520)
+	evidence_panel.visible = false
+	ui_layer.add_child(evidence_panel)
+
+	var margin = MarginContainer.new()
+	margin.position = Vector2(24, 24)
+	margin.size = Vector2(522, 472)
+	evidence_panel.add_child(margin)
+
+	var layout = VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 14)
+	margin.add_child(layout)
+
+	var title = Label.new()
+	title.text = "Evidence Board"
+	title.add_theme_font_size_override("font_size", 32)
+	layout.add_child(title)
+
+	evidence_label = Label.new()
+	evidence_label.text = "No evidence collected yet."
+	evidence_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	evidence_label.custom_minimum_size = Vector2(500, 340)
+	evidence_label.add_theme_font_size_override("font_size", 21)
+	layout.add_child(evidence_label)
+
+	var close_button = Button.new()
+	close_button.text = "Close"
+	close_button.custom_minimum_size = Vector2(500, 44)
+	close_button.pressed.connect(close_evidence_board)
+	layout.add_child(close_button)
+
+
+func toggle_evidence_board():
+	if message_panel.visible:
+		return
+
+	if evidence_board_open:
+		close_evidence_board()
+	else:
+		open_evidence_board()
+
+
+func open_evidence_board():
+	evidence_board_open = true
+	update_evidence_board_text()
+	evidence_panel.visible = true
+
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+
+func close_evidence_board():
+	evidence_board_open = false
+	evidence_panel.visible = false
+
+	if not game_over and not dialogue_active:
+		player.set_physics_process(true)
+
+		if enemy != null:
+			enemy.set_physics_process(true)
+
+
+func update_evidence_board_text():
+	if evidence_items.size() == 0:
+		evidence_label.text = "No evidence collected yet.\n\nExplore the castle and investigate suspicious clues."
+		return
+
+	var text = ""
+
+	if evidence_items.has("fake_red_stain"):
+		text += "Evidence 1: Fake Red Stain\n"
+		text += "- Observation: A red liquid was found near white powder and a broken bottle.\n"
+		text += "- Science: The color may come from an indicator reacting with a basic cleaner.\n"
+		text += "- Reasoning: This does not prove it is blood. The scene may have been staged.\n"
+		text += "- Suspect Link: Someone with access to cleaning supplies or chemical materials.\n\n"
+
+	evidence_label.text = text
