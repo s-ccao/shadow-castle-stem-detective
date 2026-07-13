@@ -1,8 +1,8 @@
 extends Node2D
 
 const CELL_SIZE := 32
-const MAP_WIDTH := 32
-const MAP_HEIGHT := 24
+const MAP_WIDTH := 60
+const MAP_HEIGHT := 40
 const MAP_PIXEL_WIDTH := MAP_WIDTH * CELL_SIZE
 const MAP_PIXEL_HEIGHT := MAP_HEIGHT * CELL_SIZE
 
@@ -25,6 +25,7 @@ var discovered_fog_cells := {}
 var visible_fog_cells := {}
 var visible_fog_distances := {}
 @onready var enemy = get_node_or_null("enemy")
+var follow_camera: Camera2D
 
 var astar_grid := AStarGrid2D.new()
 var game_over := false
@@ -93,6 +94,7 @@ func _ready():
 	create_game_ui()
 	create_game_over_ui()
 	move_player_to_cell(Vector2i(2, 2))
+	create_follow_camera()
 	setup_enemy()
 
 
@@ -359,7 +361,7 @@ func setup_enemy():
 	if enemy == null:
 		return
 
-	enemy.position = cell_to_world(Vector2i(29, 21))
+	enemy.position = cell_to_world(Vector2i(50, 32))
 	enemy.setup(self, player)
 
 
@@ -405,6 +407,7 @@ func create_red_stain_clue():
 	clue_node.z_index = 5
 
 	add_child(clue_node)
+	add_world_label(clue_node, "Red Stain", Vector2(-26, -24))
 
 
 func create_game_ui():
@@ -791,6 +794,7 @@ func create_butler_npc():
 	butler_node.z_index = 6
 
 	add_child(butler_node)
+	add_world_label(butler_node, "Butler", Vector2(-18, -24))
 func show_butler_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
@@ -814,6 +818,7 @@ func create_pollen_clue():
 	pollen_node.z_index = 5
 
 	add_child(pollen_node)
+	add_world_label(pollen_node, "Pollen", Vector2(-16, -24))
 func create_gardener_npc():
 	gardener_position = cell_to_world(Vector2i(18, 4))
 
@@ -825,6 +830,7 @@ func create_gardener_npc():
 	gardener_node.z_index = 6
 
 	add_child(gardener_node)
+	add_world_label(gardener_node, "Gardener", Vector2(-28, -24))
 func show_pollen_intro():
 	start_dialogue_pause()
 	clear_buttons()
@@ -921,6 +927,7 @@ func create_circuit_clue():
 	circuit_node.z_index = 5
 
 	add_child(circuit_node)
+	add_world_label(circuit_node, "circuit", Vector2(-36, -24))
 
 
 func create_mechanic_npc():
@@ -934,6 +941,7 @@ func create_mechanic_npc():
 	mechanic_node.z_index = 6
 
 	add_child(mechanic_node)
+	add_world_label(mechanic_node, "Mechanic", Vector2(-28, -24))
 func show_circuit_intro():
 	start_dialogue_pause()
 	clear_buttons()
@@ -1072,7 +1080,7 @@ func show_evidence_detail(evidence_id: String):
 	evidence_detail_scroll.visible = true
 	evidence_back_button.visible = true
 func create_final_room():
-	final_room_position = cell_to_world(Vector2i(29, 3))
+	final_room_position = cell_to_world(Vector2i(54, 5))
 
 	final_room_node = ColorRect.new()
 	final_room_node.name = "FinalDeductionRoom"
@@ -1082,6 +1090,7 @@ func create_final_room():
 	final_room_node.z_index = 5
 
 	add_child(final_room_node)
+	add_world_label(final_room_node, "Final Deduction", Vector2(-48, -24))
 func has_all_evidence() -> bool:
 	return evidence_items.has("fake_red_stain") \
 		and evidence_items.has("greenhouse_pollen") \
@@ -1296,3 +1305,30 @@ func close_objective_panel():
 
 		if enemy != null:
 			enemy.set_physics_process(true)
+func add_world_label(parent_node: Control, text: String, offset: Vector2):
+	var label = Label.new()
+	label.text = text
+	label.position = offset
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 13)
+	label.z_index = 20
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent_node.add_child(label)
+	return label
+func create_follow_camera():
+	follow_camera = Camera2D.new()
+	follow_camera.name = "FollowCamera"
+	follow_camera.position = Vector2.ZERO
+	follow_camera.zoom = Vector2(1.0, 1.0)
+	follow_camera.enabled = true
+
+	follow_camera.position_smoothing_enabled = true
+	follow_camera.position_smoothing_speed = 8.0
+
+	follow_camera.limit_left = 0
+	follow_camera.limit_top = 0
+	follow_camera.limit_right = MAP_PIXEL_WIDTH
+	follow_camera.limit_bottom = MAP_PIXEL_HEIGHT
+
+	player.add_child(follow_camera)
+	follow_camera.make_current()
