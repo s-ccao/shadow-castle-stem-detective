@@ -23,6 +23,9 @@ var wall_cells := {}
 var fog_cells := {}
 var door_cells := {}
 var door_nodes := {}
+var learned_circuit_rule := false
+var circuit_note_position := Vector2.ZERO
+var circuit_note_node: ColorRect
 var circuit_door_open := false
 var circuit_door_position := Vector2.ZERO
 var discovered_fog_cells := {}
@@ -88,6 +91,7 @@ func _ready():
 	create_castle_walls()
 	build_navigation_grid()
 	create_locked_circuit_door()
+	create_circuit_learning_note()
 	create_red_stain_clue()
 	create_pollen_clue()
 	create_circuit_clue()
@@ -572,6 +576,14 @@ func update_interaction_prompt():
 
 	if message_panel.visible or evidence_board_open:
 		return
+	if not learned_circuit_rule:
+		var note_distance = player.global_position.distance_to(circuit_note_position)
+
+		if note_distance < 55.0:
+			current_interaction = "circuit_note"
+			interact_label.text = "Press E to read maintenance note"
+			interact_label.visible = true
+			return
 	if not circuit_door_open:
 		var door_distance = player.global_position.distance_to(circuit_door_position)
 
@@ -645,7 +657,9 @@ func update_interaction_prompt():
 		return
 
 func try_investigate_clue():
-	if current_interaction == "circuit_door":
+	if current_interaction == "circuit_note":
+		show_circuit_learning_note()
+	elif current_interaction == "circuit_door":
 		show_circuit_door_puzzle()
 	elif current_interaction == "red_stain":
 		show_clue_intro()
@@ -1312,7 +1326,12 @@ func update_objective_text():
 	var circuit_status = "✓" if circuit_done else "✗"
 
 	var detail = "Current Mission:\n\n"
-
+	if not circuit_door_open:
+		detail += "Locked Door:\n"
+		if learned_circuit_rule:
+			detail += "✓ Circuit rule learned. Return to the locked door and solve the puzzle.\n\n"
+		else:
+			detail += "✗ Circuit rule unknown. Find and read the maintenance note near the locked door.\n\n"
 	if has_all_evidence():
 		detail += "You have collected all major STEM evidence.\n\n"
 		detail += "Next Step:\nGo to the purple Final Deduction Room and accuse the culprit.\n\n"
@@ -1483,11 +1502,15 @@ func is_door(cell: Vector2i) -> bool:
 func blocks_vision(cell: Vector2i) -> bool:
 	return is_wall(cell) or is_door(cell)
 func show_circuit_door_puzzle():
+	if not learned_circuit_rule:
+		show_circuit_door_hint()
+		return
+
 	start_dialogue_pause()
 	clear_buttons()
 
 	message_panel.visible = true
-	message_label.text = "Locked Door Puzzle\n\nA metal door is controlled by a simple electric circuit.\n\nDr. Lin:\nTo unlock it, think about current and resistance.\n\nWhich change would reduce current in the circuit?"
+	message_label.text = "Locked Door Puzzle\n\nA metal door is controlled by a simple electric circuit.\n\nDr. Lin:\nRemember what the maintenance note said about current and resistance.\n\nWhich change would reduce current in the circuit?"
 
 	add_door_answer_button("A. Increase resistance", true)
 	add_door_answer_button("B. Remove all resistance", false)
@@ -1535,3 +1558,38 @@ func open_circuit_door():
 	door_cells.clear()
 
 	update_fog_of_war()
+	update_objective_text()
+func create_circuit_learning_note():
+	circuit_note_position = cell_to_world(Vector2i(22, 7))
+
+	circuit_note_node = ColorRect.new()
+	circuit_note_node.name = "CircuitLearningNote"
+	circuit_note_node.color = Color(0.95, 0.92, 0.55, 1.0)
+	circuit_note_node.size = Vector2(24, 18)
+	circuit_note_node.position = circuit_note_position - circuit_note_node.size / 2
+	circuit_note_node.z_index = 5
+
+	add_child(circuit_note_node)
+	add_world_label(circuit_note_node, "Note", Vector2(-10, -24))
+func show_circuit_learning_note():
+	start_dialogue_pause()
+	clear_buttons()
+
+	learned_circuit_rule = true
+
+	if circuit_note_node != null:
+		circuit_note_node.color = Color(0.55, 0.52, 0.25, 0.75)
+
+	message_panel.visible = true
+	message_label.text = "Maintenance Note:\n\n\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nDr. Lin:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases."
+
+	update_objective_text()
+	add_dialogue_button("Continue", close_message_panel)
+func show_circuit_door_hint():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+	message_label.text = "Dr. Lin:\nThis lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer."
+
+	add_dialogue_button("Continue", close_message_panel)
