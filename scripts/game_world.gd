@@ -45,6 +45,10 @@ var evidence_items: Array[String] = []
 var evidence_panel: Panel
 var evidence_board_open := false
 var evidence_hint_label: Label
+var objective_summary_label: Label
+var objective_panel: Panel
+var objective_detail_label: Label
+var objective_panel_open := false
 
 var evidence_title_label: Label
 var evidence_list_scroll: ScrollContainer
@@ -101,10 +105,18 @@ func _process(delta):
 		return_to_main_menu()
 		return
 
+	if Input.is_action_just_pressed("objective_panel"):
+		toggle_objective_panel()
+		return
+
 	if game_over:
 		return
 
 	if dialogue_active:
+		update_fog_of_war()
+		return
+
+	if objective_panel_open:
 		update_fog_of_war()
 		return
 
@@ -116,7 +128,6 @@ func _process(delta):
 
 	if Input.is_action_just_pressed("evidence_board"):
 		toggle_evidence_board()
-
 
 func create_floor():
 	var floor = ColorRect.new()
@@ -408,10 +419,18 @@ func create_game_ui():
 	ui_layer.add_child(reputation_label)
 
 	evidence_hint_label = Label.new()
-	evidence_hint_label.text = "B: Evidence Board   R: Restart   M: Menu"
+	evidence_hint_label.text = "B: Evidence   O: Objectives   R: Restart   M: Menu"
 	evidence_hint_label.position = Vector2(20, 50)
 	evidence_hint_label.add_theme_font_size_override("font_size", 20)
 	ui_layer.add_child(evidence_hint_label)
+	objective_summary_label = Label.new()
+	objective_summary_label.text = ""
+	objective_summary_label.position = Vector2(20, 82)
+	objective_summary_label.size = Vector2(420, 28)
+	objective_summary_label.add_theme_font_size_override("font_size", 18)
+	ui_layer.add_child(objective_summary_label)
+
+	create_objective_panel_ui()
 
 	interact_label = Label.new()
 	interact_label.text = "Press E to investigate"
@@ -447,6 +466,7 @@ func create_game_ui():
 	layout.add_child(button_box)
 
 	create_evidence_board_ui()
+	update_objective_text()
 
 
 func update_interaction_prompt():
@@ -609,6 +629,7 @@ func collect_red_stain_evidence():
 		clue_node.color = Color(0.35, 0.02, 0.04, 0.7)
 
 	update_evidence_board_text()
+	update_objective_text()
 
 
 func close_message_panel():
@@ -876,6 +897,7 @@ func collect_pollen_evidence():
 		pollen_node.color = Color(0.45, 0.35, 0.05, 0.7)
 
 	update_evidence_board_text()
+	update_objective_text()
 func show_gardener_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
@@ -984,6 +1006,7 @@ func collect_circuit_evidence():
 		circuit_node.color = Color(0.05, 0.25, 0.35, 0.7)
 
 	update_evidence_board_text()
+	update_objective_text()
 func show_mechanic_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
@@ -1148,3 +1171,128 @@ func restart_current_game():
 
 func return_to_main_menu():
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+func update_objective_text():
+	if objective_summary_label == null:
+		return
+
+	var red_done = evidence_items.has("fake_red_stain")
+	var pollen_done = evidence_items.has("greenhouse_pollen")
+	var circuit_done = evidence_items.has("deliberate_short_circuit")
+
+	var collected_count = 0
+	if red_done:
+		collected_count += 1
+	if pollen_done:
+		collected_count += 1
+	if circuit_done:
+		collected_count += 1
+
+	if has_all_evidence():
+		objective_summary_label.text = "Objective: Go to Final Deduction Room   [O: Details]"
+	else:
+		objective_summary_label.text = "Objective: Evidence " + str(collected_count) + "/3   [O: Details]"
+
+	if objective_detail_label == null:
+		return
+
+	var red_status = "✓" if red_done else "✗"
+	var pollen_status = "✓" if pollen_done else "✗"
+	var circuit_status = "✓" if circuit_done else "✗"
+
+	var detail = "Current Mission:\n\n"
+
+	if has_all_evidence():
+		detail += "You have collected all major STEM evidence.\n\n"
+		detail += "Next Step:\nGo to the purple Final Deduction Room and accuse the culprit.\n\n"
+	else:
+		detail += "Collect three STEM evidence items before making a final accusation.\n\n"
+
+	detail += red_status + " Fake Red Stain\n"
+	detail += "Chemistry clue: Determine whether the red liquid is real blood or a staged chemical reaction.\n\n"
+
+	detail += pollen_status + " Greenhouse Pollen\n"
+	detail += "Biology clue: Use pollen as trace evidence to connect a suspect to a location.\n\n"
+
+	detail += circuit_status + " Deliberate Short Circuit\n"
+	detail += "Physics clue: Investigate whether the blackout was caused intentionally.\n\n"
+
+	detail += "Controls:\n"
+	detail += "WASD - Move\n"
+	detail += "E - Interact\n"
+	detail += "B - Evidence Board\n"
+	detail += "O - Mission Objectives\n"
+	detail += "R - Restart\n"
+	detail += "M - Main Menu\n"
+
+	objective_detail_label.text = detail
+func create_objective_panel_ui():
+	objective_panel = Panel.new()
+	objective_panel.position = Vector2(260, 120)
+	objective_panel.size = Vector2(520, 480)
+	objective_panel.visible = false
+	ui_layer.add_child(objective_panel)
+
+	var margin = MarginContainer.new()
+	margin.position = Vector2(24, 24)
+	margin.size = Vector2(472, 432)
+	objective_panel.add_child(margin)
+
+	var layout = VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 14)
+	margin.add_child(layout)
+
+	var title = Label.new()
+	title.text = "Mission Objectives"
+	title.add_theme_font_size_override("font_size", 32)
+	layout.add_child(title)
+
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(460, 310)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+
+	objective_detail_label = Label.new()
+	objective_detail_label.text = ""
+	objective_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objective_detail_label.custom_minimum_size = Vector2(440, 520)
+	objective_detail_label.add_theme_font_size_override("font_size", 21)
+	scroll.add_child(objective_detail_label)
+
+	var close_button = Button.new()
+	close_button.text = "Close"
+	close_button.custom_minimum_size = Vector2(460, 44)
+	close_button.pressed.connect(close_objective_panel)
+	layout.add_child(close_button)
+func toggle_objective_panel():
+	if message_panel.visible:
+		return
+
+	if evidence_board_open:
+		return
+
+	if objective_panel_open:
+		close_objective_panel()
+	else:
+		open_objective_panel()
+
+
+func open_objective_panel():
+	objective_panel_open = true
+	update_objective_text()
+	objective_panel.visible = true
+
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+
+func close_objective_panel():
+	objective_panel_open = false
+	objective_panel.visible = false
+
+	if not game_over and not dialogue_active and not evidence_board_open:
+		player.set_physics_process(true)
+
+		if enemy != null:
+			enemy.set_physics_process(true)
