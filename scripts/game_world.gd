@@ -140,7 +140,7 @@ func create_floor():
 
 
 func create_castle_walls():
-	# Border walls
+	# Outer castle border
 	for x in range(MAP_WIDTH):
 		add_wall_cell(Vector2i(x, 0))
 		add_wall_cell(Vector2i(x, MAP_HEIGHT - 1))
@@ -149,17 +149,108 @@ func create_castle_walls():
 		add_wall_cell(Vector2i(0, y))
 		add_wall_cell(Vector2i(MAP_WIDTH - 1, y))
 
-	# Interior castle maze walls
-	add_wall_rect(Vector2i(6, 1), Vector2i(6, 8))
-	add_wall_rect(Vector2i(12, 3), Vector2i(12, 14))
-	add_wall_rect(Vector2i(20, 2), Vector2i(20, 10))
-	add_wall_rect(Vector2i(26, 6), Vector2i(26, 18))
+	# ============================================================
+	# Castle Layout v2
+	# The map is divided into rooms and corridors:
+	# - Left top: crime hall
+	# - Top middle: greenhouse trace area
+	# - Middle: circuit room
+	# - Right top: final deduction wing
+	# - Bottom: chase maze / service corridors
+	# ============================================================
 
-	add_wall_rect(Vector2i(3, 5), Vector2i(10, 5))
-	add_wall_rect(Vector2i(14, 8), Vector2i(23, 8))
-	add_wall_rect(Vector2i(2, 12), Vector2i(9, 12))
-	add_wall_rect(Vector2i(16, 15), Vector2i(27, 15))
-	add_wall_rect(Vector2i(8, 19), Vector2i(22, 19))
+	# --- Top room partitions ---
+	# Wall between crime hall and greenhouse area, with a doorway at y=4-5
+	add_wall_rect(Vector2i(13, 1), Vector2i(13, 3))
+	add_wall_rect(Vector2i(13, 6), Vector2i(13, 17))
+
+	# Wall between greenhouse area and central wing, with openings at y=5-6 and y=13-14
+	add_wall_rect(Vector2i(28, 1), Vector2i(28, 4))
+	add_wall_rect(Vector2i(28, 7), Vector2i(28, 12))
+	add_wall_rect(Vector2i(28, 15), Vector2i(28, 17))
+
+	# Wall between central wing and final deduction wing, with doorway at y=4-6
+	add_wall_rect(Vector2i(43, 1), Vector2i(43, 3))
+	add_wall_rect(Vector2i(43, 7), Vector2i(43, 17))
+
+	# Horizontal wall separating top rooms from middle rooms, with door gaps
+	add_wall_rect(Vector2i(1, 8), Vector2i(20, 8))
+	add_wall_rect(Vector2i(24, 8), Vector2i(42, 8))
+	add_wall_rect(Vector2i(46, 8), Vector2i(58, 8))
+
+	# Horizontal wall separating middle rooms from lower corridors, with door gaps
+	add_wall_rect(Vector2i(1, 18), Vector2i(10, 18))
+	add_wall_rect(Vector2i(14, 18), Vector2i(30, 18))
+	add_wall_rect(Vector2i(34, 18), Vector2i(49, 18))
+	add_wall_rect(Vector2i(53, 18), Vector2i(58, 18))
+
+	# --- Lower castle partitions ---
+	# Vertical service corridor dividers, with gaps
+	add_wall_rect(Vector2i(18, 19), Vector2i(18, 23))
+	add_wall_rect(Vector2i(18, 26), Vector2i(18, 38))
+
+	add_wall_rect(Vector2i(38, 19), Vector2i(38, 27))
+	add_wall_rect(Vector2i(38, 31), Vector2i(38, 38))
+
+	# Lower horizontal maze sections, with gaps
+	add_wall_rect(Vector2i(1, 29), Vector2i(15, 29))
+	add_wall_rect(Vector2i(21, 29), Vector2i(36, 29))
+	add_wall_rect(Vector2i(40, 29), Vector2i(58, 29))
+
+	# ============================================================
+	# Room details / internal obstacles
+	# These make rooms feel less empty without blocking key objects.
+	# ============================================================
+
+	# Crime hall details near red stain / Butler
+	add_wall_rect(Vector2i(3, 6), Vector2i(8, 6))
+	add_wall_rect(Vector2i(10, 2), Vector2i(10, 5))
+
+	# Greenhouse trace area details
+	add_wall_rect(Vector2i(16, 2), Vector2i(24, 2))
+	add_wall_rect(Vector2i(20, 4), Vector2i(20, 6))
+	add_wall_rect(Vector2i(23, 5), Vector2i(26, 5))
+
+	# Central corridor details
+	add_wall_rect(Vector2i(31, 3), Vector2i(39, 3))
+	add_wall_rect(Vector2i(34, 5), Vector2i(34, 7))
+	add_wall_rect(Vector2i(38, 6), Vector2i(41, 6))
+
+	# Final deduction wing details
+	add_wall_rect(Vector2i(48, 2), Vector2i(56, 2))
+	add_wall_rect(Vector2i(48, 7), Vector2i(52, 7))
+	add_wall_rect(Vector2i(56, 5), Vector2i(56, 7))
+
+	# Circuit room details
+	add_wall_rect(Vector2i(16, 11), Vector2i(21, 11))
+	add_wall_rect(Vector2i(25, 10), Vector2i(25, 16))
+	add_wall_rect(Vector2i(18, 15), Vector2i(21, 15))
+
+	# Middle right storage / shadow corridor details
+	add_wall_rect(Vector2i(32, 11), Vector2i(40, 11))
+	add_wall_rect(Vector2i(36, 12), Vector2i(36, 16))
+	add_wall_rect(Vector2i(45, 13), Vector2i(53, 13))
+	add_wall_rect(Vector2i(49, 14), Vector2i(49, 17))
+
+	# Lower left maze
+	add_wall_rect(Vector2i(4, 22), Vector2i(14, 22))
+	add_wall_rect(Vector2i(8, 23), Vector2i(8, 27))
+	add_wall_rect(Vector2i(2, 35), Vector2i(12, 35))
+	add_wall_rect(Vector2i(14, 31), Vector2i(14, 37))
+
+	# Lower middle maze
+	add_wall_rect(Vector2i(22, 21), Vector2i(33, 21))
+	add_wall_rect(Vector2i(25, 22), Vector2i(25, 27))
+	add_wall_rect(Vector2i(30, 24), Vector2i(36, 24))
+	add_wall_rect(Vector2i(22, 34), Vector2i(34, 34))
+	add_wall_rect(Vector2i(29, 31), Vector2i(29, 37))
+
+	# Lower right chase maze / enemy area
+	add_wall_rect(Vector2i(42, 22), Vector2i(55, 22))
+	add_wall_rect(Vector2i(45, 23), Vector2i(45, 27))
+	add_wall_rect(Vector2i(52, 25), Vector2i(57, 25))
+	add_wall_rect(Vector2i(42, 34), Vector2i(55, 34))
+	add_wall_rect(Vector2i(51, 31), Vector2i(51, 37))
 
 
 func add_wall_rect(start_cell: Vector2i, end_cell: Vector2i):
