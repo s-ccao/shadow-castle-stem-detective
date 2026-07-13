@@ -70,6 +70,10 @@ var circuit_node: ColorRect
 
 var mechanic_position := Vector2.ZERO
 var mechanic_node: ColorRect
+
+var final_room_position := Vector2.ZERO
+var final_room_node: ColorRect
+var culprit_id := "mechanic"
 func _ready():
 	create_floor()
 	create_castle_walls()
@@ -80,6 +84,7 @@ func _ready():
 	create_butler_npc()
 	create_gardener_npc()
 	create_mechanic_npc()
+	create_final_room()
 	create_fog_cells()
 	create_game_ui()
 	create_game_over_ui()
@@ -496,6 +501,19 @@ func update_interaction_prompt():
 		interact_label.visible = true
 		return
 
+	var final_room_distance = player.global_position.distance_to(final_room_position)
+
+	if final_room_distance < 60.0:
+		current_interaction = "final_room"
+
+		if has_all_evidence():
+			interact_label.text = "Press E to make final deduction"
+		else:
+			interact_label.text = "Need more evidence before final deduction"
+
+		interact_label.visible = true
+		return
+
 func try_investigate_clue():
 	if current_interaction == "red_stain":
 		show_clue_intro()
@@ -509,6 +527,8 @@ func try_investigate_clue():
 		show_gardener_dialogue()
 	elif current_interaction == "mechanic":
 		show_mechanic_dialogue()
+	elif current_interaction == "final_room":
+		show_final_deduction()
 
 
 func show_clue_intro():
@@ -1022,3 +1042,97 @@ func show_evidence_detail(evidence_id: String):
 	evidence_list_scroll.visible = false
 	evidence_detail_scroll.visible = true
 	evidence_back_button.visible = true
+func create_final_room():
+	final_room_position = cell_to_world(Vector2i(29, 3))
+
+	final_room_node = ColorRect.new()
+	final_room_node.name = "FinalDeductionRoom"
+	final_room_node.color = Color(0.65, 0.45, 0.95, 1.0)
+	final_room_node.size = Vector2(30, 30)
+	final_room_node.position = final_room_position - final_room_node.size / 2
+	final_room_node.z_index = 5
+
+	add_child(final_room_node)
+func has_all_evidence() -> bool:
+	return evidence_items.has("fake_red_stain") \
+		and evidence_items.has("greenhouse_pollen") \
+		and evidence_items.has("deliberate_short_circuit")
+func show_final_deduction():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+
+	if not has_all_evidence():
+		message_label.text = "Dr. Lin:\nNot yet. We still need enough evidence before making a final accusation.\n\nCollected evidence:\n" + get_evidence_progress_text()
+		add_dialogue_button("Continue", close_message_panel)
+		return
+
+	message_label.text = "Dr. Lin:\nWe have three major pieces of evidence now:\n\n1. The red stain may have been staged.\n2. The pollen links someone to the greenhouse area.\n3. The blackout was likely caused by a deliberate short circuit.\n\nWho do you accuse?"
+
+	add_final_suspect_button("Butler", "butler")
+	add_final_suspect_button("Gardener", "gardener")
+	add_final_suspect_button("Mechanic", "mechanic")
+	add_dialogue_button("I need to review evidence first.", close_message_panel)
+
+
+func get_evidence_progress_text() -> String:
+	var text = ""
+
+	if evidence_items.has("fake_red_stain"):
+		text += "- Fake Red Stain collected\n"
+	else:
+		text += "- Fake Red Stain missing\n"
+
+	if evidence_items.has("greenhouse_pollen"):
+		text += "- Greenhouse Pollen collected\n"
+	else:
+		text += "- Greenhouse Pollen missing\n"
+
+	if evidence_items.has("deliberate_short_circuit"):
+		text += "- Deliberate Short Circuit collected\n"
+	else:
+		text += "- Deliberate Short Circuit missing\n"
+
+	return text
+
+
+func add_final_suspect_button(display_name: String, suspect_id: String):
+	var button = Button.new()
+	button.text = display_name
+	button.custom_minimum_size = Vector2(560, 42)
+	button.pressed.connect(func(): resolve_final_accusation(suspect_id))
+	button_box.add_child(button)
+
+
+func resolve_final_accusation(suspect_id: String):
+	clear_buttons()
+
+	if suspect_id == culprit_id:
+		show_victory_ending()
+	else:
+		show_wrong_accusation_ending(suspect_id)
+func show_victory_ending():
+	game_over = true
+
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+	message_panel.visible = true
+	message_label.text = "CASE SOLVED\n\nYou accused the Mechanic.\n\nDr. Lin:\nCorrect. The strongest clue is the deliberate short circuit. The blackout gave the murderer time to move through the castle while everyone else was confused.\n\nThe staged red stain and greenhouse trace evidence were distractions, but together they helped reveal how the crime scene was manipulated.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart."
+
+
+func show_wrong_accusation_ending(suspect_id: String):
+	game_over = true
+
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+	var suspect_name = suspect_id.capitalize()
+
+	message_panel.visible = true
+	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nDr. Lin:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart."
