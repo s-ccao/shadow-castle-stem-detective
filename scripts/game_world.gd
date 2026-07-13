@@ -43,9 +43,16 @@ var interact_label: Label
 var dialogue_active := false
 var evidence_items: Array[String] = []
 var evidence_panel: Panel
-var evidence_label: Label
 var evidence_board_open := false
 var evidence_hint_label: Label
+
+var evidence_title_label: Label
+var evidence_list_scroll: ScrollContainer
+var evidence_list_box: VBoxContainer
+
+var evidence_detail_scroll: ScrollContainer
+var evidence_detail_label: Label
+var evidence_back_button: Button
 
 var butler_position := Vector2.ZERO
 var butler_node: ColorRect
@@ -57,14 +64,22 @@ var pollen_node: ColorRect
 
 var gardener_position := Vector2.ZERO
 var gardener_node: ColorRect
+var circuit_collected := false
+var circuit_position := Vector2.ZERO
+var circuit_node: ColorRect
+
+var mechanic_position := Vector2.ZERO
+var mechanic_node: ColorRect
 func _ready():
 	create_floor()
 	create_castle_walls()
 	build_navigation_grid()
 	create_red_stain_clue()
 	create_pollen_clue()
+	create_circuit_clue()
 	create_butler_npc()
 	create_gardener_npc()
+	create_mechanic_npc()
 	create_fog_cells()
 	create_game_ui()
 	create_game_over_ui()
@@ -448,6 +463,15 @@ func update_interaction_prompt():
 			interact_label.visible = true
 			return
 
+	if not circuit_collected:
+		var circuit_distance = player.global_position.distance_to(circuit_position)
+
+		if circuit_distance < 55.0:
+			current_interaction = "circuit"
+			interact_label.text = "Press E to investigate circuit"
+			interact_label.visible = true
+			return
+
 	var butler_distance = player.global_position.distance_to(butler_position)
 
 	if butler_distance < 55.0:
@@ -464,15 +488,27 @@ func update_interaction_prompt():
 		interact_label.visible = true
 		return
 
+	var mechanic_distance = player.global_position.distance_to(mechanic_position)
+
+	if mechanic_distance < 55.0:
+		current_interaction = "mechanic"
+		interact_label.text = "Press E to talk to Mechanic"
+		interact_label.visible = true
+		return
+
 func try_investigate_clue():
 	if current_interaction == "red_stain":
 		show_clue_intro()
 	elif current_interaction == "pollen":
 		show_pollen_intro()
+	elif current_interaction == "circuit":
+		show_circuit_intro()
 	elif current_interaction == "butler":
 		show_butler_dialogue()
 	elif current_interaction == "gardener":
 		show_gardener_dialogue()
+	elif current_interaction == "mechanic":
+		show_mechanic_dialogue()
 
 
 func show_clue_intro():
@@ -586,31 +622,55 @@ func end_dialogue_pause():
 
 func create_evidence_board_ui():
 	evidence_panel = Panel.new()
-	evidence_panel.position = Vector2(230, 110)
-	evidence_panel.size = Vector2(570, 520)
+	evidence_panel.position = Vector2(230, 90)
+	evidence_panel.size = Vector2(570, 560)
 	evidence_panel.visible = false
 	ui_layer.add_child(evidence_panel)
 
 	var margin = MarginContainer.new()
 	margin.position = Vector2(24, 24)
-	margin.size = Vector2(522, 472)
+	margin.size = Vector2(522, 512)
 	evidence_panel.add_child(margin)
 
 	var layout = VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 14)
+	layout.add_theme_constant_override("separation", 12)
 	margin.add_child(layout)
 
-	var title = Label.new()
-	title.text = "Evidence Board"
-	title.add_theme_font_size_override("font_size", 32)
-	layout.add_child(title)
+	evidence_title_label = Label.new()
+	evidence_title_label.text = "Evidence Board"
+	evidence_title_label.add_theme_font_size_override("font_size", 32)
+	layout.add_child(evidence_title_label)
 
-	evidence_label = Label.new()
-	evidence_label.text = "No evidence collected yet."
-	evidence_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	evidence_label.custom_minimum_size = Vector2(500, 340)
-	evidence_label.add_theme_font_size_override("font_size", 21)
-	layout.add_child(evidence_label)
+	# Evidence list view
+	evidence_list_scroll = ScrollContainer.new()
+	evidence_list_scroll.custom_minimum_size = Vector2(500, 380)
+	evidence_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(evidence_list_scroll)
+
+	evidence_list_box = VBoxContainer.new()
+	evidence_list_box.add_theme_constant_override("separation", 10)
+	evidence_list_scroll.add_child(evidence_list_box)
+
+	# Evidence detail view
+	evidence_detail_scroll = ScrollContainer.new()
+	evidence_detail_scroll.custom_minimum_size = Vector2(500, 380)
+	evidence_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	evidence_detail_scroll.visible = false
+	layout.add_child(evidence_detail_scroll)
+
+	evidence_detail_label = Label.new()
+	evidence_detail_label.text = ""
+	evidence_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	evidence_detail_label.custom_minimum_size = Vector2(480, 700)
+	evidence_detail_label.add_theme_font_size_override("font_size", 21)
+	evidence_detail_scroll.add_child(evidence_detail_label)
+
+	evidence_back_button = Button.new()
+	evidence_back_button.text = "Back to Evidence List"
+	evidence_back_button.custom_minimum_size = Vector2(500, 42)
+	evidence_back_button.visible = false
+	evidence_back_button.pressed.connect(show_evidence_list)
+	layout.add_child(evidence_back_button)
 
 	var close_button = Button.new()
 	close_button.text = "Close"
@@ -631,7 +691,7 @@ func toggle_evidence_board():
 
 func open_evidence_board():
 	evidence_board_open = true
-	update_evidence_board_text()
+	show_evidence_list()
 	evidence_panel.visible = true
 
 	player.set_physics_process(false)
@@ -652,26 +712,27 @@ func close_evidence_board():
 
 
 func update_evidence_board_text():
-	if evidence_items.size() == 0:
-		evidence_label.text = "No evidence collected yet.\n\nExplore the castle and investigate suspicious clues."
+	if evidence_list_box == null:
 		return
 
-	var text = ""
+	for child in evidence_list_box.get_children():
+		child.queue_free()
 
-	if evidence_items.has("fake_red_stain"):
-		text += "Evidence 1: Fake Red Stain\n"
-		text += "- Observation: A red liquid was found near white powder and a broken bottle.\n"
-		text += "- Science: The color may come from an indicator reacting with a basic cleaner.\n"
-		text += "- Reasoning: This does not prove it is blood. The scene may have been staged.\n"
-		text += "- Suspect Link: Someone with access to cleaning supplies or chemical materials.\n\n"
-	if evidence_items.has("greenhouse_pollen"):
-		text += "Evidence 2: Greenhouse Pollen\n"
-		text += "- Observation: Yellow pollen was found on a locked door handle.\n"
-		text += "- Science: Pollen grains can connect a person to a specific plant or location.\n"
-		text += "- Reasoning: Someone who recently visited the greenhouse may have touched this door.\n"
-		text += "- Suspect Link: Gardener or anyone who entered the greenhouse.\n\n"
+	if evidence_items.size() == 0:
+		var empty_label = Label.new()
+		empty_label.text = "No evidence collected yet.\n\nExplore the castle and investigate suspicious clues."
+		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_label.add_theme_font_size_override("font_size", 22)
+		empty_label.custom_minimum_size = Vector2(480, 120)
+		evidence_list_box.add_child(empty_label)
+		return
 
-	evidence_label.text = text
+	for evidence_id in evidence_items:
+		var button = Button.new()
+		button.text = get_evidence_title(evidence_id)
+		button.custom_minimum_size = Vector2(480, 52)
+		button.pressed.connect(func(): show_evidence_detail(evidence_id))
+		evidence_list_box.add_child(button)
 func create_butler_npc():
 	butler_position = cell_to_world(Vector2i(9, 3))
 
@@ -801,3 +862,163 @@ func show_gardener_dialogue():
 		message_label.text = "Gardener:\nI was working near the greenhouse earlier. I did not enter the locked rooms.\n\nDr. Lin:\nWe should look for biological trace evidence before deciding whether that is true."
 
 	add_dialogue_button("Continue", close_message_panel)
+func create_circuit_clue():
+	circuit_position = cell_to_world(Vector2i(23, 13))
+
+	circuit_node = ColorRect.new()
+	circuit_node.name = "CircuitClue"
+	circuit_node.color = Color(0.15, 0.65, 0.95, 1.0)
+	circuit_node.size = Vector2(26, 20)
+	circuit_node.position = circuit_position - circuit_node.size / 2
+	circuit_node.z_index = 5
+
+	add_child(circuit_node)
+
+
+func create_mechanic_npc():
+	mechanic_position = cell_to_world(Vector2i(23, 17))
+
+	mechanic_node = ColorRect.new()
+	mechanic_node.name = "MechanicNPC"
+	mechanic_node.color = Color(0.25, 0.28, 0.75, 1.0)
+	mechanic_node.size = Vector2(24, 28)
+	mechanic_node.position = mechanic_position - mechanic_node.size / 2
+	mechanic_node.z_index = 6
+
+	add_child(mechanic_node)
+func show_circuit_intro():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+	message_label.text = "Dr. Lin:\nThe wall panel has burn marks, and the lights went out right before the chase began.\n\nThis may not be an accident. What do you think caused the blackout?"
+
+	add_dialogue_button("I think I know.", show_circuit_question)
+	add_dialogue_button("I'm not sure. Please explain.", explain_circuit_without_reward)
+
+
+func show_circuit_question():
+	clear_buttons()
+
+	message_label.text = "What is the best explanation for the burned circuit panel?\n\nChoose carefully. You only get one attempt."
+
+	add_circuit_answer_button("A. The room became too cold", false)
+	add_circuit_answer_button("B. A short circuit caused excess current and heat", true)
+	add_circuit_answer_button("C. Pollen reacted with electricity", false)
+	add_circuit_answer_button("D. Red liquid naturally turns wires black", false)
+
+
+func add_circuit_answer_button(text: String, is_correct: bool):
+	var button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(560, 42)
+
+	if is_correct:
+		button.pressed.connect(on_circuit_correct)
+	else:
+		button.pressed.connect(on_circuit_wrong)
+
+	button_box.add_child(button)
+
+
+func on_circuit_correct():
+	reputation += 10
+	reputation_label.text = "Reputation: " + str(reputation)
+
+	clear_buttons()
+	message_label.text = "Correct.\n\nDr. Lin:\nExactly. A short circuit can allow too much current to flow, producing heat and burn marks. This suggests the blackout may have been caused deliberately.\n\nEvidence added: Deliberate Short Circuit"
+
+	collect_circuit_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func on_circuit_wrong():
+	clear_buttons()
+	message_label.text = "Not quite.\n\nDr. Lin:\nThe burn marks suggest excess current and heat. A short circuit could explain the sudden blackout, which means someone may have caused it on purpose.\n\nEvidence added: Deliberate Short Circuit"
+
+	collect_circuit_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func explain_circuit_without_reward():
+	clear_buttons()
+	message_label.text = "Dr. Lin:\nA short circuit creates a path with very low resistance. That can cause a large current, heat, and burn marks.\n\nSo the blackout may not be accidental. Someone may have used the circuit panel to create confusion.\n\nEvidence added: Deliberate Short Circuit"
+
+	collect_circuit_evidence()
+	add_dialogue_button("Continue", close_message_panel)
+
+
+func collect_circuit_evidence():
+	circuit_collected = true
+
+	if not evidence_items.has("deliberate_short_circuit"):
+		evidence_items.append("deliberate_short_circuit")
+
+	if circuit_node != null:
+		circuit_node.color = Color(0.05, 0.25, 0.35, 0.7)
+
+	update_evidence_board_text()
+func show_mechanic_dialogue():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+
+	if evidence_items.has("deliberate_short_circuit"):
+		message_label.text = "Mechanic:\nA short circuit? I maintain the castle wiring, but anyone could have damaged that panel.\n\nDr. Lin:\nMaybe. But the burn pattern suggests the blackout was triggered intentionally. Someone who understands circuits would know exactly where to interfere."
+	else:
+		message_label.text = "Mechanic:\nThe lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nDr. Lin:\nMaybe, but we should inspect the circuit panel before accepting that explanation."
+
+	add_dialogue_button("Continue", close_message_panel)
+func get_evidence_title(evidence_id: String) -> String:
+	if evidence_id == "fake_red_stain":
+		return "Evidence 1: Fake Red Stain"
+
+	if evidence_id == "greenhouse_pollen":
+		return "Evidence 2: Greenhouse Pollen"
+
+	if evidence_id == "deliberate_short_circuit":
+		return "Evidence 3: Deliberate Short Circuit"
+
+	return "Unknown Evidence"
+func get_evidence_detail(evidence_id: String) -> String:
+	if evidence_id == "fake_red_stain":
+		return "Evidence 1: Fake Red Stain\n\n" + \
+		"Observation:\nA red liquid was found near white powder and a broken bottle.\n\n" + \
+		"Science:\nThe red color may come from an indicator solution reacting with a basic cleaner. Some indicators change color depending on whether the environment is acidic or basic.\n\n" + \
+		"Reasoning:\nThis does not prove it is blood. Someone may have staged the crime scene using a chemical reaction.\n\n" + \
+		"Suspect Link:\nThis could connect to someone with access to cleaning supplies or chemical materials, such as the Butler or someone familiar with basic substances."
+
+	if evidence_id == "greenhouse_pollen":
+		return "Evidence 2: Greenhouse Pollen\n\n" + \
+		"Observation:\nYellow pollen was found on a locked door handle.\n\n" + \
+		"Science:\nPollen grains can act as biological trace evidence. Different plants can produce different pollen patterns, which may connect a person to a specific location.\n\n" + \
+		"Reasoning:\nIf this pollen matches plants from the greenhouse, someone who recently visited that area may have touched the locked door.\n\n" + \
+		"Suspect Link:\nThis could connect to the Gardener or anyone who entered the greenhouse before the crime."
+
+	if evidence_id == "deliberate_short_circuit":
+		return "Evidence 3: Deliberate Short Circuit\n\n" + \
+		"Observation:\nBurn marks were found on a wall circuit panel near the blackout area.\n\n" + \
+		"Science:\nA short circuit can create a path with very low resistance. This can allow excess current to flow, producing heat and electrical damage.\n\n" + \
+		"Reasoning:\nThe blackout may not have been accidental. Someone may have triggered it to create confusion or cover movement through the castle.\n\n" + \
+		"Suspect Link:\nThis could connect to the Mechanic or anyone with electrical knowledge."
+
+	return "No detail available."
+func show_evidence_list():
+	evidence_title_label.text = "Evidence Board"
+
+	evidence_list_scroll.visible = true
+	evidence_detail_scroll.visible = false
+	evidence_back_button.visible = false
+
+	update_evidence_board_text()
+
+
+func show_evidence_detail(evidence_id: String):
+	evidence_title_label.text = get_evidence_title(evidence_id)
+
+	evidence_detail_label.text = get_evidence_detail(evidence_id)
+
+	evidence_list_scroll.visible = false
+	evidence_detail_scroll.visible = true
+	evidence_back_button.visible = true
