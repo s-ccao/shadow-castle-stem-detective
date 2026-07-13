@@ -21,6 +21,10 @@ const DISCOVERED_DARKNESS := 0.68
 
 var wall_cells := {}
 var fog_cells := {}
+var door_cells := {}
+var door_nodes := {}
+var circuit_door_open := false
+var circuit_door_position := Vector2.ZERO
 var discovered_fog_cells := {}
 var visible_fog_cells := {}
 var visible_fog_distances := {}
@@ -83,6 +87,7 @@ func _ready():
 	create_floor()
 	create_castle_walls()
 	build_navigation_grid()
+	create_locked_circuit_door()
 	create_red_stain_clue()
 	create_pollen_clue()
 	create_circuit_clue()
@@ -377,9 +382,7 @@ func has_world_line_of_sight(start_world: Vector2, end_world: Vector2) -> bool:
 		if not is_inside_map(sample_cell):
 			return false
 
-		if is_wall(sample_cell):
-			# The wall itself can be seen.
-			# But anything behind the wall cannot be seen.
+		if blocks_vision(sample_cell):
 			return sample_cell == target_map_cell
 
 	return true
@@ -569,7 +572,14 @@ func update_interaction_prompt():
 
 	if message_panel.visible or evidence_board_open:
 		return
+	if not circuit_door_open:
+		var door_distance = player.global_position.distance_to(circuit_door_position)
 
+		if door_distance < 75.0:
+			current_interaction = "circuit_door"
+			interact_label.text = "Press E to solve locked door puzzle"
+			interact_label.visible = true
+			return
 	if not evidence_collected:
 		var clue_distance = player.global_position.distance_to(clue_position)
 
@@ -635,7 +645,9 @@ func update_interaction_prompt():
 		return
 
 func try_investigate_clue():
-	if current_interaction == "red_stain":
+	if current_interaction == "circuit_door":
+		show_circuit_door_puzzle()
+	elif current_interaction == "red_stain":
 		show_clue_intro()
 	elif current_interaction == "pollen":
 		show_pollen_intro()
@@ -1423,3 +1435,103 @@ func create_follow_camera():
 
 	player.add_child(follow_camera)
 	follow_camera.make_current()
+func create_locked_circuit_door():
+	# This door blocks a passage into the lower / circuit side of the castle.
+	var cells = [
+		Vector2i(21, 8),
+		Vector2i(22, 8),
+		Vector2i(23, 8)
+	]
+
+	circuit_door_position = cell_to_world(Vector2i(22, 8))
+
+	for cell in cells:
+		add_door_cell(cell)
+func add_door_cell(cell: Vector2i):
+	var key = cell_key(cell)
+
+	if door_cells.has(key):
+		return
+
+	door_cells[key] = true
+
+	var door = StaticBody2D.new()
+	door.name = "LockedDoor"
+	door.position = cell_to_world(cell)
+
+	var shape = CollisionShape2D.new()
+	var rectangle = RectangleShape2D.new()
+	rectangle.size = Vector2(CELL_SIZE, CELL_SIZE)
+	shape.shape = rectangle
+	door.add_child(shape)
+
+	var visual = ColorRect.new()
+	visual.color = Color(0.95, 0.48, 0.12, 1.0)
+	visual.size = Vector2(CELL_SIZE, CELL_SIZE)
+	visual.position = Vector2(-CELL_SIZE / 2, -CELL_SIZE / 2)
+	door.add_child(visual)
+
+	add_child(door)
+	door_nodes[key] = door
+
+	# Make the door block A* navigation.
+	astar_grid.set_point_solid(cell, true)
+func is_door(cell: Vector2i) -> bool:
+	return door_cells.has(cell_key(cell))
+
+
+func blocks_vision(cell: Vector2i) -> bool:
+	return is_wall(cell) or is_door(cell)
+func show_circuit_door_puzzle():
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+	message_label.text = "Locked Door Puzzle\n\nA metal door is controlled by a simple electric circuit.\n\nDr. Lin:\nTo unlock it, think about current and resistance.\n\nWhich change would reduce current in the circuit?"
+
+	add_door_answer_button("A. Increase resistance", true)
+	add_door_answer_button("B. Remove all resistance", false)
+	add_door_answer_button("C. Add a short circuit", false)
+	add_door_answer_button("D. Replace wires with water", false)
+func add_door_answer_button(text: String, is_correct: bool):
+	var button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(560, 42)
+
+	if is_correct:
+		button.pressed.connect(on_door_puzzle_correct)
+	else:
+		button.pressed.connect(on_door_puzzle_wrong)
+
+	button_box.add_child(button)
+func on_door_puzzle_correct():
+	reputation += 5
+	reputation_label.text = "Reputation: " + str(reputation)
+
+	clear_buttons()
+	message_label.text = "Correct.\n\nDr. Lin:\nIncreasing resistance reduces current. The circuit stabilizes, and the door unlocks.\n\nDoor opened."
+
+	open_circuit_door()
+	add_dialogue_button("Continue", close_message_panel)
+func on_door_puzzle_wrong():
+	clear_buttons()
+	message_label.text = "Not quite.\n\nDr. Lin:\nCurrent decreases when resistance increases. A short circuit would do the opposite by allowing too much current to flow.\n\nI will override the lock this time.\n\nDoor opened."
+
+	open_circuit_door()
+	add_dialogue_button("Continue", close_message_panel)
+func open_circuit_door():
+	circuit_door_open = true
+
+	for key in door_nodes.keys():
+		var door = door_nodes[key]
+		if door != null:
+			door.queue_free()
+
+	for key in door_cells.keys():
+		var cell = string_to_cell(key)
+		astar_grid.set_point_solid(cell, false)
+
+	door_nodes.clear()
+	door_cells.clear()
+
+	update_fog_of_war()
