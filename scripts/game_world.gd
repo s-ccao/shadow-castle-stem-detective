@@ -93,9 +93,15 @@ func _ready():
 
 
 func _process(delta):
+	if Input.is_action_just_pressed("restart_game"):
+		restart_current_game()
+		return
+
+	if Input.is_action_just_pressed("return_menu"):
+		return_to_main_menu()
+		return
+
 	if game_over:
-		if Input.is_key_pressed(KEY_R):
-			get_tree().reload_current_scene()
 		return
 
 	if dialogue_active:
@@ -352,7 +358,7 @@ func create_game_over_ui():
 	add_child(canvas)
 
 	game_over_label = Label.new()
-	game_over_label.text = "GAME OVER\nThe murderer caught you.\nPress R to restart."
+	game_over_label.text = "GAME OVER\nThe murderer caught you.\nPress R to restart.\nPress M for main menu."
 	game_over_label.position = Vector2(300, 290)
 	game_over_label.size = Vector2(460, 180)
 	game_over_label.visible = false
@@ -402,7 +408,7 @@ func create_game_ui():
 	ui_layer.add_child(reputation_label)
 
 	evidence_hint_label = Label.new()
-	evidence_hint_label.text = "B: Evidence Board"
+	evidence_hint_label.text = "B: Evidence Board   R: Restart   M: Menu"
 	evidence_hint_label.position = Vector2(20, 50)
 	evidence_hint_label.add_theme_font_size_override("font_size", 20)
 	ui_layer.add_child(evidence_hint_label)
@@ -1121,7 +1127,7 @@ func show_victory_ending():
 		enemy.set_physics_process(false)
 
 	message_panel.visible = true
-	message_label.text = "CASE SOLVED\n\nYou accused the Mechanic.\n\nDr. Lin:\nCorrect. The strongest clue is the deliberate short circuit. The blackout gave the murderer time to move through the castle while everyone else was confused.\n\nThe staged red stain and greenhouse trace evidence were distractions, but together they helped reveal how the crime scene was manipulated.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart."
+	message_label.text = "CASE SOLVED\n\nYou accused the Mechanic.\n\nDr. Lin:\nCorrect. The strongest clue is the deliberate short circuit. The blackout gave the murderer time to move through the castle while everyone else was confused.\n\nThe staged red stain and greenhouse trace evidence were distractions, but together they helped reveal how the crime scene was manipulated.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
 
 
 func show_wrong_accusation_ending(suspect_id: String):
@@ -1135,4 +1141,10 @@ func show_wrong_accusation_ending(suspect_id: String):
 	var suspect_name = suspect_id.capitalize()
 
 	message_panel.visible = true
-	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nDr. Lin:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart."
+	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nDr. Lin:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
+func restart_current_game():
+	get_tree().reload_current_scene()
+
+
+func return_to_main_menu():
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
