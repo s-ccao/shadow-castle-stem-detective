@@ -61,8 +61,7 @@ func create_menu_ui():
 
 
 func start_game():
-	print("START GAME CLICKED")
-	get_tree().change_scene_to_file("res://scenes/game_world.tscn")
+	get_tree().change_scene_to_file("res://scenes/intro_cutscene.tscn")
 
 
 func quit_game():

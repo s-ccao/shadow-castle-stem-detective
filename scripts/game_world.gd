@@ -17,7 +17,7 @@ const CLEAR_RADIUS_PIXELS := 90.0
 const EDGE_DARKNESS := 0.62
 const DISCOVERED_DARKNESS := 0.68
 var intro_seen := false
-
+var intro_reviewing_objectives := false
 @onready var player = $player
 
 var wall_cells := {}
@@ -47,6 +47,14 @@ var ui_layer: CanvasLayer
 var message_panel: Panel
 var message_label: Label
 var button_box: VBoxContainer
+var message_scroll: ScrollContainer
+var button_scroll: ScrollContainer
+var dialogue_action_row: HBoxContainer
+var dialogue_continue_button: Button
+var dialogue_speaker_label: Label
+var dialogue_portrait_box: Panel
+var dialogue_portrait_color: ColorRect
+var dialogue_portrait_name: Label
 var reputation_label: Label
 var interact_label: Label
 var dialogue_active := false
@@ -87,6 +95,10 @@ var mechanic_node: ColorRect
 var final_room_position := Vector2.ZERO
 var final_room_node: ColorRect
 var culprit_id := "mechanic"
+var knowledge_items: Array[String] = []
+var knowledge_panel: Panel
+var knowledge_panel_open := false
+var knowledge_list_label: Label
 func _ready():
 	create_floor()
 	create_castle_walls()
@@ -106,7 +118,7 @@ func _ready():
 	move_player_to_cell(Vector2i(2, 2))
 	create_follow_camera()
 	setup_enemy()
-	show_intro_dialogue()
+	#show_intro_dialogue()
 
 
 func _process(delta):
@@ -120,6 +132,9 @@ func _process(delta):
 
 	if Input.is_action_just_pressed("objective_panel"):
 		toggle_objective_panel()
+		return
+	if Input.is_action_just_pressed("knowledge_journal"):
+		toggle_knowledge_journal()
 		return
 
 	if game_over:
@@ -522,7 +537,7 @@ func create_game_ui():
 	ui_layer.add_child(reputation_label)
 
 	evidence_hint_label = Label.new()
-	evidence_hint_label.text = "B: Evidence   O: Objectives   R: Restart   M: Menu"
+	evidence_hint_label.text = "B: Evidence   K: Knowledge   O: Objectives   R: Restart   M: Menu"
 	evidence_hint_label.position = Vector2(20, 50)
 	evidence_hint_label.add_theme_font_size_override("font_size", 20)
 	ui_layer.add_child(evidence_hint_label)
@@ -543,38 +558,96 @@ func create_game_ui():
 	ui_layer.add_child(interact_label)
 
 	message_panel = Panel.new()
-	message_panel.position = Vector2(130, 80)
-	message_panel.size = Vector2(760, 570)
+	message_panel.position = Vector2(26, 430)
+	message_panel.size = Vector2(972, 286)
 	message_panel.visible = false
 	ui_layer.add_child(message_panel)
 
 	var margin = MarginContainer.new()
-	margin.position = Vector2(24, 24)
-	margin.size = Vector2(712, 522)
+	margin.position = Vector2(16, 16)
+	margin.size = Vector2(940, 254)
 	message_panel.add_child(margin)
 
-	var layout = VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 14)
-	margin.add_child(layout)
+	var main_layout = HBoxContainer.new()
+	main_layout.add_theme_constant_override("separation", 14)
+	margin.add_child(main_layout)
 
-	var message_scroll = ScrollContainer.new()
-	message_scroll.custom_minimum_size = Vector2(700, 320)
+	# Left portrait area
+	dialogue_portrait_box = Panel.new()
+	dialogue_portrait_box.custom_minimum_size = Vector2(128, 248)
+	main_layout.add_child(dialogue_portrait_box)
+
+	var portrait_layout = VBoxContainer.new()
+	portrait_layout.position = Vector2(10, 10)
+	portrait_layout.size = Vector2(108, 228)
+	portrait_layout.add_theme_constant_override("separation", 8)
+	dialogue_portrait_box.add_child(portrait_layout)
+
+	dialogue_portrait_color = ColorRect.new()
+	dialogue_portrait_color.color = Color(0.25, 0.55, 0.95, 1.0)
+	dialogue_portrait_color.custom_minimum_size = Vector2(108, 160)
+	portrait_layout.add_child(dialogue_portrait_color)
+
+	dialogue_portrait_name = Label.new()
+	dialogue_portrait_name.text = "Dr. Lin"
+	dialogue_portrait_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dialogue_portrait_name.add_theme_font_size_override("font_size", 15)
+	portrait_layout.add_child(dialogue_portrait_name)
+
+	# Right dialogue area
+	var dialogue_layout = VBoxContainer.new()
+	dialogue_layout.custom_minimum_size = Vector2(790, 248)
+	dialogue_layout.add_theme_constant_override("separation", 6)
+	main_layout.add_child(dialogue_layout)
+
+	dialogue_speaker_label = Label.new()
+	dialogue_speaker_label.text = "Dr. Lin"
+	dialogue_speaker_label.add_theme_font_size_override("font_size", 20)
+	dialogue_layout.add_child(dialogue_speaker_label)
+
+	message_scroll = ScrollContainer.new()
+	message_scroll.custom_minimum_size = Vector2(790, 108)
 	message_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	layout.add_child(message_scroll)
+	dialogue_layout.add_child(message_scroll)
 
 	message_label = Label.new()
 	message_label.text = ""
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	message_label.add_theme_font_size_override("font_size", 22)
-	message_label.custom_minimum_size = Vector2(670, 0)
+	message_label.add_theme_font_size_override("font_size", 16)
+	message_label.custom_minimum_size = Vector2(760, 150)
 	message_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	message_scroll.add_child(message_label)
 
+	button_scroll = ScrollContainer.new()
+	button_scroll.custom_minimum_size = Vector2(790, 70)
+	button_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	dialogue_layout.add_child(button_scroll)
+
 	button_box = VBoxContainer.new()
-	button_box.add_theme_constant_override("separation", 10)
-	layout.add_child(button_box)
+	button_box.add_theme_constant_override("separation", 6)
+	button_scroll.add_child(button_box)
+
+	dialogue_action_row = HBoxContainer.new()
+	dialogue_action_row.custom_minimum_size = Vector2(790, 34)
+	dialogue_layout.add_child(dialogue_action_row)
+
+	var spacer = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dialogue_action_row.add_child(spacer)
+
+	dialogue_continue_button = Button.new()
+	dialogue_continue_button.text = "Continue"
+	dialogue_continue_button.custom_minimum_size = Vector2(180, 34)
+	dialogue_continue_button.add_theme_font_size_override("font_size", 15)
+	dialogue_continue_button.visible = false
+	dialogue_action_row.add_child(dialogue_continue_button)
+
+	set_dialogue_speaker("Dr. Lin")
+	apply_dialogue_visual_style()
 	create_evidence_board_ui()
+	create_knowledge_journal_ui()
 	update_objective_text()
+	
 
 
 func update_interaction_prompt():
@@ -687,7 +760,7 @@ func try_investigate_clue():
 func show_clue_intro():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
 	message_label.text = "Dr. Lin:\nThis red liquid looks like blood at first glance, but a good detective never relies on color alone.\n\nWhat do you think caused the red color?"
 
@@ -698,7 +771,10 @@ func show_clue_intro():
 func show_red_stain_question():
 	clear_buttons()
 
-	message_label.text = "What most likely caused the red color?\n\nChoose carefully. You only get one attempt."
+	set_dialogue_text(
+		"Dr. Lin",
+		"Question:\nWhat most likely caused the red color?\n\nUse what you observed. A good detective does not rely on color alone."
+	)
 
 	add_answer_button("A. Real blood exposed to oxygen", false)
 	add_answer_button("B. Indicator solution reacting with a basic cleaner", true)
@@ -709,7 +785,8 @@ func show_red_stain_question():
 func add_answer_button(text: String, is_correct: bool):
 	var button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(560, 42)
+	button.custom_minimum_size = Vector2(780, 28)
+	button.add_theme_font_size_override("font_size", 15)
 
 	if is_correct:
 		button.pressed.connect(on_red_stain_correct)
@@ -727,7 +804,7 @@ func on_red_stain_correct():
 	message_label.text = "Correct.\n\nDr. Lin:\nExcellent reasoning. The red color is likely caused by an indicator reacting with a basic cleaning substance. This means the stain may have been staged, not left by the victim.\n\nEvidence added: Fake Red Stain"
 
 	collect_red_stain_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func on_red_stain_wrong():
@@ -735,7 +812,7 @@ func on_red_stain_wrong():
 	message_label.text = "Not quite.\n\nDr. Lin:\nThe important clue is not just the color. If an indicator solution mixes with a basic cleaner, it can turn red or pink. This stain may be fake.\n\nEvidence added: Fake Red Stain"
 
 	collect_red_stain_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func explain_red_stain_without_reward():
@@ -743,7 +820,7 @@ func explain_red_stain_without_reward():
 	message_label.text = "Dr. Lin:\nThat's okay. A good detective knows when to ask for help.\n\nThe red color may come from an indicator solution reacting with a basic cleaner. So this does not prove it is blood. Someone may have staged the crime scene.\n\nEvidence added: Fake Red Stain"
 
 	collect_red_stain_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func collect_red_stain_evidence():
@@ -762,6 +839,10 @@ func collect_red_stain_evidence():
 func close_message_panel():
 	message_panel.visible = false
 	clear_buttons()
+
+	if interact_label != null:
+		interact_label.visible = false
+
 	end_dialogue_pause()
 
 
@@ -769,15 +850,25 @@ func clear_buttons():
 	for child in button_box.get_children():
 		child.queue_free()
 
+	if dialogue_continue_button != null:
+		dialogue_continue_button.visible = false
+
+	reset_dialogue_scrolls()
+
 
 func add_dialogue_button(text: String, callback: Callable):
 	var button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(560, 44)
+	button.custom_minimum_size = Vector2(780, 28)
+	button.add_theme_font_size_override("font_size", 15)
 	button.pressed.connect(callback)
 	button_box.add_child(button)
 func start_dialogue_pause():
 	dialogue_active = true
+	current_interaction = ""
+
+	if interact_label != null:
+		interact_label.visible = false
 
 	player.set_physics_process(false)
 
@@ -922,7 +1013,7 @@ func create_butler_npc():
 func show_butler_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Butler")
 	message_panel.visible = true
 
 	if evidence_items.has("fake_red_stain"):
@@ -930,7 +1021,7 @@ func show_butler_dialogue():
 	else:
 		message_label.text = "Butler:\nI was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms.\n\nDr. Lin:\nThat explains why many paths require scientific reasoning. We should collect physical evidence before making any accusation."
 
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func create_pollen_clue():
 	pollen_position = cell_to_world(Vector2i(17, 6))
 
@@ -958,7 +1049,7 @@ func create_gardener_npc():
 func show_pollen_intro():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
 	message_label.text = "Dr. Lin:\nThere is yellow pollen on the door handle. That may not look important, but pollen can connect a person to a specific place.\n\nWhat do you think this clue tells us?"
 
@@ -969,19 +1060,17 @@ func show_pollen_intro():
 func show_pollen_question():
 	clear_buttons()
 
-	message_label.text = "What is the best scientific use of this pollen evidence?\n\nChoose carefully. You only get one attempt."
-
-	add_pollen_answer_button("A. It proves the door is old", false)
-	add_pollen_answer_button("B. It can link someone to a plant or greenhouse location", true)
-	add_pollen_answer_button("C. It shows the room was recently painted", false)
-	add_pollen_answer_button("D. It means the red liquid is blood", false)
+	set_dialogue_text(
+		"Dr. Lin",
+		"Question:\nWhat is the best scientific use of this pollen evidence?\n\nThink about how small traces can connect a suspect to a specific place."
+	)
 
 
 func add_pollen_answer_button(text: String, is_correct: bool):
 	var button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(560, 42)
-
+	button.custom_minimum_size = Vector2(780, 28)
+	button.add_theme_font_size_override("font_size", 15)
 	if is_correct:
 		button.pressed.connect(on_pollen_correct)
 	else:
@@ -998,7 +1087,7 @@ func on_pollen_correct():
 	message_label.text = "Correct.\n\nDr. Lin:\nGood reasoning. Pollen grains can help identify where someone has been, especially if the pollen matches a plant from a specific room such as the greenhouse.\n\nEvidence added: Greenhouse Pollen"
 
 	collect_pollen_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func on_pollen_wrong():
@@ -1006,7 +1095,7 @@ func on_pollen_wrong():
 	message_label.text = "Not quite.\n\nDr. Lin:\nPollen can act like biological trace evidence. If it matches a plant from the greenhouse, it may show that someone recently came from there.\n\nEvidence added: Greenhouse Pollen"
 
 	collect_pollen_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func explain_pollen_without_reward():
@@ -1014,7 +1103,7 @@ func explain_pollen_without_reward():
 	message_label.text = "Dr. Lin:\nThat's okay. Pollen is useful because different plants can produce different pollen patterns. If we match this pollen to the greenhouse, it can connect a suspect to that location.\n\nEvidence added: Greenhouse Pollen"
 
 	collect_pollen_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func collect_pollen_evidence():
@@ -1031,7 +1120,7 @@ func collect_pollen_evidence():
 func show_gardener_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Gardener")
 	message_panel.visible = true
 
 	if evidence_items.has("greenhouse_pollen"):
@@ -1039,7 +1128,7 @@ func show_gardener_dialogue():
 	else:
 		message_label.text = "Gardener:\nI was working near the greenhouse earlier. I did not enter the locked rooms.\n\nDr. Lin:\nWe should look for biological trace evidence before deciding whether that is true."
 
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func create_circuit_clue():
 	circuit_position = cell_to_world(Vector2i(23, 13))
 
@@ -1069,7 +1158,7 @@ func create_mechanic_npc():
 func show_circuit_intro():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
 	message_label.text = "Dr. Lin:\nThe wall panel has burn marks, and the lights went out right before the chase began.\n\nThis may not be an accident. What do you think caused the blackout?"
 
@@ -1080,18 +1169,17 @@ func show_circuit_intro():
 func show_circuit_question():
 	clear_buttons()
 
-	message_label.text = "What is the best explanation for the burned circuit panel?\n\nChoose carefully. You only get one attempt."
-
-	add_circuit_answer_button("A. The room became too cold", false)
-	add_circuit_answer_button("B. A short circuit caused excess current and heat", true)
-	add_circuit_answer_button("C. Pollen reacted with electricity", false)
-	add_circuit_answer_button("D. Red liquid naturally turns wires black", false)
+	set_dialogue_text(
+		"Dr. Lin",
+		"Question:\nWhat is the best explanation for the burned circuit panel?\n\nUse the burn marks and blackout as evidence."
+	)
 
 
 func add_circuit_answer_button(text: String, is_correct: bool):
 	var button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(560, 42)
+	button.custom_minimum_size = Vector2(780, 28)
+	button.add_theme_font_size_override("font_size", 15)
 
 	if is_correct:
 		button.pressed.connect(on_circuit_correct)
@@ -1109,7 +1197,7 @@ func on_circuit_correct():
 	message_label.text = "Correct.\n\nDr. Lin:\nExactly. A short circuit can allow too much current to flow, producing heat and burn marks. This suggests the blackout may have been caused deliberately.\n\nEvidence added: Deliberate Short Circuit"
 
 	collect_circuit_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func on_circuit_wrong():
@@ -1117,7 +1205,7 @@ func on_circuit_wrong():
 	message_label.text = "Not quite.\n\nDr. Lin:\nThe burn marks suggest excess current and heat. A short circuit could explain the sudden blackout, which means someone may have caused it on purpose.\n\nEvidence added: Deliberate Short Circuit"
 
 	collect_circuit_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func explain_circuit_without_reward():
@@ -1125,7 +1213,7 @@ func explain_circuit_without_reward():
 	message_label.text = "Dr. Lin:\nA short circuit creates a path with very low resistance. That can cause a large current, heat, and burn marks.\n\nSo the blackout may not be accidental. Someone may have used the circuit panel to create confusion.\n\nEvidence added: Deliberate Short Circuit"
 
 	collect_circuit_evidence()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 
 
 func collect_circuit_evidence():
@@ -1142,7 +1230,7 @@ func collect_circuit_evidence():
 func show_mechanic_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Mechanic")
 	message_panel.visible = true
 
 	if evidence_items.has("deliberate_short_circuit"):
@@ -1150,7 +1238,7 @@ func show_mechanic_dialogue():
 	else:
 		message_label.text = "Mechanic:\nThe lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nDr. Lin:\nMaybe, but we should inspect the circuit panel before accepting that explanation."
 
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func get_evidence_title(evidence_id: String) -> String:
 	if evidence_id == "fake_red_stain":
 		return "Evidence 1: Fake Red Stain"
@@ -1222,7 +1310,7 @@ func has_all_evidence() -> bool:
 func show_final_deduction():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
 
 	if not has_all_evidence():
@@ -1262,7 +1350,8 @@ func get_evidence_progress_text() -> String:
 func add_final_suspect_button(display_name: String, suspect_id: String):
 	var button = Button.new()
 	button.text = display_name
-	button.custom_minimum_size = Vector2(560, 42)
+	button.custom_minimum_size = Vector2(780, 28)
+	button.add_theme_font_size_override("font_size", 15)
 	button.pressed.connect(func(): resolve_final_accusation(suspect_id))
 	button_box.add_child(button)
 
@@ -1358,6 +1447,7 @@ func update_objective_text():
 	detail += "WASD - Move\n"
 	detail += "E - Interact\n"
 	detail += "B - Evidence Board\n"
+	detail += "K - Knowledge Journal\n"
 	detail += "O - Mission Objectives\n"
 	detail += "R - Restart\n"
 	detail += "M - Main Menu\n"
@@ -1428,6 +1518,12 @@ func open_objective_panel():
 func close_objective_panel():
 	objective_panel_open = false
 	objective_panel.visible = false
+
+	if intro_reviewing_objectives:
+		intro_reviewing_objectives = false
+		message_panel.visible = true
+		show_intro_dialogue_page_two()
+		return
 
 	if not game_over and not dialogue_active and not evidence_board_open:
 		player.set_physics_process(true)
@@ -1515,9 +1611,12 @@ func show_circuit_door_puzzle():
 
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
-	message_label.text = "Locked Door Puzzle\n\nA metal door is controlled by a simple electric circuit.\n\nDr. Lin:\nRemember what the maintenance note said about current and resistance.\n\nWhich change would reduce current in the circuit?"
+	set_dialogue_text(
+	"Dr. Lin",
+	"Locked Door Puzzle:\nA metal door is controlled by a simple electric circuit.\n\nRemember the maintenance note:\nCurrent decreases when resistance increases.\n\nQuestion:\nWhich change would reduce current in the circuit?"
+	)
 
 	add_door_answer_button("A. Increase resistance", true)
 	add_door_answer_button("B. Remove all resistance", false)
@@ -1526,7 +1625,8 @@ func show_circuit_door_puzzle():
 func add_door_answer_button(text: String, is_correct: bool):
 	var button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(560, 42)
+	button.custom_minimum_size = Vector2(780, 28)
+	button.add_theme_font_size_override("font_size", 15)
 
 	if is_correct:
 		button.pressed.connect(on_door_puzzle_correct)
@@ -1542,13 +1642,13 @@ func on_door_puzzle_correct():
 	message_label.text = "Correct.\n\nDr. Lin:\nIncreasing resistance reduces current. The circuit stabilizes, and the door unlocks.\n\nDoor opened."
 
 	open_circuit_door()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func on_door_puzzle_wrong():
 	clear_buttons()
 	message_label.text = "Not quite.\n\nDr. Lin:\nCurrent decreases when resistance increases. A short circuit would do the opposite by allowing too much current to flow.\n\nI will override the lock this time.\n\nDoor opened."
 
 	open_circuit_door()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func open_circuit_door():
 	circuit_door_open = true
 
@@ -1581,9 +1681,9 @@ func create_circuit_learning_note():
 func show_circuit_learning_note():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	learned_circuit_rule = true
-
+	add_knowledge_item("current_resistance")
 	if circuit_note_node != null:
 		circuit_note_node.color = Color(0.55, 0.52, 0.25, 0.75)
 
@@ -1591,15 +1691,15 @@ func show_circuit_learning_note():
 	message_label.text = "Maintenance Note:\n\n\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nDr. Lin:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases."
 
 	update_objective_text()
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func show_circuit_door_hint():
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
 	message_label.text = "Dr. Lin:\nThis lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer."
 
-	add_dialogue_button("Continue", close_message_panel)
+	show_continue_button("Continue", close_message_panel)
 func show_intro_dialogue():
 	if intro_seen:
 		return
@@ -1607,20 +1707,260 @@ func show_intro_dialogue():
 	intro_seen = true
 	start_dialogue_pause()
 	clear_buttons()
-
+	set_dialogue_speaker("Dr. Lin")
 	message_panel.visible = true
 	message_label.text = "Dr. Lin:\nDetective, you are inside Shadow Castle.\n\nThis castle once belonged to Lord Ashford, a scholar who believed knowledge was the only true key.\n\nHe designed many doors as knowledge locks. They do not open with ordinary keys. They open when someone understands the question written on them."
 
-	add_dialogue_button("Continue", show_intro_dialogue_page_two)
+	show_continue_button("Continue", show_intro_dialogue_page_two)
 func open_objectives_from_intro():
+	intro_reviewing_objectives = true
 	message_panel.visible = false
 	clear_buttons()
-	end_dialogue_pause()
+
 	open_objective_panel()
 func show_intro_dialogue_page_two():
 	clear_buttons()
 
-	message_label.text = "Dr. Lin:\nTonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\nThis castle is not a normal building. Lord Ashford built it as a test of observation, reasoning, and knowledge. Many doors are knowledge locks. They respond not to keys, but to understanding.\n\nThat means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\nYour investigation has three goals:\n\n1. Explore the castle safely.\n2. Learn from clues and use STEM knowledge to open locked paths.\n3. Collect evidence, question suspects, and identify the real culprit.\n\nUse the Evidence Board to review what you have found. Use Mission Objectives when you are unsure what to do next.\n\nControls:\nWASD - Move\nE - Interact\nB - Evidence Board\nO - Mission Objectives\nR - Restart\nM - Main Menu"
+	set_dialogue_text(
+		"Dr. Lin",
+		"Tonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\n" +
+		"This castle is not a normal building. Lord Ashford, the former owner, believed that knowledge was the only true key. He designed many doors as knowledge locks. They do not open with ordinary keys. They open only when someone understands the question written on them.\n\n" +
+		"That means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\n" +
+		"Your investigation has three goals:\n\n" +
+		"1. Explore the castle safely.\n" +
+		"2. Learn from clues and use STEM knowledge to open locked paths.\n" +
+		"3. Collect evidence, question suspects, and identify the real culprit.\n\n" +
+		"Use the Evidence Board to review evidence. Use the Knowledge Journal to review concepts you have learned. Use Mission Objectives when you are unsure what to do next.\n\n" +
+		"Controls:\n" +
+		"WASD - Move\n" +
+		"E - Interact\n" +
+		"B - Evidence Board\n" +
+		"K - Knowledge Journal\n" +
+		"O - Mission Objectives\n" +
+		"R - Restart\n" +
+		"M - Main Menu"
+	)
 
-	add_dialogue_button("Start Investigation", close_message_panel)
 	add_dialogue_button("Review Mission Objectives", open_objectives_from_intro)
+	show_continue_button("Start Investigation", start_investigation_from_intro)
+func create_knowledge_journal_ui():
+	knowledge_panel = Panel.new()
+	knowledge_panel.position = Vector2(250, 100)
+	knowledge_panel.size = Vector2(560, 540)
+	knowledge_panel.visible = false
+	ui_layer.add_child(knowledge_panel)
+
+	var margin = MarginContainer.new()
+	margin.position = Vector2(24, 24)
+	margin.size = Vector2(512, 492)
+	knowledge_panel.add_child(margin)
+
+	var layout = VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 14)
+	margin.add_child(layout)
+
+	var title = Label.new()
+	title.text = "Knowledge Journal"
+	title.add_theme_font_size_override("font_size", 32)
+	layout.add_child(title)
+
+	var subtitle = Label.new()
+	subtitle.text = "Concepts you have learned from notes, clues, and Dr. Lin."
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_font_size_override("font_size", 19)
+	layout.add_child(subtitle)
+
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(500, 340)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+
+	knowledge_list_label = Label.new()
+	knowledge_list_label.text = ""
+	knowledge_list_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	knowledge_list_label.custom_minimum_size = Vector2(480, 520)
+	knowledge_list_label.add_theme_font_size_override("font_size", 21)
+	scroll.add_child(knowledge_list_label)
+
+	var close_button = Button.new()
+	close_button.text = "Close"
+	close_button.custom_minimum_size = Vector2(500, 44)
+	close_button.pressed.connect(close_knowledge_journal)
+	layout.add_child(close_button)
+
+	update_knowledge_journal_text()
+func toggle_knowledge_journal():
+	if message_panel.visible:
+		return
+
+	if evidence_board_open:
+		return
+
+	if objective_panel_open:
+		return
+
+	if knowledge_panel_open:
+		close_knowledge_journal()
+	else:
+		open_knowledge_journal()
+
+
+func open_knowledge_journal():
+	knowledge_panel_open = true
+	update_knowledge_journal_text()
+	knowledge_panel.visible = true
+
+	player.set_physics_process(false)
+
+	if enemy != null:
+		enemy.set_physics_process(false)
+
+
+func close_knowledge_journal():
+	knowledge_panel_open = false
+	knowledge_panel.visible = false
+
+	if not game_over and not dialogue_active and not evidence_board_open and not objective_panel_open:
+		player.set_physics_process(true)
+
+		if enemy != null:
+			enemy.set_physics_process(true)
+func add_knowledge_item(item_id: String):
+	if not knowledge_items.has(item_id):
+		knowledge_items.append(item_id)
+
+	update_knowledge_journal_text()
+	update_objective_text()
+func update_knowledge_journal_text():
+	if knowledge_list_label == null:
+		return
+
+	if knowledge_items.size() == 0:
+		knowledge_list_label.text = "No concepts learned yet.\n\nExplore the castle, read notes, inspect clues, and listen to Dr. Lin to build your knowledge."
+		return
+
+	var text = ""
+
+	for item_id in knowledge_items:
+		text += get_knowledge_detail(item_id) + "\n\n"
+
+	knowledge_list_label.text = text
+func get_knowledge_detail(item_id: String) -> String:
+	if item_id == "current_resistance":
+		return "Concept Card: Current and Resistance\n\n" + \
+		"What you learned:\nIncreasing resistance reduces current flow.\n\n" + \
+		"Why it matters:\nA circuit with too little resistance can allow too much current to flow, causing heat, damage, or a short circuit.\n\n" + \
+		"How to apply it:\nIf a lock asks how to reduce current, choose the option that increases resistance."
+
+	return "Unknown concept."
+func set_dialogue_speaker(speaker_name: String):
+	if dialogue_speaker_label == null:
+		return
+
+	dialogue_speaker_label.text = speaker_name
+	dialogue_portrait_name.text = speaker_name
+
+	if speaker_name == "Dr. Lin":
+		dialogue_portrait_color.color = Color(0.25, 0.55, 0.95, 1.0)
+	elif speaker_name == "Detective":
+		dialogue_portrait_color.color = Color(0.2, 0.75, 0.85, 1.0)
+	elif speaker_name == "Butler":
+		dialogue_portrait_color.color = Color(0.55, 0.35, 0.16, 1.0)
+	elif speaker_name == "Gardener":
+		dialogue_portrait_color.color = Color(0.1, 0.55, 0.18, 1.0)
+	elif speaker_name == "Mechanic":
+		dialogue_portrait_color.color = Color(0.25, 0.28, 0.75, 1.0)
+	else:
+		dialogue_portrait_color.color = Color(0.45, 0.45, 0.55, 1.0)
+func set_dialogue_text(speaker_name: String, text: String):
+	set_dialogue_speaker(speaker_name)
+	message_label.text = text
+	reset_dialogue_scrolls()
+func show_continue_button(text: String, callback: Callable):
+	if dialogue_continue_button == null:
+		return
+
+	dialogue_continue_button.text = text
+	dialogue_continue_button.visible = true
+	style_dialogue_button(dialogue_continue_button, false)
+
+	for connection in dialogue_continue_button.pressed.get_connections():
+		dialogue_continue_button.pressed.disconnect(connection.callable)
+
+	dialogue_continue_button.pressed.connect(callback)
+func make_panel_style(bg_color: Color, border_color: Color, border_width: int, corner_radius: int) -> StyleBoxFlat:
+	var style = StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = border_color
+	style.set_border_width_all(border_width)
+	style.set_corner_radius_all(corner_radius)
+	return style
+
+
+func style_dialogue_button(button: Button, is_choice_button: bool):
+	var normal_style = StyleBoxFlat.new()
+	normal_style.bg_color = Color(0.10, 0.10, 0.14, 0.96)
+	normal_style.border_color = Color(0.45, 0.38, 0.22, 1.0)
+	normal_style.set_border_width_all(1)
+	normal_style.set_corner_radius_all(6)
+
+	var hover_style = StyleBoxFlat.new()
+	hover_style.bg_color = Color(0.18, 0.16, 0.12, 0.98)
+	hover_style.border_color = Color(0.83, 0.68, 0.32, 1.0)
+	hover_style.set_border_width_all(1)
+	hover_style.set_corner_radius_all(6)
+
+	var pressed_style = StyleBoxFlat.new()
+	pressed_style.bg_color = Color(0.22, 0.18, 0.10, 1.0)
+	pressed_style.border_color = Color(0.95, 0.78, 0.34, 1.0)
+	pressed_style.set_border_width_all(1)
+	pressed_style.set_corner_radius_all(6)
+
+	button.add_theme_stylebox_override("normal", normal_style)
+	button.add_theme_stylebox_override("hover", hover_style)
+	button.add_theme_stylebox_override("pressed", pressed_style)
+	button.add_theme_color_override("font_color", Color(0.92, 0.92, 0.92))
+
+	if is_choice_button:
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	else:
+		button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+func apply_dialogue_visual_style():
+	if message_panel != null:
+		message_panel.add_theme_stylebox_override(
+			"panel",
+			make_panel_style(Color(0.04, 0.04, 0.06, 0.95), Color(0.72, 0.58, 0.28, 1.0), 2, 10)
+		)
+
+	if dialogue_portrait_box != null:
+		dialogue_portrait_box.add_theme_stylebox_override(
+			"panel",
+			make_panel_style(Color(0.08, 0.08, 0.11, 0.98), Color(0.42, 0.33, 0.16, 1.0), 1, 8)
+		)
+
+	if dialogue_speaker_label != null:
+		dialogue_speaker_label.add_theme_color_override("font_color", Color(0.95, 0.82, 0.42))
+
+	if dialogue_portrait_name != null:
+		dialogue_portrait_name.add_theme_color_override("font_color", Color(0.92, 0.92, 0.92))
+
+	if message_label != null:
+		message_label.add_theme_color_override("font_color", Color(0.90, 0.90, 0.90))
+
+	if dialogue_continue_button != null:
+		style_dialogue_button(dialogue_continue_button, false)
+func reset_dialogue_scrolls():
+	if message_scroll != null:
+		message_scroll.scroll_vertical = 0
+		message_scroll.set_deferred("scroll_vertical", 0)
+
+	if button_scroll != null:
+		button_scroll.scroll_vertical = 0
+		button_scroll.set_deferred("scroll_vertical", 0)
+func start_investigation_from_intro():
+	intro_reviewing_objectives = false
+	message_panel.visible = false
+	clear_buttons()
+	end_dialogue_pause()
