@@ -45,11 +45,15 @@ var skip_button: Button
 var background: ColorRect
 var castle_shadow: ColorRect
 var moon: ColorRect
+var text_panel: Panel
+var flash_overlay: ColorRect
+var page_tween: Tween
 
 
 func _ready():
 	create_cutscene_ui()
 	show_page()
+	start_cutscene_ambient_animation()
 
 
 func create_cutscene_ui():
@@ -90,7 +94,7 @@ func create_cutscene_ui():
 	tower_right.size = Vector2(110, 300)
 	add_child(tower_right)
 
-	var text_panel = Panel.new()
+	text_panel = Panel.new()
 	text_panel.position = Vector2(90, 440)
 	text_panel.size = Vector2(850, 230)
 	add_child(text_panel)
@@ -157,7 +161,13 @@ func create_cutscene_ui():
 	continue_button.add_theme_font_size_override("font_size", 15)
 	continue_button.pressed.connect(next_page)
 	bottom_row.add_child(continue_button)
-
+	flash_overlay = ColorRect.new()
+	flash_overlay.color = Color(0.85, 0.9, 1.0, 1.0)
+	flash_overlay.modulate.a = 0.0
+	flash_overlay.anchor_right = 1.0
+	flash_overlay.anchor_bottom = 1.0
+	flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash_overlay)
 
 func show_page():
 	var page = pages[page_index]
@@ -172,6 +182,10 @@ func show_page():
 		continue_button.text = "Continue"
 
 	update_background_for_page()
+	animate_page_transition()
+
+	if page_index == 2 or page_index == 4:
+		play_lightning_flash()
 
 
 func update_background_for_page():
@@ -201,3 +215,44 @@ func skip_cutscene():
 
 func go_to_game():
 	get_tree().change_scene_to_file("res://scenes/game_world.tscn")
+func animate_page_transition():
+	if text_panel == null:
+		return
+
+	if page_tween != null:
+		page_tween.kill()
+
+	text_panel.modulate.a = 0.0
+	text_panel.position.y = 452
+
+	page_tween = create_tween()
+	page_tween.tween_property(text_panel, "modulate:a", 1.0, 0.35)
+	page_tween.parallel().tween_property(text_panel, "position:y", 440, 0.35)
+
+
+func start_cutscene_ambient_animation():
+	if moon != null:
+		var moon_tween = create_tween()
+		moon_tween.set_loops()
+		moon_tween.tween_property(moon, "modulate:a", 0.45, 1.4)
+		moon_tween.tween_property(moon, "modulate:a", 0.85, 1.4)
+
+	if castle_shadow != null:
+		var castle_tween = create_tween()
+		castle_tween.set_loops()
+		castle_tween.tween_property(castle_shadow, "position:y", 145.0, 2.0)
+		castle_tween.tween_property(castle_shadow, "position:y", 150.0, 2.0)
+
+
+func play_lightning_flash():
+	if flash_overlay == null:
+		return
+
+	flash_overlay.modulate.a = 0.0
+
+	var flash_tween = create_tween()
+	flash_tween.tween_property(flash_overlay, "modulate:a", 0.55, 0.05)
+	flash_tween.tween_property(flash_overlay, "modulate:a", 0.0, 0.15)
+	flash_tween.tween_interval(0.08)
+	flash_tween.tween_property(flash_overlay, "modulate:a", 0.35, 0.04)
+	flash_tween.tween_property(flash_overlay, "modulate:a", 0.0, 0.20)
