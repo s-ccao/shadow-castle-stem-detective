@@ -16,6 +16,7 @@ const VISION_RADIUS_PIXELS := 210.0
 const CLEAR_RADIUS_PIXELS := 90.0
 const EDGE_DARKNESS := 0.62
 const DISCOVERED_DARKNESS := 0.68
+var intro_seen := false
 
 @onready var player = $player
 
@@ -105,6 +106,7 @@ func _ready():
 	move_player_to_cell(Vector2i(2, 2))
 	create_follow_camera()
 	setup_enemy()
+	show_intro_dialogue()
 
 
 func _process(delta):
@@ -541,31 +543,36 @@ func create_game_ui():
 	ui_layer.add_child(interact_label)
 
 	message_panel = Panel.new()
-	message_panel.position = Vector2(190, 150)
-	message_panel.size = Vector2(650, 430)
+	message_panel.position = Vector2(130, 80)
+	message_panel.size = Vector2(760, 570)
 	message_panel.visible = false
 	ui_layer.add_child(message_panel)
 
 	var margin = MarginContainer.new()
-	margin.position = Vector2(20, 20)
-	margin.size = Vector2(610, 390)
+	margin.position = Vector2(24, 24)
+	margin.size = Vector2(712, 522)
 	message_panel.add_child(margin)
 
 	var layout = VBoxContainer.new()
 	layout.add_theme_constant_override("separation", 14)
 	margin.add_child(layout)
 
+	var message_scroll = ScrollContainer.new()
+	message_scroll.custom_minimum_size = Vector2(700, 320)
+	message_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(message_scroll)
+
 	message_label = Label.new()
 	message_label.text = ""
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message_label.add_theme_font_size_override("font_size", 22)
-	message_label.custom_minimum_size = Vector2(580, 170)
-	layout.add_child(message_label)
+	message_label.custom_minimum_size = Vector2(670, 0)
+	message_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	message_scroll.add_child(message_label)
 
 	button_box = VBoxContainer.new()
 	button_box.add_theme_constant_override("separation", 10)
 	layout.add_child(button_box)
-
 	create_evidence_board_ui()
 	update_objective_text()
 
@@ -921,7 +928,7 @@ func show_butler_dialogue():
 	if evidence_items.has("fake_red_stain"):
 		message_label.text = "Butler:\nI already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nDr. Lin:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue."
 	else:
-		message_label.text = "Butler:\nI was only cleaning the hallway. I did not see anything unusual.\n\nDr. Lin:\nHe may know more than he is saying. We should collect physical evidence before making any accusation."
+		message_label.text = "Butler:\nI was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms.\n\nDr. Lin:\nThat explains why many paths require scientific reasoning. We should collect physical evidence before making any accusation."
 
 	add_dialogue_button("Continue", close_message_panel)
 func create_pollen_clue():
@@ -1593,3 +1600,27 @@ func show_circuit_door_hint():
 	message_label.text = "Dr. Lin:\nThis lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer."
 
 	add_dialogue_button("Continue", close_message_panel)
+func show_intro_dialogue():
+	if intro_seen:
+		return
+
+	intro_seen = true
+	start_dialogue_pause()
+	clear_buttons()
+
+	message_panel.visible = true
+	message_label.text = "Dr. Lin:\nDetective, you are inside Shadow Castle.\n\nThis castle once belonged to Lord Ashford, a scholar who believed knowledge was the only true key.\n\nHe designed many doors as knowledge locks. They do not open with ordinary keys. They open when someone understands the question written on them."
+
+	add_dialogue_button("Continue", show_intro_dialogue_page_two)
+func open_objectives_from_intro():
+	message_panel.visible = false
+	clear_buttons()
+	end_dialogue_pause()
+	open_objective_panel()
+func show_intro_dialogue_page_two():
+	clear_buttons()
+
+	message_label.text = "Dr. Lin:\nTonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\nThis castle is not a normal building. Lord Ashford built it as a test of observation, reasoning, and knowledge. Many doors are knowledge locks. They respond not to keys, but to understanding.\n\nThat means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\nYour investigation has three goals:\n\n1. Explore the castle safely.\n2. Learn from clues and use STEM knowledge to open locked paths.\n3. Collect evidence, question suspects, and identify the real culprit.\n\nUse the Evidence Board to review what you have found. Use Mission Objectives when you are unsure what to do next.\n\nControls:\nWASD - Move\nE - Interact\nB - Evidence Board\nO - Mission Objectives\nR - Restart\nM - Main Menu"
+
+	add_dialogue_button("Start Investigation", close_message_panel)
+	add_dialogue_button("Review Mission Objectives", open_objectives_from_intro)
