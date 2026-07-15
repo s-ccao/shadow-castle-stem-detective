@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cyoowlouskvgb"]
+
+[ext_resource type="Script" uid="uid://bc1sfy3aibkqb" path="res://scripts/wake_room.gd" id="1_tw4yt"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_efw36"]
+
+[node name="WakeRoom" type="Node2D" unique_id=1009537797]
+script = ExtResource("1_tw4yt")
+
+[node name="player" parent="." unique_id=1350265598 instance=ExtResource("2_efw36")]

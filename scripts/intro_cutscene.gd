@@ -214,7 +214,7 @@ func skip_cutscene():
 
 
 func go_to_game():
-	get_tree().change_scene_to_file("res://scenes/game_world.tscn")
+	get_tree().change_scene_to_file("res://scenes/wake_room.tscn")
 func animate_page_transition():
 	if text_panel == null:
 		return
