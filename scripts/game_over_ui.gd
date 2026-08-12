@@ -10,9 +10,12 @@ signal main_menu_requested
 @export var button_disabled_texture: Texture2D
 
 @onready var artwork: TextureRect = $GameOverArtwork
+@onready var case_record: Label = $CaseRecord
 @onready var continue_button: Button = $ContinueButton
 @onready var view_conclusion_button: Button = $ViewConclusionButton
 @onready var main_menu_button: Button = $MainMenuButton
+
+var _true_case := false
 
 
 func _ready() -> void:
@@ -38,7 +41,18 @@ func set_ui_enabled(enabled: bool) -> void:
 		button.disabled = not enabled
 
 
+func show_true_case() -> void:
+	_true_case = true
+	_refresh_copy()
+
+
+func show_ordinary_case() -> void:
+	_true_case = false
+	_refresh_copy()
+
+
 func _refresh_copy(_language: String = "") -> void:
-	continue_button.text = CaseLocale.text("ending.continue")
-	view_conclusion_button.text = CaseLocale.text("ending.review")
+	continue_button.text = CaseLocale.text("ending.true_continue" if _true_case else "ending.continue")
+	view_conclusion_button.text = CaseLocale.text("ending.true_review" if _true_case else "ending.review")
 	main_menu_button.text = CaseLocale.text("ending.main_menu")
+	case_record.text = CaseLocale.text("ending.true_record" if _true_case else "ending.ordinary_record")

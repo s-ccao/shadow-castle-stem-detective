@@ -232,6 +232,10 @@ func try_interact() -> void:
 					"The Service Passage Record",
 					"A folded kitchen record names the service passage as the only route that bypasses the main corridor. The last entry is signed just before midnight."
 				)
+				var sealed_archive_feedback := _collect_sealed_pressure_archive()
+				if not sealed_archive_feedback.is_empty():
+					interaction_runtime.present_feedback(sealed_archive_feedback)
+					return
 			var completion_feedback := _mark_dining_item(item_name)
 			if item_name == "wall_door" and GameState.has_key("service_corridor_key"):
 				interaction_runtime.present_feedback("The Service Corridor Key fits the hidden lock. The passage lies behind the hall's east wall — the way back is marked in the Castle Hall.")
@@ -240,6 +244,23 @@ func try_interact() -> void:
 			var feedback := completion_feedback if not completion_feedback.is_empty() else str(item["message"])
 			interaction_runtime.present_feedback(feedback)
 			return
+
+
+func _collect_sealed_pressure_archive() -> String:
+	if not GameState.has_story_flag("normal_ending"):
+		return ""
+	if GameState.has_story_flag("sealed_archive_pressure_found"):
+		return "The narrow compartment behind the service ledger is empty. Its private archive has already been copied."
+	GameState.set_story_flag("sealed_archive_pressure_found")
+	if NoteHud != null:
+		NoteHud.add_clue("sealed_archive_pressure", {
+			"title": "SEALED ARCHIVE I — The Butler's Pressure",
+			"icon": "icon_note",
+			"silent": true,
+			"content": "[center][b]SEALED ARCHIVE I — PRIVATE SERVICE ADDENDUM[/b][/center]\n\nA letter hidden beneath the service ledger records the Butler's demotion after a safety incident years ago. The Mechanical Office offered a way to restore his standing: carry out one emergency isolation order exactly, without asking questions.\n\nThe order promised that Dr. Lin would be kept safe behind the Ashford table's field. The Butler's later note ends with a trembling line: [color=#4a306d]“I operated the apparatus. I believed I was protecting her.”[/color]\n\nThis explains his pressure and his action. It does not identify the author of the order.",
+			"category": "sealed_archive",
+		})
+	return "A narrow compartment opens behind the service ledger. Inside is an unmarked sealed folio — no map marker, no task order, only a private record."
 
 
 func return_to_castle_hall() -> void:

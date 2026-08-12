@@ -1232,11 +1232,7 @@ func _craft_potion(recipe_id: String, produces: String, cost: Dictionary, materi
 		GameState.consume_herb(herb_id, int(cost[herb_id]))
 	for material_id: String in material_cost.keys():
 		GameState.consume_material(material_id, int(material_cost[material_id]))
-	var was_added: bool = GameState.add_inventory_item(produces)
-	# 已拥有同类药剂时 add_inventory_item 不会重复加入；仍发送一次获得通知，
-	# 让每次成功合成都使用统一的 ItemRewardHud 收集提示。
-	if not was_added:
-		GameState.item_acquired.emit(produces, "potion", 1)
+	GameState.add_inventory_item(produces)
 	end_dialogue_pause()
 
 

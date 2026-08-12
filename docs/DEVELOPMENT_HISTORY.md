@@ -68,6 +68,26 @@ The reusable [`AnimatedNpc`](../scripts/animated_npc.gd) component turns each sh
 
 See [Character Art Pipeline](ART_PIPELINE.md) for the documented visual iterations.
 
+## v0.7 — Archive-system redesign: evidence chains, reversible failure, and dual endings
+
+**August 12, 2026**
+
+The closing sequence was rebuilt after a design review found that the old final room behaved like a linear quiz. The replacement is an Ashford analysis table: the player selects two or three raw records, forms one of five case conclusions, and seats each conclusion in a matching radial brass slot. A wrong pairing dims the connection and explains the contradiction, but does not erase progress or consume evidence.
+
+The ordinary resolution deliberately identifies the **Butler as the executor**, not the full author of the crime. The follow-up path avoids an automatic “perfect ending” unlock. After the ordinary case closes, three unmarked Sealed Archives can be found by revisiting existing objects in the Dining Hall, Circuit Room, and Library. Players must read and manually pin all three records in Note Hub before the same table reveals a second, three-link command chain:
+
+1. The Butler's pressure and motive to obey an emergency order.
+2. The forged Mechanical Office instruction that appeared legitimate.
+3. Dr. Lin's decision to deny the Mechanic funding and expose unauthorized copies.
+
+Completing that chain exposes the **Mechanic** as the person who forged the order, weaponized the Butler's trust, and attempted to claim Dr. Lin's research. This structure distinguishes physical action from authorship, so the player has a reason to revisit evidence rather than merely collect every clue.
+
+The alchemy screen was also revised from auto-filled ingredients into a small experiment: choose a recipe, place its three condensed materials into any order across three reaction nodes, preserve the fourth violet stabilizer node, then pull the extraction lever. Incorrect setups create explanatory violet smoke and consume nothing; only a valid arrangement reaches the existing crafting and inventory path.
+
+**Technical decisions:** `FinalCaseBoard` is a dedicated Godot Module with a narrow Interface (`open_case`, `close_case`, and ending signals). It owns the case-board state; `final_room.gd` owns only room state and narrative handoff. Sealed-archive pinning is persisted through the existing Note Hub save payload, so the true-ending investigation survives a restart.
+
+**Representative commit:** this milestone is recorded in the repository immediately after the archive UI foundation commit `4c33790`.
+
 ## Reflection
 
-The main lesson from this project is that a feature is only useful when its information is legible to the player. The major revisions repeatedly made hidden game state visible: fog became wall-aware, dialogue paused danger, locks required learned clues, objectives and notes stayed accessible, and character art was revised from an unsuitable realistic concept to small readable pixel sprites that match the player and rooms.
+The main lesson from this project is that a feature is only useful when its information is legible to the player. The major revisions repeatedly made hidden game state visible: fog became wall-aware, dialogue paused danger, locks required learned clues, objectives and notes stayed accessible, and character art was revised from an unsuitable realistic concept to small readable pixel sprites that match the player and rooms. The final redesign added a related lesson: a detective game should let the player revise a theory without punishing experimentation, while still making the difference between an executor and the author of a crime meaningful.

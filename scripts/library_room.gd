@@ -470,8 +470,30 @@ func try_interact() -> void:
 			if item_name == "research_desk":
 				_collect_archive_record()
 				return
+			if item_name == "upper_drawer_cabinet":
+				var sealed_archive_feedback := _collect_sealed_lin_decision_archive()
+				if not sealed_archive_feedback.is_empty():
+					interaction_runtime.present_feedback(sealed_archive_feedback)
+					return
 			interaction_runtime.present_feedback(str(item["message"]))
 			return
+
+
+func _collect_sealed_lin_decision_archive() -> String:
+	if not GameState.has_story_flag("normal_ending"):
+		return ""
+	if GameState.has_story_flag("sealed_archive_lin_decision_found"):
+		return "The violet archive drawer is bare. Dr. Lin's private decision has already been copied."
+	GameState.set_story_flag("sealed_archive_lin_decision_found")
+	if NoteHud != null:
+		NoteHud.add_clue("sealed_archive_lin_decision", {
+			"title": "SEALED ARCHIVE III — Dr. Lin's Decision",
+			"icon": "icon_book",
+			"silent": true,
+			"content": "[center][b]SEALED ARCHIVE III — DR. LIN'S PRIVATE DECISION[/b][/center]\n\nDr. Lin's unsigned memorandum confirms that she rejected the Mechanic's request for independent funding and access to the complete Knowledge Engine plans. She had discovered unauthorized maintenance copies, so she prepared a controlled verification at the analysis table to trace the person directing them.\n\nHer final margin note reads: [color=#4a306d]“The Butler is frightened, not secretive. If an emergency order reaches him, verify its routing mark before he acts.”[/color]\n\nDr. Lin expected a forged instruction; she did not expect its isolation field to become lethal. The person who needed her silent also needed her research recognized as his own.",
+			"category": "sealed_archive",
+		})
+	return "One violet archive drawer yields only when you press its hidden brass catch. Inside is a private memorandum in Dr. Lin's hand."
 
 
 func _collect_archive_record() -> void:

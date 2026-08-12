@@ -239,6 +239,11 @@ func try_interact() -> void:
 						"content": "One pair of maintenance gloves was assigned to the Mechanic. The right glove had previously been repaired with a distinctive copper-thread cross-stitch. The right glove is now missing after the blackout. The same access log records the Mechanic's statement that he was checking the west-side electrical system during the blackout; the Dining timeline will test whether that account is possible.",
 						"category": "investigation",
 					})
+			if item_name == "cabinet":
+				var sealed_archive_feedback := _collect_sealed_instruction_archive()
+				if not sealed_archive_feedback.is_empty():
+					interaction_runtime.present_feedback(sealed_archive_feedback)
+					return
 			if item_name == "generator" and not GameState.has_story_flag("circuit_prism_dust_found"):
 				GameState.set_story_flag("circuit_prism_dust_found")
 				GameState.add_material("prism_dust")
@@ -264,6 +269,23 @@ func try_interact() -> void:
 				feedback = completion_feedback
 			interaction_runtime.present_feedback(feedback)
 			return
+
+
+func _collect_sealed_instruction_archive() -> String:
+	if not GameState.has_story_flag("normal_ending"):
+		return ""
+	if GameState.has_story_flag("sealed_archive_instruction_found"):
+		return "The false-bottom cabinet has nothing more to give. The damaged instruction slip is already in your notes."
+	GameState.set_story_flag("sealed_archive_instruction_found")
+	if NoteHud != null:
+		NoteHud.add_clue("sealed_archive_instruction", {
+			"title": "SEALED ARCHIVE II — The Forged Instruction",
+			"icon": "icon_note",
+			"silent": true,
+			"content": "[center][b]SEALED ARCHIVE II — EMERGENCY ISOLATION ORDER[/b][/center]\n\nThe cabinet's false bottom holds a carbon-copy instruction: “Move Dr. Lin to the analysis table. Engage the isolation field. Do not interrupt the calibration.”\n\nIts safety code belongs to the Mechanical Office, but the handwritten routing mark was added after the document was filed. The pressure seal has been scraped away; beneath it, a violet graphite trace matches the Mechanic's workshop pencil.\n\nThe Butler received an order that looked official. Someone with maintenance authority forged the command chain.",
+			"category": "sealed_archive",
+		})
+	return "A false bottom clicks loose beneath the glove record. A scraped emergency instruction has been filed where no ordinary inspection would look."
 
 
 func _handle_switch_interaction(item_name: String, item: Dictionary) -> void:

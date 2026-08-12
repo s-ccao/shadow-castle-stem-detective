@@ -166,7 +166,7 @@ func open() -> void:
 func add_clue(id: String, data: Dictionary = {}) -> void:
 	var is_new: bool = not get_journal().has_clue(id)
 	get_journal().add_clue(id, data)
-	if is_new and GameState.current_room_id != "final_deduction_room":
+	if is_new and not bool(data.get("silent", false)) and GameState.current_room_id != "final_deduction_room":
 		# 其他房间显示获得线索提示；Final Room 使用统一的自言自语对话框。
 		var reward: Node = get_node_or_null("/root/ItemRewardHud")
 		if reward != null:
@@ -194,3 +194,7 @@ func restore_saved_clues(data: Dictionary) -> void:
 	if data.is_empty():
 		return
 	get_journal().set_clues_data(data)
+
+
+func all_sealed_archives_pinned() -> bool:
+	return get_journal().all_sealed_archives_pinned()

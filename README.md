@@ -11,7 +11,9 @@ The project combines a narrative detective loop with accessible STEM reasoning. 
 - Investigation rooms for chemistry, biology, circuits, archives, dining, and the final deduction.
 - STEM-inspired locks and evidence: alchemy ingredients, pollen evidence, an electrical repair sequence, and timeline reasoning.
 - Dialogue, evidence board, notes, maps, objective panel, inventory, checkpoint, and main-menu flows.
-- Five 4-direction animated pixel NPCs: Dr. Lin, Butler, Gardener, Mechanic, and Castle Guardian.
+- Five animated pixel NPCs: Dr. Lin, Butler, Gardener, Mechanic, and Castle Guardian.
+- A two-layer finale: an ordinary case against the Butler, followed by optional sealed-archive review that exposes the Mechanic's forged command chain.
+- A manual alchemy interaction: three player-loaded material nodes, a violet stabilizer core, non-destructive error feedback, and a brass extraction lever.
 
 ## Technology
 
@@ -27,7 +29,7 @@ The project combines a narrative detective loop with accessible STEM reasoning. 
 
 ## Portfolio documentation
 
-- [Development history](docs/DEVELOPMENT_HISTORY.md) — six development milestones reconstructed from the Git history, including technical decisions and lessons learned.
+- [Development history](docs/DEVELOPMENT_HISTORY.md) — seven development milestones reconstructed from the Git history, including technical decisions, rejected approaches, and lessons learned.
 - [Character art pipeline](docs/ART_PIPELINE.md) — the three visual passes, why an early concept was rejected, and how the final sprite sheets were imported.
 
 ## Project structure

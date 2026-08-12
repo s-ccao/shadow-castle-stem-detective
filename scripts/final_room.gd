@@ -132,6 +132,7 @@ var deduction_token_buttons: Array[TextureButton] = []
 var deduction_token_order: Array[int] = []
 var deduction_step_index: int = 0
 var deduction_open: bool = false
+var final_case_board: FinalCaseBoard
 var interact_label: Label
 var interaction_hint_panel: Panel
 var self_dialogue_layer: CanvasLayer
@@ -167,7 +168,7 @@ func _ready() -> void:
 	_sync_authored_interaction_positions()
 	create_room_ui()
 	create_self_dialogue_ui()
-	create_deduction_ui()
+	_create_final_case_board()
 	create_inspection_overlay()
 	create_ending_overlay()
 	create_final_archive_reader_ui()
@@ -176,6 +177,43 @@ func _ready() -> void:
 	if player.has_method("set_visual_scale"):
 		player.call("set_visual_scale", 1.0)
 	GameState.return_spawn_id = RETURN_SPAWN_ID
+
+
+func _create_final_case_board() -> void:
+	final_case_board = FinalCaseBoard.new()
+	final_case_board.name = "FinalCaseBoard"
+	final_case_board.ordinary_case_closed.connect(_on_ordinary_case_closed)
+	final_case_board.true_case_closed.connect(_on_true_case_closed)
+	final_case_board.case_closed.connect(_on_final_case_board_closed)
+	add_child(final_case_board)
+
+
+func _on_final_case_board_closed() -> void:
+	deduction_open = false
+	room_input_enabled = true
+	get_tree().paused = false
+	if player != null:
+		player.set_physics_process(true)
+
+
+func _on_ordinary_case_closed() -> void:
+	if NoteHud != null and not NoteHud.has_clue("ordinary_case_butler_note"):
+		NoteHud.add_clue("ordinary_case_butler_note", {
+			"title": "Ordinary Case Closure — The Butler",
+			"content": "The five conclusions identify the Butler as the executor: he had the service access, reached the analysis table, and operated the prepared apparatus. Yet the glove evidence only proves contact with the maintenance chain. The original instruction remains unaccounted for.",
+			"category": "investigation",
+		})
+	_show_ending_overlay()
+
+
+func _on_true_case_closed() -> void:
+	if NoteHud != null and not NoteHud.has_clue("true_case_mechanic_note"):
+		NoteHud.add_clue("true_case_mechanic_note", {
+			"title": "True Case Closure — The Mechanic",
+			"content": "The Butler operated the apparatus under a forged emergency order. The three sealed archives reveal the author: the Mechanic exploited the Butler's pressure, forged the Mechanical Office instruction, and silenced Dr. Lin after she refused him funding and access to the Knowledge Engine plans.",
+			"category": "investigation",
+		})
+	_show_true_ending_overlay()
 
 
 func _sync_authored_interaction_positions() -> void:
@@ -577,7 +615,8 @@ func _show_final_archive_document_ui() -> void:
 			"category": "lore",
 		})
 	ending_screen_root.visible = false
-	deduction_panel.visible = false
+	if deduction_panel != null:
+		deduction_panel.visible = false
 	archive_reader_root.visible = true
 	room_input_enabled = false
 	if player != null:
@@ -587,7 +626,8 @@ func _show_final_archive_document_ui() -> void:
 
 func _close_final_archive_document_ui() -> void:
 	archive_reader_root.visible = false
-	deduction_panel.visible = true
+	if deduction_panel != null:
+		deduction_panel.visible = true
 	room_input_enabled = false
 	get_tree().paused = true
 
@@ -601,6 +641,20 @@ func _archive_reader_to_main_menu() -> void:
 func _show_ending_overlay() -> void:
 	if ending_screen_root == null:
 		return
+	if ending_screen_root.has_method("show_ordinary_case"):
+		ending_screen_root.call("show_ordinary_case")
+	ending_screen_root.visible = true
+	room_input_enabled = false
+	if player != null:
+		player.set_physics_process(false)
+	get_tree().paused = true
+
+
+func _show_true_ending_overlay() -> void:
+	if ending_screen_root == null:
+		return
+	if ending_screen_root.has_method("show_true_case"):
+		ending_screen_root.call("show_true_case")
 	ending_screen_root.visible = true
 	room_input_enabled = false
 	if player != null:
@@ -610,17 +664,16 @@ func _show_ending_overlay() -> void:
 
 func _continue_from_ending_screen() -> void:
 	ending_screen_root.visible = false
-	deduction_panel.visible = false
-	deduction_open = false
-	get_tree().paused = false
-	room_input_enabled = true
-	if player != null:
-		player.set_physics_process(true)
+	if final_case_board != null:
+		final_case_board.show_sealed_archive_prompt()
+	room_input_enabled = false
+	get_tree().paused = true
 
 
 func _view_ending_conclusion() -> void:
 	ending_screen_root.visible = false
-	deduction_panel.visible = true
+	if final_case_board != null:
+		final_case_board.open_case()
 	room_input_enabled = false
 	get_tree().paused = true
 
@@ -739,8 +792,12 @@ func _open_deduction_after_overlay() -> void:
 
 
 func _close_deduction_panel() -> void:
+	if final_case_board != null and final_case_board.visible:
+		final_case_board.close_case()
+		return
 	deduction_open = false
-	deduction_panel.visible = false
+	if deduction_panel != null:
+		deduction_panel.visible = false
 	room_input_enabled = true
 	get_tree().paused = false
 
@@ -940,7 +997,7 @@ func try_interact() -> void:
 				_show_final_visual(
 					"ASHFORD ANALYSIS TABLE",
 					"res://assets/props/FinalRoom/final_analysis_board.png",
-					"The circular Ashford verification table connects the staged Chemistry scene, the Greenhouse maintenance route, the deliberate blackout, the Dining opportunity, and the personalized glove match. Open the final deduction when the five links are ready.",
+					"The circular Ashford verification table holds five brass slots. Build each claim from the raw records first; a glove can prove contact, but not yet the full command chain.",
 					true
 				)
 				return
@@ -1053,7 +1110,7 @@ func show_final_deduction() -> void:
 	if deduction_open:
 		return
 	if not GameState.has_story_flag("mrs_lin_notebook_found"):
-		item_message = "The analysis table will not activate until you examine Mrs. Lin's body and read her final notebook."
+		item_message = "The analysis table will not activate until you examine Dr. Lin's body and read her final notebook."
 		interact_label.text = item_message
 		return
 	var missing: Array[String] = []
@@ -1063,16 +1120,13 @@ func show_final_deduction() -> void:
 	deduction_open = true
 	room_input_enabled = false
 	get_tree().paused = true
-	deduction_panel.visible = true
 	if not missing.is_empty():
-		deduction_title.text = "FINAL DEDUCTION — INCOMPLETE"
-		deduction_question.text = "The notebook is clear, but the evidence chain is incomplete. Return to the castle and investigate the missing links."
-		deduction_status.text = "Missing: " + ", ".join(missing)
-		_clear_deduction_options()
-		_add_deduction_close_button()
+		item_message = "The notebook is clear, but the evidence chain is incomplete. Missing: " + ", ".join(missing)
+		interact_label.text = item_message
+		_close_deduction_panel()
 		return
-	deduction_step_index = 0
-	_show_deduction_step()
+	if final_case_board != null:
+		final_case_board.open_case()
 
 
 func _clear_deduction_options() -> void:

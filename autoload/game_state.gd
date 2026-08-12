@@ -962,8 +962,6 @@ func toggle_developer_mode() -> bool:
 # ============================================================
 
 func add_inventory_item(item_id: String) -> bool:
-	if inventory_items.has(item_id):
-		return false
 	inventory_items.append(item_id)
 	state_changed.emit()
 	item_acquired.emit(item_id, "potion", 1)

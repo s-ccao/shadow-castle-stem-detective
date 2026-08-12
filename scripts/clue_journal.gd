@@ -31,6 +31,11 @@ const CLUE_ICONS := {
 
 # 线索按钮模板场景（scenes/clue_list_item.tscn，可在编辑器调整样式）
 const CLUE_ITEM_SCENE: PackedScene = preload("res://scenes/clue_list_item.tscn")
+const SEALED_ARCHIVE_IDS: Array[String] = [
+	"sealed_archive_pressure",
+	"sealed_archive_instruction",
+	"sealed_archive_lin_decision",
+]
 
 # 示例线索数据（id -> 数据字典）
 # 字段：title 标题 / icon 图标名 / content BBCode 正文 / unlocked 是否已解锁 / category 分类
@@ -81,6 +86,7 @@ var _buttons: Dictionary = {}
 var _rebuilding := false
 var _rebuild_dirty := false
 var _x_hovered := false
+var archive_pin_button: Button
 
 @onready var title_label: Label = %TitleLabel
 @onready var list_box: VBoxContainer = %ListBox
@@ -128,6 +134,7 @@ func _ready() -> void:
 	# 预置示例线索（未解锁的不会显示在列表中）
 	for id in CLUE_DEFAULTS:
 		clues[id] = CLUE_DEFAULTS[id].duplicate(true)
+	_create_archive_pin_button()
 
 	rebuild_list()
 
@@ -371,10 +378,80 @@ func _select_first_unlocked() -> void:
 func _select_clue(id: String) -> void:
 	_selected_id = id
 	var entry: Dictionary = clues[id]
-	detail_text.text = entry.get("content", "")
+	detail_text.text = _localized_clue_content(id, entry)
 	detail_text.scroll_to_line(0)
 	for btn_id in _buttons:
 		_update_button_visual(btn_id)
+	_refresh_archive_pin_button()
+
+
+func _create_archive_pin_button() -> void:
+	archive_pin_button = Button.new()
+	archive_pin_button.name = "SealedArchivePinButton"
+	archive_pin_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	archive_pin_button.offset_left = -138.0
+	archive_pin_button.offset_top = -84.0
+	archive_pin_button.offset_right = 138.0
+	archive_pin_button.offset_bottom = -40.0
+	archive_pin_button.add_theme_font_size_override("font_size", 11)
+	archive_pin_button.visible = false
+	ArchiveUi.apply_button(archive_pin_button, ArchiveUi.ROLE_ARCHIVE)
+	archive_pin_button.pressed.connect(_toggle_selected_sealed_archive_pin)
+	parchment.add_child(archive_pin_button)
+	CaseLocale.locale_changed.connect(_on_locale_changed)
+
+
+func _on_locale_changed(_language: String) -> void:
+	if not _selected_id.is_empty() and clues.has(_selected_id):
+		_select_clue(_selected_id)
+
+
+func _refresh_archive_pin_button() -> void:
+	if archive_pin_button == null:
+		return
+	var is_sealed_archive := SEALED_ARCHIVE_IDS.has(_selected_id)
+	archive_pin_button.visible = is_sealed_archive
+	if not is_sealed_archive:
+		return
+	var pinned := GameState.has_story_flag("sealed_archive_pinned_" + _selected_id)
+	var count := _sealed_archive_pin_count()
+	archive_pin_button.text = (
+		("REMOVE FROM ANALYSIS TABLE" if pinned else "PIN TO ANALYSIS TABLE")
+		if not CaseLocale.is_chinese()
+		else ("从分析圆桌移除" if pinned else "钉选到分析圆桌")
+	) + "  ·  %d/3" % count
+	ArchiveUi.set_button_status(archive_pin_button, &"success" if pinned else &"default")
+
+
+func _toggle_selected_sealed_archive_pin() -> void:
+	if not SEALED_ARCHIVE_IDS.has(_selected_id):
+		return
+	var flag_id := "sealed_archive_pinned_" + _selected_id
+	GameState.set_story_flag(flag_id, not GameState.has_story_flag(flag_id))
+	_refresh_archive_pin_button()
+
+
+func _sealed_archive_pin_count() -> int:
+	var count := 0
+	for archive_id: String in SEALED_ARCHIVE_IDS:
+		if GameState.has_story_flag("sealed_archive_pinned_" + archive_id):
+			count += 1
+	return count
+
+
+func all_sealed_archives_pinned() -> bool:
+	return _sealed_archive_pin_count() == SEALED_ARCHIVE_IDS.size()
+
+
+func _localized_clue_content(id: String, entry: Dictionary) -> String:
+	if not CaseLocale.is_chinese():
+		return str(entry.get("content", ""))
+	var chinese_content: Dictionary = {
+		"sealed_archive_pressure": "[center][b]密封档案 I — 私人服务附录[/b][/center]\n\n藏在服务账本下方的信件记录了管家多年前因一次安全事故被降职。机械办公室曾许诺帮他恢复职位，条件是完整执行一次紧急隔离命令，不许追问。\n\n命令声称阿什福德圆桌的力场会保护林博士。管家后来留下的笔记只写了一句：[color=#4a306d]“是我启动了装置。我以为自己是在保护她。”[/color]\n\n这说明了他的压力与行为，却没有说明命令的作者。",
+		"sealed_archive_instruction": "[center][b]密封档案 II — 伪造的紧急指令[/b][/center]\n\n设备柜的夹层里藏着一张复写指令：“将林博士带到分析圆桌。启动隔离力场。不得中断校准。”\n\n它的安全编码属于机械办公室，但手写的路由标记是在归档后添加的。压力印章被刮去，下面残留的紫色石墨痕迹与机械师工作台的铅笔一致。\n\n管家收到的是一份看似正式的命令。有人利用维修权限伪造了命令链。",
+		"sealed_archive_lin_decision": "[center][b]密封档案 III — 林博士的决定[/b][/center]\n\n林博士未署名的备忘录证实，她拒绝了机械师提出的独立资助与完整知识引擎蓝图访问权限。她发现了未经授权的维修副本，因此在分析圆桌上安排了一次受控验证，想追出下达指令的人。\n\n最后的页边笔记写道：[color=#4a306d]“管家害怕，却并不隐瞒。如果紧急命令送到他手中，必须先核验它的路由标记。”[/color]\n\n林博士预料到会有伪造指令；她没有预料到隔离力场会变成致命装置。那个想让她沉默的人，也想让她的研究成果被记在自己名下。",
+	}
+	return str(chinese_content.get(id, entry.get("content", "")))
 
 
 ## 切换按钮选中状态：保留原始木牌贴图，只显示不遮挡内容的细金色侧标记。
