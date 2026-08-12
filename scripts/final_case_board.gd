@@ -125,11 +125,11 @@ const CONCLUSION_SPECS: Array[Dictionary] = [
 ]
 
 const SLOT_SPECS: Array[Dictionary] = [
-	{"id": "method", "en": "METHOD", "zh": "手段", "position": Vector2(395.0, 122.0)},
-	{"id": "route", "en": "ROUTE", "zh": "路线", "position": Vector2(562.0, 194.0)},
-	{"id": "blackout", "en": "BLACKOUT", "zh": "断电", "position": Vector2(562.0, 382.0)},
-	{"id": "opportunity", "en": "OPPORTUNITY", "zh": "时机", "position": Vector2(395.0, 470.0)},
-	{"id": "link", "en": "LINK", "zh": "关联", "position": Vector2(284.0, 330.0)},
+	{"id": "method", "en": "METHOD", "zh": "手段", "position": Vector2(382.0, 136.0)},
+	{"id": "route", "en": "ROUTE", "zh": "路线", "position": Vector2(570.0, 218.0)},
+	{"id": "blackout", "en": "BLACKOUT", "zh": "断电", "position": Vector2(570.0, 430.0)},
+	{"id": "opportunity", "en": "OPPORTUNITY", "zh": "时机", "position": Vector2(382.0, 532.0)},
+	{"id": "link", "en": "LINK", "zh": "关联", "position": Vector2(254.0, 372.0)},
 ]
 
 const SEALED_ARCHIVE_SPECS: Array[Dictionary] = [
@@ -138,21 +138,21 @@ const SEALED_ARCHIVE_SPECS: Array[Dictionary] = [
 		"slot": "pressure",
 		"en": "BUTLER'S PRESSURE",
 		"zh": "管家的压力",
-		"position": Vector2(318.0, 188.0),
+		"position": Vector2(294.0, 208.0),
 	},
 	{
 		"id": "sealed_archive_instruction",
 		"slot": "instruction",
 		"en": "FORGED ORDER",
 		"zh": "伪造指令",
-		"position": Vector2(510.0, 188.0),
+		"position": Vector2(512.0, 208.0),
 	},
 	{
 		"id": "sealed_archive_lin_decision",
 		"slot": "lin_decision",
 		"en": "DR. LIN'S DECISION",
 		"zh": "林博士的决定",
-		"position": Vector2(414.0, 432.0),
+		"position": Vector2(402.0, 488.0),
 	},
 ]
 
@@ -162,8 +162,15 @@ var title_label: Label
 var subtitle_label: Label
 var source_heading: Label
 var conclusion_heading: Label
+var source_drawer: Panel
+var conclusion_drawer: Panel
 var source_list: VBoxContainer
 var conclusion_list: VBoxContainer
+var source_scroll: ScrollContainer
+var conclusion_scroll: ScrollContainer
+var protocol_label: Label
+var empty_conclusion_label: Label
+var empty_conclusion_plaque: Panel
 var status_label: Label
 var form_button: Button
 var lever_button: Button
@@ -195,6 +202,7 @@ func _ready() -> void:
 func open_case() -> void:
 	_load_progress()
 	true_case_mode = _can_open_true_case()
+	status_label.text = ""
 	visible = true
 	root.visible = true
 	_refresh_copy()
@@ -236,41 +244,46 @@ func _build_ui() -> void:
 
 	panel = Panel.new()
 	panel.name = "AshfordAnalysisTable"
-	panel.position = Vector2(18.0, 20.0)
-	panel.size = Vector2(988.0, 728.0)
+	panel.position = Vector2(10.0, 12.0)
+	panel.size = Vector2(1004.0, 744.0)
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	root.add_child(panel)
 
-	title_label = _label(Vector2(24.0, 18.0), Vector2(940.0, 34.0), 23, &"title")
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label = _label(Vector2(28.0, 16.0), Vector2(948.0, 34.0), 27, &"title")
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	panel.add_child(title_label)
 
-	subtitle_label = _label(Vector2(110.0, 56.0), Vector2(770.0, 32.0), 13, &"body")
-	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle_label = _label(Vector2(30.0, 52.0), Vector2(720.0, 30.0), 14, &"body")
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(subtitle_label)
 
-	source_heading = _label(Vector2(26.0, 112.0), Vector2(230.0, 24.0), 14, &"title")
-	source_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	panel.add_child(source_heading)
+	source_drawer = _drawer("RawEvidenceDrawer", Vector2(24.0, 102.0), Vector2(212.0, 526.0), false)
+	panel.add_child(source_drawer)
+	source_heading = _label(Vector2(14.0, 14.0), Vector2(184.0, 24.0), 15, &"title")
+	source_drawer.add_child(source_heading)
+	var source_instruction := _label(Vector2(14.0, 42.0), Vector2(184.0, 38.0), 11, &"muted")
+	source_instruction.name = "EvidenceInstruction"
+	source_instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	source_drawer.add_child(source_instruction)
 
-	var source_scroll := ScrollContainer.new()
+	source_scroll = ScrollContainer.new()
 	source_scroll.name = "RawEvidenceScroll"
-	source_scroll.position = Vector2(24.0, 142.0)
-	source_scroll.size = Vector2(238.0, 420.0)
+	source_scroll.position = Vector2(10.0, 88.0)
+	source_scroll.size = Vector2(192.0, 318.0)
 	source_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	panel.add_child(source_scroll)
+	source_drawer.add_child(source_scroll)
 	source_list = VBoxContainer.new()
 	source_list.name = "RawEvidenceList"
 	source_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	source_list.add_theme_constant_override("separation", 5)
+	source_list.add_theme_constant_override("separation", 6)
 	source_scroll.add_child(source_list)
 
 	var table := TextureRect.new()
 	table.name = "AnalysisTableArtwork"
 	table.texture = TABLE_TEXTURE
-	table.position = Vector2(270.0, 98.0)
-	table.size = Vector2(450.0, 450.0)
+	table.position = Vector2(250.0, 108.0)
+	table.size = Vector2(498.0, 498.0)
 	table.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	table.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	table.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -281,62 +294,80 @@ func _build_ui() -> void:
 		var slot_id := str(spec["id"])
 		slot.name = "ConclusionSlot_" + slot_id
 		slot.position = spec["position"] as Vector2
-		slot.size = Vector2(128.0, 50.0)
-		slot.add_theme_font_size_override("font_size", 10)
+		slot.size = Vector2(112.0, 42.0)
+		slot.add_theme_font_size_override("font_size", 11)
 		slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		slot.clip_text = true
+		slot.clip_text = false
 		slot.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		ArchiveUi.apply_button(slot, ArchiveUi.ROLE_ARCHIVE)
+		_apply_table_slot(slot, false)
 		slot.pressed.connect(func() -> void: _place_selected_conclusion(slot_id))
 		panel.add_child(slot)
 		slot_buttons[slot_id] = slot
 
-	conclusion_heading = _label(Vector2(734.0, 112.0), Vector2(228.0, 24.0), 14, &"title")
-	conclusion_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	panel.add_child(conclusion_heading)
+	conclusion_drawer = _drawer("ConclusionDrawer", Vector2(770.0, 102.0), Vector2(210.0, 526.0), true)
+	panel.add_child(conclusion_drawer)
+	conclusion_heading = _label(Vector2(14.0, 14.0), Vector2(182.0, 24.0), 15, &"title")
+	conclusion_drawer.add_child(conclusion_heading)
+	protocol_label = _label(Vector2(14.0, 42.0), Vector2(182.0, 52.0), 11, &"muted")
+	protocol_label.name = "AnalysisProtocol"
+	protocol_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	conclusion_drawer.add_child(protocol_label)
+	empty_conclusion_plaque = Panel.new()
+	empty_conclusion_plaque.name = "EmptyConclusionPlaque"
+	empty_conclusion_plaque.position = Vector2(16.0, 128.0)
+	empty_conclusion_plaque.size = Vector2(178.0, 180.0)
+	empty_conclusion_plaque.add_theme_stylebox_override("panel", _empty_file_style())
+	conclusion_drawer.add_child(empty_conclusion_plaque)
+	empty_conclusion_label = _label(Vector2(8.0, 8.0), Vector2(162.0, 164.0), 13, &"body")
+	empty_conclusion_label.name = "EmptyConclusionFile"
+	empty_conclusion_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty_conclusion_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	empty_conclusion_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	empty_conclusion_plaque.add_child(empty_conclusion_label)
+	conclusion_scroll = ScrollContainer.new()
+	conclusion_scroll.name = "ConclusionScroll"
+	conclusion_scroll.position = Vector2(8.0, 104.0)
+	conclusion_scroll.size = Vector2(194.0, 410.0)
+	conclusion_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	conclusion_drawer.add_child(conclusion_scroll)
 	conclusion_list = VBoxContainer.new()
 	conclusion_list.name = "ConclusionCardBank"
-	conclusion_list.position = Vector2(730.0, 142.0)
-	conclusion_list.size = Vector2(234.0, 294.0)
-	conclusion_list.add_theme_constant_override("separation", 7)
-	panel.add_child(conclusion_list)
-
-	var note_label := _label(Vector2(730.0, 452.0), Vector2(234.0, 106.0), 12, &"body")
-	note_label.name = "AnalysisProtocol"
-	note_label.text = _text(
-		"A conclusion is a claim, not a guess. Build it from its supporting evidence, then seat it in its brass slot.",
-		"结论是主张，不是猜测。先用支持它的证物构成结论，再将其放入对应的黄铜槽位。"
-	)
-	note_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel.add_child(note_label)
+	conclusion_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	conclusion_list.add_theme_constant_override("separation", 8)
+	conclusion_scroll.add_child(conclusion_list)
 
 	form_button = Button.new()
 	form_button.name = "FormConclusionButton"
-	form_button.position = Vector2(24.0, 584.0)
-	form_button.size = Vector2(238.0, 46.0)
-	form_button.add_theme_font_size_override("font_size", 11)
+	form_button.position = Vector2(24.0, 640.0)
+	form_button.size = Vector2(212.0, 48.0)
+	form_button.add_theme_font_size_override("font_size", 12)
 	ArchiveUi.apply_button(form_button, ArchiveUi.ROLE_ACTION)
 	form_button.pressed.connect(_form_conclusion)
 	panel.add_child(form_button)
 
-	source_slots_label = _label(Vector2(24.0, 634.0), Vector2(238.0, 64.0), 11, &"body")
-	source_slots_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	source_slots_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	source_slots_label = _label(Vector2(12.0, 416.0), Vector2(188.0, 96.0), 11, &"body")
+	source_slots_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	source_slots_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	source_slots_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	panel.add_child(source_slots_label)
+	source_drawer.add_child(source_slots_label)
 
-	status_label = _label(Vector2(285.0, 562.0), Vector2(415.0, 74.0), 12, &"body")
+	var status_plaque := Panel.new()
+	status_plaque.name = "CaseStatusPlaque"
+	status_plaque.position = Vector2(254.0, 628.0)
+	status_plaque.size = Vector2(500.0, 50.0)
+	status_plaque.add_theme_stylebox_override("panel", _status_style())
+	panel.add_child(status_plaque)
+	status_label = _label(Vector2(12.0, 4.0), Vector2(476.0, 42.0), 12, &"body")
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	panel.add_child(status_label)
+	status_plaque.add_child(status_label)
 
 	lever_button = Button.new()
 	lever_button.name = "AccusationLeverButton"
-	lever_button.position = Vector2(337.0, 654.0)
-	lever_button.size = Vector2(328.0, 46.0)
-	lever_button.add_theme_font_size_override("font_size", 11)
+	lever_button.position = Vector2(302.0, 686.0)
+	lever_button.size = Vector2(404.0, 42.0)
+	lever_button.add_theme_font_size_override("font_size", 12)
 	lever_button.disabled = true
 	ArchiveUi.apply_button(lever_button, ArchiveUi.ROLE_ARCANE)
 	lever_button.pressed.connect(_pull_accusation_lever)
@@ -344,10 +375,10 @@ func _build_ui() -> void:
 
 	close_button = Button.new()
 	close_button.name = "CloseFinalCaseBoardButton"
-	close_button.position = Vector2(760.0, 654.0)
-	close_button.size = Vector2(204.0, 46.0)
-	close_button.add_theme_font_size_override("font_size", 11)
-	ArchiveUi.apply_button(close_button, ArchiveUi.ROLE_ARCHIVE)
+	close_button.position = Vector2(770.0, 640.0)
+	close_button.size = Vector2(210.0, 48.0)
+	close_button.add_theme_font_size_override("font_size", 12)
+	_apply_record_button(close_button, false)
 	close_button.pressed.connect(close_case)
 	panel.add_child(close_button)
 
@@ -355,11 +386,11 @@ func _build_ui() -> void:
 		var source_id := str(source["id"])
 		var button := Button.new()
 		button.name = "Evidence_" + source_id
-		button.custom_minimum_size = Vector2(226.0, 38.0)
-		button.add_theme_font_size_override("font_size", 10)
+		button.custom_minimum_size = Vector2(184.0, 44.0)
+		button.add_theme_font_size_override("font_size", 12)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = true
-		ArchiveUi.apply_button(button, ArchiveUi.ROLE_ARCHIVE)
+		_apply_record_button(button, false)
 		button.pressed.connect(func() -> void: _toggle_source(source_id))
 		source_list.add_child(button)
 		source_buttons[source_id] = button
@@ -368,11 +399,11 @@ func _build_ui() -> void:
 		var conclusion_id := str(conclusion["id"])
 		var button := Button.new()
 		button.name = "ConclusionCard_" + conclusion_id
-		button.custom_minimum_size = Vector2(234.0, 48.0)
-		button.add_theme_font_size_override("font_size", 10)
+		button.custom_minimum_size = Vector2(184.0, 64.0)
+		button.add_theme_font_size_override("font_size", 12)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.clip_text = true
-		ArchiveUi.apply_button(button, ArchiveUi.ROLE_ARCHIVE)
+		button.clip_text = false
+		_apply_record_button(button, true)
 		button.pressed.connect(func() -> void: _select_conclusion(conclusion_id))
 		conclusion_list.add_child(button)
 		conclusion_buttons[conclusion_id] = button
@@ -381,11 +412,11 @@ func _build_ui() -> void:
 		var archive_id := str(archive["id"])
 		var archive_button := Button.new()
 		archive_button.name = "SealedArchive_" + archive_id
-		archive_button.custom_minimum_size = Vector2(234.0, 52.0)
-		archive_button.add_theme_font_size_override("font_size", 10)
+		archive_button.custom_minimum_size = Vector2(184.0, 76.0)
+		archive_button.add_theme_font_size_override("font_size", 12)
 		archive_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		archive_button.clip_text = true
-		ArchiveUi.apply_button(archive_button, ArchiveUi.ROLE_ARCHIVE)
+		archive_button.clip_text = false
+		_apply_record_button(archive_button, true)
 		archive_button.pressed.connect(func() -> void: _select_sealed_archive(archive_id))
 		conclusion_list.add_child(archive_button)
 		archive_buttons[archive_id] = archive_button
@@ -393,11 +424,11 @@ func _build_ui() -> void:
 		var archive_slot := Button.new()
 		archive_slot.name = "SealedArchiveSlot_" + str(archive["slot"])
 		archive_slot.position = archive["position"] as Vector2
-		archive_slot.size = Vector2(150.0, 52.0)
-		archive_slot.add_theme_font_size_override("font_size", 10)
+		archive_slot.size = Vector2(142.0, 48.0)
+		archive_slot.add_theme_font_size_override("font_size", 11)
 		archive_slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		archive_slot.clip_text = true
-		ArchiveUi.apply_button(archive_slot, ArchiveUi.ROLE_ARCANE)
+		archive_slot.clip_text = false
+		_apply_table_slot(archive_slot, true)
 		archive_slot.pressed.connect(func() -> void: _place_selected_archive(str(archive["slot"])))
 		panel.add_child(archive_slot)
 		archive_slot_buttons[str(archive["slot"])] = archive_slot
@@ -433,7 +464,19 @@ func _refresh_copy(_language: String = "") -> void:
 		"管家执行了操作。现在用钉选的私密档案追溯命令的作者。" if true_case_mode else "从 2–3 条原始证物中构成结论，再将它放入对应的黄铜槽位。"
 	)
 	source_heading.text = _text("RAW EVIDENCE", "原始证物")
-	conclusion_heading.text = _text("CONCLUSION FILE", "结论档案")
+	(source_drawer.get_node("EvidenceInstruction") as Label).text = _text(
+		"Choose two or three records. The pins below become one claim.",
+		"选择两到三条记录。下方证物钉将组成一条结论。"
+	)
+	conclusion_heading.text = _text("CONCLUSION FILES", "结论档案")
+	protocol_label.text = _text(
+		"Form a claim first. Only completed files enter this tray.",
+		"先形成结论；只有已完成的档案会进入此处。"
+	)
+	empty_conclusion_label.text = _text(
+		"NO CONCLUSION FORMED\n\nSelect 2–3 evidence records, then use FORM CONCLUSION.",
+		"尚未形成结论\n\n选择 2–3 条证物，再点击“形成结论”。"
+	)
 	close_button.text = _text("RETURN TO INVESTIGATION", "返回调查")
 	lever_button.text = _text(
 		"PULL LEVER · EXPOSE MECHANIC" if true_case_mode else "PULL LEVER · ACCUSE BUTLER",
@@ -445,14 +488,15 @@ func _refresh_copy(_language: String = "") -> void:
 func _refresh() -> void:
 	if title_label == null:
 		return
-	for child: Node in source_list.get_children():
-		child.visible = not true_case_mode
+	source_drawer.visible = not true_case_mode
 	form_button.visible = not true_case_mode
-	source_slots_label.visible = not true_case_mode
-	source_heading.visible = not true_case_mode
-	(source_list.get_parent() as Control).visible = not true_case_mode
-	source_heading.text = _text("RAW EVIDENCE", "原始证物")
-	conclusion_heading.text = _text("SECOND-LAYER CHAIN" if true_case_mode else "CONCLUSION FILE", "第二层命令链" if true_case_mode else "结论档案")
+	conclusion_heading.text = _text("SECOND-LAYER CHAIN" if true_case_mode else "CONCLUSION FILES", "第二层命令链" if true_case_mode else "结论档案")
+	protocol_label.text = _text(
+		"Seat the pinned private record in the role it played in the hidden command chain." if true_case_mode else "Form a claim first. Only completed files enter this tray.",
+		"将钉选的私密档案放入它在隐藏命令链中承担的角色。" if true_case_mode else "先形成结论；只有已完成的档案会进入此处。"
+	)
+	empty_conclusion_label.visible = not true_case_mode and formed.is_empty()
+	empty_conclusion_plaque.visible = empty_conclusion_label.visible
 	for source: Dictionary in SOURCE_SPECS:
 		var source_id := str(source["id"])
 		var button: Button = source_buttons.get(source_id) as Button
@@ -477,12 +521,12 @@ func _refresh() -> void:
 			continue
 		var is_formed := formed.has(conclusion_id)
 		var is_placed := placed.has(str(conclusion["slot"]))
-		button.visible = not true_case_mode
+		button.visible = not true_case_mode and is_formed
 		button.disabled = not is_formed or is_placed
 		button.text = (
 			("◆ " if selected_conclusion == conclusion_id else "")
 			+ _localized(conclusion, "")
-			+ ("\n" + _text("SEATED", "已入槽") if is_placed else "")
+			+ ("\n" + _text("SEATED IN BRASS SLOT", "已放入黄铜槽位") if is_placed else "")
 		)
 		ArchiveUi.set_button_status(button, &"success" if is_formed else &"default")
 		if selected_conclusion == conclusion_id:
@@ -502,7 +546,7 @@ func _refresh() -> void:
 		archive_slot.visible = true_case_mode
 		if archive_button != null:
 			archive_button.disabled = not archive_ready or archive_placed
-			archive_button.text = ("◆ " if selected_archive == archive_id else "") + _localized(archive, "") + ("\n" + _text("SEATED", "已入槽") if archive_placed else "")
+			archive_button.text = ("◆ " if selected_archive == archive_id else "") + _localized(archive, "") + ("\n" + _text("SEATED IN VIOLET CORE", "已连入紫色核心") if archive_placed else "")
 			ArchiveUi.set_button_status(archive_button, &"success" if archive_ready else &"default")
 			archive_button.self_modulate = Color(0.89, 0.82, 1.04, 1.0) if archive_ready else Color(0.62, 0.62, 0.68, 0.74)
 		if archive_slot != null:
@@ -522,7 +566,7 @@ func _refresh() -> void:
 			continue
 		button.visible = not true_case_mode
 		if conflict_slot == slot_id:
-			button.text = _text("×\nCONFLICT", "×\n矛盾")
+			button.text = _text("×  CONTRADICTION", "×  矛盾")
 			ArchiveUi.set_button_status(button, &"error")
 			button.self_modulate = Color(1.0, 0.72, 0.68, 1.0)
 			continue
@@ -532,7 +576,7 @@ func _refresh() -> void:
 			ArchiveUi.set_button_status(button, &"success")
 			button.self_modulate = Color(0.86, 1.05, 0.88, 1.0)
 		else:
-			button.text = _localized(slot, "") + "\n—"
+			button.text = _localized(slot, "") + "\n" + _text("EMPTY", "空位")
 			ArchiveUi.set_button_status(button, &"default")
 			button.self_modulate = Color.WHITE
 
@@ -542,16 +586,16 @@ func _refresh() -> void:
 	)
 	var source_slots: Array[String] = []
 	for source_id: String in selected_sources:
-		source_slots.append(_localized(_source_by_id(source_id), ""))
+		source_slots.append("◆ " + _localized(_source_by_id(source_id), ""))
 	while source_slots.size() < 3:
-		source_slots.append(_text("empty evidence pin", "空白证物钉") )
-	source_slots_label.text = _text("PINS\n", "证物钉\n") + "  ·  ".join(source_slots)
+		source_slots.append("○ " + _text("empty pin", "空白证物钉"))
+	source_slots_label.text = _text("EVIDENCE PINS  %d/3\n" % selected_sources.size(), "证物钉  %d/3\n" % selected_sources.size()) + "\n".join(source_slots)
 	form_button.disabled = selected_sources.size() < 2
 	_levers_ready()
 	if status_label.text.is_empty():
 		status_label.text = _text(
-			"Select evidence. A wrong connection will reveal a contradiction without costing progress.",
-			"选择证物。错误关联会显示矛盾，但不会损失进度。"
+			"Select a Sealed Archive, then seat it in the role it played in the hidden command chain." if true_case_mode else "Select evidence. A wrong connection will reveal a contradiction without costing progress.",
+			"选择一份密封档案，再将它放入它在隐藏命令链中承担的角色。" if true_case_mode else "选择证物。错误关联会显示矛盾，但不会损失进度。"
 		)
 
 
@@ -768,6 +812,31 @@ func _label(position_value: Vector2, size_value: Vector2, font_size: int, role: 
 	return label
 
 
+func _drawer(name_value: String, position_value: Vector2, size_value: Vector2, arcane: bool) -> Panel:
+	var drawer := Panel.new()
+	drawer.name = name_value
+	drawer.position = position_value
+	drawer.size = size_value
+	drawer.add_theme_stylebox_override("panel", _drawer_style(arcane))
+	return drawer
+
+
+func _apply_table_slot(button: Button, arcane: bool) -> void:
+	ArchiveUi.apply_button(button, ArchiveUi.ROLE_ARCANE if arcane else ArchiveUi.ROLE_ARCHIVE)
+	button.add_theme_stylebox_override("normal", _table_slot_style(arcane, &"default"))
+	button.add_theme_stylebox_override("hover", _table_slot_style(arcane, &"hover"))
+	button.add_theme_stylebox_override("pressed", _table_slot_style(arcane, &"pressed"))
+	button.add_theme_stylebox_override("disabled", _table_slot_style(arcane, &"disabled"))
+
+
+func _apply_record_button(button: Button, arcane: bool) -> void:
+	ArchiveUi.apply_button(button, ArchiveUi.ROLE_ARCANE if arcane else ArchiveUi.ROLE_ARCHIVE)
+	button.add_theme_stylebox_override("normal", _record_style(arcane, &"default"))
+	button.add_theme_stylebox_override("hover", _record_style(arcane, &"hover"))
+	button.add_theme_stylebox_override("pressed", _record_style(arcane, &"pressed"))
+	button.add_theme_stylebox_override("disabled", _record_style(arcane, &"disabled"))
+
+
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.016, 0.012, 0.025, 0.985)
@@ -777,4 +846,88 @@ func _panel_style() -> StyleBoxFlat:
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.72)
 	style.shadow_size = 18
 	style.shadow_offset = Vector2(0.0, 6.0)
+	return style
+
+
+func _drawer_style(arcane: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.075, 0.052, 0.045, 0.96) if not arcane else Color(0.06, 0.035, 0.10, 0.96)
+	style.border_color = Color(0.55, 0.39, 0.18, 0.92) if not arcane else Color(0.48, 0.30, 0.76, 0.94)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.36)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0.0, 2.0)
+	return style
+
+
+func _table_slot_style(arcane: bool, state: StringName) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	var border := Color(0.80, 0.60, 0.24, 0.95) if not arcane else Color(0.69, 0.49, 1.0, 0.96)
+	var background := Color(0.038, 0.026, 0.018, 0.90) if not arcane else Color(0.075, 0.036, 0.12, 0.91)
+	if state == &"hover":
+		border = border.lightened(0.16)
+		background = background.lightened(0.13)
+	elif state == &"pressed":
+		background = background.darkened(0.12)
+	elif state == &"disabled":
+		border = border.darkened(0.42)
+		background = background.darkened(0.20)
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 6.0
+	style.content_margin_right = 6.0
+	style.content_margin_top = 3.0
+	style.content_margin_bottom = 3.0
+	return style
+
+
+func _record_style(arcane: bool, state: StringName) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	var background := Color(0.115, 0.082, 0.052, 0.94) if not arcane else Color(0.096, 0.052, 0.15, 0.94)
+	var border := Color(0.62, 0.47, 0.23, 0.86) if not arcane else Color(0.58, 0.38, 0.86, 0.88)
+	if state == &"hover":
+		background = background.lightened(0.10)
+		border = border.lightened(0.16)
+	elif state == &"pressed":
+		background = background.darkened(0.12)
+	elif state == &"disabled":
+		background = background.darkened(0.24)
+		border = border.darkened(0.40)
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 10.0
+	style.content_margin_right = 10.0
+	style.content_margin_top = 5.0
+	style.content_margin_bottom = 5.0
+	return style
+
+
+func _status_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.024, 0.018, 0.030, 0.92)
+	style.border_color = Color(0.48, 0.35, 0.20, 0.84)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 14.0
+	style.content_margin_right = 14.0
+	style.content_margin_top = 6.0
+	style.content_margin_bottom = 6.0
+	return style
+
+
+func _empty_file_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.038, 0.022, 0.062, 0.58)
+	style.border_color = Color(0.42, 0.28, 0.66, 0.78)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 12.0
+	style.content_margin_right = 12.0
+	style.content_margin_top = 10.0
+	style.content_margin_bottom = 10.0
 	return style
