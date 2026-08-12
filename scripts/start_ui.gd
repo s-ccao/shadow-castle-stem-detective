@@ -17,6 +17,7 @@ signal quit_requested
 @onready var settings_button: Button = $SettingsButton
 @onready var language_button: Button = $LanguageButton
 @onready var quit_button: Button = $QuitButton
+@onready var save_label: Label = $SaveStatus
 
 
 func _ready() -> void:
@@ -24,23 +25,18 @@ func _ready() -> void:
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_connect_button(start_button, func() -> void: start_requested.emit())
-	_connect_button(continue_button, func() -> void: continue_requested.emit())
-	_connect_button(settings_button, func() -> void: settings_requested.emit())
-	_connect_button(language_button, func() -> void: language_requested.emit())
-	_connect_button(quit_button, func() -> void: quit_requested.emit())
+	_connect_button(start_button, func() -> void: start_requested.emit(), ArchiveUi.ROLE_ACTION)
+	_connect_button(continue_button, func() -> void: continue_requested.emit(), ArchiveUi.ROLE_ARCHIVE)
+	_connect_button(settings_button, func() -> void: settings_requested.emit(), ArchiveUi.ROLE_ARCHIVE)
+	_connect_button(language_button, func() -> void: language_requested.emit(), ArchiveUi.ROLE_ARCANE)
+	_connect_button(quit_button, func() -> void: quit_requested.emit(), ArchiveUi.ROLE_DANGER)
+	CaseLocale.locale_changed.connect(_refresh_copy)
+	_refresh_copy()
 
 
-func _connect_button(button: Button, callback: Callable) -> void:
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+func _connect_button(button: Button, callback: Callable, role: StringName) -> void:
 	button.add_theme_font_size_override("font_size", 13)
-	button.add_theme_color_override("font_color", Color(0.96, 0.78, 0.42, 1.0))
-	button.add_theme_color_override("font_hover_color", Color(1.0, 0.92, 0.62, 1.0))
-	button.add_theme_color_override("font_pressed_color", Color(1.0, 0.84, 0.42, 1.0))
-	button.add_theme_color_override("font_disabled_color", Color(0.46, 0.46, 0.48, 0.82))
-	_style_button(button)
+	ArchiveUi.apply_button(button, role)
 	button.pressed.connect(callback)
 
 
@@ -51,20 +47,21 @@ func set_ui_enabled(enabled: bool) -> void:
 
 func set_continue_enabled(enabled: bool) -> void:
 	continue_button.disabled = not enabled
+	if save_label != null:
+		save_label.visible = enabled
 
 
-func _style_button(button: Button) -> void:
-	button.add_theme_stylebox_override("normal", _make_texture_style(button_normal_texture))
-	button.add_theme_stylebox_override("hover", _make_texture_style(button_hover_texture))
-	button.add_theme_stylebox_override("pressed", _make_texture_style(button_pressed_texture))
-	button.add_theme_stylebox_override("disabled", _make_texture_style(button_disabled_texture))
+func set_save_status(status: String) -> void:
+	if save_label != null:
+		save_label.text = status
+		save_label.visible = not status.is_empty()
 
 
-func _make_texture_style(texture: Texture2D) -> StyleBoxTexture:
-	var style: StyleBoxTexture = StyleBoxTexture.new()
-	style.texture = texture
-	style.texture_margin_left = 20.0
-	style.texture_margin_right = 20.0
-	style.texture_margin_top = 8.0
-	style.texture_margin_bottom = 8.0
-	return style
+func _refresh_copy(_language: String = "") -> void:
+	ArchiveUi.apply_label(save_label, &"muted")
+	start_button.text = CaseLocale.text("menu.new_case")
+	continue_button.text = CaseLocale.text("menu.continue")
+	settings_button.text = CaseLocale.text("menu.settings")
+	language_button.text = CaseLocale.text("menu.language")
+	quit_button.text = CaseLocale.text("menu.quit")
+	set_save_status(GameState.resume_label() if GameState.has_saved_game() else "")

@@ -46,7 +46,16 @@ func _flush_queued_save() -> void:
 
 
 func has_saved_game() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	if not FileAccess.file_exists(SAVE_PATH):
+		return false
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return typeof(parsed) == TYPE_DICTIONARY \
+		and int((parsed as Dictionary).get("version", 0)) == SAVE_VERSION \
+		and bool((parsed as Dictionary).get("checkpoint_valid", false))
 
 
 func delete_saved_game() -> void:
@@ -764,6 +773,15 @@ func load_room_checkpoint() -> bool:
 
 func has_room_checkpoint() -> bool:
 	return checkpoint_valid and ResourceLoader.exists(checkpoint_scene_path)
+
+
+func resume_label() -> String:
+	if not has_room_checkpoint():
+		return CaseLocale.text("save.none")
+	return CaseLocale.text(
+		"save.resume",
+		{"room": CaseLocale.room_name(resume_room_id)}
+	)
 
 
 func prepare_room_transition(

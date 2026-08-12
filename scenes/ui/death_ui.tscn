@@ -45,6 +45,29 @@ text = "GAME OVER"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="DeathReasonTitle" type="Label" parent="."]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 366.0
+offset_right = 774.0
+offset_bottom = 394.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+text = "OBSERVATION LOST"
+horizontal_alignment = 1
+
+[node name="DeathReasonBody" type="Label" parent="."]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 398.0
+offset_right = 774.0
+offset_bottom = 432.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+text = "Your notes and evidence are safe."
+horizontal_alignment = 1
+autowrap_mode = 2
+
 [node name="RetryButton" type="Button" parent="."]
 offset_left = 263.0
 offset_top = 445.0

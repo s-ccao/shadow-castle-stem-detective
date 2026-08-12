@@ -18,6 +18,8 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameState="*res://autoload/game_state.gd"
+CaseLocale="*res://autoload/case_locale.gd"
+ArchiveUi="*res://autoload/archive_ui.gd"
 NoteHud="*res://scenes/note_hud.tscn"
 KeyHud="*res://scenes/key_hud.tscn"
 MapHud="*res://scenes/map_hud.tscn"
