@@ -13,6 +13,7 @@ const RETURN_SPAWN_ID: String = "final_room_door"
 const CASE_CLOSED_SCREEN_PATH: String = "res://assets/ui/screens/case_closed.png"
 const GAME_OVER_UI_SCENE_PATH: String = "res://scenes/ui/game_over_ui.tscn"
 const FINAL_ARCHIVE_DOCUMENT_UI_PATH: String = "res://assets/props/FinalRoom/final_archive_document.png"
+const FINAL_CASE_BOARD_SCENE: PackedScene = preload("res://scenes/ui/final_case_board.tscn")
 
 const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 930.0)
 const EXIT_POSITION: Vector2 = Vector2(724.0, 1030.0)
@@ -180,8 +181,7 @@ func _ready() -> void:
 
 
 func _create_final_case_board() -> void:
-	final_case_board = FinalCaseBoard.new()
-	final_case_board.name = "FinalCaseBoard"
+	final_case_board = FINAL_CASE_BOARD_SCENE.instantiate() as FinalCaseBoard
 	final_case_board.ordinary_case_closed.connect(_on_ordinary_case_closed)
 	final_case_board.true_case_closed.connect(_on_true_case_closed)
 	final_case_board.case_closed.connect(_on_final_case_board_closed)
