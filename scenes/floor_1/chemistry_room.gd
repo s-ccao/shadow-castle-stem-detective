@@ -12,6 +12,7 @@ const ROOM_BACKGROUND_PATH: String = \
 	"res://assets/backgrounds/chemistry_room_alchemy_lab.png"
 const CHEMISTRY_EVIDENCE_OVERVIEW_PATH: String = \
 	"res://assets/props/Chemistry/chemistry_fake_stain_overview.png"
+const ALCHEMY_WORKBENCH_UI_SCENE: PackedScene = preload("res://scenes/ui/alchemy_workbench_ui.tscn")
 # 玩家从大厅进入 Chemistry Room 时出现在顶部大门内侧。
 # 门楣碰撞在 y≈121 以上，所以出生点放在门洞内可站地面，
 # 距大门交互点 (742,107) 约 33px，出生即可触发出口交互。
@@ -209,7 +210,7 @@ func _process(delta: float) -> void:
 		hide_interaction_feedback()
 		return
 
-	if craft_panel != null and craft_panel.visible:
+	if alchemy_workbench_ui != null and alchemy_workbench_ui.visible:
 		hide_interaction_feedback()
 		return
 
@@ -468,6 +469,7 @@ func show_alchemy_table_dialogue() -> void:
 
 var craft_panel: Panel
 var prototype_craft_ui: Control
+var alchemy_workbench_ui: AlchemyWorkbenchUI
 var craft_box: VBoxContainer
 var selected_recipe_id: String = ""
 var selected_recipe_label: Label
@@ -926,7 +928,7 @@ func _on_ingredient_slot_pressed(slot_index: int) -> void:
 
 
 func show_craft_panel() -> void:
-	# 新炼金原型：不再创建旧的 CraftPanel，所有交互由独立原型 UI 负责。
+	# The workbench is a dedicated UI scene; Chemistry Room owns only opening it.
 	message_panel.visible = false
 	var reward_hud: Node = get_node_or_null("/root/ItemRewardHud")
 	if reward_hud != null and reward_hud.has_method("dismiss_for_overlay"):
@@ -935,20 +937,25 @@ func show_craft_panel() -> void:
 	if inventory_hud != null and inventory_hud.get("feature_panel") != null:
 		(inventory_hud.get("feature_panel") as Panel).visible = false
 	hide_interaction_feedback()
-	if prototype_craft_ui == null:
-		var ui_script: Script = load("res://scripts/alchemy_prototype_ui.gd") as Script
-		prototype_craft_ui = ui_script.new() as Control
-		ui_layer.add_child(prototype_craft_ui)
-		prototype_craft_ui.call("setup", self)
-	prototype_craft_ui.visible = true
-	prototype_craft_ui.call("_refresh_all")
+	if alchemy_workbench_ui == null:
+		alchemy_workbench_ui = ALCHEMY_WORKBENCH_UI_SCENE.instantiate() as AlchemyWorkbenchUI
+		alchemy_workbench_ui.closed.connect(_on_alchemy_workbench_closed)
+		add_child(alchemy_workbench_ui)
+	alchemy_workbench_ui.open(self)
 
 
 func close_craft_panel() -> void:
+	if alchemy_workbench_ui != null:
+		alchemy_workbench_ui.close()
+		return
 	if prototype_craft_ui != null:
 		prototype_craft_ui.visible = false
 	if craft_panel != null:
 		craft_panel.visible = false
+	end_dialogue_pause()
+
+
+func _on_alchemy_workbench_closed() -> void:
 	end_dialogue_pause()
 
 

@@ -1,0 +1,238 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/alchemy_workbench_ui.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/alchemy/alchemy_workbench_clean.png" id="2_art"]
+
+[node name="AlchemyWorkbenchUI" type="CanvasLayer"]
+layer = 70
+script = ExtResource("1_script")
+
+[node name="AlchemyRoot" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Veil" type="ColorRect" parent="AlchemyRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.008, 0.006, 0.016, 0.9)
+
+[node name="SafeArea" type="MarginContainer" parent="AlchemyRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="WorkshopFrame" type="PanelContainer" parent="AlchemyRoot/SafeArea"]
+layout_mode = 2
+
+[node name="FrameMargin" type="MarginContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="Content" type="VBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="VBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TitleLabel" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/Header"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+vertical_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/Header"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="MainSeparator" type="HSeparator" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content"]
+layout_mode = 2
+
+[node name="MainRow" type="HBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="RecipeDrawer" type="PanelContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow"]
+custom_minimum_size = Vector2(232, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Column" type="VBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RecipeHeading" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+
+[node name="RecipeInstruction" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="RecipeScroll" type="ScrollContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="RecipeList" type="VBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column/RecipeScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ReagentSeparator" type="HSeparator" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column"]
+layout_mode = 2
+
+[node name="ReagentHeading" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="ReagentList" type="VBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/RecipeDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 118)
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Workbench" type="Control" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TableCanvas" type="Control" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/Workbench"]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="AlchemyArtwork" type="TextureRect" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/Workbench/TableCanvas"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_art")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="ProductDrawer" type="PanelContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Column" type="VBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProductHeading" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+
+[node name="ProductPreview" type="CenterContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+
+[node name="ProductImage" type="TextureRect" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column/ProductPreview"]
+custom_minimum_size = Vector2(82, 82)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ProductName" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="ProductDescription" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+autowrap_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RequirementsSeparator" type="HSeparator" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+layout_mode = 2
+
+[node name="RequirementsHeading" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+
+[node name="RequirementsLabel" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 2
+
+[node name="ReactionState" type="PanelContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+
+[node name="ReactionStateLabel" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/MainRow/ProductDrawer/Margin/Column/ReactionState"]
+layout_mode = 2
+autowrap_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ActionSeparator" type="HSeparator" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content"]
+layout_mode = 2
+
+[node name="ActionRail" type="HBoxContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ResetNodesButton" type="Button" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/ActionRail"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+
+[node name="StatusPlaque" type="PanelContainer" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/ActionRail"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatusLabel" type="Label" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/ActionRail/StatusPlaque"]
+layout_mode = 2
+autowrap_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ExtractButton" type="Button" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/ActionRail"]
+custom_minimum_size = Vector2(226, 0)
+layout_mode = 2
+
+[node name="CloseAlchemyButton" type="Button" parent="AlchemyRoot/SafeArea/WorkshopFrame/FrameMargin/Content/ActionRail"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
