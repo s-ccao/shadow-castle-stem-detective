@@ -17,7 +17,10 @@ const CASE_FRAME: Texture2D = preload("res://assets/ui/frames/menu_banner_frame.
 const COLOR_GOLD := Color(0.98, 0.82, 0.45, 1.0)
 const COLOR_PARCHMENT := Color(0.95, 0.88, 0.70, 1.0)
 const COLOR_ARCANE := Color(0.84, 0.72, 1.0, 1.0)
-const COLOR_DANGER := Color(1.0, 0.62, 0.58, 1.0)
+# Violet remains reserved for Vision, final activation, and hazardous choices.
+# Red is feedback-only (for example, a contradictory evidence connection), not a
+# competing primary-button language.
+const COLOR_DANGER := Color(0.84, 0.72, 1.0, 1.0)
 const COLOR_DISABLED := Color(0.47, 0.44, 0.49, 0.88)
 const COLOR_FOCUS := Color(0.94, 0.82, 0.44, 1.0)
 
