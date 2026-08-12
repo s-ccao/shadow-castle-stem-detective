@@ -16,8 +16,8 @@ const TABLE_TEXTURE: Texture2D = preload("res://assets/props/FinalRoom/final_ana
 # the whole central lane, while both archive drawers keep a readable safe inset.
 # Slot positions are normalized to this rect so the dial and its interaction
 # targets stay aligned whenever the table ratio changes.
-const TABLE_POSITION := Vector2(242.0, 92.0)
-const TABLE_SIZE := Vector2(520.0, 520.0)
+const TABLE_POSITION := Vector2(182.0, 74.0)
+const TABLE_SIZE := Vector2(640.0, 640.0)
 
 const SOURCE_SPECS: Array[Dictionary] = [
 	{
@@ -265,19 +265,19 @@ func _build_ui() -> void:
 	subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(subtitle_label)
 
-	source_drawer = _drawer("RawEvidenceDrawer", Vector2(24.0, 102.0), Vector2(212.0, 526.0), false)
+	source_drawer = _drawer("RawEvidenceDrawer", Vector2(16.0, 116.0), Vector2(150.0, 492.0), false)
 	panel.add_child(source_drawer)
-	source_heading = _label(Vector2(14.0, 14.0), Vector2(184.0, 24.0), 15, &"title")
+	source_heading = _label(Vector2(10.0, 12.0), Vector2(130.0, 24.0), 13, &"title")
 	source_drawer.add_child(source_heading)
-	var source_instruction := _label(Vector2(14.0, 42.0), Vector2(184.0, 38.0), 11, &"muted")
+	var source_instruction := _label(Vector2(10.0, 38.0), Vector2(130.0, 38.0), 10, &"muted")
 	source_instruction.name = "EvidenceInstruction"
 	source_instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	source_drawer.add_child(source_instruction)
 
 	source_scroll = ScrollContainer.new()
 	source_scroll.name = "RawEvidenceScroll"
-	source_scroll.position = Vector2(10.0, 88.0)
-	source_scroll.size = Vector2(192.0, 318.0)
+	source_scroll.position = Vector2(8.0, 82.0)
+	source_scroll.size = Vector2(134.0, 286.0)
 	source_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	source_drawer.add_child(source_scroll)
 	source_list = VBoxContainer.new()
@@ -314,21 +314,21 @@ func _build_ui() -> void:
 		panel.add_child(slot)
 		slot_buttons[slot_id] = slot
 
-	conclusion_drawer = _drawer("ConclusionDrawer", Vector2(770.0, 102.0), Vector2(210.0, 526.0), true)
+	conclusion_drawer = _drawer("ConclusionDrawer", Vector2(838.0, 116.0), Vector2(150.0, 492.0), true)
 	panel.add_child(conclusion_drawer)
-	conclusion_heading = _label(Vector2(14.0, 14.0), Vector2(182.0, 24.0), 15, &"title")
+	conclusion_heading = _label(Vector2(10.0, 12.0), Vector2(130.0, 24.0), 13, &"title")
 	conclusion_drawer.add_child(conclusion_heading)
-	protocol_label = _label(Vector2(14.0, 42.0), Vector2(182.0, 52.0), 11, &"muted")
+	protocol_label = _label(Vector2(10.0, 38.0), Vector2(130.0, 52.0), 10, &"muted")
 	protocol_label.name = "AnalysisProtocol"
 	protocol_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	conclusion_drawer.add_child(protocol_label)
 	empty_conclusion_plaque = Panel.new()
 	empty_conclusion_plaque.name = "EmptyConclusionPlaque"
-	empty_conclusion_plaque.position = Vector2(16.0, 128.0)
-	empty_conclusion_plaque.size = Vector2(178.0, 180.0)
+	empty_conclusion_plaque.position = Vector2(10.0, 112.0)
+	empty_conclusion_plaque.size = Vector2(130.0, 170.0)
 	empty_conclusion_plaque.add_theme_stylebox_override("panel", _empty_file_style())
 	conclusion_drawer.add_child(empty_conclusion_plaque)
-	empty_conclusion_label = _label(Vector2(8.0, 8.0), Vector2(162.0, 164.0), 13, &"body")
+	empty_conclusion_label = _label(Vector2(6.0, 6.0), Vector2(118.0, 158.0), 11, &"body")
 	empty_conclusion_label.name = "EmptyConclusionFile"
 	empty_conclusion_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	empty_conclusion_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -336,8 +336,8 @@ func _build_ui() -> void:
 	empty_conclusion_plaque.add_child(empty_conclusion_label)
 	conclusion_scroll = ScrollContainer.new()
 	conclusion_scroll.name = "ConclusionScroll"
-	conclusion_scroll.position = Vector2(8.0, 104.0)
-	conclusion_scroll.size = Vector2(194.0, 410.0)
+	conclusion_scroll.position = Vector2(8.0, 96.0)
+	conclusion_scroll.size = Vector2(134.0, 382.0)
 	conclusion_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	conclusion_drawer.add_child(conclusion_scroll)
 	conclusion_list = VBoxContainer.new()
@@ -348,14 +348,14 @@ func _build_ui() -> void:
 
 	form_button = Button.new()
 	form_button.name = "FormConclusionButton"
-	form_button.position = Vector2(24.0, 640.0)
-	form_button.size = Vector2(212.0, 48.0)
+	form_button.position = Vector2(16.0, 622.0)
+	form_button.size = Vector2(150.0, 46.0)
 	form_button.add_theme_font_size_override("font_size", 12)
 	ArchiveUi.apply_button(form_button, ArchiveUi.ROLE_ACTION)
 	form_button.pressed.connect(_form_conclusion)
 	panel.add_child(form_button)
 
-	source_slots_label = _label(Vector2(12.0, 416.0), Vector2(188.0, 96.0), 11, &"body")
+	source_slots_label = _label(Vector2(10.0, 378.0), Vector2(130.0, 96.0), 10, &"body")
 	source_slots_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	source_slots_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	source_slots_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -363,11 +363,11 @@ func _build_ui() -> void:
 
 	var status_plaque := Panel.new()
 	status_plaque.name = "CaseStatusPlaque"
-	status_plaque.position = Vector2(254.0, 628.0)
-	status_plaque.size = Vector2(500.0, 50.0)
+	status_plaque.position = Vector2(332.0, 336.0)
+	status_plaque.size = Vector2(340.0, 62.0)
 	status_plaque.add_theme_stylebox_override("panel", _status_style())
 	panel.add_child(status_plaque)
-	status_label = _label(Vector2(12.0, 4.0), Vector2(476.0, 42.0), 12, &"body")
+	status_label = _label(Vector2(12.0, 6.0), Vector2(316.0, 50.0), 12, &"body")
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -375,8 +375,8 @@ func _build_ui() -> void:
 
 	lever_button = Button.new()
 	lever_button.name = "AccusationLeverButton"
-	lever_button.position = Vector2(302.0, 686.0)
-	lever_button.size = Vector2(404.0, 42.0)
+	lever_button.position = Vector2(344.0, 410.0)
+	lever_button.size = Vector2(316.0, 46.0)
 	lever_button.add_theme_font_size_override("font_size", 12)
 	lever_button.disabled = true
 	ArchiveUi.apply_button(lever_button, ArchiveUi.ROLE_ARCANE)
@@ -385,8 +385,8 @@ func _build_ui() -> void:
 
 	close_button = Button.new()
 	close_button.name = "CloseFinalCaseBoardButton"
-	close_button.position = Vector2(770.0, 640.0)
-	close_button.size = Vector2(210.0, 48.0)
+	close_button.position = Vector2(838.0, 622.0)
+	close_button.size = Vector2(150.0, 46.0)
 	close_button.add_theme_font_size_override("font_size", 12)
 	_apply_record_button(close_button, false)
 	close_button.pressed.connect(close_case)
@@ -396,8 +396,8 @@ func _build_ui() -> void:
 		var source_id := str(source["id"])
 		var button := Button.new()
 		button.name = "Evidence_" + source_id
-		button.custom_minimum_size = Vector2(184.0, 44.0)
-		button.add_theme_font_size_override("font_size", 12)
+		button.custom_minimum_size = Vector2(126.0, 42.0)
+		button.add_theme_font_size_override("font_size", 11)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = true
 		_apply_record_button(button, false)
@@ -409,8 +409,8 @@ func _build_ui() -> void:
 		var conclusion_id := str(conclusion["id"])
 		var button := Button.new()
 		button.name = "ConclusionCard_" + conclusion_id
-		button.custom_minimum_size = Vector2(184.0, 64.0)
-		button.add_theme_font_size_override("font_size", 12)
+		button.custom_minimum_size = Vector2(126.0, 62.0)
+		button.add_theme_font_size_override("font_size", 11)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.clip_text = false
 		_apply_record_button(button, true)
@@ -422,8 +422,8 @@ func _build_ui() -> void:
 		var archive_id := str(archive["id"])
 		var archive_button := Button.new()
 		archive_button.name = "SealedArchive_" + archive_id
-		archive_button.custom_minimum_size = Vector2(184.0, 76.0)
-		archive_button.add_theme_font_size_override("font_size", 12)
+		archive_button.custom_minimum_size = Vector2(126.0, 72.0)
+		archive_button.add_theme_font_size_override("font_size", 11)
 		archive_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		archive_button.clip_text = false
 		_apply_record_button(archive_button, true)
