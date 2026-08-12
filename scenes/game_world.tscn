@@ -10,4 +10,4 @@ script = ExtResource("1_47u71")
 [node name="player" parent="." unique_id=1350265598 instance=ExtResource("1_0biqy")]
 position = Vector2(512, 384)
 
-[node name="enemy" parent="." unique_id=134981474 instance=ExtResource("3_ywgp6")]
+[node name="CastleGuardian" parent="." unique_id=134981474 instance=ExtResource("3_ywgp6")]

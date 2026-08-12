@@ -1,0 +1,198 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" uid="uid://v1xlueww3ytc" path="res://autoload/note_hud.gd" id="1_hud"]
+[ext_resource type="Texture2D" path="res://assets/ui/icon_book.png" id="2_icon"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hit"]
+radius = 36.0
+
+[sub_resource type="StyleBoxFlat" id="sb_halo"]
+bg_color = Color(0.32, 0.42, 0.78, 0.12)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.55, 0.68, 1, 0.58)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+shadow_color = Color(0.30, 0.48, 1, 0.30)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="sb_hint"]
+bg_color = Color(0.035, 0.03, 0.055, 0.90)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.72, 0.58, 0.30, 0.72)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="sb_feature_ring"]
+bg_color = Color(0.72, 0.55, 0.20, 0.08)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.96, 0.76, 0.34, 0.92)
+corner_radius_top_left = 42
+corner_radius_top_right = 42
+corner_radius_bottom_right = 42
+corner_radius_bottom_left = 42
+shadow_color = Color(0.86, 0.56, 0.18, 0.42)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="sb_feature_panel"]
+bg_color = Color(0.035, 0.028, 0.055, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.76, 0.59, 0.28, 0.88)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.01, 0.005, 0.02, 0.55)
+shadow_size = 12
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="sb_backplate"]
+bg_color = Color(0.30, 0.18, 0.07, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.80, 0.36, 1)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+shadow_color = Color(0.65, 0.35, 0.08, 0.34)
+shadow_size = 8
+
+[node name="NoteHud" type="CanvasLayer"]
+layer = 40
+process_mode = 3
+script = ExtResource("1_hud")
+
+[node name="IconArea" type="Area2D" parent="."]
+# BagHub 在最左侧；NoteHub 解锁后排在其右侧预留槽位。
+position = Vector2(230, 52)
+input_pickable = true
+
+[node name="EntryBackplate" type="Panel" parent="IconArea"]
+mouse_filter = 2
+z_index = -2
+offset_left = -36.0
+offset_top = -36.0
+offset_right = 36.0
+offset_bottom = 36.0
+theme_override_styles/panel = SubResource("sb_backplate")
+
+[node name="HoverHalo" type="Panel" parent="IconArea"]
+visible = false
+mouse_filter = 2
+z_index = -1
+offset_left = -36.0
+offset_top = -36.0
+offset_right = 36.0
+offset_bottom = 36.0
+theme_override_styles/panel = SubResource("sb_halo")
+
+[node name="FeatureRing" type="Panel" parent="IconArea"]
+visible = false
+mouse_filter = 2
+z_index = 0
+offset_left = -43.0
+offset_top = -43.0
+offset_right = 43.0
+offset_bottom = 43.0
+theme_override_styles/panel = SubResource("sb_feature_ring")
+
+[node name="IconSprite" type="Sprite2D" parent="IconArea"]
+z_index = 1
+texture = ExtResource("2_icon")
+scale = Vector2(0.0625, 0.0625)
+
+[node name="HitShape" type="CollisionShape2D" parent="IconArea"]
+visible = false
+shape = SubResource("CircleShape2D_hit")
+
+[node name="HoverPlate" type="Panel" parent="IconArea"]
+visible = false
+mouse_filter = 2
+z_index = 2
+offset_left = -30.0
+offset_top = 32.0
+offset_right = 30.0
+offset_bottom = 56.0
+theme_override_styles/panel = SubResource("sb_hint")
+
+[node name="HoverLabel" type="Label" parent="IconArea/HoverPlate"]
+visible = true
+mouse_filter = 2
+offset_left = 2.0
+offset_top = 1.0
+offset_right = 58.0
+offset_bottom = 23.0
+theme_override_colors/font_color = Color(0.95, 0.90, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 12
+text = "note"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FeatureUnlockPanel" type="Panel" parent="."]
+visible = false
+mouse_filter = 2
+z_index = 10
+offset_left = 248.0
+offset_top = 8.0
+offset_right = 598.0
+offset_bottom = 120.0
+theme_override_styles/panel = SubResource("sb_feature_panel")
+
+[node name="FeaturePointer" type="Label" parent="FeatureUnlockPanel"]
+mouse_filter = 2
+offset_left = -18.0
+offset_top = 34.0
+offset_right = 4.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.96, 0.76, 0.34, 1)
+theme_override_font_sizes/font_size = 18
+text = "◀"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Content" type="VBoxContainer" parent="FeatureUnlockPanel"]
+mouse_filter = 2
+offset_left = 16.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -10.0
+theme_override_constants/separation = 3
+
+[node name="Title" type="Label" parent="FeatureUnlockPanel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.96, 0.76, 0.34, 1)
+theme_override_font_sizes/font_size = 15
+text = "NEW NOTE FEATURE"
+
+[node name="Description" type="Label" parent="FeatureUnlockPanel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.90, 0.86, 0.74, 1)
+theme_override_font_sizes/font_size = 13
+text = "A new clue was added to your notes."
+autowrap_mode = 2
+vertical_alignment = 1

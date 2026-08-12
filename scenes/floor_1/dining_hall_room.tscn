@@ -1,0 +1,178 @@
+[gd_scene format=3 uid="uid://c2h2nqjgvvpv1"]
+
+[ext_resource type="Script" uid="uid://ccnylxem1rldw" path="res://scripts/dining_hall_room.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Texture2D" uid="uid://djuj2cgli8nnk" path="res://assets/backgrounds/dining_hall_banquet.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://cby6ebilm8b1x" path="res://assets/props/DiningHall/dining_table.png" id="4_table"]
+[ext_resource type="Texture2D" uid="uid://bh6rs2oy6wklb" path="res://assets/props/DiningHall/dining_fireplace.png" id="5_fire"]
+[ext_resource type="Texture2D" uid="uid://c8gtsujod7qte" path="res://assets/props/DiningHall/dining_main_door.png" id="6_mdoor"]
+[ext_resource type="Texture2D" uid="uid://j5pc14hr83tt" path="res://assets/props/DiningHall/dining_wall_door.png" id="7_wdoor"]
+[ext_resource type="Texture2D" uid="uid://cgv14hpiffkqi" path="res://assets/props/DiningHall/dining_chandelier.png" id="8_chandelier"]
+[ext_resource type="Texture2D" uid="uid://drby2ji7cxr1g" path="res://assets/props/DiningHall/dining_sideboard.png" id="9_side"]
+[ext_resource type="Texture2D" uid="uid://b3la55ptlt4q4" path="res://assets/props/DiningHall/dining_cabinet.png" id="10_cab"]
+[ext_resource type="Texture2D" uid="uid://b3v37oclbbhsh" path="res://assets/props/DiningHall/dining_grandfather_clock.png" id="11_clock"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_table"]
+size = Vector2(510.62848, 213.43466)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_sideboard"]
+size = Vector2(212.12117, 324.99997)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_cabinet"]
+size = Vector2(165, 148)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_clock"]
+size = Vector2(100.870804, 177.7915)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_fireplace"]
+size = Vector2(215.1907, 364.9153)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_main_door"]
+size = Vector2(130.372, 103.6189)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_wall_door"]
+size = Vector2(118.8839, 133.2125)
+
+[node name="DiningHallRoom" type="Node2D" unique_id=588450028]
+script = ExtResource("1_script")
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=1813507954]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=1647218417 instance=ExtResource("2_player")]
+
+[node name="DiningTable" type="Node2D" parent="Worldsort" unique_id=1134468854]
+position = Vector2(700, 780)
+
+[node name="DiningTableSprite" type="Sprite2D" parent="Worldsort/DiningTable" unique_id=1530292142]
+position = Vector2(-283.99997, -394.00003)
+scale = Vector2(0.37983426, 0.3793739)
+texture = ExtResource("4_table")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/DiningTable" unique_id=1411115421]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/DiningTable/FurnitureCollision" unique_id=1668012382]
+position = Vector2(-9.314209, -205.71735)
+shape = SubResource("RectangleShape2D_furn_table")
+
+[node name="Sideboard" type="Node2D" parent="Worldsort" unique_id=-2084621596]
+position = Vector2(1283, 973)
+
+[node name="SideboardSprite" type="Sprite2D" parent="Worldsort/Sideboard" unique_id=-2084621595]
+position = Vector2(-239.00005, -384)
+scale = Vector2(0.43939397, 0.3572568)
+texture = ExtResource("9_side")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/Sideboard" unique_id=807726295]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/Sideboard/FurnitureCollision" unique_id=1995433909]
+position = Vector2(31.060547, -159.5)
+shape = SubResource("RectangleShape2D_furn_sideboard")
+
+[node name="Cabinet" type="Node2D" parent="Worldsort" unique_id=-2084621594]
+position = Vector2(138, 904)
+
+[node name="CabinetSprite" type="Sprite2D" parent="Worldsort/Cabinet" unique_id=-2084621593]
+position = Vector2(-157, -363.00006)
+scale = Vector2(0.26874006, 0.279107)
+texture = ExtResource("10_cab")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/Cabinet" unique_id=65157265]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/Cabinet/FurnitureCollision" unique_id=1714612352]
+position = Vector2(-15.5, -162)
+shape = SubResource("RectangleShape2D_furn_cabinet")
+
+[node name="GrandfatherClock" type="Node2D" parent="Worldsort" unique_id=-2084621592]
+position = Vector2(1330, 582)
+
+[node name="GrandfatherClockSprite" type="Sprite2D" parent="Worldsort/GrandfatherClock" unique_id=-2084621591]
+position = Vector2(-77.99997, -248.00003)
+scale = Vector2(0.18151745, 0.15660204)
+texture = ExtResource("11_clock")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/GrandfatherClock" unique_id=1945612976]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/GrandfatherClock/FurnitureCollision" unique_id=1707061312]
+position = Vector2(4.435425, -82.10425)
+shape = SubResource("RectangleShape2D_furn_clock")
+
+[node name="Fireplace" type="Node2D" parent="Worldsort" unique_id=1902473688]
+position = Vector2(164, 410)
+
+[node name="FireplaceSprite" type="Sprite2D" parent="Worldsort/Fireplace" unique_id=891587101]
+position = Vector2(-144, -448)
+scale = Vector2(0.28884655, 0.2988659)
+texture = ExtResource("5_fire")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/Fireplace" unique_id=126135501]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/Fireplace/FurnitureCollision" unique_id=1406667039]
+position = Vector2(9.810791, -235.3569)
+shape = SubResource("RectangleShape2D_furn_fireplace")
+
+[node name="MainDoor" type="Node2D" parent="Worldsort" unique_id=304032407]
+position = Vector2(723, 1071)
+
+[node name="MainDoorSprite" type="Sprite2D" parent="Worldsort/MainDoor" unique_id=1334054024]
+position = Vector2(-120.00001, -126)
+scale = Vector2(0.13810596, 0.1465614)
+texture = ExtResource("6_mdoor")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/MainDoor" unique_id=220565391]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/MainDoor/FurnitureCollision" unique_id=979386760]
+position = Vector2(2.499977, -63.345)
+shape = SubResource("RectangleShape2D_furn_main_door")
+
+[node name="WallDoor" type="Node2D" parent="Worldsort" unique_id=477060699]
+position = Vector2(1224, 281)
+
+[node name="WallDoorSprite" type="Sprite2D" parent="Worldsort/WallDoor" unique_id=1726342298]
+position = Vector2(-74.000015, -160)
+scale = Vector2(0.12838435, 0.12590976)
+texture = ExtResource("7_wdoor")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/WallDoor" unique_id=1003406359]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/WallDoor/FurnitureCollision" unique_id=1262756446]
+position = Vector2(1.104832, -76.89957)
+shape = SubResource("RectangleShape2D_furn_wall_door")
+
+[node name="ChandelierSprite" type="Sprite2D" parent="." unique_id=1832309709]
+z_index = 150
+position = Vector2(639, 9)
+scale = Vector2(0.19391206, 0.17531003)
+texture = ExtResource("8_chandelier")
+centered = false
+
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=1267553716]
+z_index = -100
+position = Vector2(1, -9)
+texture = ExtResource("3_bg")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=116454616]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1394016776]
+polygon = PackedVector2Array(51, 11, 60, 39, 252, 46, 289, 256, 583, 253, 817, 247, 1012, 257, 1159, 253, 1300, 254, 1436, 234, 1424, 12)
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=849778376]
+polygon = PackedVector2Array(25, 17, 53, 14, 57, 356, 41, 350, 39, 917, 50, 922, 53, 1001, 7, 1015)
+
+[node name="RightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1407378691]
+polygon = PackedVector2Array(1398, 20, 1389, 206, 1300, 205, 1300, 351, 1394, 356, 1418, 640, 1417, 980, 1417, 1000, 1436, 997, 1434, 225, 1418, 10)
+
+[node name="BottomLeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=862888626]
+polygon = PackedVector2Array(20, 972, 88, 972, 100, 984, 434, 978, 440, 946, 527, 945, 599, 940, 608, 960, 641, 957, 644, 967, 656, 971, 658, 1059, 13, 1051)
+
+[node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1019062561]
+polygon = PackedVector2Array(795, 973, 797, 1056, 1423, 1064, 1446, 980, 1357, 975, 1341, 983, 1012, 979, 1008, 950, 923, 951, 921, 936, 863, 937, 843, 960)

@@ -1,0 +1,214 @@
+[gd_scene format=3 uid="uid://bgm4voutxp03p"]
+
+[ext_resource type="Script" uid="uid://bwfi8o4sl36ec" path="res://scripts/clue_journal.gd" id="1_journal"]
+[ext_resource type="Texture2D" uid="uid://bsek4jyxor28p" path="res://assets/ui/ui_note_panel_bg.png" id="2_panel"]
+[ext_resource type="Texture2D" uid="uid://cvsl6gjndxppa" path="res://assets/ui/ui_note_parchment.png" id="3_parch"]
+[ext_resource type="Texture2D" uid="uid://cht8b84wfgfu1" path="res://assets/ui/ui_note_close_btn.png" id="4_close"]
+[ext_resource type="Texture2D" uid="uid://cac4vojmvr8l5" path="res://assets/ui/ui_note_divider.png" id="5_divider"]
+[ext_resource type="Texture2D" uid="uid://o8dpovcesshh" path="res://assets/ui/ui_note_scrollbar_track.png" id="5_nktue"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_note_star.png" id="6_star"]
+
+[sub_resource type="StyleBoxTexture" id="sb_panel"]
+texture = ExtResource("2_panel")
+texture_margin_left = 32.0
+texture_margin_top = 32.0
+texture_margin_right = 32.0
+texture_margin_bottom = 32.0
+
+[sub_resource type="StyleBoxFlat" id="sb_main_soft"]
+bg_color = Color(0.045, 0.052, 0.075, 0.975)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.34, 0.30, 0.26, 0.92)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0.005, 0.008, 0.018, 0.68)
+shadow_size = 20
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="sb_wood"]
+bg_color = Color(0.055, 0.042, 0.035, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.55, 0.43, 0.24, 0.62)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="sb_track"]
+bg_color = Color(0.08, 0.1, 0.16, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.62, 0.47, 0.22, 0.9)
+
+[sub_resource type="StyleBoxFlat" id="sb_grab"]
+bg_color = Color(0.35, 0.55, 0.95, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.7, 0.85, 1, 0.9)
+
+[node name="ClueJournal" type="CanvasLayer" unique_id=1681036788]
+layer = 50
+script = ExtResource("1_journal")
+
+[node name="Overlay" type="ColorRect" parent="." unique_id=1269078565]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MainPanel" type="Panel" parent="." unique_id=1068665446]
+offset_left = 32.0
+offset_top = 32.0
+offset_right = 992.0
+offset_bottom = 736.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("sb_main_soft")
+
+[node name="TitleLabel" type="Label" parent="MainPanel" unique_id=1421395114]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 24.0
+offset_right = 960.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.95, 0.78, 0.36, 1)
+theme_override_colors/font_outline_color = Color(0.35, 0.22, 0.05, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 34
+text = "Detective Notes"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TitleSep" type="ColorRect" parent="MainPanel" unique_id=928770346]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 94.0
+offset_right = 928.0
+offset_bottom = 96.0
+color = Color(0.62, 0.47, 0.22, 0.9)
+
+[node name="Sprite2D" type="Sprite2D" parent="MainPanel/TitleSep" unique_id=1634621774]
+position = Vector2(448, 1)
+scale = Vector2(0.18, 0.17)
+texture = ExtResource("5_divider")
+
+[node name="LeftPanelBg" type="Panel" parent="MainPanel" unique_id=820168930]
+z_index = 10
+layout_mode = 0
+offset_left = 40.0
+offset_top = 128.0
+offset_right = 348.0
+offset_bottom = 680.0
+theme_override_styles/panel = SubResource("sb_wood")
+
+[node name="ListHeader" type="Label" parent="MainPanel/LeftPanelBg" unique_id=1210114406]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 14.0
+offset_right = 308.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0.95, 0.78, 0.36, 1)
+theme_override_font_sizes/font_size = 18
+text = "◇ Clue List ◇"
+horizontal_alignment = 1
+
+[node name="ListScroll" type="ScrollContainer" parent="MainPanel/LeftPanelBg" unique_id=1331035647]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_top = 56.0
+offset_right = 296.0
+offset_bottom = 540.0
+horizontal_scroll_mode = 0
+
+[node name="ListBox" type="VBoxContainer" parent="MainPanel/LeftPanelBg/ListScroll" unique_id=338852768]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="Sprite2D" type="Sprite2D" parent="MainPanel/LeftPanelBg" unique_id=690009950]
+visible = false
+z_index = -1
+position = Vector2(154, 276)
+scale = Vector2(0.22, 0.30)
+texture = ExtResource("2_panel")
+
+[node name="ScrollBarDecor" type="VScrollBar" parent="MainPanel" unique_id=231013069]
+unique_name_in_owner = true
+z_index = 30
+layout_mode = 0
+offset_left = 362.0
+offset_top = 184.0
+offset_right = 378.0
+offset_bottom = 680.0
+mouse_default_cursor_shape = 2
+theme_override_styles/scroll = SubResource("sb_track")
+theme_override_styles/grabber = SubResource("sb_grab")
+
+[node name="Sprite2D" type="Sprite2D" parent="MainPanel/ScrollBarDecor" unique_id=1047545349]
+position = Vector2(8, 248)
+scale = Vector2(0.10, 0.50)
+texture = ExtResource("5_nktue")
+
+[node name="XVisual" type="Sprite2D" parent="MainPanel" unique_id=604741930]
+unique_name_in_owner = true
+position = Vector2(872, 52)
+scale = Vector2(0.082, 0.078)
+texture = ExtResource("4_close")
+
+[node name="StarTL" type="Sprite2D" parent="MainPanel"]
+position = Vector2(60, 98)
+scale = Vector2(0.10, 0.10)
+texture = ExtResource("6_star")
+
+[node name="StarTR" type="Sprite2D" parent="MainPanel"]
+position = Vector2(900, 98)
+scale = Vector2(0.10, 0.10)
+texture = ExtResource("6_star")
+
+[node name="Parchment" type="TextureRect" parent="MainPanel" unique_id=738358337]
+layout_mode = 0
+offset_left = 390.0
+offset_top = 126.0
+offset_right = 928.0
+offset_bottom = 680.0
+texture = ExtResource("3_parch")
+expand_mode = 1
+
+[node name="ParchMargin" type="MarginContainer" parent="MainPanel/Parchment" unique_id=454236843]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 112
+theme_override_constants/margin_top = 68
+theme_override_constants/margin_right = 112
+theme_override_constants/margin_bottom = 120
+
+[node name="DetailText" type="RichTextLabel" parent="MainPanel/Parchment/ParchMargin" unique_id=333577107]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/default_color = Color(0.24, 0.17, 0.12, 1)
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+autowrap_mode = 3
+scroll_active = true

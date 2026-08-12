@@ -1,3 +1,13 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Local source downloads retained for editing reference only. The game uses the
+# processed assets in the other asset folders, not these raw files.
+/assets/incoming/
+/assets/sprites/player/player_move_right.html
+/assets/sprites/player/source/
+
+# Godot import metadata for legacy portrait source files that are no longer in
+# the project. Current portraits live in portraits_pixel_v2/.
+/assets/characters/portraits/

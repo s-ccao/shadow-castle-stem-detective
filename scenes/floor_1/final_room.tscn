@@ -1,0 +1,131 @@
+[gd_scene format=3 uid="uid://t58mfjoy070j"]
+
+[ext_resource type="Script" uid="uid://btv1a4f2af0cc" path="res://scripts/final_room.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Texture2D" uid="uid://8p5gk06o6ksn" path="res://assets/backgrounds/final_room_arcane.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://bmupr4xqaqpc4" path="res://assets/props/FinalRoom/mrs_lin_fallen.png" id="4_mrs_body"]
+[ext_resource type="Texture2D" uid="uid://b46l6m5cirhyl" path="res://assets/props/FinalRoom/mrs_lin_final_notebook.png" id="5_notebook"]
+[ext_resource type="Texture2D" uid="uid://dno6baekbiid1" path="res://assets/props/FinalRoom/final_analysis_board.png" id="6_analysis_board"]
+[ext_resource type="Texture2D" uid="uid://bljysphf2ua52" path="res://assets/props/FinalRoom/knowledge_engine_orrery.png" id="7_knowledge_engine"]
+[ext_resource type="Texture2D" uid="uid://b72ktc5orswkh" path="res://assets/props/FinalRoom/final_vault_door.png" id="8_vault_door"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mrs_body"]
+size = Vector2(140, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_notebook"]
+size = Vector2(1254, 1024)
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_kscu3"]
+radius = 588.0156
+height = 1208.5186
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_d45s4"]
+radius = 484.854
+height = 969.708
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vault_door"]
+size = Vector2(993.5228, 1088.9015)
+
+[node name="FinalRoom" type="Node2D" unique_id=1819802266]
+script = ExtResource("1_script")
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=1689622432]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=1600809992 instance=ExtResource("2_player")]
+
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=2132523267]
+z_index = -100
+texture = ExtResource("3_bg")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=1504358929]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1671922988]
+position = Vector2(97, 41)
+polygon = PackedVector2Array(-100, -43, -99, 174, 169, 175, 174, 157, 243, 157, 245, 114, 262, 109, 375, 110, 381, 161, 430, 164, 440, 176, 798, 170, 827, 176, 831, 160, 875, 162, 878, 112, 902, 107, 980, 103, 1006, 105, 1008, 125, 1016, 156, 1076, 161, 1081, 174, 1196, 180, 1349, 179, 1347, -41)
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1318058978]
+polygon = PackedVector2Array(6, 7, 134, 7, 148, 305, 125, 301, 123, 538, 79, 540, 79, 571, 150, 577, 149, 605, 146, 738, 64, 742, 64, 790, 70, 829, 101, 841, 132, 860, 185, 867, 221, 870, 224, 1001, 0, 990)
+
+[node name="RightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1576868385]
+polygon = PackedVector2Array(1406, 12, 1444, 6, 1445, 994, 1053, 982, 1052, 881, 1066, 876, 1066, 864, 1265, 870, 1265, 752, 1256, 725, 1259, 579, 1369, 589, 1369, 545, 1227, 541, 1232, 333, 1325, 331, 1307, 309, 1297, 130)
+
+[node name="BottomLeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1225745325]
+polygon = PackedVector2Array(210, 879, 406, 879, 435, 877, 442, 840, 459, 838, 461, 726, 606, 752, 608, 801, 614, 1072, 451, 1069, 401, 1063, 410, 954, 208, 970)
+
+[node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1798161491]
+polygon = PackedVector2Array(1060, 883, 1022, 1080, 606, 1079, 604, 800, 889, 771, 896, 743, 926, 742, 929, 724, 982, 732, 982, 844, 1000, 844, 1011, 868, 1032, 878)
+
+[node name="MrsLinBody" type="Node2D" parent="." unique_id=1374417607]
+editor_description = "Mrs. Lin's independent final-room body visual using the newly imported pixel illustration. Interaction remains handled by final_room.gd."
+z_index = 8
+position = Vector2(445, 631)
+
+[node name="BodyVisual" type="Sprite2D" parent="MrsLinBody" unique_id=522058801]
+position = Vector2(-97.999985, -22.999998)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("4_mrs_body")
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="MrsLinBody" unique_id=2087001010]
+editor_description = "Mrs. Lin body blocking collision. Inspector-editable; final_room.gd does not overwrite this shape."
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MrsLinBody/FurnitureCollision" unique_id=2087001011]
+position = Vector2(-99, -20)
+shape = SubResource("RectangleShape2D_mrs_body")
+
+[node name="NotebookVisual" type="Sprite2D" parent="." unique_id=1998582925]
+editor_description = "Mrs. Lin's notebook visual. Interaction is handled by final_room.gd, not by the decorative Sprite2D."
+z_index = 9
+position = Vector2(306.00003, 653)
+scale = Vector2(0.03, 0.03)
+texture = ExtResource("5_notebook")
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="NotebookVisual" unique_id=2087001012]
+editor_description = "Notebook blocking collision. Inspector-editable; final_room.gd does not overwrite this shape."
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="NotebookVisual/FurnitureCollision" unique_id=2087001013]
+shape = SubResource("RectangleShape2D_notebook")
+
+[node name="FinalAnalysisBoardVisual" type="Sprite2D" parent="." unique_id=2087001001]
+editor_description = "可在 Inspector 手动调整的 Final Deduction 圆形分析盘视觉。位置和缩放不由脚本覆盖。"
+z_index = 7
+position = Vector2(725, 508.5)
+scale = Vector2(0.307815, 0.30223292)
+texture = ExtResource("6_analysis_board")
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="FinalAnalysisBoardVisual" unique_id=2087001014]
+editor_description = "Analysis board blocking collision. Inspector-editable; final_room.gd does not overwrite this shape."
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FinalAnalysisBoardVisual/FurnitureCollision" unique_id=2087001015]
+shape = SubResource("CapsuleShape2D_kscu3")
+
+[node name="KnowledgeEngineVisual" type="Sprite2D" parent="." unique_id=2087001002]
+editor_description = "可在 Inspector 手动调整的 Knowledge Engine 天文机械视觉。位置和缩放不由脚本覆盖。"
+z_index = 7
+position = Vector2(1083.715, 391.715)
+scale = Vector2(0.23718496, 0.26589313)
+texture = ExtResource("7_knowledge_engine")
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="KnowledgeEngineVisual" unique_id=2087001016]
+editor_description = "Knowledge Engine blocking collision. Inspector-editable; final_room.gd does not overwrite this shape."
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KnowledgeEngineVisual/FurnitureCollision" unique_id=2087001017]
+position = Vector2(-11.446487, 110.13825)
+scale = Vector2(1.0000002, 1)
+shape = SubResource("CapsuleShape2D_d45s4")
+
+[node name="VaultDoorVisual" type="Sprite2D" parent="." unique_id=2087001003]
+editor_description = "可在 Inspector 手动调整的 Final Room Vault Door 视觉。位置和缩放不由脚本覆盖。"
+z_index = 7
+position = Vector2(724, 133)
+scale = Vector2(0.13386713, 0.13867186)
+texture = ExtResource("8_vault_door")
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="VaultDoorVisual" unique_id=2087001018]
+editor_description = "Vault Door blocking collision. Inspector-editable; final_room.gd does not overwrite this shape."
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VaultDoorVisual/FurnitureCollision" unique_id=2087001019]
+position = Vector2(-11.205078, 68.50714)
+shape = SubResource("RectangleShape2D_vault_door")

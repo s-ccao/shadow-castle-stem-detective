@@ -1,0 +1,108 @@
+[gd_scene format=3 uid="uid://cgmsqwua2ot1v"]
+
+[ext_resource type="Script" uid="uid://cb53pe0yfn0gp" path="res://scripts/greenhouse_room.gd" id="1_8pe0b"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="1_teoya"]
+[ext_resource type="Texture2D" uid="uid://jc5of27q5vrb" path="res://assets/backgrounds/greenhouse_room_bg.png" id="2_8pe0b"]
+[ext_resource type="Texture2D" uid="uid://dx4bpy4kmm5aw" path="res://assets/props/Greenhouse/greenhouse_magic_planter.png" id="3_planter"]
+[ext_resource type="Texture2D" uid="uid://bv0w8806eh2mr" path="res://assets/props/Greenhouse/greenhouse_workbench.png" id="4_bench"]
+[ext_resource type="Texture2D" uid="uid://dqb1eh65lgxk" path="res://assets/props/Greenhouse/greenhouse_plant_pots_a.png" id="5_potsa"]
+[ext_resource type="Texture2D" uid="uid://d05phj4m0uvvo" path="res://assets/props/Greenhouse/greenhouse_plant_pots_b.png" id="6_potsb"]
+[ext_resource type="Texture2D" uid="uid://cvblhtq88y2y4" path="res://assets/props/Greenhouse/greenhouse_arch_door.png" id="7_arch"]
+
+[node name="GreenhouseRoom" type="Node2D" unique_id=1507825419]
+script = ExtResource("1_8pe0b")
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=-2084621618]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=902696120 instance=ExtResource("1_teoya")]
+
+[node name="MagicPlanter" type="Node2D" parent="Worldsort" unique_id=-2084621617]
+position = Vector2(515, 785)
+
+[node name="PlanterSprite" type="Sprite2D" parent="Worldsort/MagicPlanter" unique_id=-2084621616]
+position = Vector2(-204, -390)
+texture = ExtResource("3_planter")
+centered = false
+
+[node name="Workbench" type="Node2D" parent="Worldsort" unique_id=-2084621615]
+position = Vector2(515, 1081)
+
+[node name="WorkbenchSprite" type="Sprite2D" parent="Worldsort/Workbench" unique_id=-2084621614]
+position = Vector2(-147, -232)
+texture = ExtResource("4_bench")
+centered = false
+
+[node name="PlantPotsA" type="Node2D" parent="Worldsort" unique_id=-2084621613]
+position = Vector2(200, 1386)
+
+[node name="PlantPotsASprite" type="Sprite2D" parent="Worldsort/PlantPotsA" unique_id=-2084621612]
+position = Vector2(-141, -238.00009)
+scale = Vector2(0.41093752, 0.42226171)
+texture = ExtResource("5_potsa")
+centered = false
+
+[node name="PlantPotsB" type="Node2D" parent="Worldsort" unique_id=-2084621611]
+position = Vector2(820, 1386)
+
+[node name="PlantPotsBSprite" type="Sprite2D" parent="Worldsort/PlantPotsB" unique_id=-2084621610]
+position = Vector2(-114.99997, -237.99997)
+scale = Vector2(0.37812495, 0.4116608)
+texture = ExtResource("6_potsb")
+centered = false
+
+[node name="ArchDoor" type="Node2D" parent="Worldsort" unique_id=-2084621609]
+position = Vector2(512, 1515)
+
+[node name="ArchDoorSprite" type="Sprite2D" parent="Worldsort/ArchDoor" unique_id=-2084621608]
+position = Vector2(-135.00002, -208.00003)
+scale = Vector2(0.32619652, 0.32704407)
+texture = ExtResource("7_arch")
+centered = false
+
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=367104276]
+z_index = -100
+position = Vector2(-1.1641532e-10, 3)
+rotation = -0.0002898631
+texture = ExtResource("2_8pe0b")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=1763513064]
+collision_mask = 0
+
+[node name="TopRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1892169865]
+rotation = -0.0018762569
+polygon = PackedVector2Array(911.8634, 73.71102, 912.3568, 343.71243, 916.6025, 1278.7222, 858.61383, 1272.6134, 833.6889, 1232.5665, 791.7153, 1218.4877, 744.7041, 1224.3995, 723.6309, 1263.3601, 723.5146, 1325.36, 761.45825, 1355.4312, 809.4601, 1354.5214, 829.5219, 1321.5588, 849.4769, 1345.5963, 879.46185, 1353.6527, 915.4824, 1342.7202, 933.4092, 1381.7539, 889.36237, 1406.6713, 891.30237, 1438.6749, 993.3041, 1437.8663, 1012.37714, 1398.9021, 994.867, 71.86676)
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1992323701]
+position = Vector2(-3.0000002, -18.000002)
+rotation = -0.0035124056
+polygon = PackedVector2Array(31.806622, 55.11206, 111.78857, 60.39302, 108.87185, 321.3844, 175.76605, 351.61954, 232.83244, 332.8199, 189.70976, 367.66864, 93.66822, 379.33136, 88.55625, 1265.3188, 104.61235, 1249.3751, 145.66478, 1234.5193, 267.66403, 1234.9478, 287.52344, 1275.0178, 287.39697, 1311.0176, 276.23196, 1357.9786, 241.20757, 1364.8556, 197.2254, 1359.7012, 180.27118, 1346.6415, 152.14139, 1383.5428, 123.16264, 1377.4412, 108.07141, 1403.3882, 128.95888, 1435.4618, 131.69191, 1511.4719, 15.692637, 1511.0645, 29.029747, 1415.1107, 4.0755625, 1402.023)
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=748647754]
+position = Vector2(0, 29)
+polygon = PackedVector2Array(106, 12, 985, 9, 993, 37, 910, 39, 915, 310, 847, 322, 785, 276, 748, 303, 710, 283, 650, 281, 647, 318, 375, 322, 377, 285, 315, 284, 275, 310, 242, 280, 181, 308, 109, 276)
+
+[node name="LeftGate" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1495221498]
+polygon = PackedVector2Array(397, 468, 349, 532, 351, 562, 323, 565, 330, 599, 349, 601, 353, 649, 379, 687, 421, 727, 462, 743, 484, 746, 490, 777, 530, 777, 539, 744, 582, 738, 615, 712, 642, 686, 658, 669, 671, 646, 677, 624, 677, 610, 680, 599, 696, 600, 702, 588, 702, 580, 702, 567, 692, 560, 681, 558, 677, 538, 672, 522, 667, 510, 660, 499, 655, 490, 647, 480, 640, 471, 636, 464, 629, 457, 618, 448, 611, 441, 599, 434, 590, 430, 581, 424, 570, 421, 556, 415, 545, 414, 530, 411, 516, 411, 501, 411, 484, 413, 469, 417, 452, 422, 441, 427, 423, 438, 397, 456, 384, 472, 348, 531)
+
+[node name="LeftBottomWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1766091909]
+position = Vector2(795, -404)
+polygon = PackedVector2Array(123, 762, -9, 755, -34, 778, -29, 1509, -4, 1538, 134, 1542)
+
+[node name="BottomWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1856976931]
+position = Vector2(-5, 56)
+polygon = PackedVector2Array(145, 1377, 439, 1381, 429, 1442, 86, 1433)
+
+[node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=2003302561]
+position = Vector2(-25, 55)
+polygon = PackedVector2Array(634, 1374, 1013, 1383, 1009, 1438, 658, 1444)
+
+[node name="MainGate" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1082563934]
+polygon = PackedVector2Array(408, 1422, 416, 1379, 455, 1373, 601, 1376, 623, 1451, 623, 1496, 416, 1499)
+
+[node name="LeftTopPlant" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=275792846]
+polygon = PackedVector2Array(110, 361, 223, 356, 257, 379, 244, 1110, 218, 1140, 101, 1137, 88, 967)
+
+[node name="table" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=386441577]
+polygon = PackedVector2Array(383, 867, 383, 1015, 389, 1021, 393, 1049, 423, 1050, 424, 1033, 453, 1032, 451, 1045, 451, 1056, 458, 1066, 477, 1073, 491, 1073, 505, 1065, 507, 1058, 514, 1047, 514, 1033, 600, 1036, 601, 1049, 632, 1051, 632, 1022, 642, 1016, 640, 869, 623, 868)

@@ -1,0 +1,403 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" uid="uid://bb0nr64urfn77" path="res://scripts/door_puzzle_ui.gd" id="1_ui"]
+[ext_resource type="Texture2D" path="res://assets/sprites/wake_room/door_magical.png" id="2_door"]
+
+[sub_resource type="StyleBoxFlat" id="sb_panel"]
+bg_color = Color(0.105, 0.095, 0.145, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.62, 0.47, 0.22, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0.01, 0.005, 0.02, 0.78)
+shadow_size = 24
+shadow_offset = Vector2(0, 8)
+
+[sub_resource type="StyleBoxFlat" id="sb_question"]
+bg_color = Color(0.88, 0.78, 0.59, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.48, 0.34, 0.19, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.02, 0.01, 0.02, 0.34)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="sb_submit"]
+bg_color = Color(0.32, 0.22, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.80, 0.64, 0.29, 0.95)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.85, 0.57, 0.18, 0.22)
+shadow_size = 7
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="sb_submit_hover"]
+bg_color = Color(0.60, 0.42, 0.18, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.85, 0.5, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.96, 0.70, 0.25, 0.40)
+shadow_size = 10
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="sb_exit"]
+bg_color = Color(0.12, 0.12, 0.16, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.46, 0.43, 0.42, 0.9)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.01, 0.01, 0.02, 0.35)
+shadow_size = 6
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="sb_exit_hover"]
+bg_color = Color(0.25, 0.21, 0.18, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.60, 0.40, 0.95)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.70, 0.48, 0.22, 0.18)
+shadow_size = 7
+shadow_offset = Vector2(0, 2)
+
+[node name="DoorPuzzleUI" type="CanvasLayer"]
+layer = 60
+process_mode = 3
+script = ExtResource("1_ui")
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.01, 0.008, 0.02, 0.60)
+
+[node name="MainPanel" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="DialogFrame" type="PanelContainer" parent="MainPanel"]
+custom_minimum_size = Vector2(820, 640)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("sb_panel")
+
+[node name="Margin" type="MarginContainer" parent="MainPanel/DialogFrame"]
+layout_mode = 2
+theme_override_constants/margin_left = 44
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 44
+theme_override_constants/margin_bottom = 30
+
+[node name="Root" type="VBoxContainer" parent="MainPanel/DialogFrame/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleBar" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root"]
+layout_mode = 2
+
+[node name="TitleSpacerL" type="Control" parent="MainPanel/DialogFrame/Margin/Root/TitleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TitleLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root/TitleBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.70, 0.34, 1)
+theme_override_colors/font_shadow_color = Color(0.06, 0.03, 0.01, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_constants/outline_size = 2
+theme_override_colors/font_outline_color = Color(0.10, 0.07, 0.04, 0.9)
+theme_override_font_sizes/font_size = 28
+text = "KNOWLEDGE LOCK"
+horizontal_alignment = 1
+
+[node name="TitleSpacerR" type="Control" parent="MainPanel/DialogFrame/Margin/Root/TitleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Divider" type="ColorRect" parent="MainPanel/DialogFrame/Margin/Root"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.62, 0.47, 0.22, 0.82)
+
+[node name="CaseLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.50, 0.34, 1)
+theme_override_colors/font_shadow_color = Color(0.04, 0.02, 0.01, 0.8)
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 12
+text = "CASE FILE  //  KNOWLEDGE LOCK"
+horizontal_alignment = 1
+
+[node name="QuestionPanel" type="PanelContainer" parent="MainPanel/DialogFrame/Margin/Root"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("sb_question")
+
+[node name="QuestionInner" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root/QuestionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="DoorAccent" type="TextureRect" parent="MainPanel/DialogFrame/Margin/Root/QuestionPanel/QuestionInner"]
+layout_mode = 2
+custom_minimum_size = Vector2(76, 128)
+size_flags_vertical = 4
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+texture = ExtResource("2_door")
+
+[node name="QuestionText" type="RichTextLabel" parent="MainPanel/DialogFrame/Margin/Root/QuestionPanel/QuestionInner"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 128)
+theme_override_colors/default_color = Color(0.239216, 0.168627, 0.121569, 1)
+theme_override_font_sizes/normal_font_size = 20
+bbcode_enabled = true
+text = "Question"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SpacerTop" type="Control" parent="MainPanel/DialogFrame/Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 8)
+
+[node name="OptionsContainer" type="VBoxContainer" parent="MainPanel/DialogFrame/Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="OptionA" type="Button" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBox" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionA"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="IndicatorA" type="Panel" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionA/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="LabelA" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionA/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(36, 0)
+theme_override_colors/font_color = Color(0.788235, 0.658824, 0.298039, 1)
+theme_override_font_sizes/font_size = 20
+text = "A."
+vertical_alignment = 1
+
+[node name="TextLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionA/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.909804, 0.835294, 0.709804, 1)
+theme_override_font_sizes/font_size = 19
+text = "Option A"
+vertical_alignment = 1
+
+[node name="OptionB" type="Button" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBox" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionB"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="IndicatorB" type="Panel" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionB/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="LabelB" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionB/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(36, 0)
+theme_override_colors/font_color = Color(0.788235, 0.658824, 0.298039, 1)
+theme_override_font_sizes/font_size = 20
+text = "B."
+vertical_alignment = 1
+
+[node name="TextLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionB/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.909804, 0.835294, 0.709804, 1)
+theme_override_font_sizes/font_size = 19
+text = "Option B"
+vertical_alignment = 1
+
+[node name="OptionC" type="Button" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBox" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionC"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="IndicatorC" type="Panel" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionC/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="LabelC" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionC/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(36, 0)
+theme_override_colors/font_color = Color(0.788235, 0.658824, 0.298039, 1)
+theme_override_font_sizes/font_size = 20
+text = "C."
+vertical_alignment = 1
+
+[node name="TextLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionC/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.909804, 0.835294, 0.709804, 1)
+theme_override_font_sizes/font_size = 19
+text = "Option C"
+vertical_alignment = 1
+
+[node name="OptionD" type="Button" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBox" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="IndicatorD" type="Panel" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionD/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="LabelD" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionD/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(36, 0)
+theme_override_colors/font_color = Color(0.788235, 0.658824, 0.298039, 1)
+theme_override_font_sizes/font_size = 20
+text = "D."
+vertical_alignment = 1
+
+[node name="TextLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root/OptionsContainer/OptionD/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.909804, 0.835294, 0.709804, 1)
+theme_override_font_sizes/font_size = 19
+text = "Option D"
+vertical_alignment = 1
+
+[node name="SpacerBottom" type="Control" parent="MainPanel/DialogFrame/Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FeedbackLabel" type="Label" parent="MainPanel/DialogFrame/Margin/Root"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="ButtonRow" type="HBoxContainer" parent="MainPanel/DialogFrame/Margin/Root"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="SubmitBtn" type="Button" parent="MainPanel/DialogFrame/Margin/Root/ButtonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.831373, 0.768627, 0.658824, 1)
+theme_override_colors/font_hover_color = Color(1, 0.9, 0.7, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.95, 0.8, 1)
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("sb_submit")
+theme_override_styles/hover = SubResource("sb_submit_hover")
+theme_override_styles/pressed = SubResource("sb_submit_hover")
+text = "UNLOCK GATE"
+
+[node name="ExitBtn" type="Button" parent="MainPanel/DialogFrame/Margin/Root/ButtonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.58, 0.44, 1)
+theme_override_colors/font_hover_color = Color(0.86, 0.76, 0.58, 1)
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("sb_exit")
+theme_override_styles/hover = SubResource("sb_exit_hover")
+theme_override_styles/pressed = SubResource("sb_exit_hover")
+text = "STEP AWAY"

@@ -1,0 +1,31 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c58a4d"/>
+      <stop offset="0.45" stop-color="#704426"/>
+      <stop offset="1" stop-color="#392116"/>
+    </linearGradient>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2c96a"/>
+      <stop offset="0.5" stop-color="#9b6625"/>
+      <stop offset="1" stop-color="#4e2c12"/>
+    </linearGradient>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="128" cy="226" rx="76" ry="13" fill="#000" opacity=".55" filter="url(#glow)"/>
+  <path d="M48 75 Q128 51 208 75 L197 198 Q128 222 59 198 Z" fill="url(#leather)" stroke="#241209" stroke-width="9"/>
+  <path d="M48 75 Q128 51 208 75 L197 198 Q128 222 59 198 Z" fill="none" stroke="#e2ae5b" stroke-width="4" opacity=".95"/>
+  <path d="M58 91 Q128 111 198 91" fill="none" stroke="#b37b43" stroke-width="5" opacity=".7"/>
+  <path d="M65 174 Q128 194 191 174" fill="none" stroke="#160d09" stroke-width="7" opacity=".8"/>
+  <path d="M78 75 Q80 24 128 20 Q176 24 178 75" fill="none" stroke="url(#leather)" stroke-width="24"/>
+  <path d="M78 75 Q80 24 128 20 Q176 24 178 75" fill="none" stroke="#dca45b" stroke-width="4" opacity=".85"/>
+  <path d="M113 109 h30 l-5 39 -10 11 -10-11z" fill="url(#brass)" stroke="#35200e" stroke-width="5"/>
+  <circle cx="128" cy="128" r="9" fill="#20120b" stroke="#f1c663" stroke-width="4"/>
+  <path d="M95 161 Q128 179 161 161" fill="none" stroke="#dca45b" stroke-width="4" opacity=".9"/>
+  <path d="M51 80 L66 82 L62 105 L47 101 Z M205 80 L190 82 L194 105 L209 101 Z" fill="url(#brass)" stroke="#3c210d" stroke-width="4"/>
+  <circle cx="78" cy="87" r="5" fill="#f3d27b" filter="url(#glow)"/>
+  <circle cx="179" cy="87" r="4" fill="#9dcbff" filter="url(#glow)"/>
+</svg>

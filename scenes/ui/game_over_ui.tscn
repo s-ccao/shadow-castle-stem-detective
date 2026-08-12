@@ -1,0 +1,76 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/game_over_ui.gd" id="1_game_over"]
+[ext_resource type="Texture2D" path="res://assets/ui/screens/game_over_case_closed_record.png" id="2_art"]
+[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_normal.png" id="3_normal"]
+[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_hover.png" id="4_hover"]
+[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_pressed.png" id="5_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_disabled.png" id="6_disabled"]
+
+[node name="GameOverUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_game_over")
+button_normal_texture = ExtResource("3_normal")
+button_hover_texture = ExtResource("4_hover")
+button_pressed_texture = ExtResource("5_pressed")
+button_disabled_texture = ExtResource("6_disabled")
+
+[node name="GameOverArtwork" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_art")
+mouse_filter = 2
+
+[node name="GameOverTitle" type="Label" parent="."]
+offset_left = 300.0
+offset_top = 270.0
+offset_right = 724.0
+offset_bottom = 298.0
+visible = false
+mouse_filter = 2
+theme_override_colors/font_shadow_color = Color(0.12, 0.03, 0.2, 0.9)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 22
+text = "CASE CLOSED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContinueButton" type="Button" parent="."]
+offset_left = 380.0
+offset_top = 297.0
+offset_right = 643.0
+offset_bottom = 337.0
+pivot_offset = Vector2(131.5, 20)
+scale = Vector2(1, 1)
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+text = "Continue"
+
+[node name="ViewConclusionButton" type="Button" parent="."]
+offset_left = 380.0
+offset_top = 345.0
+offset_right = 643.0
+offset_bottom = 385.0
+pivot_offset = Vector2(131.5, 20)
+scale = Vector2(1, 1)
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+text = "View Conclusion"
+
+[node name="MainMenuButton" type="Button" parent="."]
+offset_left = 380.0
+offset_top = 393.0
+offset_right = 643.0
+offset_bottom = 433.0
+pivot_offset = Vector2(131.5, 20)
+scale = Vector2(1, 1)
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+text = "Main Menu"

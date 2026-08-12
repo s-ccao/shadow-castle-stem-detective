@@ -1,0 +1,96 @@
+[gd_scene format=3 uid="uid://ing68us84qhl"]
+
+[ext_resource type="Script" uid="uid://7o721wc1fads" path="res://scripts/start_ui.gd" id="1_start"]
+[ext_resource type="Texture2D" uid="uid://cmly7ujh43mo" path="res://assets/ui/screens/main_menu_case_file.png" id="2_art"]
+[ext_resource type="Texture2D" uid="uid://c4j70uh678eak" path="res://assets/ui/panels/button_states/button_normal.png" id="3_normal"]
+[ext_resource type="Texture2D" uid="uid://8bp4e2rv7xkb" path="res://assets/ui/panels/button_states/button_hover.png" id="4_hover"]
+[ext_resource type="Texture2D" uid="uid://yd16liks3wxg" path="res://assets/ui/panels/button_states/button_pressed.png" id="5_pressed"]
+[ext_resource type="Texture2D" uid="uid://cq5jkhbwnt3ua" path="res://assets/ui/panels/button_states/button_disabled.png" id="6_disabled"]
+
+[node name="StartUI" type="Control" unique_id=300500821]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_start")
+button_normal_texture = ExtResource("3_normal")
+button_hover_texture = ExtResource("4_hover")
+button_pressed_texture = ExtResource("5_pressed")
+button_disabled_texture = ExtResource("6_disabled")
+
+[node name="StartArtwork" type="TextureRect" parent="." unique_id=1607282251]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_art")
+
+[node name="StartTitle" type="Label" parent="." unique_id=700290901]
+visible = false
+layout_mode = 0
+offset_left = 300.0
+offset_top = 270.0
+offset_right = 724.0
+offset_bottom = 298.0
+theme_override_colors/font_shadow_color = Color(0.12, 0.03, 0.2, 0.9)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+text = "START INVESTIGATION"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StartGameButton" type="Button" parent="." unique_id=919375197]
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+layout_mode = 0
+offset_left = 385.0
+offset_top = 342.0
+offset_right = 610.0
+offset_bottom = 409.0
+pivot_offset = Vector2(112.5, 33.5)
+text = "Start Game"
+
+[node name="ContinueButton" type="Button" parent="." unique_id=1567757152]
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+layout_mode = 0
+offset_left = 385.0
+offset_top = 428.0
+offset_right = 610.0
+offset_bottom = 495.0
+pivot_offset = Vector2(112.5, 33.5)
+text = "Continue"
+
+[node name="SettingsButton" type="Button" parent="." unique_id=2082591330]
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+layout_mode = 0
+offset_left = 385.0
+offset_top = 514.0
+offset_right = 610.0
+offset_bottom = 581.0
+pivot_offset = Vector2(112.5, 33.5)
+text = "Settings"
+
+[node name="LanguageButton" type="Button" parent="." unique_id=1797954511]
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+layout_mode = 0
+offset_left = 385.0
+offset_top = 600.0
+offset_right = 610.0
+offset_bottom = 667.0
+pivot_offset = Vector2(112.5, 33.5)
+text = "Language"
+
+[node name="QuitButton" type="Button" parent="." unique_id=1519306383]
+editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
+layout_mode = 0
+offset_left = 385.0
+offset_top = 686.0
+offset_right = 610.0
+offset_bottom = 753.0
+pivot_offset = Vector2(112.5, 33.5)
+text = "Quit"

@@ -1,0 +1,425 @@
+[gd_scene format=3 uid="uid://b5yg3tkb7wwxm"]
+
+[ext_resource type="Script" uid="uid://qeudnlt0n65c" path="res://scripts/library_room.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Texture2D" uid="uid://c2c2sx7bllwff" path="res://assets/backgrounds/library_archive.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://bmvif2rx6vixq" path="res://assets/props/Library/library_storage_cabinet.png" id="4_store"]
+[ext_resource type="Texture2D" uid="uid://hyfgjyacglid" path="res://assets/props/Library/library_tall_cabinet_a.png" id="5_talla"]
+[ext_resource type="Texture2D" uid="uid://bdem4i2j2w443" path="res://assets/props/Library/library_tall_cabinet_b.png" id="6_tallb"]
+[ext_resource type="Texture2D" uid="uid://d0taar8p2sdf2" path="res://assets/props/Library/library_chest_cabinet.png" id="7_chest"]
+[ext_resource type="Texture2D" uid="uid://do5scl6i83vxk" path="res://assets/props/Library/library_writing_desk.png" id="8_desk"]
+[ext_resource type="Texture2D" uid="uid://d3qjbsgmksxd3" path="res://assets/props/LibraryUpper/library_upper_panel.png" id="9_upper_panel"]
+[ext_resource type="Texture2D" uid="uid://cr41lphdym1dv" path="res://assets/props/LibraryUpper/library_upper_shelf.png" id="10_upper_shelf"]
+[ext_resource type="Texture2D" uid="uid://7xik8plt6eh3" path="res://assets/props/LibraryUpper/library_upper_chest.png" id="11_upper_chest"]
+[ext_resource type="Texture2D" uid="uid://sagpaojnqx44" path="res://assets/props/LibraryUpper/library_upper_drawers.png" id="12_upper_drawers"]
+[ext_resource type="Texture2D" uid="uid://dcqpoowhbydhw" path="res://assets/props/LibraryUpper/library_upper_apothecary.png" id="13_upper_apothecary"]
+[ext_resource type="Texture2D" uid="uid://cy2t0wds4wk25" path="res://assets/props/LibraryLower/library_lower_panel_a.png" id="14_lower_panel_a"]
+[ext_resource type="Texture2D" uid="uid://cwrib1706mejt" path="res://assets/props/LibraryLower/library_lower_panel_b.png" id="15_lower_panel_b"]
+[ext_resource type="Texture2D" uid="uid://cxxmow7bk2p2x" path="res://assets/props/LibraryLower/library_lower_storage.png" id="16_lower_storage"]
+[ext_resource type="Texture2D" uid="uid://b0lrjcnf646nl" path="res://assets/props/LibraryLower/library_lower_globe_desk.png" id="17_lower_globe"]
+[ext_resource type="Texture2D" uid="uid://dge8oxwj56muy" path="res://assets/props/LibraryLower/library_lower_study_table.png" id="18_lower_study"]
+[ext_resource type="Texture2D" uid="uid://b4vaubjvhcj7v" path="res://assets/props/LibraryTopLeft/library_topleft_chest_a.png" id="19_topleft_chest"]
+[ext_resource type="Texture2D" uid="uid://d1po5cdyuv6qi" path="res://assets/props/LibraryTopLeft/library_topleft_cabinet_b.png" id="20_topleft_b"]
+[ext_resource type="Texture2D" uid="uid://dy44olrkk4xkw" path="res://assets/props/LibraryTopLeft/library_topleft_cabinet_c.png" id="21_topleft_c"]
+[ext_resource type="Texture2D" uid="uid://ctvcxqdyrs1hi" path="res://assets/props/LibraryTopLeft/library_topleft_cabinet_d.png" id="22_topleft_d"]
+[ext_resource type="Texture2D" uid="uid://dwo57nulwuhoe" path="res://assets/props/LibraryTopLeft/library_topleft_tall_case.png" id="23_topleft_tall"]
+[ext_resource type="Texture2D" path="res://assets/props/Library/ashford_archive_book.png" id="24_archive_book"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_storage"]
+size = Vector2(278.92776, 108.98288)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_talla"]
+size = Vector2(72.56647, 144.62198)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_tallb"]
+size = Vector2(83.15611, 169.9065)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_chest"]
+size = Vector2(151.73598, 94.454384)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_desk"]
+size = Vector2(142.39954, 113.41487)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_upper_panel"]
+size = Vector2(71.304695, 156.62502)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_upper_shelf"]
+size = Vector2(161.1085, 160.307)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_upper_chest"]
+size = Vector2(140.6251, 152.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_upper_drawers"]
+size = Vector2(178.95532, 85.94655)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_upper_apothecary"]
+size = Vector2(263.37695, 136)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_lower_panel_a"]
+size = Vector2(86.47235, 197.34387)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_lower_panel_b"]
+size = Vector2(90.65164, 218.353)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_lower_storage"]
+size = Vector2(143.49788, 143.86636)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_lower_globe"]
+size = Vector2(110.33974, 97.004684)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_lower_study"]
+size = Vector2(161.2512, 184.3086)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_topleft_chest"]
+size = Vector2(169.31427, 125.22406)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_topleft_b"]
+size = Vector2(173.83807, 169.42265)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_topleft_c"]
+size = Vector2(173.99359, 126.36845)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_topleft_d"]
+size = Vector2(195.96649, 44.33331)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_topleft_tall"]
+size = Vector2(84.94028, 165.99998)
+
+[node name="LibraryRoom" type="Node2D" unique_id=2036445557]
+script = ExtResource("1_script")
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=2036191187]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=891097735 instance=ExtResource("2_player")]
+
+[node name="StorageCabinet" type="Node2D" parent="Worldsort" unique_id=587635752]
+position = Vector2(1057, 786)
+
+[node name="StorageCabinetSprite" type="Sprite2D" parent="Worldsort/StorageCabinet" unique_id=314110012]
+position = Vector2(-147.00003, -361)
+scale = Vector2(0.27005363, 0.25392297)
+texture = ExtResource("4_store")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/StorageCabinet" unique_id=1396739845]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/StorageCabinet/FurnitureCollision" unique_id=390221731]
+position = Vector2(3.5361328, -141.50854)
+shape = SubResource("RectangleShape2D_furn_storage")
+
+[node name="TallCabinetA" type="Node2D" parent="Worldsort" unique_id=1777889348]
+position = Vector2(1165.5, 933)
+
+[node name="TallCabinetASprite" type="Sprite2D" parent="Worldsort/TallCabinetA" unique_id=1630097799]
+position = Vector2(-79.5, -275)
+scale = Vector2(0.16772135, 0.16576247)
+texture = ExtResource("5_talla")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TallCabinetA" unique_id=1714403783]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TallCabinetA/FurnitureCollision" unique_id=1908692034]
+position = Vector2(-0.7832031, -94.689026)
+shape = SubResource("RectangleShape2D_furn_talla")
+
+[node name="TallCabinetB" type="Node2D" parent="Worldsort" unique_id=738746923]
+position = Vector2(889, 966)
+
+[node name="TallCabinetBSprite" type="Sprite2D" parent="Worldsort/TallCabinetB" unique_id=1792940973]
+position = Vector2(-91, -293)
+scale = Vector2(0.1919831, 0.17661239)
+texture = ExtResource("6_tallb")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TallCabinetB" unique_id=443231067]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TallCabinetB/FurnitureCollision" unique_id=1596851481]
+position = Vector2(-2.578064, -128.04675)
+shape = SubResource("RectangleShape2D_furn_tallb")
+
+[node name="ChestCabinet" type="Node2D" parent="Worldsort" unique_id=52913054]
+position = Vector2(1323, 971)
+
+[node name="ChestCabinetSprite" type="Sprite2D" parent="Worldsort/ChestCabinet" unique_id=1030110242]
+position = Vector2(-102, -214)
+scale = Vector2(0.11499427, 0.24126272)
+texture = ExtResource("7_chest")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/ChestCabinet" unique_id=1342518014]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/ChestCabinet/FurnitureCollision" unique_id=1260805591]
+position = Vector2(1.868042, -59.772827)
+shape = SubResource("RectangleShape2D_furn_chest")
+
+[node name="WritingDesk" type="Node2D" parent="Worldsort" unique_id=1056036536]
+position = Vector2(1309.5, 690)
+
+[node name="WritingDeskSprite" type="Sprite2D" parent="Worldsort/WritingDesk" unique_id=571858499]
+position = Vector2(-112.5, -165)
+scale = Vector2(0.16375548, 0.14410478)
+texture = ExtResource("8_desk")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/WritingDesk" unique_id=2125135688]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/WritingDesk/FurnitureCollision" unique_id=2010456634]
+position = Vector2(-9.300293, -58.29254)
+shape = SubResource("RectangleShape2D_furn_desk")
+
+[node name="UpperPanelCabinet" type="Node2D" parent="Worldsort" unique_id=327508768]
+position = Vector2(980, 320)
+
+[node name="UpperPanelCabinetSprite" type="Sprite2D" parent="Worldsort/UpperPanelCabinet" unique_id=342975205]
+position = Vector2(-212.99998, -46.000004)
+scale = Vector2(0.16113284, 0.15364584)
+texture = ExtResource("9_upper_panel")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/UpperPanelCabinet" unique_id=734569659]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/UpperPanelCabinet/FurnitureCollision" unique_id=602866334]
+position = Vector2(-129.65234, 104.3125)
+shape = SubResource("RectangleShape2D_furn_upper_panel")
+
+[node name="UpperShelfCabinet" type="Node2D" parent="Worldsort" unique_id=178567995]
+position = Vector2(1060, 220)
+
+[node name="UpperShelfCabinetSprite" type="Sprite2D" parent="Worldsort/UpperShelfCabinet" unique_id=2019367729]
+position = Vector2(-165.00002, -187)
+scale = Vector2(0.14194578, 0.1491228)
+texture = ExtResource("10_upper_shelf")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/UpperShelfCabinet" unique_id=1271204444]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/UpperShelfCabinet/FurnitureCollision" unique_id=376864805]
+position = Vector2(-75.92905, -99.68859)
+shape = SubResource("RectangleShape2D_furn_upper_shelf")
+
+[node name="UpperChestCabinet" type="Node2D" parent="Worldsort" unique_id=534916198]
+position = Vector2(1100, 390)
+
+[node name="UpperChestCabinetSprite" type="Sprite2D" parent="Worldsort/UpperChestCabinet" unique_id=1456771589]
+position = Vector2(63.00008, -238)
+scale = Vector2(0.14992017, 0.14593302)
+texture = ExtResource("11_upper_chest")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/UpperChestCabinet" unique_id=1309713615]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/UpperChestCabinet/FurnitureCollision" unique_id=1696866852]
+position = Vector2(156.4003, -151.0969)
+shape = SubResource("RectangleShape2D_furn_upper_chest")
+
+[node name="UpperDrawerCabinet" type="Node2D" parent="Worldsort" unique_id=955646097]
+position = Vector2(1015, 540)
+
+[node name="UpperDrawerCabinetSprite" type="Sprite2D" parent="Worldsort/UpperDrawerCabinet" unique_id=159571150]
+position = Vector2(-73, -409)
+scale = Vector2(0.18341309, 0.18261561)
+texture = ExtResource("12_upper_drawers")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/UpperDrawerCabinet" unique_id=1430069302]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/UpperDrawerCabinet/FurnitureCollision" unique_id=906220025]
+position = Vector2(42.52234, -256.02673)
+shape = SubResource("RectangleShape2D_furn_upper_drawers")
+
+[node name="UpperApothecaryCabinet" type="Node2D" parent="Worldsort" unique_id=233765340]
+position = Vector2(1160, 540)
+
+[node name="UpperApothecaryCabinetSprite" type="Sprite2D" parent="Worldsort/UpperApothecaryCabinet" unique_id=767040647]
+position = Vector2(-202.99992, -217)
+scale = Vector2(0.18922642, 0.20073664)
+texture = ExtResource("13_upper_apothecary")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/UpperApothecaryCabinet" unique_id=556243991]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/UpperApothecaryCabinet/FurnitureCollision" unique_id=1779257050]
+position = Vector2(-64.68848, -105)
+shape = SubResource("RectangleShape2D_furn_upper_apothecary")
+
+[node name="LowerPanelA" type="Node2D" parent="Worldsort" unique_id=751059405]
+position = Vector2(320, 650)
+
+[node name="LowerPanelASprite" type="Sprite2D" parent="Worldsort/LowerPanelA" unique_id=1292792546]
+position = Vector2(111.99998, 23.000011)
+scale = Vector2(0.18263811, 0.17080045)
+texture = ExtResource("14_lower_panel_a")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/LowerPanelA" unique_id=1725293812]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/LowerPanelA/FurnitureCollision" unique_id=1046949409]
+position = Vector2(191.76382, 172.67194)
+shape = SubResource("RectangleShape2D_furn_lower_panel_a")
+
+[node name="LowerPanelB" type="Node2D" parent="Worldsort" unique_id=1831020992]
+position = Vector2(460, 650)
+
+[node name="LowerPanelBSprite" type="Sprite2D" parent="Worldsort/LowerPanelB" unique_id=777343521]
+position = Vector2(-291, -14.000015)
+scale = Vector2(0.16459978, 0.15727173)
+texture = ExtResource("15_lower_panel_b")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/LowerPanelB" unique_id=889993225]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/LowerPanelB/FurnitureCollision" unique_id=1433715981]
+position = Vector2(-220.32582, 133.17651)
+shape = SubResource("RectangleShape2D_furn_lower_panel_b")
+
+[node name="LowerStorage" type="Node2D" parent="Worldsort" unique_id=163902906]
+position = Vector2(350, 790)
+
+[node name="LowerStorageSprite" type="Sprite2D" parent="Worldsort/LowerStorage" unique_id=508021968]
+position = Vector2(-89, -289)
+scale = Vector2(0.1868759, 0.19251338)
+texture = ExtResource("16_lower_storage")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/LowerStorage" unique_id=1526084971]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/LowerStorage/FurnitureCollision" unique_id=1017019612]
+position = Vector2(38.25107, -162.06683)
+shape = SubResource("RectangleShape2D_furn_lower_storage")
+
+[node name="LowerGlobeDesk" type="Node2D" parent="Worldsort" unique_id=1491463794]
+position = Vector2(470, 790)
+
+[node name="LowerGlobeDeskSprite" type="Sprite2D" parent="Worldsort/LowerGlobeDesk" unique_id=1932174709]
+position = Vector2(-464, -465)
+scale = Vector2(0.16108452, 0.15071768)
+texture = ExtResource("17_lower_globe")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/LowerGlobeDesk" unique_id=1553644388]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/LowerGlobeDesk/FurnitureCollision" unique_id=67975830]
+position = Vector2(-370.16986, -365.49765)
+shape = SubResource("RectangleShape2D_furn_lower_globe")
+
+[node name="LowerStudyTable" type="Node2D" parent="Worldsort" unique_id=1234601940]
+position = Vector2(350, 930)
+
+[node name="LowerStudyTableSprite" type="Sprite2D" parent="Worldsort/LowerStudyTable" unique_id=489213331]
+position = Vector2(256, -489)
+scale = Vector2(0.17394955, 0.17322241)
+texture = ExtResource("18_lower_study")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/LowerStudyTable" unique_id=1940418352]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/LowerStudyTable/FurnitureCollision" unique_id=1469987439]
+position = Vector2(358.3693, -371.7284)
+shape = SubResource("RectangleShape2D_furn_lower_study")
+
+[node name="TopLeftChestA" type="Node2D" parent="Worldsort" unique_id=909191663]
+position = Vector2(200, 240)
+
+[node name="TopLeftChestASprite" type="Sprite2D" parent="Worldsort/TopLeftChestA" unique_id=1009466806]
+position = Vector2(63.999992, 80.99999)
+scale = Vector2(0.17384368, 0.17623605)
+texture = ExtResource("19_topleft_chest")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TopLeftChestA" unique_id=1985244094]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TopLeftChestA/FurnitureCollision" unique_id=962305179]
+position = Vector2(173.34286, 203.61203)
+shape = SubResource("RectangleShape2D_furn_topleft_chest")
+
+[node name="TopLeftCabinetB" type="Node2D" parent="Worldsort" unique_id=862298807]
+position = Vector2(300, 380)
+
+[node name="TopLeftCabinetBSprite" type="Sprite2D" parent="Worldsort/TopLeftCabinetB" unique_id=1911582613]
+position = Vector2(44.999996, -362)
+scale = Vector2(0.18102074, 0.16586922)
+texture = ExtResource("20_topleft_b")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TopLeftCabinetB" unique_id=817912334]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TopLeftCabinetB/FurnitureCollision" unique_id=1469438541]
+position = Vector2(157.08096, -258.71133)
+shape = SubResource("RectangleShape2D_furn_topleft_b")
+
+[node name="TopLeftCabinetC" type="Node2D" parent="Worldsort" unique_id=200790863]
+position = Vector2(300, 520)
+
+[node name="TopLeftCabinetCSprite" type="Sprite2D" parent="Worldsort/TopLeftCabinetC" unique_id=1815586579]
+position = Vector2(-259, -376)
+scale = Vector2(0.15231259, 0.15789473)
+texture = ExtResource("21_topleft_c")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TopLeftCabinetC" unique_id=1034903665]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TopLeftCabinetC/FurnitureCollision" unique_id=1058174211]
+position = Vector2(-164.9968, -256.81577)
+shape = SubResource("RectangleShape2D_furn_topleft_c")
+
+[node name="TopLeftCabinetD" type="Node2D" parent="Worldsort" unique_id=1741304632]
+position = Vector2(440, 430)
+
+[node name="TopLeftCabinetDSprite" type="Sprite2D" parent="Worldsort/TopLeftCabinetD" unique_id=1834975237]
+position = Vector2(-159, -299)
+scale = Vector2(0.18660288, 0.18500797)
+texture = ExtResource("22_topleft_d")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TopLeftCabinetD" unique_id=1255218324]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TopLeftCabinetD/FurnitureCollision" unique_id=431837444]
+position = Vector2(-41.983246, -127.83334)
+shape = SubResource("RectangleShape2D_furn_topleft_d")
+
+[node name="TopLeftTallCase" type="Node2D" parent="Worldsort" unique_id=230219417]
+position = Vector2(180, 600)
+
+[node name="TopLeftTallCaseSprite" type="Sprite2D" parent="Worldsort/TopLeftTallCase" unique_id=948017610]
+position = Vector2(299.99997, -331)
+scale = Vector2(0.16347243, 0.15163472)
+texture = ExtResource("23_topleft_tall")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/TopLeftTallCase" unique_id=1044360232]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/TopLeftTallCase/FurnitureCollision" unique_id=417123842]
+position = Vector2(373.52985, -176)
+shape = SubResource("RectangleShape2D_furn_topleft_tall")
+
+[node name="ArchiveBookVisual" type="Sprite2D" parent="."]
+position = Vector2(724, 560)
+scale = Vector2(0.08, 0.08)
+z_index = 12
+texture = ExtResource("24_archive_book")
+visible = false
+editor_description = "Ashford Archive book visual. It appears after the RGB archive record is successfully copied."
+
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=1117630293]
+z_index = -100
+texture = ExtResource("3_bg")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=1079769563]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=229453184]
+polygon = PackedVector2Array(77, 48, 74, 167, 233, 170, 244, 174, 234, 197, 238, 230, 288, 234, 286, 170, 292, 200, 480, 195, 547, 199, 548, 232, 574, 260, 670, 264, 673, 273, 701, 276, 777, 275, 777, 266, 870, 265, 906, 233, 903, 206, 1101, 197, 1326, 196, 1330, 235, 1369, 233, 1424, 219, 1423, 44)
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=686445076]
+polygon = PackedVector2Array(47, 949, 24, 950, 25, 754, 4, 754, 5, 258, 23, 259, 24, 72, 56, 72, 59, 38, 80, 40, 80, 160, 45, 163, 44, 273, 48, 350, 46, 472, 85, 469, 82, 527, 76, 535, 75, 576, 91, 585, 87, 652, 33, 653, 45, 672, 87, 672, 84, 775, 84, 828, 105, 834, 106, 947)
+
+[node name="RightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=36541057]
+polygon = PackedVector2Array(1372, 40, 1372, 195, 1381, 270, 1382, 316, 1391, 309, 1388, 355, 1378, 366, 1378, 398, 1412, 403, 1399, 418, 1381, 417, 1384, 453, 1414, 452, 1415, 522, 1381, 526, 1381, 647, 1422, 649, 1422, 737, 1401, 736, 1401, 954, 1401, 977, 1434, 973, 1443, 253, 1435, 44)
+
+[node name="BottomLeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=25863483]
+polygon = PackedVector2Array(659, 941, 659, 1036, 625, 1034, 625, 1059, 474, 1059, 478, 1038, 24, 1030, 25, 949, 115, 945, 115, 968, 505, 966, 503, 946, 590, 951, 593, 921, 619, 921, 623, 945, 663, 940)
+
+[node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=697848978]
+polygon = PackedVector2Array(1418, 961, 1422, 1031, 1361, 1032, 755, 1081, 764, 940, 827, 922, 827, 953, 892, 955, 892, 944, 913, 944, 914, 966, 1331, 969, 1335, 955, 1422, 961)

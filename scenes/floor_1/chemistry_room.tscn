@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://dx7hmb52ah0k"]
+
+[ext_resource type="Script" uid="uid://dkxmaltbod2gx" path="res://scenes/floor_1/chemistry_room.gd" id="1_4j5a8"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_dhced"]
+[ext_resource type="Texture2D" uid="uid://xku1e7df1omd" path="res://assets/backgrounds/chemistry_room_alchemy_lab.png" id="2_t35nj"]
+[ext_resource type="Texture2D" uid="uid://ig04wng7i8at" path="res://assets/props/Chemistry/chemistry_lab_table_overlay_transparent.png" id="3_table_overlay"]
+[ext_resource type="Texture2D" uid="uid://dw006wlloigwe" path="res://assets/props/Chemistry/chemistry_cabinet_overlay_transparent.png" id="4_cabinet_overlay"]
+
+[node name="ChemistryRoom" type="Node2D" unique_id=1571698997]
+script = ExtResource("1_4j5a8")
+
+[node name="Background" type="Sprite2D" parent="." unique_id=1544759406]
+z_index = -100
+texture = ExtResource("2_t35nj")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=1741176737]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=159876597]
+polygon = PackedVector2Array(113, 4, 1301, 2, 1302, 228, 1141, 222, 1222, 172, 893, 167, 893, 185, 824, 186, 825, 123, 671, 121, 663, 183, 601, 187, 602, 141, 40, 126)
+
+[node name="BottomWallRight" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1343208449]
+polygon = PackedVector2Array(587, 1184, 610, 1158, 658, 1132, 690, 1133, 720, 1134, 749, 1137, 757, 1145, 771, 1153, 785, 1169, 853, 1170, 852, 1152, 1299, 1134, 1301, 1206, 577, 1202, 583, 1180)
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1621828888]
+position = Vector2(26, 3)
+polygon = PackedVector2Array(-17, 5, 95, 6, 160, 637, 140, 680, 113, 773, 99, 1207, -10, 1203)
+
+[node name="RightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=607561906]
+polygon = PackedVector2Array(1245, 0, 1305, 0, 1305, 1206, 1245, 1206)
+
+[node name="LeftUpperShelves" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1234337206]
+polygon = PackedVector2Array(135, 60, 244, 59, 247, 555, 217, 556, 213, 594, 219, 615, 184, 617, 43, 601)
+
+[node name="TopLeftShelves" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1409373789]
+polygon = PackedVector2Array(260, 45, 585, 45, 585, 235, 260, 235)
+
+[node name="TopRightShelves" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1454969280]
+polygon = PackedVector2Array(903, 56, 984, 57, 989, 33, 1194, 49, 1202, 176, 1179, 211, 1175, 228, 1135, 229, 1131, 273, 1110, 328, 1057, 314, 1031, 302, 997, 302, 988, 228, 925, 230, 916, 242, 906, 242)
+
+[node name="RightShelves" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=618149234]
+polygon = PackedVector2Array(1144, 214, 1258, 216, 1250, 766, 1141, 764)
+
+[node name="LeftLowerFurniture" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=301363883]
+polygon = PackedVector2Array(145, 671, 249, 671, 252, 732, 279, 725, 298, 719, 315, 727, 315, 746, 315, 774, 318, 799, 318, 799, 327, 802, 319, 812, 319, 827, 305, 827, 305, 854, 311, 862, 310, 872, 304, 875, 311, 892, 292, 890, 268, 890, 247, 891, 251, 943, 257, 954, 345, 954, 358, 961, 358, 1150, 420, 1150, 421, 1043, 488, 1045, 500, 1090, 576, 1093, 576, 1151, 581, 1199, 125, 1196)
+
+[node name="BottomLeftStorage" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1475610348]
+
+[node name="BottomRightStorage" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=594706861]
+polygon = PackedVector2Array(1245, 1010, 1183, 1002, 1176, 1043, 1143, 1043, 1127, 1016, 1107, 1038, 1097, 1051, 1039, 1047, 1014, 1052, 953, 1052, 942, 1047, 942, 1117, 867, 1125, 855, 1158, 1307, 1166)
+
+[node name="AlchemyTableCollision" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1887493217]
+polygon = PackedVector2Array(375, 350, 860, 350, 860, 690, 375, 690)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=611862888]
+
+[node name="Foreground" type="Node2D" parent="." unique_id=82228193]
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=649071902]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=1350265598 instance=ExtResource("2_dhced")]
+
+[node name="ChemistryLabTable" type="Node2D" parent="Worldsort" unique_id=1425768095]
+position = Vector2(620, 680)
+
+[node name="TableOverlay" type="Sprite2D" parent="Worldsort/ChemistryLabTable" unique_id=686375654]
+position = Vector2(-274, -392)
+scale = Vector2(0.38, 0.38)
+texture = ExtResource("3_table_overlay")
+centered = false
+
+[node name="ChemistryPotionCabinet" type="Node2D" parent="Worldsort" unique_id=1105994553]
+position = Vector2(422, 248)
+
+[node name="CabinetOverlay" type="Sprite2D" parent="Worldsort/ChemistryPotionCabinet" unique_id=2080500206]
+position = Vector2(-195, -250)
+scale = Vector2(0.27002764, 0.25230205)
+texture = ExtResource("4_cabinet_overlay")
+centered = false

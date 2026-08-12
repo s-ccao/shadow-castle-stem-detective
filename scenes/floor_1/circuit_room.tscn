@@ -1,0 +1,114 @@
+[gd_scene format=3 uid="uid://dkb406lwtdsrg"]
+
+[ext_resource type="Script" uid="uid://c8x8wpl64s7y0" path="res://scripts/circuit_room.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Texture2D" uid="uid://msjqyfr1y3md" path="res://assets/backgrounds/circuit_room_workshop.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://beh7qyy8kadta" path="res://assets/props/CircuitRoom/circuit_workbench.png" id="4_wb"]
+[ext_resource type="Texture2D" uid="uid://dbmyh1mndlerf" path="res://assets/props/CircuitRoom/circuit_cabinet.png" id="5_cab"]
+[ext_resource type="Texture2D" uid="uid://cfo46x44rwnhf" path="res://assets/props/CircuitRoom/circuit_generator.png" id="6_gen"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_workbench"]
+size = Vector2(381.2557, 295.813)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_cabinet"]
+size = Vector2(196.6634, 260.5056)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_furn_generator"]
+size = Vector2(401.4139, 439)
+
+[node name="CircuitRoom" type="Node2D" unique_id=1584012955]
+script = ExtResource("1_script")
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=1985988608]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=1835840520 instance=ExtResource("2_player")]
+
+[node name="Workbench" type="Node2D" parent="Worldsort" unique_id=926557849]
+position = Vector2(635, 722)
+
+[node name="WorkbenchSprite" type="Sprite2D" parent="Worldsort/Workbench" unique_id=1465532188]
+position = Vector2(-222.00002, -296)
+scale = Vector2(0.30820993, 0.30878183)
+texture = ExtResource("4_wb")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/Workbench" unique_id=482540628]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/Workbench/FurnitureCollision" unique_id=72046422]
+position = Vector2(1.91449, -130.493)
+shape = SubResource("RectangleShape2D_furn_workbench")
+
+[node name="Cabinet" type="Node2D" parent="Worldsort" unique_id=1306280305]
+position = Vector2(195, 692)
+
+[node name="CabinetSprite" type="Sprite2D" parent="Worldsort/Cabinet" unique_id=1320363778]
+position = Vector2(-98.9, -309)
+scale = Vector2(0.19394813, 0.18795499)
+texture = ExtResource("5_cab")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/Cabinet" unique_id=246791625]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/Cabinet/FurnitureCollision" unique_id=2133611201]
+position = Vector2(1.759079, -171.6049)
+shape = SubResource("RectangleShape2D_furn_cabinet")
+
+[node name="Generator" type="Node2D" parent="Worldsort" unique_id=909012443]
+position = Vector2(1120, 755)
+
+[node name="GeneratorSprite" type="Sprite2D" parent="Worldsort/Generator" unique_id=565396402]
+position = Vector2(-220.00003, -382)
+scale = Vector2(0.3564955, 0.3695286)
+texture = ExtResource("6_gen")
+centered = false
+
+[node name="FurnitureCollision" type="StaticBody2D" parent="Worldsort/Generator" unique_id=1801420873]
+
+[node name="FurnitureShape" type="CollisionShape2D" parent="Worldsort/Generator/FurnitureCollision" unique_id=897572288]
+position = Vector2(13.86102, -162.5)
+shape = SubResource("RectangleShape2D_furn_generator")
+
+[node name="SwitchLeft" type="Node2D" parent="Worldsort" unique_id=301000001]
+position = Vector2(210, 535)
+
+[node name="SwitchPlate" type="Polygon2D" parent="Worldsort/SwitchLeft" unique_id=301000002]
+color = Color(0.20, 0.21, 0.20, 0)
+polygon = PackedVector2Array(-18, -12, 18, -12, 18, 12, -18, 12)
+
+[node name="SwitchRight" type="Node2D" parent="Worldsort" unique_id=301000003]
+position = Vector2(1210, 595)
+
+[node name="SwitchPlate" type="Polygon2D" parent="Worldsort/SwitchRight" unique_id=301000004]
+color = Color(0.20, 0.21, 0.20, 0)
+polygon = PackedVector2Array(-18, -12, 18, -12, 18, 12, -18, 12)
+
+[node name="MasterSwitch" type="Node2D" parent="Worldsort" unique_id=301000005]
+position = Vector2(705, 595)
+
+[node name="SwitchPlate" type="Polygon2D" parent="Worldsort/MasterSwitch" unique_id=301000006]
+color = Color(0.20, 0.21, 0.20, 0)
+polygon = PackedVector2Array(-20, -14, 20, -14, 20, 14, -20, 14)
+
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=1776840033]
+z_index = -100
+texture = ExtResource("3_bg")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=1939290748]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1714390248]
+polygon = PackedVector2Array(59, 27, 75, 227, 225, 219, 230, 262, 1071, 276, 1073, 214, 1429, 214, 1427, 22)
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=205288727]
+polygon = PackedVector2Array(45, 24, 73, 232, 73, 964, 44, 1001, 3, 969, 12, 47)
+
+[node name="RightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1731719902]
+polygon = PackedVector2Array(1406, 31, 1371, 197, 1391, 949, 1447, 951, 1428, 19)
+
+[node name="BottomLeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1884563616]
+polygon = PackedVector2Array(72, 960, 153, 966, 532, 958, 532, 929, 635, 916, 632, 1058, 16, 1062, 24, 979)
+
+[node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=869028076]
+polygon = PackedVector2Array(762, 920, 809, 926, 828, 930, 851, 930, 860, 968, 1441, 951, 1438, 1065, 747, 1068)

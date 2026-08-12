@@ -2,8 +2,127 @@
 
 [ext_resource type="Script" uid="uid://bc1sfy3aibkqb" path="res://scripts/wake_room.gd" id="1_tw4yt"]
 [ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="2_efw36"]
+[ext_resource type="Texture2D" uid="uid://bh0sx5e6vagco" path="res://assets/backgrounds/wake_room_bg.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://57y543pr2nvt" path="res://assets/sprites/wake_room/bed.png" id="4_bed"]
+[ext_resource type="Texture2D" uid="uid://dcevlbqbbgyqj" path="res://assets/sprites/wake_room/desk.png" id="5_desk"]
+[ext_resource type="Texture2D" uid="uid://b643c63x8pwjv" path="res://assets/sprites/wake_room/bookshelf.png" id="6_shelf"]
+[ext_resource type="Texture2D" uid="uid://cruvduhjaym2g" path="res://assets/sprites/wake_room/door_magical.png" id="7_door"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gfywe"]
+size = Vector2(134, 286)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_iyeo1"]
+size = Vector2(226, 158)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mx3pa"]
+size = Vector2(179, 180)
 
 [node name="WakeRoom" type="Node2D" unique_id=1009537797]
 script = ExtResource("1_tw4yt")
 
 [node name="player" parent="." unique_id=1350265598 instance=ExtResource("2_efw36")]
+
+[node name="WakeRoomBackground" type="Sprite2D" parent="." unique_id=1805902600]
+z_index = -100
+position = Vector2(-5.9604645e-08, 1.9999999)
+scale = Vector2(0.707183, 0.707183)
+texture = ExtResource("3_bg")
+centered = false
+
+[node name="Props" type="Node2D" parent="." unique_id=770894202]
+
+[node name="Bed" type="Area2D" parent="Props" unique_id=963410084]
+position = Vector2(503, 354)
+
+[node name="Visual" type="Sprite2D" parent="Props/Bed" unique_id=1909777341]
+position = Vector2(-312.99997, 79.999985)
+scale = Vector2(0.30696616, 0.3330078)
+texture = ExtResource("4_bed")
+
+[node name="Hotspot" type="CollisionShape2D" parent="Props/Bed" unique_id=1431100357]
+position = Vector2(-318, 73)
+shape = SubResource("RectangleShape2D_gfywe")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Props/Bed" unique_id=1783041986]
+polygon = PackedVector2Array(-384, -73, -249, -71, -254, 218, -381, 217)
+
+[node name="InteractionFocusPoint" type="Node2D" parent="Props/Bed" unique_id=1832761827]
+position = Vector2(-313, 80)
+scale = Vector2(3, 3)
+
+[node name="Desk" type="Area2D" parent="Props" unique_id=910359219]
+position = Vector2(778, 212)
+
+[node name="Visual" type="Sprite2D" parent="Props/Desk" unique_id=1521245116]
+position = Vector2(-73.000015, 19.999996)
+scale = Vector2(0.18515627, 0.2100586)
+texture = ExtResource("5_desk")
+
+[node name="Hotspot" type="CollisionShape2D" parent="Props/Desk" unique_id=639471551]
+position = Vector2(-72, 22)
+shape = SubResource("RectangleShape2D_iyeo1")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Props/Desk" unique_id=1616781545]
+position = Vector2(-20, 235)
+polygon = PackedVector2Array(-168, -288, 55, -284, 66, -135, -167, -136)
+
+[node name="InteractionFocusPoint" type="Node2D" parent="Props/Desk" unique_id=727253714]
+position = Vector2(-73, 20)
+scale = Vector2(2, 2)
+
+[node name="Bookshelf" type="Area2D" parent="Props" unique_id=324797663]
+position = Vector2(283, 177)
+
+[node name="Visual" type="Sprite2D" parent="Props/Bookshelf" unique_id=1727969528]
+position = Vector2(36.999996, 13.999998)
+scale = Vector2(0.17, 0.17)
+texture = ExtResource("6_shelf")
+
+[node name="Hotspot" type="CollisionShape2D" parent="Props/Bookshelf" unique_id=2073732139]
+position = Vector2(42.5, 12)
+shape = SubResource("RectangleShape2D_mx3pa")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Props/Bookshelf" unique_id=234354154]
+position = Vector2(3, 5)
+polygon = PackedVector2Array(-54, -86, 109, -79, 132, 94, -25, 95)
+
+[node name="InteractionFocusPoint" type="Node2D" parent="Props/Bookshelf" unique_id=1161655631]
+position = Vector2(37, 14)
+scale = Vector2(2, 2)
+
+[node name="Door" type="Area2D" parent="Props" unique_id=1313899806]
+
+[node name="Visual" type="Sprite2D" parent="Props/Door" unique_id=171336777]
+position = Vector2(902, 450)
+scale = Vector2(0.19547988, 0.17361893)
+texture = ExtResource("7_door")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Props/Door" unique_id=1987748575]
+polygon = PackedVector2Array(865, 357, 929, 303, 1021, 306, 1018, 544, 960, 551, 905, 598, 872, 587, 868, 559, 860, 529, 852, 409)
+
+[node name="Collisions" type="Node2D" parent="." unique_id=929005949]
+
+[node name="WallTop" type="StaticBody2D" parent="Collisions" unique_id=740967464]
+position = Vector2(512, 32)
+
+[node name="Shape" type="CollisionPolygon2D" parent="Collisions/WallTop" unique_id=384205818]
+polygon = PackedVector2Array(-457, 11, 439, 18, 367, 222, 342, 207, 349, 187, 53, 191, 52, 218, 16, 218, 15, 201, -75, 202, -77, 228, -94, 229, -269, 229, -271, 247, -365, 247, -359, 187, -427, 71, -462, 71)
+
+[node name="WallBottom" type="StaticBody2D" parent="Collisions" unique_id=2003432700]
+position = Vector2(512, 736)
+
+[node name="Shape" type="CollisionPolygon2D" parent="Collisions/WallBottom" unique_id=20160324]
+polygon = PackedVector2Array(-505, -14, -128, -11, -129, -78, 112, -78, 114, -11, 129, -11, 129, -25, 184, -24, 188, -14, 293, -13, 266, -22, 260, -107, 276, -133, 378, -131, 386, -66, 391, -60, 396, -22, 443, -57, 447, 24, -505, 23)
+
+[node name="WallLeft" type="StaticBody2D" parent="Collisions" unique_id=498765933]
+position = Vector2(32, 384)
+
+[node name="Shape" type="CollisionPolygon2D" parent="Collisions/WallLeft" unique_id=132597996]
+position = Vector2(-22, -16)
+polygon = PackedVector2Array(48, -262, 79, -261, 140, -150, 133, -90, 110, 202, 238, 205, 238, 278, 239, 285, 248, 285, 251, 295, 262, 303, 254, 354, -2, 353)
+
+[node name="WallRight" type="StaticBody2D" parent="Collisions" unique_id=1484154049]
+position = Vector2(992, 384)
+
+[node name="Shape" type="CollisionPolygon2D" parent="Collisions/WallRight" unique_id=903117100]
+polygon = PackedVector2Array(-46, -332, -116, -121, -118, -41, -81, 323, -34, 374, 25, 371, -22, -342, -78, -346, -77, -332)

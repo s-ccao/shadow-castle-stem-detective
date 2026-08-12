@@ -1,0 +1,100 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/clue_list_item.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_note_listitem_normal_trim.png" id="2_normal"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_note_listitem_hover_trim.png" id="3_hover"]
+
+[sub_resource type="StyleBoxFlat" id="sb_hover_glow"]
+bg_color = Color(0.42, 0.32, 0.16, 0.10)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.92, 0.72, 0.36, 0.62)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0.88, 0.58, 0.20, 0.20)
+shadow_size = 5
+shadow_offset = Vector2(0, 1)
+
+[sub_resource type="StyleBoxFlat" id="sb_selected_glow"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_color = Color(0.93, 0.70, 0.30, 0.88)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0.90, 0.58, 0.20, 0.22)
+shadow_size = 5
+shadow_offset = Vector2(0, 0)
+
+[node name="ClueListItem" type="TextureButton"]
+custom_minimum_size = Vector2(0, 76)
+size_flags_horizontal = 3
+ignore_texture_size = true
+stretch_mode = 0
+texture_normal = ExtResource("2_normal")
+texture_hover = ExtResource("3_hover")
+texture_pressed = ExtResource("2_normal")
+script = ExtResource("1_item")
+
+[node name="Layout" type="HBoxContainer" parent="."]
+mouse_filter = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="Icon" type="TextureRect" parent="Layout"]
+unique_name_in_owner = true
+mouse_filter = 2
+layout_mode = 2
+custom_minimum_size = Vector2(42, 42)
+size_flags_vertical = 4
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Layout"]
+unique_name_in_owner = true
+mouse_filter = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.94, 0.90, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.06, 0.04, 0.02, 0.82)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 14
+text = "Clue"
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="HoverGlow" type="Panel" parent="."]
+visible = false
+mouse_filter = 2
+z_index = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("sb_hover_glow")
+
+[node name="SelectedGlow" type="Panel" parent="."]
+visible = false
+mouse_filter = 2
+z_index = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("sb_selected_glow")

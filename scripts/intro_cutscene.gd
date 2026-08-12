@@ -17,7 +17,7 @@ var pages := [
 	},
 	{
 		"title": "The Night of the Case",
-		"body": "Tonight, something went wrong.\n\nA crime scene was staged. The lights failed. Strange clues appeared in locked rooms."
+		"body": "Tonight, something went wrong.\n\nThe lights failed. Strange clues appeared in locked rooms, and someone may still be moving inside the castle."
 	},
 	{
 		"title": "The Darkness",
@@ -25,11 +25,11 @@ var pages := [
 	},
 	{
 		"title": "You Wake Up",
-		"body": "You wake inside the castle with no clear memory of how you arrived.\n\nNearby, Dr. Lin is waiting."
+		"body": "You wake inside the castle with no clear memory of how you arrived.\n\nMrs. Lin is missing. Only a locked room, a letter, and the trail she left behind remain."
 	},
 	{
-		"title": "Dr. Lin",
-		"body": "Dr. Lin understands the castle's science.\n\nBut she cannot solve the case alone."
+		"title": "Mrs. Lin's Last Note",
+		"body": "\"When you read this, I may already be dead. Do not come looking for me until you have learned the castle's rules.\"\n\nHer investigation is now yours."
 	},
 	{
 		"title": "Your Investigation Begins",
@@ -214,6 +214,12 @@ func skip_cutscene():
 
 
 func go_to_game():
+	if GameState.is_game_started():
+		GameState.save_room_checkpoint(
+			"res://scenes/wake_room.tscn",
+			"wake_room",
+			"wake_room_start"
+		)
 	get_tree().change_scene_to_file("res://scenes/wake_room.tscn")
 func animate_page_transition():
 	if text_panel == null:

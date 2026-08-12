@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://dqw54b3l1argm"]
+
+[ext_resource type="Script" uid="uid://dkxmaltbod2gx" path="res://scenes/floor_1/chemistry_room.gd" id="1_y4ghu"]
+[ext_resource type="Texture2D" uid="uid://chutdx2coebv4" path="res://assets/backgrounds/chemistry_room_base.png" id="2_mw7pn"]
+[ext_resource type="PackedScene" uid="uid://clcku2tayfutp" path="res://scenes/player.tscn" id="3_7ls8t"]
+[ext_resource type="Texture2D" uid="uid://dln6tl8barjib" path="res://assets/props/Chemistry/chemistry_lab_table.png" id="4_8644y"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_n0hjq"]
+size = Vector2(262, 48.5)
+
+[node name="ChemistryRoom" type="Node2D" unique_id=1571698997]
+script = ExtResource("1_y4ghu")
+
+[node name="Background" type="Sprite2D" parent="." unique_id=1544759406]
+z_index = -100
+texture = ExtResource("2_mw7pn")
+centered = false
+
+[node name="RoomCollisions" type="StaticBody2D" parent="." unique_id=1741176737]
+collision_mask = 0
+
+[node name="LeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=213467110]
+polygon = PackedVector2Array(23, 14, 117, 15, 122, 175, 190, 174, 228, 264, 230, 290, 222, 290, 220, 349, 225, 355, 224, 380, 218, 378, 220, 433, 213, 432, 210, 595, 224, 611, 228, 626, 235, 640, 240, 641, 238, 742, 238, 933, 149, 929, 148, 955, 152, 1067, 31, 1069)
+
+[node name="TopWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1372983606]
+polygon = PackedVector2Array(120, 15, 121, 173, 187, 171, 221, 263, 367, 272, 376, 287, 512, 292, 517, 262, 549, 262, 553, 269, 632, 270, 630, 262, 822, 264, 830, 270, 904, 271, 905, 262, 940, 263, 943, 293, 1011, 292, 1018, 259, 1030, 260, 1030, 280, 1044, 277, 1049, 264, 1074, 265, 1076, 274, 1098, 274, 1101, 263, 1140, 262, 1136, 378, 1217, 379, 1223, 353, 1231, 351, 1230, 264, 1242, 228, 1256, 169, 1331, 172, 1376, 55, 1376, 13)
+
+[node name="BottomLeftWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=684064692]
+polygon = PackedVector2Array(148, 958, 417, 959, 419, 953, 544, 953, 546, 907, 628, 910, 628, 931, 652, 932, 653, 1070, 626, 1071, 625, 1061, 555, 1066, 552, 1049, 152, 1050)
+
+[node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=180480114]
+polygon = PackedVector2Array(795, 935, 794, 1067, 821, 1069, 823, 1061, 895, 1064, 897, 1051, 1288, 1051, 1297, 1066, 1422, 1072, 1429, 877, 1315, 898, 1316, 957, 1027, 958, 1024, 952, 903, 952, 901, 909, 820, 909, 819, 933)
+
+[node name="RightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=925524801]
+polygon = PackedVector2Array(1378, 12, 1332, 173, 1256, 170, 1231, 263, 1232, 349, 1223, 355, 1218, 389, 1235, 384, 1236, 456, 1240, 595, 1224, 614, 1220, 632, 1213, 641, 1213, 933, 1300, 931, 1300, 957, 1317, 957, 1316, 900, 1428, 879, 1431, 228, 1419, 14)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=611862888]
+
+[node name="Foreground" type="Node2D" parent="." unique_id=82228193]
+
+[node name="Worldsort" type="Node2D" parent="." unique_id=649071902]
+y_sort_enabled = true
+
+[node name="player" parent="Worldsort" unique_id=1350265598 instance=ExtResource("3_7ls8t")]
+
+[node name="ChemistryLabTable" type="Node2D" parent="Worldsort" unique_id=226333466]
+
+[node name="Sprite2D" type="Sprite2D" parent="Worldsort/ChemistryLabTable" unique_id=905256499]
+position = Vector2(702, 558)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("4_8644y")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Worldsort/ChemistryLabTable" unique_id=1374203467]
+
+[node name="TableCollisionShape" type="CollisionShape2D" parent="Worldsort/ChemistryLabTable/StaticBody2D" unique_id=1067245674]
+position = Vector2(705, 595.25)
+shape = SubResource("RectangleShape2D_n0hjq")
