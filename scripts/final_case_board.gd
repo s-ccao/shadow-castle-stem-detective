@@ -12,6 +12,13 @@ signal true_case_closed
 
 const TABLE_TEXTURE: Texture2D = preload("res://assets/props/FinalRoom/final_analysis_board.png")
 
+# The final board uses the game's 1024×768 reference layout. The table receives
+# the whole central lane, while both archive drawers keep a readable safe inset.
+# Slot positions are normalized to this rect so the dial and its interaction
+# targets stay aligned whenever the table ratio changes.
+const TABLE_POSITION := Vector2(242.0, 92.0)
+const TABLE_SIZE := Vector2(520.0, 520.0)
+
 const SOURCE_SPECS: Array[Dictionary] = [
 	{
 		"id": "fake_red_stain",
@@ -125,11 +132,11 @@ const CONCLUSION_SPECS: Array[Dictionary] = [
 ]
 
 const SLOT_SPECS: Array[Dictionary] = [
-	{"id": "method", "en": "METHOD", "zh": "手段", "position": Vector2(382.0, 136.0)},
-	{"id": "route", "en": "ROUTE", "zh": "路线", "position": Vector2(570.0, 218.0)},
-	{"id": "blackout", "en": "BLACKOUT", "zh": "断电", "position": Vector2(570.0, 430.0)},
-	{"id": "opportunity", "en": "OPPORTUNITY", "zh": "时机", "position": Vector2(382.0, 532.0)},
-	{"id": "link", "en": "LINK", "zh": "关联", "position": Vector2(254.0, 372.0)},
+	{"id": "method", "en": "METHOD", "zh": "手段", "anchor": Vector2(0.50, 0.12)},
+	{"id": "route", "en": "ROUTE", "zh": "路线", "anchor": Vector2(0.73, 0.21)},
+	{"id": "blackout", "en": "BLACKOUT", "zh": "断电", "anchor": Vector2(0.89, 0.50)},
+	{"id": "opportunity", "en": "OPPORTUNITY", "zh": "时机", "anchor": Vector2(0.50, 0.86)},
+	{"id": "link", "en": "LINK", "zh": "关联", "anchor": Vector2(0.11, 0.50)},
 ]
 
 const SEALED_ARCHIVE_SPECS: Array[Dictionary] = [
@@ -138,21 +145,21 @@ const SEALED_ARCHIVE_SPECS: Array[Dictionary] = [
 		"slot": "pressure",
 		"en": "BUTLER'S PRESSURE",
 		"zh": "管家的压力",
-		"position": Vector2(294.0, 208.0),
+		"anchor": Vector2(0.11, 0.50),
 	},
 	{
 		"id": "sealed_archive_instruction",
 		"slot": "instruction",
 		"en": "FORGED ORDER",
 		"zh": "伪造指令",
-		"position": Vector2(512.0, 208.0),
+		"anchor": Vector2(0.50, 0.12),
 	},
 	{
 		"id": "sealed_archive_lin_decision",
 		"slot": "lin_decision",
 		"en": "DR. LIN'S DECISION",
 		"zh": "林博士的决定",
-		"position": Vector2(402.0, 488.0),
+		"anchor": Vector2(0.89, 0.50),
 	},
 ]
 
@@ -282,10 +289,13 @@ func _build_ui() -> void:
 	var table := TextureRect.new()
 	table.name = "AnalysisTableArtwork"
 	table.texture = TABLE_TEXTURE
-	table.position = Vector2(250.0, 108.0)
-	table.size = Vector2(498.0, 498.0)
+	table.position = TABLE_POSITION
+	table.size = TABLE_SIZE
 	table.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	table.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# The analysis board is authored at 1254px. Scale the entire dial into its
+	# central lane; KEEP_ASPECT_CENTERED preserves its native size and only shows
+	# a cropped quadrant at the 1024×768 reference layout.
+	table.stretch_mode = TextureRect.STRETCH_SCALE
 	table.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(table)
 
@@ -293,8 +303,8 @@ func _build_ui() -> void:
 		var slot := Button.new()
 		var slot_id := str(spec["id"])
 		slot.name = "ConclusionSlot_" + slot_id
-		slot.position = spec["position"] as Vector2
 		slot.size = Vector2(112.0, 42.0)
+		slot.position = _slot_position(spec["anchor"] as Vector2, slot.size)
 		slot.add_theme_font_size_override("font_size", 11)
 		slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		slot.clip_text = false
@@ -423,8 +433,8 @@ func _build_ui() -> void:
 
 		var archive_slot := Button.new()
 		archive_slot.name = "SealedArchiveSlot_" + str(archive["slot"])
-		archive_slot.position = archive["position"] as Vector2
 		archive_slot.size = Vector2(142.0, 48.0)
+		archive_slot.position = _slot_position(archive["anchor"] as Vector2, archive_slot.size)
 		archive_slot.add_theme_font_size_override("font_size", 11)
 		archive_slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		archive_slot.clip_text = false
@@ -796,6 +806,10 @@ func _same_ids(first: Array[String], second: Array) -> bool:
 
 func _localized(spec: Dictionary, _fallback: String) -> String:
 	return str(spec.get("zh" if CaseLocale.is_chinese() else "en", _fallback))
+
+
+func _slot_position(table_anchor: Vector2, slot_size: Vector2) -> Vector2:
+	return TABLE_POSITION + (TABLE_SIZE * table_anchor) - (slot_size * 0.5)
 
 
 func _text(english: String, chinese: String) -> String:
