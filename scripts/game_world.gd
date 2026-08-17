@@ -129,8 +129,18 @@ var circuit_note_position := Vector2.ZERO
 var circuit_note_node: ColorRect
 var circuit_door_position := Vector2.ZERO
 var discovered_fog_cells := {}
-var visible_fog_cells := {}
-var visible_fog_distances := {}
+
+# 迷雾每帧重算的缓存。has_world_line_of_sight() 的两个端点都会量化到 16px
+# 格子，所以对固定的玩家格，"哪些格子看得见"是个常量——只在玩家跨格或视野
+# 半径变化时重算一次，逐帧只做距离衰减，画面结果与逐帧全量重算完全一致。
+var _fog_visible_cells: Array[Vector2i] = []
+var _fog_cache_cell := Vector2i(-9999, -9999)
+var _fog_cache_radius := -1.0
+# 已探索区域的暗影底图：只在发现新格子或追逐模式切换时重绘，
+# 逐帧用一次原生 copy_from() 代替上千次 set_pixel()。
+var _fog_base_image: Image
+var _fog_base_dirty := true
+var _fog_base_chase_mode := false
 @onready var enemy = get_node_or_null("CastleGuardian")
 var follow_camera: Camera2D
 
@@ -848,33 +858,10 @@ func update_fog_of_war():
 			fog_texture.update(fog_image)
 		return
 
-	visible_fog_cells.clear()
-	visible_fog_distances.clear()
-
 	if fog_image == null:
 		return
 
-	var player_world = player.global_position
-
-	# 基础全黑。
-	fog_image.fill(Color(0.0, 0.0, 0.0, 1.0))
-
-	# 曾经发现过、但当前视线不可达的格子：暗影轮廓。
-	# 追逐模式：走过的地方不留记忆，保持全黑（只有手电筒范围可见）。
-	if not GameState.chase_mode:
-		for key: Variant in discovered_fog_cells.keys():
-			var parts: PackedStringArray = str(key).split(",")
-			if parts.size() != 2:
-				continue
-			var cell_x: int = int(parts[0])
-			var cell_y: int = int(parts[1])
-			if cell_x < 0 or cell_x >= FOG_COLS or cell_y < 0 or cell_y >= FOG_ROWS:
-				continue
-			fog_image.set_pixel(
-				cell_x,
-				cell_y,
-				Color(0.0, 0.0, 0.0, DISCOVERED_DARKNESS)
-			)
+	var player_world: Vector2 = player.global_position
 
 	# 追逐模式：手电筒式视野（更小的半径、更暗的边缘）。
 	# Vision Potion 生效时扩大视野——药水降低追逐难度。
@@ -890,35 +877,87 @@ func update_fog_of_war():
 			clear_radius = 160.0
 			edge_darkness = 0.55
 
-	var min_x = int(max(0, (player_world.x - vision_radius) / FOG_CELL_SIZE))
-	var max_x = int(min(FOG_COLS - 1, (player_world.x + vision_radius) / FOG_CELL_SIZE))
-	var min_y = int(max(0, (player_world.y - vision_radius) / FOG_CELL_SIZE))
-	var max_y = int(min(FOG_ROWS - 1, (player_world.y + vision_radius) / FOG_CELL_SIZE))
+	# 底图：全黑 + 曾经发现过但当前视线不可达的格子（暗影轮廓）。
+	# 追逐模式下走过的地方不留记忆，保持全黑。
+	if GameState.chase_mode != _fog_base_chase_mode:
+		_fog_base_chase_mode = GameState.chase_mode
+		_fog_base_dirty = true
+	if _fog_base_dirty:
+		_rebuild_fog_base_image()
+	fog_image.copy_from(_fog_base_image)
 
-	for y in range(min_y, max_y + 1):
-		for x in range(min_x, max_x + 1):
-			var fog_cell = Vector2i(x, y)
-			var target_world = fog_cell_to_world_center(fog_cell)
-			var distance = player_world.distance_to(target_world)
+	var player_cell := Vector2i(
+		int(player_world.x / FOG_CELL_SIZE),
+		int(player_world.y / FOG_CELL_SIZE)
+	)
+	if player_cell != _fog_cache_cell or not is_equal_approx(vision_radius, _fog_cache_radius):
+		_fog_cache_cell = player_cell
+		_fog_cache_radius = vision_radius
+		_rebuild_fog_visibility(player_cell, vision_radius)
 
-			if distance > vision_radius:
-				continue
+	for fog_cell: Vector2i in _fog_visible_cells:
+		var distance: float = player_world.distance_to(
+			fog_cell_to_world_center(fog_cell)
+		)
+		if distance > vision_radius:
+			continue
 
-			if has_world_line_of_sight(player_world, target_world):
-				var key = fog_key(fog_cell)
-				visible_fog_cells[key] = true
-				visible_fog_distances[key] = distance
-				discovered_fog_cells[key] = true
+		if not discovered_fog_cells.has(fog_cell):
+			discovered_fog_cells[fog_cell] = true
+			_fog_base_dirty = true
 
-				var edge_amount = 0.0
-				if distance > clear_radius:
-					edge_amount = (distance - clear_radius) / (vision_radius - clear_radius)
-					edge_amount = clamp(edge_amount, 0.0, 1.0)
+		var edge_amount: float = 0.0
+		if distance > clear_radius:
+			edge_amount = (distance - clear_radius) / (vision_radius - clear_radius)
+			edge_amount = clampf(edge_amount, 0.0, 1.0)
 
-				var alpha = edge_amount * edge_darkness
-				fog_image.set_pixel(x, y, Color(0.0, 0.0, 0.0, alpha))
+		fog_image.set_pixel(
+			fog_cell.x,
+			fog_cell.y,
+			Color(0.0, 0.0, 0.0, edge_amount * edge_darkness)
+		)
 
 	fog_texture.update(fog_image)
+
+
+func _rebuild_fog_base_image() -> void:
+	_fog_base_dirty = false
+	if _fog_base_image == null:
+		_fog_base_image = Image.create(
+			FOG_COLS,
+			FOG_ROWS,
+			false,
+			Image.FORMAT_RGBA8
+		)
+	_fog_base_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	if GameState.chase_mode:
+		return
+	var discovered_color := Color(0.0, 0.0, 0.0, DISCOVERED_DARKNESS)
+	for cell: Vector2i in discovered_fog_cells:
+		if cell.x < 0 or cell.x >= FOG_COLS or cell.y < 0 or cell.y >= FOG_ROWS:
+			continue
+		_fog_base_image.set_pixel(cell.x, cell.y, discovered_color)
+
+
+func _rebuild_fog_visibility(player_cell: Vector2i, vision_radius: float) -> void:
+	# 端点都量化到格子，所以用玩家格中心投射与用玩家精确坐标投射结果相同。
+	# 候选框比视野半径多放一格，保证玩家在格内任意位置移动时都不会漏格，
+	# 精确的圆形裁剪交给逐帧的距离判断。
+	_fog_visible_cells.clear()
+	var cell_reach: int = int(ceilf(vision_radius / float(FOG_CELL_SIZE))) + 1
+	var min_x: int = maxi(0, player_cell.x - cell_reach)
+	var max_x: int = mini(FOG_COLS - 1, player_cell.x + cell_reach)
+	var min_y: int = maxi(0, player_cell.y - cell_reach)
+	var max_y: int = mini(FOG_ROWS - 1, player_cell.y + cell_reach)
+	var player_center: Vector2 = fog_cell_to_world_center(player_cell)
+	for y: int in range(min_y, max_y + 1):
+		for x: int in range(min_x, max_x + 1):
+			var fog_cell := Vector2i(x, y)
+			if has_world_line_of_sight(
+				player_center,
+				fog_cell_to_world_center(fog_cell)
+			):
+				_fog_visible_cells.append(fog_cell)
 
 
 func build_sight_blockers() -> void:
@@ -926,6 +965,8 @@ func build_sight_blockers() -> void:
 	# 出 16px 视线遮挡格：手电筒视野被真实墙壁遮挡，
 	# 没有碰撞的装饰物不再挡视线。
 	sight_blockers.clear()
+	# 遮挡格变了，缓存的可见集合必须作废。
+	_fog_cache_cell = Vector2i(-9999, -9999)
 
 	var wall_root: Node = get_node_or_null("WallCollisions")
 	if wall_root == null:
@@ -969,7 +1010,7 @@ func build_sight_blockers() -> void:
 						gy * FOG_CELL_SIZE + FOG_CELL_SIZE / 2.0
 					)
 					if Geometry2D.is_point_in_polygon(center, world_poly):
-						sight_blockers[fog_key(Vector2i(gx, gy))] = true
+						sight_blockers[Vector2i(gx, gy)] = true
 
 
 func has_world_line_of_sight(start_world: Vector2, end_world: Vector2) -> bool:
@@ -989,7 +1030,7 @@ func has_world_line_of_sight(start_world: Vector2, end_world: Vector2) -> bool:
 	if start_cell == end_cell:
 		return true
 
-	if sight_blockers.has(fog_key(end_cell)):
+	if sight_blockers.has(end_cell):
 		return true
 
 	var x0: int = start_cell.x
@@ -1009,7 +1050,7 @@ func has_world_line_of_sight(start_world: Vector2, end_world: Vector2) -> bool:
 		# 小于 16px 的视野格，贴墙站立时格心会落在墙内被光栅化成遮挡格；
 		# 若在这里就判定受阻，玩家会对几乎所有方向失去视野（整屏变黑）。
 		if not (x0 == start_cell.x and y0 == start_cell.y):
-			if sight_blockers.has(fog_key(Vector2i(x0, y0))):
+			if sight_blockers.has(Vector2i(x0, y0)):
 				return false
 		var e2: int = 2 * err
 		if e2 >= dy:
@@ -1122,8 +1163,6 @@ func cell_key(cell: Vector2i) -> String:
 	return str(cell.x) + "," + str(cell.y)
 
 
-func fog_key(fog_cell: Vector2i) -> String:
-	return str(fog_cell.x) + "," + str(fog_cell.y)
 func build_navigation_grid():
 	astar_grid.region = Rect2i(0, 0, MAP_WIDTH, MAP_HEIGHT)
 	astar_grid.cell_size = Vector2(CELL_SIZE, CELL_SIZE)
