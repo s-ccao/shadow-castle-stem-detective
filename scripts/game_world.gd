@@ -985,8 +985,12 @@ func has_world_line_of_sight(start_world: Vector2, end_world: Vector2) -> bool:
 	while true:
 		if x0 == x1 and y0 == y1:
 			break
-		if sight_blockers.has(fog_key(Vector2i(x0, y0))):
-			return false
+		# 起点格是玩家自己站的格子，必须跳过。玩家碰撞体只有 14x8，
+		# 小于 16px 的视野格，贴墙站立时格心会落在墙内被光栅化成遮挡格；
+		# 若在这里就判定受阻，玩家会对几乎所有方向失去视野（整屏变黑）。
+		if not (x0 == start_cell.x and y0 == start_cell.y):
+			if sight_blockers.has(fog_key(Vector2i(x0, y0))):
+				return false
 		var e2: int = 2 * err
 		if e2 >= dy:
 			err += dy
