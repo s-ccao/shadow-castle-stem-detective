@@ -13,15 +13,14 @@ const FOG_COLS := MAP_PIXEL_WIDTH / FOG_CELL_SIZE
 const FOG_ROWS := MAP_PIXEL_HEIGHT / FOG_CELL_SIZE
 
 # ============================================================
-# Castle Hall visual assets (user-provided GPT art):
-#   hall_floor_bg.png - full floor art (1448x1086 -> 1920x1280)
-#   hall_walls.png    - wall pieces (RGBA, 1536x1024 -> 1920x1280,
-#                       exact x1.25 scale, aligned with the floor)
+# Castle Hall visual assets (user-provided GPT art).
+# 两张图由 scenes/wall_collisions.tscn 直接引用，不在代码里加载：
+#   hall_floor_bg.png - 地板与氛围层，1448x1086 拉伸铺满 1920x1280。
+#   hall_walls.png    - 墙体层，1536x1024 按 x1.25 均匀缩放铺满。
+# 注意：两张图的迷宫布局并不相同，只有 hall_walls.png 与 Wall_*
+# 碰撞多边形同源。墙体视觉必须取自 hall_walls.png 并保持 x1.25，
+# 否则玩家看到的墙会和实际碰撞、视线遮挡错位。
 # ============================================================
-const HALL_FLOOR_BG: String = \
-	"res://assets/backgrounds/hall_floor_bg.png"
-const HALL_WALLS_IMAGE: String = \
-	"res://assets/backgrounds/hall_walls.png"
 const GAME_OVER_SCREEN_PATH: String = "res://assets/ui/screens/game_over.png"
 const DEATH_UI_SCENE_PATH: String = "res://scenes/ui/death_ui.tscn"
 const NPC_DIALOGUE_PORTRAITS: Dictionary = {
@@ -33,8 +32,6 @@ const NPC_DIALOGUE_PORTRAITS: Dictionary = {
 	"Mechanic": "res://assets/characters/portraits_pixel_v2/mechanic.png",
 	"Castle Guardian": "res://assets/characters/portraits_pixel_v2/castle_guardian.png",
 }
-
-var wall_visual: Sprite2D
 
 # ============================================================
 # Castle Hall layout (60x40 string map, one char per 32px cell)
@@ -502,10 +499,9 @@ func _ready():
 	if not LAYOUT_ALIGNMENT_MODE:
 		create_castle_walls()
 
-	# 大厅视觉（背景图 + 墙壁图 Sprite2D）现在随 wall_collisions.tscn
-	# 一起加载（编辑器 2D 视图可直接看到并对照调节碰撞），
-	# 不再由代码创建，避免双重显示。
-	# create_modular_visuals()
+	# 大厅视觉（地板图 + 墙壁图 Sprite2D）随 wall_collisions.tscn
+	# 一起加载：墙壁图与碰撞多边形同源同坐标系，编辑器 2D 视图里
+	# 可直接看到并对照调节，不再由代码创建，避免双重显示与比例不一致。
 
 	create_wall_collision_polygons()
 	use_authored_wall_collision_probe = (
@@ -647,36 +643,6 @@ func create_floor():
 	floor.size = Vector2(MAP_PIXEL_WIDTH, MAP_PIXEL_HEIGHT)
 	floor.z_index = -10
 	add_child(floor)
-func create_modular_visuals() -> void:
-	if wall_visual != null:
-		return
-
-	var texture: Texture2D = load(
-		HALL_WALLS_IMAGE
-	) as Texture2D
-
-	if texture == null:
-		push_warning(
-			"hall walls image not found: "
-			+ HALL_WALLS_IMAGE
-		)
-		return
-
-	wall_visual = Sprite2D.new()
-	wall_visual.name = "WallVisual"
-	wall_visual.texture = texture
-	wall_visual.z_index = -5
-	# Same transform as the floor background (top-left aligned,
-	# non-uniform scale), so both layers align exactly.
-	wall_visual.centered = false
-	wall_visual.position = Vector2.ZERO
-	wall_visual.scale = Vector2(
-		float(MAP_PIXEL_WIDTH) / 1448.0,
-		float(MAP_PIXEL_HEIGHT) / 1086.0
-	)
-	add_child(wall_visual)
-
-
 func on_player_ground_move_started(
 	target_position: Vector2
 ) -> void:
