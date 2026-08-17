@@ -115,6 +115,10 @@ const TEXT: Dictionary = {
 		),
 		"zh": "这个答案跟你掌握的证据对不上。\n\n回去复习对应房间的知识笔记，再试一次。",
 	},
+	# 药水状态角标空间很窄，用短名而不是 POTION_INFO 里的完整名字。
+	"potion.swift_short": {"en": "SWIFT", "zh": "迅捷"},
+	"potion.vision_short": {"en": "VISION", "zh": "洞察"},
+	"potion.green_short": {"en": "GREEN", "zh": "青藤"},
 }
 
 

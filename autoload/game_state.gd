@@ -3,6 +3,10 @@ extends Node
 signal state_changed
 # 获得物品通知：add_* 成功时发出，ItemRewardHud 据此在屏幕中心显示获得提示。
 signal item_acquired(item_id: String, kind: String, amount: int)
+## 药水生效/失效的专用信号。state_changed 每次任何状态变化都会发，
+## 分不出"药水刚喝下"和"药水刚失效"，而表现层两者都要单独响应。
+signal potion_applied(effect_id: String, duration: float)
+signal potion_expired(effect_id: String)
 
 const SAVE_PATH: String = "user://shadow_castle_save.json"
 # 自动存档写得很频繁（每次状态变化合并一次）。直接覆写 SAVE_PATH 的话，
@@ -1127,7 +1131,16 @@ func consume_dish(dish_id: String) -> bool:
 ## 使用药水：effect_id 为 "swift" / "vision"，duration 为秒。
 func apply_potion_effect(effect_id: String, duration: float) -> void:
 	potion_effects[effect_id] = duration
+	potion_applied.emit(effect_id, duration)
 	state_changed.emit()
+
+
+## 反查某个效果由哪瓶药水产生，表现层据此取图标与名字。
+func get_potion_id_for_effect(effect_id: String) -> String:
+	for potion_id: String in POTION_INFO:
+		if str(POTION_INFO[potion_id].get("effect", "")) == effect_id:
+			return potion_id
+	return ""
 
 
 func is_potion_active(effect_id: String) -> bool:
@@ -1157,6 +1170,7 @@ func _process(delta: float) -> void:
 		var remaining: float = float(potion_effects[effect_id]) - delta
 		if remaining <= 0.0:
 			potion_effects.erase(effect_id)
+			potion_expired.emit(effect_id)
 			changed = true
 		else:
 			potion_effects[effect_id] = remaining
