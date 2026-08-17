@@ -208,17 +208,25 @@ const CHEMISTRY_ROOM_SCENE_PATH: String = \
 const GREENHOUSE_ROOM_SCENE_PATH: String = \
 	"res://scenes/floor_1/greenhouse_room.tscn"
 
-# 用户手动确认的大厅房间入口坐标。交互点和视觉焦点使用同一坐标，
-# 不再用旧底图推算值覆盖用户调整。
+# 用户手动确认的大厅房间入口坐标。
+#
+# *_DOOR_POSITION 是触发圆心（同时也是回大厅时的落点锚点），
+# *_DOOR_FOCUS_POSITION 是交互角标框的绘制位置。两者原本填的是同一个值，
+# 而那个值是按 hall_floor_bg.png 推算的；玩家真正看到的门扇却来自盖在上面
+# 的 hall_walls.png，两张底图的纵向缩放不同（1.1786 对 1.25），于是角标框
+# 普遍落在门扇下方几十像素的空地上。这里把 FOCUS 单独校到 hall_walls.png
+# 里门洞的实际中心，触发圆心保持不动以免影响可达性与落点。
 const CHEMISTRY_ROOM_DOOR_POSITION: Vector2 = Vector2(283, 162)
-const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(283, 162)
+const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(283, 154)
 const CHEMISTRY_ROOM_RETURN_POSITION: Vector2 = Vector2(283, 162)
 const CHEMISTRY_ROOM_DOOR_RADIUS: float = 100.0
 const GREENHOUSE_ROOM_DOOR_POSITION: Vector2 = Vector2(219, 409)
-const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(219, 409)
+const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(217, 362)
 const GREENHOUSE_ROOM_DOOR_RADIUS: float = 100.0
 const LIBRARY_DOOR_POSITION: Vector2 = Vector2(1676, 285)
+const LIBRARY_DOOR_FOCUS_POSITION: Vector2 = Vector2(1672, 251)
 const DINING_HALL_DOOR_POSITION: Vector2 = Vector2(1774, 715)
+const DINING_HALL_DOOR_FOCUS_POSITION: Vector2 = Vector2(1770, 703)
 const HALL_ENEMY_START_POSITION := Vector2(1611, 1070)
 
 # 新房间场景（用户 2026-08-05 提供的四张 1448×1086 房间图）。
@@ -235,7 +243,7 @@ const FINAL_ROOM_SCENE_PATH: String = (
 	"res://scenes/floor_1/final_room.tscn"
 )
 const FINAL_ROOM_DOOR_POSITION: Vector2 = Vector2(955, 138)
-const FINAL_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(955, 138)
+const FINAL_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(956, 68)
 const FINAL_ROOM_DOOR_RADIUS: float = 100.0
 
 # Mrs. Lin 撕落的走廊笔记碎片（在大厅拼凑，指引 Final Room）。
@@ -417,8 +425,14 @@ const FINAL_SYNTHESIS_QUESTIONS: Array[Dictionary] = [
 # Wake Room return entrance: use the user's manually adjusted position.
 const WAKE_ROOM_SCENE_PATH: String = \
 	"res://scenes/wake_room.tscn"
-const WAKE_ROOM_DOOR_POSITION: Vector2 = Vector2(258, 1050)
-const WAKE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(258, 1050)
+# 这扇门是唯一一处偏差大过自身交互半径的：旧坐标 (258,1050) 落在入口北侧的
+# 空地上，玩家一踏进大厅就弹出「返回 Wake Room」，而真正的金色拱门在南边
+# 124 px 处。半径只有 75 px，光挪 FOCUS 会让角标框跑到触发圈外，所以触发
+# 圆心与角标一起挪到拱门上；WAKE_ROOM_DOOR_POSITION 同时是从 Wake Room
+# 回来的落点锚点，挪过去后落点也正好在门前（resolve_spawn_position() 会把
+# 嵌在门里的锚点推到最近的可站立处）。
+const WAKE_ROOM_DOOR_POSITION: Vector2 = Vector2(291, 1172)
+const WAKE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(291, 1172)
 const WAKE_ROOM_DOOR_INTERACT_RADIUS: float = 75.0
 # ============================================================
 # Floor 1 world positions
@@ -446,7 +460,7 @@ const GARDENER_POSITION: Vector2 = Vector2(1648, 496)
 # The old point (332,899) was inside a wall cell. Use the walkable
 # threshold for interaction and keep the visual focus on the doorway.
 const CIRCUIT_DOOR_POSITION: Vector2 = Vector2(168, 691)
-const CIRCUIT_DOOR_FOCUS_POSITION: Vector2 = Vector2(168, 691)
+const CIRCUIT_DOOR_FOCUS_POSITION: Vector2 = Vector2(170, 700)
 
 # Maintenance note in the service corridor outside the locked door.
 const CIRCUIT_NOTE_POSITION: Vector2 = Vector2(541.0419, 641.9716)
@@ -1287,11 +1301,11 @@ func update_interaction_focus() -> void:
 			focus_title = "Greenhouse Room"
 			is_primary = true
 		"library_door":
-			target_position = LIBRARY_DOOR_POSITION
+			target_position = LIBRARY_DOOR_FOCUS_POSITION
 			focus_title = "Library"
 			is_primary = true
 		"dining_hall_door":
-			target_position = DINING_HALL_DOOR_POSITION
+			target_position = DINING_HALL_DOOR_FOCUS_POSITION
 			focus_title = "Dining Hall"
 			is_primary = true
 		"final_room_door":
@@ -3837,12 +3851,12 @@ func create_floor_one_layout_markers():
 	)
 	create_layout_marker(
 		"Library Door",
-		LIBRARY_DOOR_POSITION,
+		LIBRARY_DOOR_FOCUS_POSITION,
 		Color(0.60, 0.30, 0.95, 0.95)
 	)
 	create_layout_marker(
 		"Dining Hall Door",
-		DINING_HALL_DOOR_POSITION,
+		DINING_HALL_DOOR_FOCUS_POSITION,
 		Color(0.95, 0.65, 0.25, 0.95)
 	)
 func create_layout_marker(
