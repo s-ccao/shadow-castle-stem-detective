@@ -67,6 +67,54 @@ const TEXT: Dictionary = {
 	"ending.main_menu": {"en": "Return to Archive", "zh": "返回档案室"},
 	"language.english": {"en": "English", "zh": "English"},
 	"language.chinese": {"en": "中文", "zh": "中文"},
+	# 知识锁：这是整个游戏的 STEM 教学核心，题干与选项跟着数据表走
+	# （game_world.gd 的 DOOR_QUESTIONS / FINAL_SYNTHESIS_QUESTIONS），
+	# 这里只放围绕它们的界面文字。
+	"knowledge.lock_title": {"en": "Knowledge Lock:", "zh": "知识锁："},
+	"knowledge.locked_title": {
+		"en": "The key fits, but the knowledge lock is still sealed.",
+		"zh": "钥匙对上了，但知识锁仍然紧闭。",
+	},
+	"knowledge.locked_body": {
+		"en": (
+			"Study the {room} exhibit in Castle Hall and save it to "
+			+ "NoteHub before answering this question."
+		),
+		"zh": "请先在城堡大厅研究「{room}」展品并存入侦探笔记，再来回答这道题。",
+	},
+	"knowledge.correct": {
+		"en": "Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened.",
+		"zh": "回答正确。\n\n知识锁接受了你的答案。\n\n门开了。",
+	},
+	"knowledge.wrong": {
+		"en": (
+			"Not quite.\n\nThe lock remains sealed. Think about the science "
+			+ "behind the question and try again."
+		),
+		"zh": "还差一点。\n\n锁仍然没开。想一想题目背后的科学原理，再试一次。",
+	},
+	"knowledge.retry": {"en": "Try Again", "zh": "再试一次"},
+	"knowledge.leave": {"en": "Leave the lock", "zh": "先离开这道锁"},
+	"knowledge.continue": {"en": "Continue", "zh": "继续"},
+	"knowledge.study_prompt": {
+		"en": "Press E to study {target}",
+		"zh": "按 E 研究{target}",
+	},
+	"knowledge.saved_to_notehub": {
+		"en": "This knowledge has been added to NoteHub.",
+		"zh": "这条知识已存入侦探笔记。",
+	},
+	"knowledge.synthesis_header": {
+		"en": "Final Synthesis Lock — Question {index}/{total}:",
+		"zh": "终局综合锁 —— 第 {index}/{total} 题：",
+	},
+	"knowledge.synthesis_wrong": {
+		"en": (
+			"That answer does not fit the evidence you have learned.\n\n"
+			+ "Review the corresponding room Knowledge note and try again."
+		),
+		"zh": "这个答案跟你掌握的证据对不上。\n\n回去复习对应房间的知识笔记，再试一次。",
+	},
 }
 
 

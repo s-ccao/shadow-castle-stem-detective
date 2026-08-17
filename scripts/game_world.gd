@@ -298,7 +298,9 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 		"id": "DiningHallKnowledge",
 		"texture": "res://assets/props/DiningHall/dining_grandfather_clock.png",
 		"title": "Dining Hall Knowledge",
+		"title_zh": "餐厅知识",
 		"prompt": "the Dining Hall knowledge exhibit",
+		"prompt_zh": "餐厅知识展品",
 		"note_id": "hall_knowledge_dining_timeline",
 		"knowledge_flag": "hall_knowledge_dining_hall_collected",
 		"knowledge": (
@@ -306,12 +308,18 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 			+ "has changed can help estimate elapsed time. One observation is rarely "
 			+ "enough; compare several independent indicators before drawing a conclusion."
 		),
+		"knowledge_zh": (
+			"当一个过程以比较稳定的速度变化时，量一量它已经变了多少，就能推算出过去了"
+			+ "多长时间。只看一处观察结果往往不够——下结论之前，要比对几个互相独立的线索。"
+		),
 	},
 	{
 		"id": "CircuitRoomKnowledge",
 		"texture": "res://assets/props/hall_knowledge/hall_knowledge_gauge_machine.png",
 		"title": "Circuit Room Knowledge",
+		"title_zh": "电路室知识",
 		"prompt": "the Circuit Room knowledge exhibit",
+		"prompt_zh": "电路室知识展品",
 		"note_id": "hall_knowledge_electricity",
 		"knowledge_flag": "hall_knowledge_circuit_room_collected",
 		"knowledge": (
@@ -320,12 +328,18 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 			+ "better conductor than rubber, dry wood, or glass. A broken circuit "
 			+ "cannot carry current."
 		),
+		"knowledge_zh": (
+			"这两只仪表测的是一条闭合电路。导体能让电荷在电路里流动；金属通常比橡胶、"
+			+ "干木头和玻璃都更好导电。而断开的电路是没法通电流的。"
+		),
 	},
 	{
 		"id": "ChemistryRoomKnowledge",
 		"texture": "res://assets/props/hall_knowledge/hall_knowledge_bronze_core.png",
 		"title": "Chemistry Room Knowledge",
+		"title_zh": "化学室知识",
 		"prompt": "the Chemistry Room knowledge exhibit",
+		"prompt_zh": "化学室知识展品",
 		"note_id": "hall_knowledge_chemical_change",
 		"knowledge_flag": "hall_knowledge_chemistry_room_collected",
 		"knowledge": (
@@ -334,12 +348,19 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 			+ "while melting ice, breaking glass, and dissolving sugar are physical "
 			+ "changes. The difference is whether a new substance forms."
 		),
+		"knowledge_zh": (
+			"核心是热的，因为里面正在发生反应。化学变化会生成新的物质：纸张燃烧属于"
+			+ "化学变化，而冰块融化、玻璃破碎、白糖溶解都只是物理变化。"
+			+ "区别就在于——有没有生成新物质。"
+		),
 	},
 	{
 		"id": "GreenhouseRoomKnowledge",
 		"texture": "res://assets/props/hall_knowledge/hall_knowledge_green_construct.png",
 		"title": "Greenhouse Room Knowledge",
+		"title_zh": "温室知识",
 		"prompt": "the Greenhouse Room knowledge exhibit",
+		"prompt_zh": "温室知识展品",
 		"note_id": "hall_knowledge_photosynthesis",
 		"knowledge_flag": "hall_knowledge_greenhouse_room_collected",
 		"knowledge": (
@@ -348,12 +369,18 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 			+ "released as a product. This is why the greenhouse keeps a supply of "
 			+ "light, water, and carbon dioxide."
 		),
+		"knowledge_zh": (
+			"这些活体面板在模仿光合作用。植物从空气中吸收二氧化碳，再借助光和水制造"
+			+ "养分，同时释放出氧气。这就是温室要持续供应光、水和二氧化碳的原因。"
+		),
 	},
 	{
 		"id": "LibraryRoomKnowledge",
 		"texture": "res://assets/props/hall_knowledge/hall_knowledge_glowing_console.png",
 		"title": "Library Knowledge",
+		"title_zh": "图书馆知识",
 		"prompt": "the Library knowledge exhibit",
+		"prompt_zh": "图书馆知识展品",
 		"note_id": "hall_knowledge_light",
 		"knowledge_flag": "hall_knowledge_library_collected",
 		"knowledge": (
@@ -361,6 +388,10 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 			+ "red, green, and blue. Combining light adds energy and produces brighter "
 			+ "colors; this is different from mixing pigments, which usually removes "
 			+ "light."
+		),
+		"knowledge_zh": (
+			"这台控制台混合的是光，不是颜料。光的三原色是红、绿、蓝。把光叠加在一起是"
+			+ "在增加能量，颜色会更亮；这和调颜料正好相反——混颜料通常是在减少光。"
 		),
 	},
 ]
@@ -374,37 +405,49 @@ var hall_knowledge_sprites: Dictionary = {}
 const DOOR_QUESTIONS: Dictionary = {
 	"chemistry": {
 		"question": "Which of these is a chemical change?",
+		"question_zh": "下面哪一个是化学变化？",
 		"options": ["Burning paper", "Melting ice", "Breaking glass", "Dissolving sugar"],
+		"options_zh": ["纸张燃烧", "冰块融化", "玻璃破碎", "白糖溶解"],
 		"correct": 0,
 		"knowledge_flag": "hall_knowledge_chemistry_room_collected",
 	},
 	"greenhouse": {
 		"question": "Which gas do plants absorb from the air to make their food?",
+		"question_zh": "植物制造养分时，会从空气中吸收哪种气体？",
 		"options": ["Carbon dioxide", "Oxygen", "Nitrogen", "Argon"],
+		"options_zh": ["二氧化碳", "氧气", "氮气", "氩气"],
 		"correct": 0,
 		"knowledge_flag": "hall_knowledge_greenhouse_room_collected",
 	},
 	"circuit": {
 		"question": "Which material usually allows electricity to flow most easily?",
+		"question_zh": "下面哪种材料通常最容易让电流通过？",
 		"options": ["Metal", "Rubber", "Dry wood", "Glass"],
+		"options_zh": ["金属", "橡胶", "干木头", "玻璃"],
 		"correct": 0,
 		"knowledge_flag": "hall_knowledge_circuit_room_collected",
 	},
 	"dining": {
 		"question": "Which principle helps estimate elapsed time from a changing process?",
+		"question_zh": "想从一个正在变化的过程推算过了多久，应该依据哪条原则？",
 		"options": ["Measure a reasonably steady change and compare independent indicators", "Trust the first visible clue", "Use the color of one object", "Assume every process changes at the same rate"],
+		"options_zh": ["测量一个变化速度较稳定的量，并比对多个互相独立的线索", "相信第一眼看到的线索", "只看某一件物品的颜色", "假设所有过程的变化速度都一样"],
 		"correct": 0,
 		"knowledge_flag": "hall_knowledge_dining_hall_collected",
 	},
 	"library": {
 		"question": "Which of these is a primary color of light?",
+		"question_zh": "下面哪一个是光的三原色之一？",
 		"options": ["Red", "Yellow", "Purple", "Brown"],
+		"options_zh": ["红", "黄", "紫", "棕"],
 		"correct": 0,
 		"knowledge_flag": "hall_knowledge_library_collected",
 	},
 	"final": {
 		"question": "Final synthesis lock",
+		"question_zh": "终局综合锁",
 		"options": [],
+		"options_zh": [],
 		"correct": 0,
 	},
 }
@@ -412,22 +455,30 @@ const DOOR_QUESTIONS: Dictionary = {
 const FINAL_SYNTHESIS_QUESTIONS: Array[Dictionary] = [
 	{
 		"question": "A sheet of paper burns and leaves ash. Why is this evidence of a chemical change?",
+		"question_zh": "一张纸燃烧后留下灰烬。为什么这能说明发生了化学变化？",
 		"options": ["A new substance forms", "The paper only changes shape", "The ash is the same substance as the paper", "Heat cannot change matter"],
+		"options_zh": ["生成了新的物质", "纸只是改变了形状", "灰烬和纸是同一种物质", "热量不会改变物质"],
 		"correct": 0,
 	},
 	{
 		"question": "If carbon dioxide is removed from a sealed greenhouse, which process is directly limited?",
+		"question_zh": "如果把密闭温室里的二氧化碳抽走，哪个过程会直接受限？",
 		"options": ["Photosynthesis", "Condensation", "Magnetism", "Sound transmission"],
+		"options_zh": ["光合作用", "水汽凝结", "磁性作用", "声音传播"],
 		"correct": 0,
 	},
 	{
 		"question": "Which material is the best choice to reconnect a broken conducting path?",
+		"question_zh": "要接通一条断掉的导电通路，选哪种材料最合适？",
 		"options": ["Metal", "Rubber", "Dry wood", "Glass"],
+		"options_zh": ["金属", "橡胶", "干木头", "玻璃"],
 		"correct": 0,
 	},
 	{
 		"question": "Which combination provides the strongest estimate of elapsed time?",
+		"question_zh": "哪一种组合能最可靠地推算出过了多长时间？",
 		"options": ["Several independent indicators that changed at reasonably steady rates", "One clock reading by itself", "The color of one object", "A guess based on the first clue"],
+		"options_zh": ["多个互相独立、且变化速度较稳定的线索", "单看一只钟的读数", "某一件物品的颜色", "凭第一条线索猜"],
 		"correct": 0,
 	},
 ]
@@ -1325,7 +1376,7 @@ func update_interaction_focus() -> void:
 			if str(item["id"]) == exhibit_id:
 				interaction_focus.set_focus(
 					item["position"] as Vector2,
-					str(item["title"]),
+					str(_localized_field(item, "title")),
 					false
 				)
 				return
@@ -1697,7 +1748,10 @@ func update_interaction_prompt() -> void:
 		)
 		if exhibit_distance <= 100.0:
 			current_interaction = "hall_knowledge:" + exhibit_id
-			interact_label.text = "Press E to study " + str(item["prompt"])
+			interact_label.text = CaseLocale.text(
+				"knowledge.study_prompt",
+				{"target": str(_localized_field(item, "prompt"))}
+			)
 			interact_label.visible = true
 			return
 
@@ -2033,9 +2087,9 @@ func _inspect_hall_knowledge(exhibit_id: String) -> void:
 		GameState.set_story_flag(collected_flag)
 		if NoteHud != null:
 			NoteHud.add_clue(str(item["note_id"]), {
-				"title": str(item["title"]),
+				"title": str(_localized_field(item, "title")),
 				"icon": "icon_book",
-				"content": str(item["knowledge"]),
+				"content": str(_localized_field(item, "knowledge")),
 				"category": "knowledge",
 			})
 		start_dialogue_pause()
@@ -2044,10 +2098,16 @@ func _inspect_hall_knowledge(exhibit_id: String) -> void:
 		message_panel.visible = true
 		set_dialogue_text(
 			"You",
-			str(item["title"]) + "\n\n" + str(item["knowledge"]) + "\n\n"
-			+ "This knowledge has been added to NoteHub."
+			str(_localized_field(item, "title"))
+			+ "\n\n"
+			+ str(_localized_field(item, "knowledge"))
+			+ "\n\n"
+			+ CaseLocale.text("knowledge.saved_to_notehub")
 		)
-		show_continue_button("Continue", close_message_panel)
+		show_continue_button(
+			CaseLocale.text("knowledge.continue"),
+			close_message_panel
+		)
 		return
 
 
@@ -3217,34 +3277,32 @@ func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable)
 		not required_knowledge_flag.is_empty()
 		and not GameState.has_story_flag(required_knowledge_flag)
 	):
-		var room_label: String = door_id.capitalize()
-		if door_id == "final":
-			room_label = "Final Room"
-		elif door_id == "greenhouse":
-			room_label = "Greenhouse Room"
-		elif door_id == "circuit":
-			room_label = "Circuit Room"
-		elif door_id == "chemistry":
-			room_label = "Chemistry Room"
-		elif door_id == "dining":
-			room_label = "Dining Hall"
-		elif door_id == "library":
-			room_label = "Library"
+		# 提示语直接引用展品自己的标题，玩家看到的名字和展品上写的一字不差，
+		# 也省掉一份需要跟着数据表同步维护的房间名映射。
+		var exhibit_label: String = door_id.capitalize()
+		for template: Dictionary in HALL_KNOWLEDGE_ITEMS:
+			if str(template.get("knowledge_flag", "")) == required_knowledge_flag:
+				exhibit_label = str(_localized_field(template, "title"))
+				break
 		start_dialogue_pause()
 		clear_buttons()
 		set_dialogue_speaker("Mrs. Lin")
 		message_panel.visible = true
 		set_dialogue_text(
 			"Mrs. Lin",
-			"The key fits, but the knowledge lock is still sealed.\n\n"
-			+ "Study the " + room_label + " Knowledge exhibit in Castle Hall and save it to NoteHub before answering this question."
+			CaseLocale.text("knowledge.locked_title")
+			+ "\n\n"
+			+ CaseLocale.text("knowledge.locked_body", {"room": exhibit_label})
 		)
-		show_continue_button("Continue", close_message_panel)
+		show_continue_button(
+			CaseLocale.text("knowledge.continue"),
+			close_message_panel
+		)
 		return
 	_show_door_question(
 		door_id,
-		str(data["question"]),
-		data["options"] as Array,
+		str(_localized_field(data, "question")),
+		_localized_field(data, "options") as Array,
 		int(data["correct"])
 	)
 
@@ -3257,13 +3315,14 @@ func _show_final_synthesis_question() -> void:
 	message_panel.visible = true
 	set_dialogue_text(
 		"Mrs. Lin",
-		"Final Synthesis Lock — Question %d/%d:\n\n%s" % [
-			_final_synthesis_index + 1,
-			FINAL_SYNTHESIS_QUESTIONS.size(),
-			str(step["question"]),
-		]
+		CaseLocale.text("knowledge.synthesis_header", {
+			"index": _final_synthesis_index + 1,
+			"total": FINAL_SYNTHESIS_QUESTIONS.size(),
+		})
+		+ "\n\n"
+		+ str(_localized_field(step, "question"))
 	)
-	var options: Array = step["options"]
+	var options: Array = _localized_field(step, "options")
 	var correct_index: int = int(step["correct"])
 	var option_order: Array[int] = []
 	for option_index: int in range(options.size()):
@@ -3297,18 +3356,27 @@ func _on_final_synthesis_correct() -> void:
 
 func _show_final_synthesis_wrong() -> void:
 	clear_buttons()
-	set_dialogue_text(
-		"Mrs. Lin",
-		"That answer does not fit the evidence you have learned.\n\n"
-		+ "Review the corresponding room Knowledge note and try again."
-	)
+	set_dialogue_text("Mrs. Lin", CaseLocale.text("knowledge.synthesis_wrong"))
 	var retry_button: Button = Button.new()
-	retry_button.text = "Try Again"
+	retry_button.text = CaseLocale.text("knowledge.retry")
 	retry_button.custom_minimum_size = Vector2(780, 28)
 	retry_button.add_theme_font_size_override("font_size", 15)
 	retry_button.pressed.connect(_show_final_synthesis_question)
 	button_box.add_child(retry_button)
-	show_continue_button("Leave the lock", close_message_panel)
+	show_continue_button(
+		CaseLocale.text("knowledge.leave"),
+		close_message_panel
+	)
+
+
+func _localized_field(data: Dictionary, field: String) -> Variant:
+	# 知识锁的题干/选项与展品文本是数据表的一部分，中文版直接挂在同一条记录上的
+	# `<field>_zh` 里。这样选项与 "correct" 下标永远不可能对不上号，
+	# 缺翻译时也会自动退回英文。
+	var chinese_field: String = field + "_zh"
+	if CaseLocale != null and CaseLocale.is_chinese() and data.has(chinese_field):
+		return data[chinese_field]
+	return data[field]
 
 
 func _show_door_question(door_id: String, question: String, options: Array, correct_index: int) -> void:
@@ -3323,7 +3391,9 @@ func _show_door_question(door_id: String, question: String, options: Array, corr
 	for option_index: int in range(options.size()):
 		option_order.append(option_index)
 	option_order.shuffle()
-	var question_text: String = "Knowledge Lock:\n\n" + question + "\n"
+	var question_text: String = (
+		CaseLocale.text("knowledge.lock_title") + "\n\n" + question + "\n"
+	)
 	for display_index: int in range(option_order.size()):
 		question_text += (
 			"\n"
@@ -3375,11 +3445,11 @@ func _on_door_question_correct() -> void:
 			GameState.set_story_flag("door_final_unlocked")
 	# 六扇门共用同一条解锁后刷新路径，目标面板才会立刻反映新状态。
 	update_objective_text()
-	set_dialogue_text(
-		"Mrs. Lin",
-		"Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened."
+	set_dialogue_text("Mrs. Lin", CaseLocale.text("knowledge.correct"))
+	show_continue_button(
+		CaseLocale.text("knowledge.continue"),
+		close_message_panel
 	)
-	show_continue_button("Continue", close_message_panel)
 
 
 func _on_door_question_wrong() -> void:
@@ -3387,17 +3457,17 @@ func _on_door_question_wrong() -> void:
 		_show_final_synthesis_wrong()
 		return
 	clear_buttons()
-	set_dialogue_text(
-		"Mrs. Lin",
-		"Not quite.\n\nThe lock remains sealed. Think about the science behind the question and try again."
-	)
+	set_dialogue_text("Mrs. Lin", CaseLocale.text("knowledge.wrong"))
 	var retry_button := Button.new()
-	retry_button.text = "Try Again"
+	retry_button.text = CaseLocale.text("knowledge.retry")
 	retry_button.custom_minimum_size = Vector2(780, 28)
 	retry_button.add_theme_font_size_override("font_size", 15)
 	retry_button.pressed.connect(_retry_door_question)
 	button_box.add_child(retry_button)
-	show_continue_button("Leave the lock", close_message_panel)
+	show_continue_button(
+		CaseLocale.text("knowledge.leave"),
+		close_message_panel
+	)
 
 
 func _retry_door_question() -> void:
@@ -3410,8 +3480,8 @@ func _retry_door_question() -> void:
 	var data: Dictionary = DOOR_QUESTIONS[door_id]
 	_show_door_question(
 		door_id,
-		str(data["question"]),
-		data["options"] as Array,
+		str(_localized_field(data, "question")),
+		_localized_field(data, "options") as Array,
 		int(data["correct"])
 	)
 
