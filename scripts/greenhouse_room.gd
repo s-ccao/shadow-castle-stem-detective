@@ -74,6 +74,24 @@ const INTERACT_ITEMS: Array[Dictionary] = [
 		)
 	},
 	{
+		"name": "herb_bed_left",
+		"label": "the long herb bed",
+		"position": Vector2(214, 858),
+		"message": (
+			"A long raised bed of blue blossom. The supply valves for light, "
+			+ "water and air all feed into it."
+		)
+	},
+	{
+		"name": "herb_bed_right",
+		"label": "the moonleaf bed",
+		"position": Vector2(806, 858),
+		"message": (
+			"A long raised bed of moonleaf. The silver pods open and close, "
+			+ "each on its own slow rhythm."
+		)
+	},
+	{
 		"name": "arch_door",
 		"label": "the greenhouse gate",
 		"position": Vector2(512, 1300),
@@ -82,6 +100,21 @@ const INTERACT_ITEMS: Array[Dictionary] = [
 		)
 	}
 ]
+
+## 两条长花坛各挂一个采药小游戏。坐标取自 greenhouse_room_bg.png 里植被
+## 区域的实测中心（左 x114..223、右 x800..902），交互点放在花坛朝走道的
+## 内侧边缘：y=858 处可走区间是 x∈[256,760]，距左点 42 px、距右点 46 px，
+## 都在 ITEM_INTERACT_RADIUS(90) 之内。
+const HERB_BED_GAMES: Dictionary = {
+	"herb_bed_left": {
+		"herb": "blue_blossom",
+		"per_stage": 1,
+	},
+	"herb_bed_right": {
+		"herb": "moonleaf",
+		"per_stage": 1,
+	},
+}
 
 @onready var player: CharacterBody2D = (
 	$Worldsort/player
@@ -666,10 +699,102 @@ func show_gardener_dialogue() -> void:
 
 var _inspected_items: Array[String] = []
 var _gathered_plants: Array[String] = []
+var _active_minigame: MinigameShell
+var _active_bed: String = ""
+
+
+## 打开某条长花坛的采药小游戏。小游戏期间冻结房间输入，避免玩家一边
+## 玩一边还在走路。
+func _open_herb_bed_minigame(bed_name: String) -> void:
+	if _active_minigame != null:
+		return
+	_active_bed = bed_name
+	var game: MinigameShell
+	if bed_name == "herb_bed_left":
+		var photosynthesis := PhotosynthesisMinigame.new()
+		photosynthesis.configure(
+			_bilingual("Photosynthesis Bench", "光合工作台"),
+			_bilingual(
+				"Blue blossom will not swell unless light, water and air are"
+				+ " balanced against one another.",
+				"蓝铃花只有在光照、水分与空气三者彼此配平时才会饱满。"
+			),
+			Color(0.62, 0.94, 0.58, 1.0)
+		)
+		game = photosynthesis
+	else:
+		var harvest := MoonlightHarvestMinigame.new()
+		harvest.configure(
+			_bilingual("Moonlight Harvest", "月光采收"),
+			_bilingual(
+				"Moonleaf opens and closes on its own cycle. Cut only at the"
+				+ " peak, and never cut the thorns.",
+				"月叶按自己的周期开合。只在最盛时下刀，带刺的绝对别碰。"
+			),
+			Color(0.78, 0.88, 1.00, 1.0)
+		)
+		game = harvest
+	_active_minigame = game
+	game.finished.connect(_on_herb_bed_minigame_finished)
+	add_child(game)
+	room_input_enabled = false
+	if interact_label != null:
+		interact_label.visible = false
+	game.start()
+
+
+func _on_herb_bed_minigame_finished(cleared_all: bool) -> void:
+	var game: MinigameShell = _active_minigame
+	var bed_name: String = _active_bed
+	_active_minigame = null
+	_active_bed = ""
+	room_input_enabled = true
+	var stages_cleared: int = 0
+	if game != null:
+		stages_cleared = game.levels_cleared()
+		game.queue_free()
+	var config: Dictionary = HERB_BED_GAMES.get(bed_name, {})
+	if config.is_empty():
+		return
+	# 按通关数发草药：中途退出也拿得到已挣的份额，不会白玩。
+	var herb_id: String = str(config["herb"])
+	var amount: int = stages_cleared * int(config["per_stage"])
+	if amount <= 0:
+		show_message(
+			"You",
+			_bilingual(
+				"You step back from the bed without gathering anything.",
+				"你从花坛边退开，什么也没采到。"
+			)
+		)
+		return
+	GameState.add_herb(herb_id, amount)
+	if cleared_all:
+		GameState.set_story_flag("greenhouse_%s_mastered" % bed_name)
+	var herb_name: String = str(
+		GameState.HERB_INFO.get(herb_id, {}).get("name", herb_id)
+	)
+	show_message(
+		"You",
+		_bilingual(
+			"Gathered %d %s from the bed." % [amount, herb_name],
+			"从这条花坛采到了 %d 份%s。" % [amount, herb_name]
+		)
+	)
+
+
+func _bilingual(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english
 
 
 ## 交互物 → 玩家独白对话框（分段 + 头像）。
 func _show_item_dialogue(item_name: String) -> void:
+	# 两条长花坛：采药前先过小游戏。
+	if HERB_BED_GAMES.has(item_name):
+		_open_herb_bed_minigame(item_name)
+		return
 	# 已解锁采集时，植物交互改为采集。
 	if (
 		(item_name == "plant_pots_a" or item_name == "plant_pots_b")
