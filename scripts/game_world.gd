@@ -791,51 +791,6 @@ func create_wall_collision_polygons() -> void:
 	add_child(instance)
 
 
-func create_wall_collision_polygons_from_data() -> void:
-	# Fallback: build the same polygons from the data file.
-	var data: GDScript = load(
-		"res://scripts/wall_collision_data.gd"
-	) as GDScript
-
-	if data == null:
-		push_warning("wall_collision_data.gd not found")
-		return
-
-	var polys: Array = data.WALL_POLYGONS
-	var body := StaticBody2D.new()
-	body.name = "WallPolygonCollisions"
-	add_child(body)
-
-	for poly: Array in polys:
-		var points := PackedVector2Array()
-
-		for p: Vector2 in poly:
-			points.append(p)
-
-		if points.size() < 3:
-			continue
-
-		var parts := Geometry2D.decompose_polygon_in_convex(
-			points
-		)
-
-		if parts.is_empty():
-			# try reversed winding
-			var reversed_points := PackedVector2Array()
-
-			for i in range(points.size() - 1, -1, -1):
-				reversed_points.append(points[i])
-
-			parts = Geometry2D.decompose_polygon_in_convex(
-				reversed_points
-			)
-
-		for part: PackedVector2Array in parts:
-			var shape := CollisionPolygon2D.new()
-			shape.polygon = part
-			body.add_child(shape)
-
-
 func create_fog_cells():
 	if LAYOUT_ALIGNMENT_MODE and DISABLE_FOG_DURING_ALIGNMENT:
 		return
