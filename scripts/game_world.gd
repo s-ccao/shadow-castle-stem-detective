@@ -3278,12 +3278,21 @@ func _show_door_question(door_id: String, question: String, options: Array, corr
 	clear_buttons()
 	set_dialogue_speaker("Mrs. Lin")
 	message_panel.visible = true
-	var question_text: String = "Knowledge Lock:\n\n" + question + "\n"
-	for i: int in range(options.size()):
-		question_text += "\n" + str(i + 1) + ". " + str(options[i])
-	set_dialogue_text("Mrs. Lin", question_text)
-	var option_order: Array[int] = [0, 1, 2, 3]
+	# 按钮顺序每次都会重新打乱，所以对话框里的编号列表必须用同一份顺序来生成，
+	# 否则玩家读到「答案是 1」再去点第一个按钮就会答错。
+	var option_order: Array[int] = []
+	for option_index: int in range(options.size()):
+		option_order.append(option_index)
 	option_order.shuffle()
+	var question_text: String = "Knowledge Lock:\n\n" + question + "\n"
+	for display_index: int in range(option_order.size()):
+		question_text += (
+			"\n"
+			+ str(display_index + 1)
+			+ ". "
+			+ str(options[option_order[display_index]])
+		)
+	set_dialogue_text("Mrs. Lin", question_text)
 	for option_index: int in option_order:
 		add_door_answer_button(
 			str(options[option_index]),
