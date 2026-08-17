@@ -127,12 +127,9 @@ var fog_cells := {}
 var fog_sprite: Sprite2D
 var fog_image: Image
 var fog_texture: ImageTexture
-var door_cells := {}
-var door_nodes := {}
 var learned_circuit_rule := false
 var circuit_note_position := Vector2.ZERO
 var circuit_note_node: ColorRect
-var circuit_door_open := false
 var circuit_door_position := Vector2.ZERO
 var discovered_fog_cells := {}
 var visible_fog_cells := {}
@@ -208,7 +205,6 @@ var knowledge_items: Array[String] = []
 var knowledge_panel: Panel
 var knowledge_panel_open := false
 var knowledge_list_label: Label
-const SHOW_PROTOTYPE_DOOR_VISUALS := false
 const USE_CASTLE_IMAGE_BACKGROUND := true
 const CHEMISTRY_ROOM_SCENE_PATH: String = \
 	"res://scenes/floor_1/chemistry_room.tscn"
@@ -506,12 +502,6 @@ func _ready():
 	if not LAYOUT_ALIGNMENT_MODE:
 		create_castle_walls()
 
-		# TODO(doors): knowledge-lock door is temporarily disabled until
-		# the circuit room entrance is recalibrated on the new map art
-		# (its old cells would be an invisible wall on the new layout).
-		# if not circuit_door_open:
-		# 	create_locked_circuit_door()
-
 	# 大厅视觉（背景图 + 墙壁图 Sprite2D）现在随 wall_collisions.tscn
 	# 一起加载（编辑器 2D 视图可直接看到并对照调节碰撞），
 	# 不再由代码创建，避免双重显示。
@@ -697,8 +687,6 @@ func on_player_ground_move_started(
 	if not is_inside_map(target_cell):
 		return
 
-	if is_door(target_cell):
-		return
 	if use_authored_wall_collision_probe:
 		if has_authored_wall_collision(target_position):
 			return
@@ -768,8 +756,10 @@ func create_castle_background():
 
 func create_castle_walls():
 	# Layout is stored as a 60x40 string map (same grid as the
-	# original castle background art): '#' = wall, 'K' = knowledge
-	# lock door cells (handled by create_locked_circuit_door).
+	# original castle background art): '#' = wall. The old 'K'
+	# knowledge-lock door cells are no longer built — every room
+	# door is now an interaction-driven knowledge lock instead of
+	# a physical grid door.
 	for y in range(CASTLE_LAYOUT.size()):
 		var row: String = CASTLE_LAYOUT[y]
 		for x in range(row.length()):
@@ -1109,8 +1099,6 @@ func is_player_position_walkable(world_position: Vector2) -> bool:
 		var cell: Vector2i = world_to_cell(world_position + sample_offset)
 		if not is_inside_map(cell):
 			return false
-		if is_door(cell):
-			return false
 
 	if use_authored_wall_collision_probe:
 		return not has_authored_wall_collision(world_position)
@@ -1202,12 +1190,11 @@ func build_navigation_grid():
 			var cell := Vector2i(x, y)
 			var point_is_solid: bool = false
 			if use_authored_wall_collision_probe:
-				point_is_solid = (
-					has_authored_wall_collision(cell_to_world(cell))
-					or is_door(cell)
+				point_is_solid = has_authored_wall_collision(
+					cell_to_world(cell)
 				)
 			else:
-				point_is_solid = is_wall(cell) or is_door(cell)
+				point_is_solid = is_wall(cell)
 			if point_is_solid:
 				astar_grid.set_point_solid(cell, true)
 
@@ -1317,9 +1304,6 @@ func show_damage_feedback(health_left: int) -> void:
 	interaction_hint_panel.visible = true
 
 
-func string_to_cell(key: String) -> Vector2i:
-	var parts = key.split(",")
-	return Vector2i(int(parts[0]), int(parts[1]))
 func create_red_stain_clue():
 	clue_position = RED_STAIN_POSITION
 
@@ -1389,7 +1373,7 @@ func update_interaction_focus() -> void:
 			is_primary = true
 		"circuit_door":
 			target_position = CIRCUIT_DOOR_FOCUS_POSITION
-			focus_title = "Knowledge lock"
+			focus_title = "Circuit Room"
 			is_primary = true
 		"hidden_library_key":
 			target_position = _get_storage_rack_position()
@@ -1924,31 +1908,34 @@ func update_interaction_prompt() -> void:
 	# Circuit knowledge-lock door
 	# ========================================================
 
-	if not circuit_door_open:
-		var door_distance: float = (
-			player.global_position.distance_to(
-				circuit_door_position
-			)
+	# 与其余五扇房门一致：只按「钥匙 / 知识 / 已解锁」三种状态给提示。
+	# 这里不能再用 circuit_door_open 作为门槛：那是旧原型实体门的标记，
+	# 工坊合上总闸后会被置真（circuit_room.gd），从而让大厅永久失去
+	# 线路房入口，玩家也就拿不到餐厅钥匙与线路证据。
+	var door_distance: float = (
+		player.global_position.distance_to(
+			circuit_door_position
 		)
+	)
 
-		if door_distance <= (
-			CIRCUIT_DOOR_INTERACT_RADIUS
-		):
-			current_interaction = "circuit_door"
-			if not GameState.has_key("circuit_room_key"):
-				interact_label.text = (
-					"The Circuit Room door is locked. A key must be hidden somewhere nearby."
-				)
-			elif not GameState.has_story_flag("door_circuit_unlocked"):
-				interact_label.text = (
-					"Press E to answer the knowledge lock"
-				)
-			else:
-				interact_label.text = (
-					"Press E to enter the Circuit Room"
-				)
-			interact_label.visible = true
-			return
+	if door_distance <= (
+		CIRCUIT_DOOR_INTERACT_RADIUS
+	):
+		current_interaction = "circuit_door"
+		if not GameState.has_key("circuit_room_key"):
+			interact_label.text = (
+				"The Circuit Room door is locked. A key must be hidden somewhere nearby."
+			)
+		elif not GameState.has_story_flag("door_circuit_unlocked"):
+			interact_label.text = (
+				"Press E to answer the knowledge lock"
+			)
+		else:
+			interact_label.text = (
+				"Press E to enter the Circuit Room"
+			)
+		interact_label.visible = true
+		return
 
 	# 房间内部线索（Maintenance Note / Pollen / Circuit / NPC / Final Deduction）
 	# 不在大厅检测，进入对应房间后由房间脚本负责。
@@ -3043,16 +3030,35 @@ func update_objective_text():
 	var circuit_status = "✓" if circuit_done else "✗"
 
 	var detail = "Current Mission:\n\n"
-	if not circuit_door_open:
-		detail += "Locked Door:\n"
-		if learned_circuit_rule:
-			detail += "✓ Circuit rule learned. Return to the locked door and solve the puzzle.\n\n"
+	# 线路房知识锁：按真实的「钥匙 / 知识 / 已解锁」状态播报。
+	# 旧文案读的是原型标记 circuit_door_open / learned_circuit_rule，
+	# 两个分支的内容还写反了（没学会规则时反而说“门已打开”）。
+	if not GameState.has_story_flag("door_circuit_unlocked"):
+		detail += "Circuit Room Door:\n"
+		if not GameState.has_key("circuit_room_key"):
+			detail += (
+				"✗ The Circuit Room door is locked. "
+				+ "Search the rooms you can already reach for its key.\n\n"
+			)
+		elif not GameState.has_story_flag(
+			"hall_knowledge_circuit_room_collected"
+		):
+			detail += (
+				"✗ The key fits, but the knowledge lock is still sealed. "
+				+ "Study the Circuit Room Knowledge exhibit in Castle Hall "
+				+ "and save it to NoteHub.\n\n"
+			)
 		else:
 			detail += (
-				"✓ Electrical door opened. "
-				+ "Search inside for the maintenance note "
-				+ "and circuit evidence.\n\n"
+				"✓ Key and knowledge ready. "
+				+ "Answer the knowledge lock at the Circuit Room door.\n\n"
 			)
+	elif not circuit_done:
+		detail += "Circuit Room Door:\n"
+		detail += (
+			"✓ Circuit Room unlocked. "
+			+ "Search inside for the workshop clues and circuit evidence.\n\n"
+		)
 	if has_all_evidence():
 		detail += "You have collected all major STEM evidence.\n\n"
 		detail += "Next Step:\nGo to the purple Final Deduction Room and accuse the culprit.\n\n"
@@ -3189,55 +3195,6 @@ func create_follow_camera() -> void:
 
 	player.add_child(follow_camera)
 	follow_camera.make_current()
-func create_locked_circuit_door():
-	# This door blocks the y=8 passage at x 21..23 (original
-	# knowledge-lock position in the castle layout).
-	var cells = [
-		Vector2i(21, 8),
-		Vector2i(22, 8),
-		Vector2i(23, 8)
-	]
-
-	circuit_door_position = cell_to_world(Vector2i(22, 8))
-
-	for cell in cells:
-		add_door_cell(cell)
-func add_door_cell(cell: Vector2i):
-	var key = cell_key(cell)
-
-	if door_cells.has(key):
-		return
-
-	door_cells[key] = true
-
-	var door = StaticBody2D.new()
-	door.name = "LockedDoor"
-	door.position = cell_to_world(cell)
-
-	var shape = CollisionShape2D.new()
-	var rectangle = RectangleShape2D.new()
-	rectangle.size = Vector2(CELL_SIZE, CELL_SIZE)
-	shape.shape = rectangle
-	door.add_child(shape)
-
-	if SHOW_PROTOTYPE_DOOR_VISUALS:
-		var visual := ColorRect.new()
-		visual.color = Color(0.95, 0.48, 0.12, 1.0)
-		visual.size = Vector2(CELL_SIZE, CELL_SIZE)
-		visual.position = Vector2(
-			-CELL_SIZE / 2.0,
-			-CELL_SIZE / 2.0
-		)
-		visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		door.add_child(visual)
-
-	add_child(door)
-	door_nodes[key] = door
-
-	# Make the door block A* navigation.
-	astar_grid.set_point_solid(cell, true)
-func is_door(cell: Vector2i) -> bool:
-	return door_cells.has(cell_key(cell))
 
 
 # ============================================================
@@ -3413,7 +3370,6 @@ func _on_door_question_correct() -> void:
 	match door_id:
 		"circuit":
 			GameState.set_story_flag("door_circuit_unlocked")
-			open_circuit_door()
 		"chemistry":
 			GameState.set_story_flag("door_chemistry_unlocked")
 		"greenhouse":
@@ -3424,6 +3380,8 @@ func _on_door_question_correct() -> void:
 			GameState.set_story_flag("door_library_unlocked")
 		"final":
 			GameState.set_story_flag("door_final_unlocked")
+	# 六扇门共用同一条解锁后刷新路径，目标面板才会立刻反映新状态。
+	update_objective_text()
 	set_dialogue_text(
 		"Mrs. Lin",
 		"Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened."
@@ -3465,24 +3423,6 @@ func _retry_door_question() -> void:
 	)
 
 
-func open_circuit_door():
-	GameState.set_circuit_door_open(true)
-	circuit_door_open = true
-
-	for key in door_nodes.keys():
-		var door = door_nodes[key]
-		if door != null:
-			door.queue_free()
-
-	for key in door_cells.keys():
-		var cell: Vector2i = string_to_cell(key)
-		astar_grid.set_point_solid(cell, false)
-
-	door_nodes.clear()
-	door_cells.clear()
-
-	update_fog_of_war()
-	update_objective_text()
 func create_circuit_learning_note():
 	circuit_note_position = CIRCUIT_NOTE_POSITION
 
@@ -4030,10 +3970,6 @@ func load_progress_from_game_state() -> void:
 
 	learned_circuit_rule = (
 		GameState.learned_circuit_rule
-	)
-
-	circuit_door_open = (
-		GameState.circuit_door_open
 	)
 func award_reputation(amount: int) -> void:
 	GameState.add_reputation(amount)
