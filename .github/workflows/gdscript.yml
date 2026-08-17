@@ -1,0 +1,76 @@
+name: GDScript
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  check:
+    name: Parse and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install gdtoolkit
+        run: pip install "gdtoolkit==4.*"
+
+      # A syntax error means the project will not open in Godot at all, so
+      # this is the check that must never be allowed to fail.
+      - name: Parse every script
+        run: |
+          set -uo pipefail
+          failed=0
+          while IFS= read -r file; do
+            if ! gdparse "$file" >/dev/null 2>&1; then
+              echo "::error file=$file::gdparse failed"
+              gdparse "$file" || true
+              failed=1
+            fi
+          done < <(find scripts autoload -name '*.gd' | sort)
+          exit "$failed"
+
+      # gdlint reports a large number of pre-existing style issues, mostly
+      # class-definitions-order in the two oldest files. Failing on any of
+      # them would make this job permanently red and therefore ignored, so
+      # the count is pinned instead: new code must not add to it.
+      - name: Lint against the recorded baseline
+        env:
+          BASELINE: "769"
+        run: |
+          set -uo pipefail
+          total=0
+          while IFS= read -r file; do
+            count=$(gdlint "$file" 2>&1 | grep -c 'Error:' || true)
+            total=$((total + count))
+          done < <(find scripts autoload -name '*.gd' | sort)
+          echo "gdlint problems: $total (baseline $BASELINE)"
+          if [ "$total" -gt "$BASELINE" ]; then
+            echo "::error::gdlint problems rose from $BASELINE to $total."
+            echo "Fix the new warnings, or lower the baseline if you removed some."
+            exit 1
+          fi
+          if [ "$total" -lt "$BASELINE" ]; then
+            echo "::notice::gdlint problems dropped to $total."
+            echo "Lower BASELINE in .github/workflows/gdscript.yml to lock the win in."
+          fi
+
+      # project.godot lists every autoload by path; a rename that misses one
+      # produces a project that boots straight into an error screen.
+      - name: Check autoload paths resolve
+        run: |
+          set -uo pipefail
+          failed=0
+          while IFS= read -r path; do
+            file="${path#res://}"
+            if [ ! -f "$file" ]; then
+              echo "::error file=project.godot::autoload target missing: $path"
+              failed=1
+            fi
+          done < <(sed -n '/^\[autoload\]/,/^\[/p' project.godot \
+                   | grep -o 'res://[^"]*' || true)
+          exit "$failed"
