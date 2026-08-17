@@ -88,7 +88,12 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# 增量去雾：只画新增的探索格，避免玩家行走时全量重建大图。
+	# hall_explored_cells 只增不减（清空时 _sync_map_state() 会重建
+	# _drawn_explored），所以格数没变就一定没有新格子——这里先比一次整数，
+	# 免掉每帧最多 2400 次字典查询，地图没打开时同样省下。
 	var explored: Dictionary = GameState.hall_explored_cells
+	if explored.size() == _known_explored_count:
+		return
 	var has_new: bool = false
 	for cell_key: Variant in explored.keys():
 		if not _drawn_explored.has(cell_key):

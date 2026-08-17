@@ -146,6 +146,7 @@ func load_saved_game() -> bool:
 	final_key_fragments = _int_array(data.get("final_key_fragments", []))
 	map_hub_unlocked = bool(data.get("map_hub_unlocked", false))
 	hall_explored_cells = _dictionary(data.get("hall_explored_cells", {}))
+	_last_revealed_hall_cell = Vector2i(-9999, -9999)
 	story_flags = _dictionary(data.get("story_flags", {}))
 	learned_fire_oxygen_rule = bool(data.get("learned_fire_oxygen_rule", false))
 	wake_room_door_unlocked = bool(data.get("wake_room_door_unlocked", false))
@@ -219,6 +220,9 @@ var map_hub_unlocked: bool = false
 # 是否从主菜单正式开始游戏；false = 单独调试房间（解锁所有 Hub）。
 var game_started: bool = false
 var hall_explored_cells: Dictionary = {}
+# reveal_hall_position() 的跨格游标。任何清空/重载 hall_explored_cells 的
+# 地方都必须一并作废它，否则玩家原地不动时新的一局不会重新揭图。
+var _last_revealed_hall_cell := Vector2i(-9999, -9999)
 var story_flags: Dictionary = {}
 
 # ============================================================
@@ -385,6 +389,7 @@ func reset_new_game() -> void:
 	final_key_fragments.clear()
 	map_hub_unlocked = false
 	hall_explored_cells.clear()
+	_last_revealed_hall_cell = Vector2i(-9999, -9999)
 
 	learned_fire_oxygen_rule = false
 	wake_room_door_unlocked = false
@@ -690,6 +695,13 @@ func _add_debug_evidence(evidence_id: String) -> void:
 func reveal_hall_position(world_position: Vector2) -> void:
 	var center_x: int = clampi(int(world_position.x / 32.0), 0, 59)
 	var center_y: int = clampi(int(world_position.y / 32.0), 0, 39)
+	# 这个函数每帧都会被 game_world._process() 调用，但揭开的 3x3 区域只由
+	# 玩家所在的 32px 格决定。没跨格就没有新格子可揭，直接返回，省掉每帧
+	# 9 次字符串拼接与字典查询。hall_explored_cells.clear() 会一并重置游标。
+	var cell := Vector2i(center_x, center_y)
+	if cell == _last_revealed_hall_cell:
+		return
+	_last_revealed_hall_cell = cell
 	var changed: bool = false
 	for y: int in range(center_y - 1, center_y + 2):
 		for x: int in range(center_x - 1, center_x + 2):
