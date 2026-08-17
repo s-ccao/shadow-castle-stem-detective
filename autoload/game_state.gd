@@ -5,6 +5,10 @@ signal state_changed
 signal item_acquired(item_id: String, kind: String, amount: int)
 
 const SAVE_PATH: String = "user://shadow_castle_save.json"
+# 自动存档写得很频繁（每次状态变化合并一次）。直接覆写 SAVE_PATH 的话，
+# 写到一半崩溃或强退就会留下截断的 JSON，玩家整局进度全丢。先写临时文件
+# 再改名，让替换过程对读取方来说是原子的。
+const SAVE_TEMP_PATH: String = "user://shadow_castle_save.json.tmp"
 const SAVE_VERSION: int = 1
 var _loading_save: bool = false
 var _save_queued: bool = false
@@ -59,6 +63,8 @@ func has_saved_game() -> bool:
 
 
 func delete_saved_game() -> void:
+	if FileAccess.file_exists(SAVE_TEMP_PATH):
+		DirAccess.remove_absolute(SAVE_TEMP_PATH)
 	if has_saved_game():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
@@ -107,12 +113,18 @@ func save_to_disk() -> bool:
 	if NoteHud != null and NoteHud.has_method("get_saved_clues"):
 		payload["note_clues"] = NoteHud.get_saved_clues()
 		payload["note_unlocked"] = NoteHud.is_unlocked()
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(SAVE_TEMP_PATH, FileAccess.WRITE)
 	if file == null:
 		return false
 	file.store_string(JSON.stringify(payload))
 	file.close()
-	return true
+	var rename_result: Error = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
+	if rename_result != OK:
+		# 有的平台不允许直接改名覆盖已存在的文件。此时完整的新存档已经
+		# 落盘为 .tmp，最坏情况也只是残留一个临时文件，不会写坏正式存档。
+		DirAccess.remove_absolute(SAVE_PATH)
+		rename_result = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
+	return rename_result == OK
 
 
 func load_saved_game() -> bool:
