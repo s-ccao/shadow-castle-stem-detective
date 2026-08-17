@@ -427,6 +427,12 @@ const WAKE_ROOM_DOOR_INTERACT_RADIUS: float = 75.0
 # 用户手动确认的 Entrance / Wake Room 位置。
 const HALL_ENTRANCE_POSITION: Vector2 = Vector2(240, 1040)
 
+# 从房间返回大厅时，落点要从门坐标挪到门前的可站立处。8 px 一圈向外找，
+# 最远 96 px：足够跨过最深的一扇门（线路房 40 px、服务门 48 px），又不会
+# 远到离开该门的交互半径（最小 75 px），玩家落地后仍能立刻看到门提示。
+const SPAWN_RESOLVE_STEP: float = 8.0
+const SPAWN_RESOLVE_RINGS: int = 12
+
 # Upper-left chemistry crime scene.
 const RED_STAIN_POSITION: Vector2 = Vector2(410.7005, 273.7006)
 const BUTLER_POSITION: Vector2 = Vector2(505.0796, 386.3819)
@@ -4214,6 +4220,45 @@ func enter_wake_room() -> void:
 			+ str(change_error)
 		)
 func get_floor_one_spawn_position() -> Vector2:
+	return resolve_spawn_position(
+		get_floor_one_spawn_anchor()
+	)
+
+
+## 门坐标标记的是门扇本身，而门扇嵌在墙里，所以它几乎从来不是一个站得住人
+## 的点。玩家的 collision_mask 为 0，移动完全由 move_with_floor_constraint()
+## 逐轴调用 is_player_position_walkable() 决定，物理引擎不会把重叠的身体推
+## 出来。于是一旦落在墙里，每个方向都判定为不可走，玩家被永久冻在原地——正
+## 是「看着四周没有墙却怎么也走不动」的那种卡死。这里把落点挪到门前最近的可
+## 站立处；探测不可用时原样返回，行为与从前一致。
+func resolve_spawn_position(anchor: Vector2) -> Vector2:
+	if is_player_position_walkable(anchor):
+		return anchor
+
+	for ring: int in range(1, SPAWN_RESOLVE_RINGS + 1):
+		var radius: float = SPAWN_RESOLVE_STEP * float(ring)
+		var sample_count: int = ring * 8
+
+		for index: int in range(sample_count):
+			var angle: float = TAU * float(index) / float(sample_count)
+			var candidate: Vector2 = anchor + Vector2(
+				cos(angle),
+				sin(angle)
+			) * radius
+
+			if is_player_position_walkable(candidate):
+				return candidate
+
+	push_warning(
+		"No walkable spawn within "
+		+ str(SPAWN_RESOLVE_STEP * float(SPAWN_RESOLVE_RINGS))
+		+ " px of "
+		+ str(anchor)
+	)
+	return anchor
+
+
+func get_floor_one_spawn_anchor() -> Vector2:
 	match GameState.return_spawn_id:
 		"chemistry_door":
 			return (
