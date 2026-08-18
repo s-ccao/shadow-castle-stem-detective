@@ -19,6 +19,8 @@ especially after a merge. Four classes have actually broken this project:
    the call fails at runtime and Godot returns the string unformatted, so the
    player reads a literal "%s". Long prose in this project is nearly always a
    concatenation chain, which makes this easy to write and easy to miss.
+5. `**bold**` in a string. Every label here is a plain Label, so the asterisks
+   reach the player as asterisks. Rich text uses BBCode.
 
 Exits non-zero when anything is found, so it can gate CI.
 """
@@ -172,6 +174,25 @@ def check_format_precedence(path: str) -> list[str]:
     return problems
 
 
+def check_markdown_emphasis(path: str) -> list[str]:
+    """Report `**bold**` inside a string literal.
+
+    Labels here are plain Label nodes, so markdown is not interpreted and the
+    asterisks reach the player verbatim. Rich text in this project uses BBCode
+    (`[b]`), so `**` in a string is always a mistake.
+    """
+    problems: list[str] = []
+    with open(path, encoding="utf-8") as handle:
+        for number, line in enumerate(handle, start=1):
+            code = strip_comment(line)
+            if '"' in code and "**" in code:
+                problems.append(
+                    f"{path}:{number}: '**' in a string literal -- Label does "
+                    "not render markdown, use BBCode or quotation marks"
+                )
+    return problems
+
+
 def check_resource_paths(root: str) -> list[str]:
     """Report res:// references whose target file is absent."""
     problems: list[str] = []
@@ -204,6 +225,7 @@ def main() -> int:
         problems.extend(check_duplicate_keys(path))
         problems.extend(check_duplicate_definitions(path))
         problems.extend(check_format_precedence(path))
+        problems.extend(check_markdown_emphasis(path))
     problems.extend(check_resource_paths(root))
 
     for problem in problems:

@@ -59,12 +59,30 @@ const LEVELS: Array[Dictionary] = [
 		"target_ratio": 0.25, "target_cw": true,
 	},
 ]
+
+## 运转演示。原来按下"启动引擎"是当场判分，齿轮一动不动——一个讲传动的
+## 谜题，最该被看见的东西反而从来没出现过。现在它真的转：主动轮带着整条
+## 链跑起来，输入轮和输出轮各带一个亮点，圈数可以直接对着数。
+const RUN_TIME: float = 2.8
+const RUN_HOLD: float = 0.5
+## 转得慢的那一端在一轮演示里转过多少圈。以慢的一端为准，快的那端才不会
+## 糊成一片；两端的圈数比就是速比本身。
+const SLOW_TURNS: float = 2.0
+const MAX_INPUT_TURNS: float = 8.0
+
 var _level: Dictionary = {}
 var _picked: Array[int] = []
 var _stage_buttons: Array[Button] = []
 var _selected_stage: int = 0
 var _train: GearTrainView
 var _readout: Label
+var _running: bool = false
+var _run_time: float = 0.0
+var _drive_total: float = 0.0
+## 演示跑完之前不告诉玩家速比和转向。原来这两个数是实时显示的，于是只要
+## 把读数调到和目标一致就能过关——那条"中间加一个齿轮不改变速比"的考点，
+## 玩家一次也不需要想。
+var _revealed: bool = false
 
 
 func level_count() -> int:
@@ -76,6 +94,8 @@ func build_level(index: int) -> void:
 	_picked = []
 	_stage_buttons = []
 	_selected_stage = 0
+	_running = false
+	_revealed = false
 	for stage: int in range(int(_level["stages"])):
 		_picked.append(0)
 
@@ -84,7 +104,7 @@ func build_level(index: int) -> void:
 		+ "driver teeth over driven teeth — and a gear in the middle only "
 		+ "flips direction, it never changes the final ratio.",
 		"啮合的两个齿轮转向相反。输出转速 = 输入转速 × 主动轮齿数 ÷ 从动轮齿数——"
-		+ "而夹在中间的齿轮只会改变转向，它**不会**改变最终速比。"
+		+ "而夹在中间的齿轮只会改变转向，它「不会」改变最终速比。"
 	))
 
 	var column := VBoxContainer.new()
@@ -97,7 +117,8 @@ func build_level(index: int) -> void:
 	column.add_child(goal)
 
 	_train = GearTrainView.new()
-	_train.custom_minimum_size = Vector2(0.0, 132.0)
+	_train.custom_minimum_size = Vector2(0.0, 96.0)
+	_train.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(_train)
 
 	_readout = _make_label("", 15, PARCHMENT)
@@ -191,14 +212,23 @@ func _is_clockwise() -> bool:
 
 
 func _on_select_stage(stage: int) -> void:
+	if _running:
+		return
 	_selected_stage = stage
 	_refresh()
 
 
 func _on_pick_gear(teeth: int) -> void:
+	if _running:
+		return
 	if _selected_stage < 0 or _selected_stage >= _picked.size():
 		return
 	_picked[_selected_stage] = teeth
+	# 换了齿轮，上一轮跑出来的结果就不再作数；转角也归零，免得新链条一上来
+	# 就停在一个莫名其妙的姿态上。
+	_revealed = false
+	if _train != null:
+		_train.drive = 0.0
 	for offset: int in range(_picked.size()):
 		var candidate: int = (_selected_stage + 1 + offset) % _picked.size()
 		if _picked[candidate] == 0:
@@ -230,24 +260,37 @@ func _refresh() -> void:
 	if _train != null:
 		_train.input_teeth = int(_level["input"])
 		_train.stages = _picked.duplicate()
+		_train.running = _running
 		_train.queue_redraw()
 	if _readout != null:
 		if _picked.has(0):
 			_readout.text = _text(
 				"The train is incomplete.", "传动链还没装完。"
 			)
-		else:
+		elif _running:
+			_readout.text = _text(
+				"The engine is turning — count the two marked gears.",
+				"引擎正在运转——数一数两个亮点各转了几圈。"
+			)
+		elif _revealed:
 			var spin: String = (
 				_text("clockwise", "顺时针") if _is_clockwise()
 				else _text("counter-clockwise", "逆时针")
 			)
 			_readout.text = _text(
-				"Output: %s, %s" % [_ratio_text(_ratio()), spin],
-				"输出：%s，%s" % [_ratio_text(_ratio()), spin]
+				"It ran at %s, %s." % [_ratio_text(_ratio()), spin],
+				"它跑出来是 %s，%s。" % [_ratio_text(_ratio()), spin]
+			)
+		else:
+			_readout.text = _text(
+				"Assembled. Engage the engine and see what it does.",
+				"装好了。启动引擎，看它究竟转多快、往哪边转。"
 			)
 
 
 func _on_engage() -> void:
+	if _running:
+		return
 	if _picked.has(0):
 		report_level_failed(_text(
 			"A seat is still undecided — put a gear in it or belt through it.",
@@ -260,6 +303,46 @@ func _on_engage() -> void:
 			"所有座位都被跳过了。没有任何啮合，也就什么都不会变。"
 		))
 		return
+
+	# 以慢的那一端为准定圈数：速比大时输入轮慢，速比小时输出轮慢。这样两个
+	# 亮点里总有一个是数得过来的，而两者的圈数比就是速比本身。
+	var ratio: float = _ratio()
+	var turns: float = SLOW_TURNS
+	if ratio < 1.0:
+		turns = SLOW_TURNS / maxf(ratio, 0.05)
+	_drive_total = minf(turns, MAX_INPUT_TURNS) * TAU
+
+	_running = true
+	_run_time = 0.0
+	_revealed = false
+	_set_buttons_disabled(content, true)
+	GameAudio.play(&"switch_throw")
+	_refresh()
+
+
+func _process(delta: float) -> void:
+	if not _running:
+		return
+	# 演示途中玩家可以直接关掉面板。_finish() 只清空内容并不释放面板本身，
+	# 不拦的话演示会继续跑到判分，在一个已经结束的小游戏上再判一次。
+	if not visible or not is_instance_valid(_train):
+		_running = false
+		return
+	_run_time += delta
+	var progress: float = clampf(_run_time / RUN_TIME, 0.0, 1.0)
+	# 平滑起停：两端速度为零，像一台真的要加速、又要停下来的机器。
+	_train.drive = _drive_total * (progress * progress * (3.0 - 2.0 * progress))
+	_train.queue_redraw()
+	if _run_time >= RUN_TIME + RUN_HOLD:
+		_running = false
+		_revealed = true
+		_train.running = false
+		_set_buttons_disabled(content, false)
+		_refresh()
+		_judge()
+
+
+func _judge() -> void:
 	var ratio_ok: bool = is_equal_approx(_ratio(), float(_level["target_ratio"]))
 	var spin_ok: bool = _is_clockwise() == bool(_level["target_cw"])
 	if ratio_ok and spin_ok:

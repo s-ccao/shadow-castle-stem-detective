@@ -129,7 +129,7 @@ func build_level(index: int) -> void:
 	set_instruction(_text(
 		"A change is chemical only when a NEW substance appears. "
 		+ "Sort every sample, then seal the tray.",
-		"只有生成了**新物质**才算化学变化。把每份样本分好类，再封盘。"
+		"只有生成了「新物质」才算化学变化。把每份样本分好类，再封盘。"
 	))
 
 	var column := VBoxContainer.new()
