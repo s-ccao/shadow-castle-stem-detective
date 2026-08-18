@@ -1,13 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://ct1doyvrdwn08"]
 
-[ext_resource type="Script" path="res://scripts/death_ui.gd" id="1_death"]
-[ext_resource type="Texture2D" path="res://assets/ui/screens/death_retry.png" id="2_art"]
-[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_normal.png" id="3_normal"]
-[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_hover.png" id="4_hover"]
-[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_pressed.png" id="5_pressed"]
-[ext_resource type="Texture2D" path="res://assets/ui/panels/button_states/button_disabled.png" id="6_disabled"]
+[ext_resource type="Script" uid="uid://cwtgncc5v2p1f" path="res://scripts/death_ui.gd" id="1_death"]
+[ext_resource type="Texture2D" uid="uid://bq6wj1h6wm2d0" path="res://assets/ui/screens/death_retry.png" id="2_art"]
 
-[node name="DeathUI" type="Control"]
+[node name="DeathUI" type="Control" unique_id=1928581101]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,85 +11,139 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_death")
-button_normal_texture = ExtResource("3_normal")
-button_hover_texture = ExtResource("4_hover")
-button_pressed_texture = ExtResource("5_pressed")
-button_disabled_texture = ExtResource("6_disabled")
 
-[node name="DeathArtwork" type="TextureRect" parent="."]
+[node name="DeathArtwork" type="TextureRect" parent="." unique_id=1319829409]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -209.0
+offset_top = -194.0
+offset_right = 215.0
+offset_bottom = 124.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_art")
+
+[node name="Veil" type="ColorRect" parent="." unique_id=1535044273]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("2_art")
+color = Color(0.013, 0.009, 0.018, 0.54)
+
+[node name="CaseFilePanel" type="Panel" parent="." unique_id=2039080699]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 215.0
+offset_top = 400.0
+offset_right = 809.0
+offset_bottom = 670.0
+
+[node name="CaseFileInlay" type="Panel" parent="CaseFilePanel" unique_id=1926739872]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="DeathTitle" type="Label" parent="."]
-offset_left = 300.0
-offset_top = 270.0
-offset_right = 724.0
-offset_bottom = 298.0
-visible = false
+[node name="StatusMark" type="ColorRect" parent="CaseFilePanel" unique_id=1754509424]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 21.0
+offset_right = 35.0
+offset_bottom = 33.0
 mouse_filter = 2
-theme_override_colors/font_shadow_color = Color(0.12, 0.03, 0.2, 0.9)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 22
-text = "GAME OVER"
-horizontal_alignment = 1
+color = Color(0.63, 0.17, 0.11, 1)
+
+[node name="ReportKicker" type="Label" parent="CaseFilePanel" unique_id=1824317373]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 44.0
+offset_top = 15.0
+offset_right = 560.0
+offset_bottom = 38.0
+theme_override_font_sizes/font_size = 10
+text = "CASE FILE  /  INTERRUPTION REPORT"
 vertical_alignment = 1
 
-[node name="DeathReasonTitle" type="Label" parent="."]
+[node name="DeathReasonTitle" type="Label" parent="CaseFilePanel" unique_id=447842303]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 250.0
-offset_top = 366.0
-offset_right = 774.0
-offset_bottom = 394.0
-mouse_filter = 2
-theme_override_font_sizes/font_size = 18
+offset_left = 30.0
+offset_top = 38.0
+offset_right = 560.0
+offset_bottom = 73.0
+theme_override_font_sizes/font_size = 22
 text = "OBSERVATION LOST"
-horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="DeathReasonBody" type="Label" parent="."]
+[node name="ReportRule" type="ColorRect" parent="CaseFilePanel" unique_id=1424847372]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 250.0
-offset_top = 398.0
-offset_right = 774.0
-offset_bottom = 432.0
+offset_left = 30.0
+offset_top = 81.0
+offset_right = 564.0
+offset_bottom = 82.0
 mouse_filter = 2
-theme_override_font_sizes/font_size = 12
-text = "Your notes and evidence are safe."
-horizontal_alignment = 1
+color = Color(0.68, 0.45, 0.16, 0.72)
+
+[node name="DeathReasonBody" type="Label" parent="CaseFilePanel" unique_id=183467249]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 92.0
+offset_right = 564.0
+offset_bottom = 126.0
+theme_override_font_sizes/font_size = 13
+text = "The Guardian forced you from the trail. Your notes and evidence are safe."
 autowrap_mode = 2
 
-[node name="RetryButton" type="Button" parent="."]
-offset_left = 263.0
-offset_top = 445.0
-offset_right = 417.0
-offset_bottom = 493.0
-pivot_offset = Vector2(77, 24)
-scale = Vector2(1, 1)
-editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
-text = "Retry"
+[node name="RetentionLine" type="Label" parent="CaseFilePanel" unique_id=1248598068]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 132.0
+offset_right = 564.0
+offset_bottom = 152.0
+theme_override_font_sizes/font_size = 11
+text = "EVIDENCE RETAINED  ·  CHECKPOINT READY"
+vertical_alignment = 1
 
-[node name="LoadCheckpointButton" type="Button" parent="."]
-offset_left = 435.0
-offset_top = 445.0
-offset_right = 589.0
-offset_bottom = 493.0
-pivot_offset = Vector2(77, 24)
-scale = Vector2(1, 1)
-editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
-text = "Load Checkpoint"
+[node name="CheckpointButton" type="Button" parent="CaseFilePanel" unique_id=103811059]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 166.0
+offset_right = 564.0
+offset_bottom = 210.0
+text = "RETURN TO CHECKPOINT"
 
-[node name="MainMenuButton" type="Button" parent="."]
-offset_left = 607.0
-offset_top = 445.0
-offset_right = 761.0
-offset_bottom = 493.0
-pivot_offset = Vector2(77, 24)
-scale = Vector2(1, 1)
-editor_description = "可在 Inspector 独立调整 Position、Size、Scale 和 Pivot Offset。脚本不会覆盖按钮几何属性。"
-text = "Main Menu"
+[node name="RetryButton" type="Button" parent="CaseFilePanel" unique_id=1964643650]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 218.0
+offset_right = 290.0
+offset_bottom = 252.0
+text = "RETRY ROOM"
+
+[node name="MainMenuButton" type="Button" parent="CaseFilePanel" unique_id=509364702]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 304.0
+offset_top = 218.0
+offset_right = 564.0
+offset_bottom = 252.0
+text = "RETURN TO ARCHIVE"

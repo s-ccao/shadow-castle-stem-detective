@@ -14,7 +14,8 @@ const RETURN_SPAWN_ID: String = "dining_hall_door"
 const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 930.0)
 const EXIT_POSITION: Vector2 = Vector2(724.0, 1030.0)
 const EXIT_RADIUS: float = 80.0
-const INTERACTION_CONTACT_MARGIN: float = 4.0
+const EXIT_RECT: Rect2 = Rect2(646.0, 970.0, 156.0, 116.0)
+const INTERACTION_CONTACT_MARGIN: float = 14.0
 const LEGACY_CONTACT_RADIUS: float = 20.0
 const INTERACTION_FRONT_OFFSET: Vector2 = Vector2(0.0, 28.0)
 const PROP_NODE_PATHS: Dictionary = {
@@ -117,18 +118,21 @@ func _ready() -> void:
 		"room_display_name": "Dining Hall",
 		"exit_position": EXIT_POSITION,
 		"exit_radius": EXIT_RADIUS,
+		"exit_rect": EXIT_RECT,
 		"interaction_contact_margin": INTERACTION_CONTACT_MARGIN,
 		"legacy_contact_radius": LEGACY_CONTACT_RADIUS,
 		"interaction_front_offset": INTERACTION_FRONT_OFFSET,
 		"gameplay_camera_zoom": GAMEPLAY_CAMERA_ZOOM,
 		"developer_camera_zoom": DEVELOPER_CAMERA_ZOOM,
 		"room_size": Vector2(ROOM_WIDTH, ROOM_HEIGHT),
+		"preferred_spawn": PLAYER_SPAWN_POSITION,
 		"prop_front_z": PROP_FRONT_Z,
 		"prop_back_z": PROP_BACK_Z,
+		"occlusion_mode": "visual_anchor",
 		"ui_layer_name": "DiningRoomUI",
 	})
-	if player.has_method("set_visual_scale"):
-		player.call("set_visual_scale", 1.0)
+	if player.has_method("set_room_visual_scale"):
+		player.call("set_room_visual_scale", ROOM_ID)
 	GameState.return_spawn_id = RETURN_SPAWN_ID
 
 
@@ -151,6 +155,7 @@ func _mark_dining_item(item_name: String) -> String:
 	GameState.set_story_flag("dining_timeline_reconstructed")
 	GameState.add_key("service_corridor_key")
 	GameState.add_evidence("dining_timeline")
+	_grant_counter_serum_blueprints()
 	_show_dining_note(
 		"dining_timeline_reconstructed_note",
 		"The Last Twenty Minutes",
@@ -163,6 +168,21 @@ func _mark_dining_item(item_name: String) -> String:
 			"category": "investigation",
 		})
 	return "The dining timeline is complete. Mrs. Lin's last note points toward the hidden service route. A cold key is hidden behind the wall door."
+
+
+## The dining hall is where the serum was administered, so it is also where
+## Mrs. Lin's counter-formulas are hidden. Reconstructing the last dinner is
+## the beat that turns the Guardian from an unavoidable hunter into a problem
+## the player can solve with chemistry.
+func _grant_counter_serum_blueprints() -> void:
+	GameState.add_recipe("recipe_purification")
+	GameState.add_recipe("recipe_daze")
+	GameState.add_recipe("recipe_shroud")
+	_show_dining_note(
+		"dining_counter_serum_note",
+		"Mrs. Lin's Counter-Formulas",
+		"Pressed inside the carving-board ledger are three formulas in Mrs. Lin's hand. \"They put the marker in the wine, not the food. It is why the thing in the corridor never has to search. Wash it out with moonleaf and blue blossom in twice-distilled water and it will lose you the moment you leave its sight. Two more, for when sight is not enough: iron salt and prism dust to blind it, prism dust alone to bend the light around you.\""
+	)
 
 
 func _show_dining_note(note_id: String, title: String, content: String) -> void:

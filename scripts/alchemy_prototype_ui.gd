@@ -613,28 +613,11 @@ func _text(english: String, chinese: String) -> String:
 
 
 func _ingredient_texture_path(item_id: String) -> String:
-	match item_id:
-		"blue_blossom":
-			return "res://assets/ui/alchemy/blue_blossom.png"
-		"moonleaf":
-			return "res://assets/ui/alchemy/moonleaf.png"
-		"distilled_water":
-			return "res://assets/ui/alchemy/distilled_water.png"
-		"iron_salt":
-			return "res://assets/ui/alchemy/iron_salt.png"
-		"prism_dust":
-			return "res://assets/ui/alchemy/prism_dust.png"
-	return ""
+	return GameState.get_item_texture_path(item_id)
 
 
 func _potion_texture_path(potion_id: String) -> String:
-	if potion_id == "vision_potion":
-		return "res://assets/ui/alchemy/vision_potion_eyes.png"
-	if potion_id == "swift_potion":
-		return "res://assets/ui/alchemy/swiftness_potion.png"
-	if potion_id == "green_potion":
-		return "res://assets/ui/alchemy/green_potion.png"
-	return ""
+	return GameState.get_item_texture_path(potion_id)
 
 
 func _create_eye_overlay(overlay_size: Vector2) -> Control:

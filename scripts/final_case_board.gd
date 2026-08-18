@@ -176,6 +176,9 @@ var close_button: Button
 var source_slots_label: Label
 var workbench: Control
 var table_canvas: Control
+var effect_layer: Control
+var table_core_glow: Sprite2D
+var connection_lines: Dictionary = {}
 var source_buttons: Dictionary = {}
 var conclusion_buttons: Dictionary = {}
 var slot_buttons: Dictionary = {}
@@ -195,7 +198,22 @@ func _ready() -> void:
 	layer = 60
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_bind_scene()
+	# The accusation is made at a lit table, not against a flat void. The shared
+	# atmosphere keeps this screen in the same room as the rest of the archive.
+	ArchiveUi.install_screen_atmosphere(root, {
+		"lamp_anchor": Vector2(0.50, 0.50),
+		"lamp_tint": Color(0.74, 0.56, 1.0, 1.0),
+		"mote_tint": Color(0.88, 0.80, 1.0, 1.0),
+		"lamp_strength": 0.20,
+		"lamp_radius": 0.44,
+		"vignette_strength": 0.62,
+		"vignette_radius": 0.30,
+		"mote_strength": 0.34,
+		"grain_strength": 0.024,
+		"layer_index": 1,
+	})
 	_build_scene_controls()
+	_build_effect_layer()
 	_apply_safe_area()
 	root.resized.connect(_apply_safe_area)
 	workbench.resized.connect(_layout_table_canvas)
@@ -288,6 +306,45 @@ func _bind_scene() -> void:
 	form_button.pressed.connect(_form_conclusion)
 	lever_button.pressed.connect(_pull_accusation_lever)
 	close_button.pressed.connect(close_case)
+
+
+func _build_effect_layer() -> void:
+	effect_layer = Control.new()
+	effect_layer.name = "FinalBoardOpticalVFX"
+	effect_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	effect_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	effect_layer.z_index = 80
+	root.add_child(effect_layer)
+
+	# The analysis table is the instrument the whole case ends on. A slow violet
+	# core keeps it alive beneath the role slots without competing with them.
+	table_core_glow = Sprite2D.new()
+	table_core_glow.name = "AnalysisTableCore"
+	table_core_glow.texture = OpticalFxRuntime.radial_glow_texture()
+	table_core_glow.material = OpticalFxRuntime.additive_material()
+	table_core_glow.modulate = Color(0.62, 0.42, 1.0, 0.30)
+	table_canvas.add_child(table_core_glow)
+	# Directly above the painted table, below the role slots the player reads.
+	var table_artwork := table_canvas.get_node_or_null("AnalysisTableArtwork")
+	table_canvas.move_child(
+		table_core_glow,
+		0 if table_artwork == null else table_artwork.get_index() + 1
+	)
+	_layout_table_core()
+	table_canvas.resized.connect(_layout_table_core)
+	var core_pulse := table_core_glow.create_tween().set_loops()
+	core_pulse.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	core_pulse.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	core_pulse.tween_property(table_core_glow, "modulate:a", 0.15, 2.4)
+	core_pulse.tween_property(table_core_glow, "modulate:a", 0.30, 2.4)
+
+
+func _layout_table_core() -> void:
+	if table_core_glow == null or not is_instance_valid(table_core_glow):
+		return
+	table_core_glow.position = table_canvas.size * 0.5
+	var core_radius := minf(table_canvas.size.x, table_canvas.size.y) * 0.34
+	table_core_glow.scale = Vector2.ONE * maxf(0.05, core_radius / 64.0)
 
 
 func _build_scene_controls() -> void:
@@ -470,6 +527,7 @@ func _load_progress() -> void:
 
 
 func _refresh_copy(_language: String = "") -> void:
+	ArchiveUi.refresh_tree(root)
 	title_label.text = _text(
 		"ASHFORD ANALYSIS TABLE · SEALED REVIEW" if true_case_mode else "ASHFORD ANALYSIS TABLE",
 		"阿什福德分析圆桌 · 密封复查" if true_case_mode else "阿什福德分析圆桌"
@@ -478,12 +536,12 @@ func _refresh_copy(_language: String = "") -> void:
 		"The Butler acted. Now use the pinned private records to trace the author of the command." if true_case_mode else "Build a conclusion from 2–3 raw evidence records. Then seat it in the matching brass slot.",
 		"管家执行了操作。现在用钉选的私密档案追溯命令的作者。" if true_case_mode else "从 2–3 条原始证物中构成结论，再将它放入对应的黄铜槽位。"
 	)
-	source_heading.text = _text("RAW EVIDENCE", "原始证物")
+	source_heading.text = _text("1 · PIN RAW EVIDENCE", "1 · 钉选原始证物")
 	source_instruction.text = _text(
 		"Choose two or three records. The pins below become one claim.",
 		"选择两到三条记录。下方证物钉将组成一条结论。"
 	)
-	conclusion_heading.text = _text("CONCLUSION FILES", "结论档案")
+	conclusion_heading.text = _text("2 · FORM & SEAT CLAIMS", "2 · 形成并放置结论")
 	protocol_label.text = _text(
 		"Form a claim first. Only completed files enter this tray.",
 		"先形成结论；只有已完成的档案会进入此处。"
@@ -494,8 +552,8 @@ func _refresh_copy(_language: String = "") -> void:
 	)
 	close_button.text = _text("RETURN TO INVESTIGATION", "返回调查")
 	lever_button.text = _text(
-		"PULL LEVER · EXPOSE MECHANIC" if true_case_mode else "PULL LEVER · ACCUSE BUTLER",
-		"拉下拉杆 · 揭露机械师" if true_case_mode else "拉下拉杆 · 指认管家"
+		"3 · PULL LEVER · TRACE COMMAND" if true_case_mode else "3 · PULL LEVER · SEAL ACCUSATION",
+		"3 · 拉下拉杆 · 追溯命令" if true_case_mode else "3 · 拉下拉杆 · 封存指控"
 	)
 	_refresh()
 
@@ -505,7 +563,7 @@ func _refresh() -> void:
 		return
 	source_drawer.visible = not true_case_mode
 	form_button.visible = not true_case_mode
-	conclusion_heading.text = _text("SECOND-LAYER CHAIN" if true_case_mode else "CONCLUSION FILES", "第二层命令链" if true_case_mode else "结论档案")
+	conclusion_heading.text = _text("2 · HIDDEN COMMAND CHAIN" if true_case_mode else "2 · FORM & SEAT CLAIMS", "2 · 隐藏命令链" if true_case_mode else "2 · 形成并放置结论")
 	protocol_label.text = _text(
 		"Seat the pinned private record in the role it played in the hidden command chain." if true_case_mode else "Form a claim first. Only completed files enter this tray.",
 		"将钉选的私密档案放入它在隐藏命令链中承担的角色。" if true_case_mode else "先形成结论；只有已完成的档案会进入此处。"
@@ -596,8 +654,8 @@ func _refresh() -> void:
 			button.self_modulate = Color.WHITE
 
 	form_button.text = _text(
-		"FORM CONCLUSION  %d/3" % selected_sources.size(),
-		"形成结论  %d/3" % selected_sources.size()
+		"2 · FORM CONCLUSION  %d/3" % selected_sources.size(),
+		"2 · 形成结论  %d/3" % selected_sources.size()
 	)
 	var source_slots: Array[String] = []
 	for source_id: String in selected_sources:
@@ -631,6 +689,8 @@ func _toggle_source(source_id: String) -> void:
 		)
 		ArchiveUi.set_button_status(form_button, &"error")
 	_refresh()
+	if selected_sources.has(source_id):
+		_play_pin_effect(source_buttons.get(source_id) as Button)
 
 
 func _form_conclusion() -> void:
@@ -682,7 +742,9 @@ func _place_selected_conclusion(slot_id: String) -> void:
 			"矛盾——“" + _localized(conclusion, "") + "”不属于这个槽位。连线已变暗，进度不会丢失。"
 		)
 		_refresh()
+		_play_conflict_effect(slot_buttons.get(slot_id) as Button)
 		return
+	var placed_conclusion_id := selected_conclusion
 	placed[slot_id] = selected_conclusion
 	GameState.set_story_flag("final_case_placed_" + slot_id)
 	status_label.text = _text(
@@ -691,6 +753,12 @@ func _place_selected_conclusion(slot_id: String) -> void:
 	)
 	selected_conclusion = ""
 	_refresh()
+	_play_board_link(
+		conclusion_buttons.get(placed_conclusion_id) as Button,
+		slot_buttons.get(slot_id) as Button,
+		"conclusion_" + slot_id,
+		false
+	)
 
 
 func _pull_accusation_lever() -> void:
@@ -715,6 +783,11 @@ func _levers_ready() -> void:
 		else placed.size() == SLOT_SPECS.size() and not GameState.has_story_flag("normal_ending")
 	)
 	lever_button.disabled = not ready
+	if ready and not bool(lever_button.get_meta("ready_fx_shown", false)):
+		lever_button.set_meta("ready_fx_shown", true)
+		_play_lever_ready_effect()
+	elif not ready:
+		lever_button.set_meta("ready_fx_shown", false)
 	if true_case_mode and GameState.has_story_flag("true_ending"):
 		lever_button.text = _text("TRUE CASE REVEALED", "真相案件已揭露")
 
@@ -741,7 +814,9 @@ func _place_selected_archive(slot_id: String) -> void:
 			"CONTRADICTION — this archive has a different role in the command chain. No progress is lost.",
 			"矛盾——这份档案在命令链中承担的是另一种角色。进度不会丢失。"
 		)
+		_play_conflict_effect(archive_slot_buttons.get(slot_id) as Button)
 		return
+	var placed_archive_id := selected_archive
 	placed_archives[slot_id] = selected_archive
 	GameState.set_story_flag("true_case_placed_" + slot_id)
 	selected_archive = ""
@@ -750,6 +825,131 @@ func _place_selected_archive(slot_id: String) -> void:
 		"第二层关联已锁定。"
 	)
 	_refresh()
+	_play_board_link(
+		archive_buttons.get(placed_archive_id) as Button,
+		archive_slot_buttons.get(slot_id) as Button,
+		"archive_" + slot_id,
+		true
+	)
+
+
+func _play_pin_effect(button: Button) -> void:
+	if button == null or effect_layer == null:
+		return
+	var center := _effect_point(button)
+	OpticalFxRuntime.pulse_ring(
+		self,
+		effect_layer,
+		center,
+		Color(0.96, 0.78, 0.34, 0.90),
+		18.0,
+		1.9,
+		0.32
+	)
+	button.pivot_offset = button.size * 0.5
+	button.scale = Vector2(1.055, 1.055)
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", Vector2.ONE, 0.18)
+
+
+func _play_conflict_effect(button: Button) -> void:
+	if button == null or effect_layer == null:
+		return
+	var center := _effect_point(button)
+	OpticalFxRuntime.pulse_ring(
+		self,
+		effect_layer,
+		center,
+		Color(0.92, 0.24, 0.30, 0.92),
+		22.0,
+		2.25,
+		0.36
+	)
+	button.pivot_offset = button.size * 0.5
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_property(button, "rotation", 0.025, 0.04)
+	tween.tween_property(button, "rotation", -0.022, 0.05)
+	tween.tween_property(button, "rotation", 0.0, 0.06)
+
+
+func _play_board_link(
+	source_button: Button,
+	target_button: Button,
+	line_id: String,
+	arcane: bool
+) -> void:
+	if source_button == null or target_button == null or effect_layer == null:
+		return
+	var start := _effect_point(source_button)
+	var finish := _effect_point(target_button)
+	var colour := (
+		Color(0.72, 0.54, 1.0, 0.90)
+		if arcane
+		else Color(0.94, 0.72, 0.30, 0.90)
+	)
+	if connection_lines.has(line_id):
+		var old_line := connection_lines[line_id] as Line2D
+		if old_line != null and is_instance_valid(old_line):
+			old_line.queue_free()
+	var line := Line2D.new()
+	line.name = "EvidenceConnection_" + line_id
+	line.points = PackedVector2Array([start, start])
+	line.width = 2.6
+	line.default_color = colour
+	effect_layer.add_child(line)
+	connection_lines[line_id] = line
+	target_button.modulate.a = 0.38
+	OpticalFxRuntime.trace_beam(
+		self,
+		line,
+		start,
+		finish,
+		colour,
+		2.8,
+		0.34,
+		0.05
+	)
+	OpticalFxRuntime.launch_jewel(
+		self,
+		effect_layer,
+		start,
+		finish,
+		colour,
+		0.34,
+		func() -> void:
+			if is_instance_valid(target_button):
+				target_button.modulate.a = 1.0
+				_play_pin_effect(target_button)
+	)
+
+
+func _play_lever_ready_effect() -> void:
+	if lever_button == null or effect_layer == null:
+		return
+	var center := _effect_point(lever_button)
+	OpticalFxRuntime.pulse_ring(
+		self,
+		effect_layer,
+		center,
+		Color(0.72, 0.52, 1.0, 0.92),
+		28.0,
+		2.25,
+		0.46
+	)
+	lever_button.pivot_offset = lever_button.size * 0.5
+	lever_button.scale = Vector2(1.08, 1.08)
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(lever_button, "scale", Vector2.ONE, 0.24)
+
+
+func _effect_point(control: Control) -> Vector2:
+	var global_point := control.get_global_transform_with_canvas() * (control.size * 0.5)
+	return effect_layer.get_global_transform_with_canvas().affine_inverse() * global_point
 
 
 func _sealed_archive_pinned(archive_id: String) -> bool:

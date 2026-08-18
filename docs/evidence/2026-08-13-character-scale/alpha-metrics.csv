@@ -1,0 +1,8 @@
+name,frame_width,frame_height,frames,opaque_width_min,opaque_width_max,opaque_width_average,opaque_height_min,opaque_height_max,opaque_height_average,bottom_padding_min,bottom_padding_max,representative_width,representative_height,representative_bottom
+player,256,256,64,103,126,114.45,228,244,236.83,6,24,121,239,245
+butler,48,68,64,15,26,19.70,41,46,44.42,11,13,26,43,57
+guardian,128,156,64,42,72,58.88,90,103,96.94,20,30,69,100,134
+gardener,256,256,16,106,113,109.44,203,241,210.94,0,53,110,208,235
+mechanic,256,256,16,100,111,104.81,211,221,214.44,3,42,101,211,224
+dr_lin_echo,256,256,16,106,116,110.56,196,240,212.06,0,60,111,199,227
+mrs_lin_fallen,1536,1024,1,1328,1328,1328.00,742,742,742.00,89,89,1328,742,935

@@ -13,8 +13,10 @@ var _unlocked := false
 var _hovered := false
 var _feature_sequence: int = 0
 var _feature_tween: Tween
+var _entry_suppressed := false
 
 @onready var icon_area: Area2D = $IconArea
+@onready var hub_rail: Panel = $HubRailBackplate
 @onready var icon_sprite: Sprite2D = $IconArea/IconSprite
 @onready var hover_halo: Panel = $IconArea/HoverHalo
 @onready var feature_ring: Panel = $IconArea/FeatureRing
@@ -33,6 +35,12 @@ func _ready() -> void:
 	# 笔记本入口默认解锁并跨房间常驻显示；
 	# wake_room 的 unlock()/show_feature_unlock() 仍然有效。
 	icon_area.visible = _unlocked
+	hub_rail.visible = _unlocked
+	_sync_hub_rail_width()
+	if not GameState.state_changed.is_connected(_sync_hub_rail_width):
+		GameState.state_changed.connect(_sync_hub_rail_width)
+	if not get_tree().scene_changed.is_connected(_sync_hub_rail_width):
+		get_tree().scene_changed.connect(_sync_hub_rail_width)
 	_set_hovered(false)
 	icon_area.input_event.connect(_on_icon_input)
 
@@ -129,13 +137,16 @@ func get_journal() -> CanvasLayer:
 ## 解锁：显示书本图标
 func unlock() -> void:
 	_unlocked = true
-	icon_area.visible = true
+	icon_area.visible = not _entry_suppressed
+	hub_rail.visible = not _entry_suppressed
+	_sync_hub_rail_width()
 
 
 ## 重置（新游戏时调用，隐藏图标并清空笔记数据）
 func reset() -> void:
 	_unlocked = false
 	icon_area.visible = false
+	hub_rail.visible = false
 	hide_feature_unlock()
 	_set_hovered(false)
 	if _journal != null:
@@ -198,3 +209,20 @@ func restore_saved_clues(data: Dictionary) -> void:
 
 func all_sealed_archives_pinned() -> bool:
 	return get_journal().all_sealed_archives_pinned()
+
+
+func set_entry_suppressed(suppressed: bool) -> void:
+	_entry_suppressed = suppressed
+	icon_area.visible = _unlocked and not suppressed
+	hub_rail.visible = _unlocked and not suppressed
+
+
+func _sync_hub_rail_width() -> void:
+	if hub_rail == null:
+		return
+	# The full map entry is Hall-only. Safe rooms keep a compact three-tool rail
+	# instead of leaving an unexplained empty socket at the right edge.
+	hub_rail.size = Vector2(
+		354.0 if GameState.current_room_id == "floor_1_hub" else 266.0,
+		84.0
+	)

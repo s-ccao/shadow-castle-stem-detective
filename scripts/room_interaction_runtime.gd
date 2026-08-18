@@ -7,10 +7,11 @@ extends Node
 ## present room-authored feedback, and optionally expose collision debug visuals.
 ## The owning room keeps its own puzzle rules and narrative consequences.
 
-const DEFAULT_HINT_PANEL_POSITION := Vector2(238.0, 696.0)
+const DEFAULT_HINT_PANEL_POSITION := Vector2(238.0, 686.0)
 const DEFAULT_HINT_PANEL_SIZE := Vector2(500.0, 68.0)
 const ITEM_PROMPT_OFFSET := Vector2(0.0, -18.0)
 const EXIT_PROMPT_OFFSET := Vector2(0.0, -85.0)
+const FOCUS_PADDING := Vector2(10.0, 10.0)
 
 var room: Node2D
 var player: Node2D
@@ -20,7 +21,8 @@ var prop_occlusion_paths: Array[NodePath] = []
 var room_display_name := "Room"
 var exit_position := Vector2.ZERO
 var exit_radius := 80.0
-var interaction_contact_margin := 4.0
+var exit_rect := Rect2()
+var interaction_contact_margin := RoomSpatialRuntime.DEFAULT_INTERACTION_MARGIN
 var legacy_contact_radius := 20.0
 var interaction_front_offset := Vector2(0.0, 28.0)
 var gameplay_camera_zoom := Vector2.ONE
@@ -36,6 +38,7 @@ var interaction_hint_panel: Panel
 var interact_label: Label
 var prop_collision_bodies: Dictionary = {}
 var _texture_opaque_rect_cache: Dictionary = {}
+var spatial := RoomSpatialRuntime.new()
 var _feedback_text := ""
 var _prompt_position := Vector2.ZERO
 var _prompt_offset := ITEM_PROMPT_OFFSET
@@ -56,6 +59,12 @@ func configure(
 	room_display_name = str(config.get("room_display_name", "Room"))
 	exit_position = config.get("exit_position", Vector2.ZERO)
 	exit_radius = float(config.get("exit_radius", exit_radius))
+	exit_rect = config.get("exit_rect", exit_rect)
+	if exit_rect.size.x <= 0.0 or exit_rect.size.y <= 0.0:
+		exit_rect = Rect2(
+			exit_position - Vector2.ONE * exit_radius * 0.5,
+			Vector2.ONE * exit_radius
+		)
 	interaction_contact_margin = float(
 		config.get("interaction_contact_margin", interaction_contact_margin)
 	)
@@ -79,6 +88,13 @@ func configure(
 
 	_create_prop_collisions()
 	_sync_scene_interaction_points()
+	if config.has("preferred_spawn"):
+		var preferred_spawn := config.get("preferred_spawn", player.global_position) as Vector2
+		player.global_position = spatial.resolve_safe_spawn(
+			player as CharacterBody2D,
+			preferred_spawn,
+			Rect2(Vector2.ZERO, room_size)
+		)
 	_create_room_ui(str(config.get("ui_layer_name", room_display_name + "UI")))
 	_create_follow_camera()
 	_create_interaction_focus()
@@ -98,6 +114,10 @@ func refresh(input_enabled: bool, priority_interaction: Dictionary = {}) -> Stri
 		return _show_priority_interaction(priority_interaction)
 
 	for item: Dictionary in items:
+		# A concealed device is not simply invisible: it must not offer a prompt,
+		# a focus box or a contact band either, or the player can feel for it.
+		if bool(item.get("concealed", false)):
+			continue
 		if _is_player_touching_item(item):
 			var item_name := str(item["name"])
 			var item_label := str(item["label"])
@@ -108,10 +128,17 @@ func refresh(input_enabled: bool, priority_interaction: Dictionary = {}) -> Stri
 			_show_item_focus(item)
 			return item_name
 
-	if player != null and player.global_position.distance_to(exit_position) <= exit_radius:
+	if (
+		player != null
+		and spatial.is_actor_near_rect(
+			player as CharacterBody2D,
+			exit_rect,
+			interaction_contact_margin
+		)
+	):
 		_show_prompt(
 			"Press E to return to the Castle Hall",
-			exit_position,
+			Vector2(exit_rect.get_center().x, exit_rect.position.y),
 			EXIT_PROMPT_OFFSET
 		)
 		_show_exit_focus()
@@ -135,11 +162,23 @@ func _show_priority_interaction(priority_interaction: Dictionary) -> String:
 	var interaction_id := str(priority_interaction.get("id", ""))
 	var label := str(priority_interaction.get("label", interaction_id))
 	var position: Vector2 = priority_interaction.get("position", Vector2.ZERO)
+	var interaction_rect: Rect2 = priority_interaction.get("interaction_rect", Rect2())
 	var prompt := str(priority_interaction.get("prompt", "Press E to inspect " + label))
 	var offset: Vector2 = priority_interaction.get("prompt_offset", ITEM_PROMPT_OFFSET)
+	if interaction_rect.size.x > 0.0 and interaction_rect.size.y > 0.0:
+		position = Vector2(interaction_rect.get_center().x, interaction_rect.position.y)
 	_show_prompt(prompt, position, offset)
 	if interaction_focus != null:
-		interaction_focus.set_focus(position, label, true)
+		if interaction_rect.size.x > 0.0 and interaction_rect.size.y > 0.0:
+			var focus_rect := spatial.grow_rect(interaction_rect, FOCUS_PADDING)
+			interaction_focus.set_focus(
+				focus_rect.get_center(),
+				label,
+				true,
+				focus_rect.size
+			)
+		else:
+			interaction_focus.set_focus(position, label, true)
 	return interaction_id
 
 
@@ -175,7 +214,13 @@ func _show_item_focus(item: Dictionary) -> void:
 
 func _show_exit_focus() -> void:
 	if interaction_focus != null:
-		interaction_focus.set_focus(exit_position, "Castle Hall exit", true)
+		var focus_rect := spatial.grow_rect(exit_rect, FOCUS_PADDING)
+		interaction_focus.set_focus(
+			focus_rect.get_center(),
+			"Castle Hall exit",
+			true,
+			focus_rect.size
+		)
 
 
 func _create_room_ui(layer_name: String) -> void:
@@ -271,82 +316,34 @@ func _sync_scene_interaction_points() -> void:
 func _update_prop_occlusion_layers() -> void:
 	if player == null:
 		return
-	if occlusion_mode == "visual_anchor":
-		_update_anchor_occlusion_layers()
-		return
-	_update_collision_occlusion_layers()
+	_update_visual_foot_occlusion_layers()
 
 
-func _update_collision_occlusion_layers() -> void:
-	var player_rect := _get_player_collision_rect()
+func _update_visual_foot_occlusion_layers() -> void:
 	for item_name_variant: Variant in prop_node_paths.keys():
 		var item_name := str(item_name_variant)
 		var prop := room.get_node_or_null(prop_node_paths[item_name]) as Node2D
 		if prop == null:
 			continue
-		var prop_visual := _find_prop_sprite(prop)
-		if prop_visual == null:
-			continue
-		var furniture_rect := _get_furniture_collision_rect(item_name)
-		if furniture_rect.size == Vector2.ZERO:
-			continue
-		var target_z := prop_back_z if player_rect.end.y <= furniture_rect.position.y + 2.0 else prop_front_z
 		prop.z_index = 0
-		prop_visual.z_as_relative = false
-		prop_visual.z_index = target_z
-
-
-func _update_anchor_occlusion_layers() -> void:
-	for prop_path: NodePath in prop_occlusion_paths:
-		var prop := room.get_node_or_null(prop_path) as Node2D
-		if prop == null or prop.get_child_count() == 0:
-			continue
-		var prop_visual := prop.get_child(0) as CanvasItem
-		if prop_visual == null:
-			continue
-		var visual_anchor := _get_prop_visual_anchor(prop)
-		var target_z := prop_back_z if player.global_position.y < visual_anchor.y else prop_front_z
-		prop.z_index = 0
-		prop_visual.z_as_relative = false
-		prop_visual.z_index = target_z
+		spatial.update_occlusion(
+			player as CharacterBody2D,
+			prop,
+			prop_back_z,
+			prop_front_z
+		)
 
 
 func _find_prop_sprite(prop: Node2D) -> Sprite2D:
-	for child: Node in prop.get_children():
-		if child is Sprite2D:
-			return child as Sprite2D
-	return null
+	return spatial.find_visual_node(prop) as Sprite2D
 
 
 func _get_prop_visual_rect(prop: Node2D) -> Rect2:
-	if prop.get_child_count() == 0:
-		return Rect2(prop.global_position, Vector2.ZERO)
-	var sprite := prop.get_child(0) as Sprite2D
-	if sprite == null or sprite.texture == null:
-		return Rect2(prop.global_position, Vector2.ZERO)
-	var texture_size := sprite.texture.get_size()
-	var opaque_rect := _get_texture_opaque_rect(sprite.texture)
-	var opaque_size := Vector2(
-		float(opaque_rect.size.x) * absf(sprite.scale.x),
-		float(opaque_rect.size.y) * absf(sprite.scale.y)
-	)
-	var local_top_left := sprite.position + sprite.offset * sprite.scale
-	if sprite.centered:
-		local_top_left += Vector2(
-			(float(opaque_rect.position.x) - texture_size.x * 0.5) * sprite.scale.x,
-			(float(opaque_rect.position.y) - texture_size.y * 0.5) * sprite.scale.y
-		)
-	else:
-		local_top_left += Vector2(
-			float(opaque_rect.position.x) * sprite.scale.x,
-			float(opaque_rect.position.y) * sprite.scale.y
-		)
-	return Rect2(prop.to_global(local_top_left), opaque_size)
+	return spatial.get_visual_rect(prop)
 
 
 func _get_prop_visual_anchor(prop: Node2D) -> Vector2:
-	var visual_rect := _get_prop_visual_rect(prop)
-	return visual_rect.position + Vector2(visual_rect.size.x * 0.5, visual_rect.size.y)
+	return spatial.get_visual_feet(prop)
 
 
 func _get_texture_opaque_rect(texture: Texture2D) -> Rect2i:
@@ -383,6 +380,8 @@ func _get_item_focus_position(item: Dictionary) -> Vector2:
 
 
 func _get_item_visual_rect(item: Dictionary) -> Rect2:
+	if item.has("interaction_rect"):
+		return item["interaction_rect"] as Rect2
 	var item_name := str(item["name"])
 	if prop_node_paths.has(item_name):
 		var prop := room.get_node_or_null(prop_node_paths[item_name]) as Node2D
@@ -396,7 +395,7 @@ func _get_item_visual_rect(item: Dictionary) -> Rect2:
 
 func _get_item_focus_rect(item: Dictionary) -> Rect2:
 	var visual_rect := _get_item_visual_rect(item)
-	var padding := Vector2(24.0, 24.0)
+	var padding := FOCUS_PADDING
 	return Rect2(visual_rect.position - padding, visual_rect.size + padding * 2.0)
 
 
@@ -406,16 +405,7 @@ func _get_item_prompt_anchor(item: Dictionary) -> Vector2:
 
 
 func _get_player_collision_rect() -> Rect2:
-	if player == null:
-		return Rect2()
-	var collision_shape := player.get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if collision_shape == null:
-		return Rect2(player.global_position, Vector2.ZERO)
-	var rectangle := collision_shape.shape as RectangleShape2D
-	if rectangle == null:
-		return Rect2(player.global_position, Vector2.ZERO)
-	var size := rectangle.size * collision_shape.global_scale.abs()
-	return Rect2(collision_shape.global_position - size * 0.5, size)
+	return spatial.get_player_collision_rect(player as CharacterBody2D)
 
 
 func _get_furniture_collision_rect(item_name: String) -> Rect2:
@@ -434,27 +424,31 @@ func _get_furniture_collision_rect(item_name: String) -> Rect2:
 	return Rect2(collision_shape.global_position - size * 0.5, size)
 
 
+## A device mounted on furniture cannot be stood on, so the surface the player
+## reaches it from is not the surface that frames it. When a room declares an
+## explicit contact band the player operates the device from walkable floor in
+## front of it, while focus, prompt anchor and highlight still use the visible
+## interaction rectangle.
+func _get_item_contact_rect(item: Dictionary) -> Rect2:
+	if item.has("contact_rect"):
+		return item["contact_rect"] as Rect2
+	return _get_item_visual_rect(item)
+
+
 func _is_player_touching_item(item: Dictionary) -> bool:
-	var item_name := str(item["name"])
-	if prop_collision_bodies.has(item_name):
-		var player_rect := _get_player_collision_rect()
-		var furniture_rect := _get_furniture_collision_rect(item_name)
-		if furniture_rect.size != Vector2.ZERO:
-			return _rect_gap(player_rect, furniture_rect) <= interaction_contact_margin
+	var target_rect := _get_item_contact_rect(item)
+	if target_rect.size.x > 0.0 and target_rect.size.y > 0.0:
+		return spatial.is_actor_near_rect(
+			player as CharacterBody2D,
+			target_rect,
+			interaction_contact_margin
+		)
 	var interaction_radius := float(item.get("interaction_radius", legacy_contact_radius))
 	return player.global_position.distance_to(item["position"] as Vector2) <= interaction_radius
 
 
 func _rect_gap(first: Rect2, second: Rect2) -> float:
-	var horizontal_gap := maxf(
-		maxf(second.position.x - first.end.x, first.position.x - second.end.x),
-		0.0
-	)
-	var vertical_gap := maxf(
-		maxf(second.position.y - first.end.y, first.position.y - second.end.y),
-		0.0
-	)
-	return Vector2(horizontal_gap, vertical_gap).length()
+	return spatial.rect_gap(first, second)
 
 
 func _update_hint_screen_position(world_position: Vector2, screen_offset: Vector2) -> void:
@@ -469,4 +463,15 @@ func _update_hint_screen_position(world_position: Vector2, screen_offset: Vector
 		viewport_center
 		+ (world_position - camera_center) * follow_camera.zoom
 		+ screen_offset
+	)
+	var viewport_size := room.get_viewport().get_visible_rect().size
+	interaction_hint_panel.position.x = clampf(
+		interaction_hint_panel.position.x,
+		12.0,
+		viewport_size.x - interaction_hint_panel.size.x - 12.0
+	)
+	interaction_hint_panel.position.y = clampf(
+		interaction_hint_panel.position.y,
+		12.0,
+		viewport_size.y - interaction_hint_panel.size.y - 12.0
 	)

@@ -297,7 +297,14 @@ func _lookup(item_id: String, kind: String) -> Dictionary:
 				"hint": "Added to Satchel",
 			}
 		"map":
-			if item_id == "circuit_repair_map":
+			if item_id == GameState.DR_LIN_PARTIAL_HALL_MAP_ID:
+				return {
+					"icon": "res://assets/ui/icon_note.png",
+					"title": "Dr. Lin's Partial Hall Map",
+					"desc": "A hand-drawn hall fragment from Dr. Lin's desk. Its missing sections will reveal themselves only as you explore.",
+					"hint": "Map and Satchel unlocked",
+				}
+			elif item_id == "circuit_repair_map":
 				return {
 					"icon": "res://assets/ui/icon_note.png",
 					"title": "Circuit Repair Map",
@@ -308,13 +315,9 @@ func _lookup(item_id: String, kind: String) -> Dictionary:
 			var info: Dictionary = GameState.POTION_INFO.get(item_id, {})
 			if info.is_empty():
 				return {}
-			var potion_icon: String = "res://assets/ui/icon_note.png"
-			if item_id == "swift_potion":
-				potion_icon = "res://assets/ui/alchemy/swiftness_potion.png"
-			elif item_id == "vision_potion":
-				potion_icon = "res://assets/ui/alchemy/vision_potion_eyes.png"
-			elif item_id == "green_potion":
-				potion_icon = "res://assets/ui/alchemy/green_potion.png"
+			var potion_icon: String = GameState.get_item_texture_path(item_id)
+			if potion_icon.is_empty():
+				potion_icon = "res://assets/ui/icon_note.png"
 			return {
 				"icon": potion_icon,
 				"title": str(info.get("name", item_id)),
@@ -387,18 +390,40 @@ func _show_next() -> void:
 	)
 	_panel.visible = true
 	_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	_panel.pivot_offset = PANEL_SIZE * 0.5
+	_panel.scale = Vector2(0.88, 0.88)
+	_icon_slot.pivot_offset = _icon_slot.size * 0.5
+	_icon_slot.scale = Vector2(0.72, 0.72)
 
 	var tw: Tween = create_tween()
 	tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	tw.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_panel, "modulate:a", 1.0, 0.16)
+	tw.parallel().tween_property(_panel, "scale", Vector2.ONE, 0.24)
+	tw.parallel().tween_property(_icon_slot, "scale", Vector2.ONE, 0.28)
+	tw.tween_callback(
+		func() -> void:
+			OpticalFxRuntime.pulse_ring(
+				self,
+				_panel,
+				_icon_slot.position + _icon_slot.size * 0.5,
+				Color(0.96, 0.76, 0.34, 0.86),
+				32.0,
+				1.75,
+				0.38
+			)
+	)
 	tw.tween_interval(SHOW_DURATION)
+	tw.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tw.tween_property(_panel, "modulate:a", 0.0, 0.28)
+	tw.parallel().tween_property(_panel, "scale", Vector2(0.96, 0.96), 0.28)
 	tw.tween_callback(_on_finished)
 
 
 func _on_finished() -> void:
 	_panel.visible = false
+	_panel.scale = Vector2.ONE
+	_icon_slot.scale = Vector2.ONE
 	_showing = false
 	# 严格串行：上一条完全隐藏后留出极短间隔，再显示下一条。
 	# 防止同一交互同时发出多条奖励信号时视觉重叠/连闪。

@@ -74,7 +74,7 @@ scale = Vector2(2, 2)
 position = Vector2(283, 177)
 
 [node name="Visual" type="Sprite2D" parent="Props/Bookshelf" unique_id=1727969528]
-position = Vector2(36.999996, 13.999998)
+position = Vector2(36.999996, 19.999998)
 scale = Vector2(0.17, 0.17)
 texture = ExtResource("6_shelf")
 

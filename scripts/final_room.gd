@@ -18,11 +18,28 @@ const FINAL_CASE_BOARD_SCENE: PackedScene = preload("res://scenes/ui/final_case_
 const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 930.0)
 const EXIT_POSITION: Vector2 = Vector2(724.0, 1030.0)
 const EXIT_RADIUS: float = 80.0
+const EXIT_RECT: Rect2 = Rect2(624.0, 958.0, 200.0, 128.0)
 const INTERACT_RADIUS: float = 90.0
 
 const GAMEPLAY_CAMERA_ZOOM: Vector2 = Vector2(1.35, 1.35)
 const DEVELOPER_CAMERA_ZOOM: Vector2 = Vector2(0.90, 0.90)
 const CAMERA_ZOOM_SPEED: float = 7.0
+
+# The chamber art paints two violet sconces, a sealed door sigil, the vault core
+# and the brass orrery. These are those fixtures in room space, so the arcane
+# light is actually cast instead of only being drawn into the plate.
+const AMBIENCE_Z: int = -90
+const ARCANE_VIOLET: Color = Color(0.62, 0.40, 1.0, 0.44)
+const ARCANE_CORE: Color = Color(0.70, 0.48, 1.0, 0.48)
+const ORRERY_BRASS: Color = Color(1.0, 0.78, 0.42, 0.38)
+const AMBIENCE_FIXTURES: Array[Dictionary] = [
+	{"position": Vector2(526.0, 921.0), "colour": ARCANE_VIOLET, "radius": 118.0, "flicker": 0.24},
+	{"position": Vector2(904.0, 921.0), "colour": ARCANE_VIOLET, "radius": 118.0, "flicker": 0.24},
+	{"position": Vector2(718.0, 918.0), "colour": ARCANE_CORE, "radius": 132.0, "flicker": 0.16},
+	{"position": Vector2(724.0, 110.0), "colour": ARCANE_CORE, "radius": 178.0, "flicker": 0.14},
+	{"position": Vector2(724.0, 560.0), "colour": ARCANE_VIOLET, "radius": 186.0, "flicker": 0.12},
+	{"position": Vector2(1150.0, 480.0), "colour": ORRERY_BRASS, "radius": 152.0, "flicker": 0.18},
+]
 
 var INTERACT_ITEMS: Array[Dictionary] = [
 	{
@@ -154,6 +171,24 @@ var ending_screen_root: Control
 var archive_reader_layer: CanvasLayer
 var archive_reader_root: Control
 var _last_debug_mouse_position := Vector2(-100000, -100000)
+var spatial := RoomSpatialRuntime.new()
+
+
+## Casts the light the painted arcane fixtures imply, so the sealed chamber
+## breathes instead of reading as a static illustration.
+func _create_room_ambience() -> void:
+	var ambience := Node2D.new()
+	ambience.name = "FinalRoomAmbience"
+	ambience.z_index = AMBIENCE_Z
+	add_child(ambience)
+	for fixture: Dictionary in AMBIENCE_FIXTURES:
+		OpticalFxRuntime.install_lamp(
+			ambience,
+			fixture["position"] as Vector2,
+			fixture["colour"] as Color,
+			float(fixture["radius"]),
+			float(fixture["flicker"])
+		)
 
 
 func _ready() -> void:
@@ -164,8 +199,13 @@ func _ready() -> void:
 	GameState.sync_knowledge_notes_from_flags()
 	GameState.set_room_visited(ROOM_ID)
 	player = $Worldsort/player
-	player.position = PLAYER_SPAWN_POSITION
+	player.position = spatial.resolve_safe_spawn(
+		player,
+		PLAYER_SPAWN_POSITION,
+		Rect2(Vector2.ZERO, Vector2(ROOM_WIDTH, ROOM_HEIGHT))
+	)
 	player.set_physics_process(true)
+	_create_room_ambience()
 	_sync_authored_interaction_positions()
 	create_room_ui()
 	create_self_dialogue_ui()
@@ -175,8 +215,8 @@ func _ready() -> void:
 	create_final_archive_reader_ui()
 	create_follow_camera()
 	create_interaction_focus()
-	if player.has_method("set_visual_scale"):
-		player.call("set_visual_scale", 1.0)
+	if player.has_method("set_room_visual_scale"):
+		player.call("set_room_visual_scale", ROOM_ID)
 	GameState.return_spawn_id = RETURN_SPAWN_ID
 
 
@@ -227,12 +267,40 @@ func _sync_authored_interaction_positions() -> void:
 		if authored_node == null:
 			push_warning("Final Room authored interaction node missing: " + item_name)
 			continue
-		# 只读取 Inspector 中的场景位置；交互点在可站立的物件前方，不改 Sprite2D。
-		var front_offset: Vector2 = AUTHORED_INTERACTION_FRONT_OFFSETS.get(
-			item_name,
-			Vector2.ZERO
-		) as Vector2
-		item["position"] = authored_node.global_position + front_offset
+		var visual_rect := spatial.get_visual_rect(authored_node)
+		if visual_rect.size.x <= 0.0 or visual_rect.size.y <= 0.0:
+			var front_offset: Vector2 = AUTHORED_INTERACTION_FRONT_OFFSETS.get(
+				item_name,
+				Vector2.ZERO
+			) as Vector2
+			item["position"] = authored_node.global_position + front_offset
+			continue
+		item["interaction_rect"] = visual_rect
+		item["position"] = spatial.get_visual_feet(authored_node)
+
+
+func get_interaction_rect(interaction_id: String) -> Rect2:
+	if interaction_id == "exit":
+		return EXIT_RECT
+	for item: Dictionary in INTERACT_ITEMS:
+		if str(item["name"]) != interaction_id:
+			continue
+		if item.has("interaction_rect"):
+			return item["interaction_rect"] as Rect2
+		var center := item.get("position", Vector2.ZERO) as Vector2
+		return Rect2(
+			center - Vector2(INTERACT_RADIUS, INTERACT_RADIUS) * 0.5,
+			Vector2.ONE * INTERACT_RADIUS
+		)
+	return Rect2()
+
+
+func _is_near_interaction(interaction_id: String) -> bool:
+	return spatial.is_actor_near_rect(
+		player as CharacterBody2D,
+		get_interaction_rect(interaction_id),
+		14.0
+	)
 
 
 func _process(delta: float) -> void:
@@ -270,11 +338,11 @@ func _update_authored_prop_occlusion_layers() -> void:
 		var authored_node: Node2D = get_node_or_null(node_path) as Node2D
 		if authored_node == null:
 			continue
-		authored_node.z_as_relative = false
-		authored_node.z_index = (
-			OCCLUSION_FRONT_Z
-			if player.global_position.y < authored_node.global_position.y
-			else OCCLUSION_BACK_Z
+		spatial.update_occlusion(
+			player as CharacterBody2D,
+			authored_node,
+			OCCLUSION_FRONT_Z,
+			OCCLUSION_BACK_Z
 		)
 
 
@@ -815,14 +883,28 @@ func update_interaction_focus() -> void:
 		interaction_focus.clear_focus()
 		return
 	if current_interaction == "exit":
-		interaction_focus.set_focus(EXIT_POSITION, "Castle Hall exit", true)
+		var focus_rect := spatial.grow_rect(
+			get_interaction_rect("exit"),
+			Vector2(10.0, 10.0)
+		)
+		interaction_focus.set_focus(
+			focus_rect.get_center(),
+			"Castle Hall exit",
+			true,
+			focus_rect.size
+		)
 		return
 	for item: Dictionary in INTERACT_ITEMS:
 		if current_interaction == str(item["name"]):
+			var focus_rect := spatial.grow_rect(
+				get_interaction_rect(str(item["name"])),
+				Vector2(10.0, 10.0)
+			)
 			interaction_focus.set_focus(
-				item["position"] as Vector2,
+				focus_rect.get_center(),
 				str(item["label"]),
-				true
+				true,
+				focus_rect.size
 			)
 			return
 
@@ -951,10 +1033,8 @@ func update_interaction_prompt() -> void:
 	interaction_hint_panel.visible = false
 
 	for item: Dictionary in INTERACT_ITEMS:
-		var distance: float = player.global_position.distance_to(
-			item["position"] as Vector2
-		)
-		if distance <= INTERACT_RADIUS:
+		var interaction_rect := get_interaction_rect(str(item["name"]))
+		if _is_near_interaction(str(item["name"])):
 			current_interaction = str(item["name"])
 			if item_message.is_empty():
 				interact_label.text = (
@@ -964,14 +1044,21 @@ func update_interaction_prompt() -> void:
 			else:
 				interact_label.text = item_message
 			interaction_hint_panel.visible = true
-			_update_hint_screen_position(item["position"] as Vector2)
+			_update_hint_screen_position(Vector2(
+				interaction_rect.get_center().x,
+				interaction_rect.position.y
+			))
 			return
 
-	if player.global_position.distance_to(EXIT_POSITION) <= EXIT_RADIUS:
+	var exit_rect := get_interaction_rect("exit")
+	if _is_near_interaction("exit"):
 		current_interaction = "exit"
 		interact_label.text = "Press E to return to the Castle Hall"
 		interaction_hint_panel.visible = true
-		_update_hint_screen_position(EXIT_POSITION)
+		_update_hint_screen_position(Vector2(
+			exit_rect.get_center().x,
+			exit_rect.position.y
+		))
 		return
 
 	if not item_message.is_empty():
@@ -1237,7 +1324,10 @@ func _finish_final_deduction() -> void:
 			"content": "The final deduction identifies the Mechanic through knowledge, tools, access, opportunity and route. The staged red stain, maintenance pollen, deliberate short circuit, missing right glove, copper repair thread and torn cuff fragment form one connected case.",
 			"category": "investigation",
 		})
-	_show_ending_overlay()
+	if perfect:
+		_show_true_ending_overlay()
+	else:
+		_show_ending_overlay()
 
 
 func return_to_castle_hall() -> void:

@@ -69,6 +69,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+color = Color(0.008, 0.006, 0.016, 0.92)
 
 [node name="MainPanel" type="Panel" parent="." unique_id=1068665446]
 offset_left = 32.0
@@ -81,16 +82,28 @@ theme_override_styles/panel = SubResource("sb_main_soft")
 [node name="TitleLabel" type="Label" parent="MainPanel" unique_id=1421395114]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 0.0
-offset_top = 24.0
-offset_right = 960.0
-offset_bottom = 78.0
+offset_left = 52.0
+offset_top = 20.0
+offset_right = 792.0
+offset_bottom = 54.0
 theme_override_colors/font_color = Color(0.95, 0.78, 0.36, 1)
 theme_override_colors/font_outline_color = Color(0.35, 0.22, 0.05, 1)
-theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 34
-text = "Detective Notes"
-horizontal_alignment = 1
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 22
+text = "CASE LEDGER"
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="JournalSubtitle" type="Label" parent="MainPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 54.0
+offset_top = 54.0
+offset_right = 790.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.72, 0.67, 0.55, 1)
+theme_override_font_sizes/font_size = 12
+text = "Evidence, testimonies and unresolved routes."
 vertical_alignment = 1
 
 [node name="TitleSep" type="ColorRect" parent="MainPanel" unique_id=928770346]
@@ -100,11 +113,6 @@ offset_top = 94.0
 offset_right = 928.0
 offset_bottom = 96.0
 color = Color(0.62, 0.47, 0.22, 0.9)
-
-[node name="Sprite2D" type="Sprite2D" parent="MainPanel/TitleSep" unique_id=1634621774]
-position = Vector2(448, 1)
-scale = Vector2(0.18, 0.17)
-texture = ExtResource("5_divider")
 
 [node name="LeftPanelBg" type="Panel" parent="MainPanel" unique_id=820168930]
 z_index = 10
@@ -116,14 +124,27 @@ offset_bottom = 680.0
 theme_override_styles/panel = SubResource("sb_wood")
 
 [node name="ListHeader" type="Label" parent="MainPanel/LeftPanelBg" unique_id=1210114406]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 0.0
-offset_top = 14.0
-offset_right = 308.0
-offset_bottom = 46.0
+offset_left = 14.0
+offset_top = 15.0
+offset_right = 294.0
+offset_bottom = 39.0
 theme_override_colors/font_color = Color(0.95, 0.78, 0.36, 1)
-theme_override_font_sizes/font_size = 18
-text = "◇ Clue List ◇"
+theme_override_font_sizes/font_size = 14
+text = "EVIDENCE INDEX"
+horizontal_alignment = 1
+
+[node name="ListCountLabel" type="Label" parent="MainPanel/LeftPanelBg"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 14.0
+offset_top = 39.0
+offset_right = 294.0
+offset_bottom = 57.0
+theme_override_colors/font_color = Color(0.72, 0.67, 0.55, 1)
+theme_override_font_sizes/font_size = 10
+text = "0 RECORDS"
 horizontal_alignment = 1
 
 [node name="ListScroll" type="ScrollContainer" parent="MainPanel/LeftPanelBg" unique_id=1331035647]
@@ -171,16 +192,6 @@ position = Vector2(872, 52)
 scale = Vector2(0.082, 0.078)
 texture = ExtResource("4_close")
 
-[node name="StarTL" type="Sprite2D" parent="MainPanel"]
-position = Vector2(60, 98)
-scale = Vector2(0.10, 0.10)
-texture = ExtResource("6_star")
-
-[node name="StarTR" type="Sprite2D" parent="MainPanel"]
-position = Vector2(900, 98)
-scale = Vector2(0.10, 0.10)
-texture = ExtResource("6_star")
-
 [node name="Parchment" type="TextureRect" parent="MainPanel" unique_id=738358337]
 layout_mode = 0
 offset_left = 390.0
@@ -201,6 +212,56 @@ theme_override_constants/margin_left = 112
 theme_override_constants/margin_top = 68
 theme_override_constants/margin_right = 112
 theme_override_constants/margin_bottom = 120
+
+[node name="DocumentKicker" type="Label" parent="MainPanel/Parchment"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 96.0
+offset_top = 86.0
+offset_right = 442.0
+offset_bottom = 108.0
+theme_override_colors/font_color = Color(0.34, 0.215, 0.105, 1)
+theme_override_font_sizes/font_size = 10
+text = "EVIDENCE RECORD"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DocumentTitle" type="Label" parent="MainPanel/Parchment"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 76.0
+offset_top = 110.0
+offset_right = 462.0
+offset_bottom = 158.0
+theme_override_colors/font_color = Color(0.20, 0.115, 0.050, 1)
+theme_override_font_sizes/font_size = 20
+text = "Investigation Notes"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="DocumentMeta" type="Label" parent="MainPanel/Parchment"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 96.0
+offset_top = 160.0
+offset_right = 442.0
+offset_bottom = 182.0
+theme_override_colors/font_color = Color(0.34, 0.215, 0.105, 1)
+theme_override_font_sizes/font_size = 10
+text = "SELECT A RECORD TO REVIEW"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DocumentRule" type="ColorRect" parent="MainPanel/Parchment"]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+offset_left = 106.0
+offset_top = 195.0
+offset_right = 432.0
+offset_bottom = 196.0
+color = Color(0.30, 0.18, 0.07, 0.58)
 
 [node name="DetailText" type="RichTextLabel" parent="MainPanel/Parchment/ParchMargin" unique_id=333577107]
 unique_name_in_owner = true

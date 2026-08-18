@@ -5,6 +5,11 @@
 [ext_resource type="Texture2D" uid="uid://cl4d8rqyrdkp8" path="res://assets/props/Hall/final_key_machine_1.png" id="3_m1"]
 [ext_resource type="Texture2D" uid="uid://cnpe0hnsp5yin" path="res://assets/props/Hall/final_key_machine_2.png" id="4_m2"]
 [ext_resource type="Texture2D" uid="uid://dm6xn0faw4e02" path="res://assets/props/Hall/final_key_machine_3.png" id="5_m3"]
+[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_glowing_console.png" id="6_library_knowledge"]
+[ext_resource type="Texture2D" path="res://assets/props/DiningHall/dining_grandfather_clock.png" id="7_dining_knowledge"]
+[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_gauge_machine.png" id="8_circuit_knowledge"]
+[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_green_construct.png" id="9_greenhouse_knowledge"]
+[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_bronze_core.png" id="10_chemistry_knowledge"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rack"]
 size = Vector2(71, 64.5)
@@ -305,6 +310,7 @@ position = Vector2(1795, 487)
 texture_filter = 1
 position = Vector2(-4.999998, 42.999996)
 scale = Vector2(0.13, 0.1)
+texture = ExtResource("6_library_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=551733701]
 position = Vector2(-18, 31)
@@ -325,6 +331,7 @@ position = Vector2(1830, 802)
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=1405027501]
 texture_filter = 1
 scale = Vector2(0.14, 0.14)
+texture = ExtResource("7_dining_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=20417855]
 
@@ -344,6 +351,7 @@ position = Vector2(654, 1066)
 texture_filter = 1
 position = Vector2(-5.9999995, 7.9999995)
 scale = Vector2(0.1, 0.1)
+texture = ExtResource("8_circuit_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=1433245640]
 
@@ -363,6 +371,7 @@ position = Vector2(130, 407)
 texture_filter = 1
 position = Vector2(-10.999999, 26.999998)
 scale = Vector2(0.1, 0.1)
+texture = ExtResource("9_greenhouse_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=731269012]
 
@@ -383,6 +392,7 @@ position = Vector2(668, 552)
 texture_filter = 1
 position = Vector2(0.99999994, -48.999996)
 scale = Vector2(0.1, 0.07)
+texture = ExtResource("10_chemistry_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=686372712]
 position = Vector2(4, -49)

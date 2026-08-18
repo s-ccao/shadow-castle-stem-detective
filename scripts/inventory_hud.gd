@@ -1,7 +1,7 @@
 extends CanvasLayer
 
 ## InventoryHud — 使用正式像素素材组装的 Bag Hub。
-## BagHub 只保存普通物品：药水、药水图纸、草木材料。
+## BagHub 使用四份严格档案：ALL / POTIONS / MATERIALS / PAPERS。
 ## KeyHub 负责钥匙，NoteHud 负责线索与知识，三者保持独立。
 
 const BAG_ICON_PATH: String = "res://assets/ui/inventory/bag_satchel_icon.png"
@@ -17,6 +17,16 @@ const BOARD_SCALE: float = 0.625
 const SLOT_SIZE: Vector2 = Vector2(54.0, 53.0)
 const SLOT_CENTERS_X: Array[float] = [227.0, 325.0, 422.0, 520.0, 618.0, 716.0]
 const SLOT_CENTERS_Y: Array[float] = [250.0, 345.0, 441.0, 536.0, 632.0]
+# These are the four filing recesses painted into the 1536×1024 source board,
+# converted to the 960×640 display frame. They are intentionally explicit:
+# changing category count or using an auto-layout container would create a
+# second grid that can drift away from the authored metal tabs.
+const CATEGORY_BUTTON_RECTS: Array[Rect2] = [
+	Rect2(127.0, 76.0, 102.0, 31.0),
+	Rect2(235.0, 76.0, 102.0, 31.0),
+	Rect2(343.0, 76.0, 102.0, 31.0),
+	Rect2(451.0, 76.0, 102.0, 31.0),
+]
 
 const ENTRY_POSITION: Vector2 = Vector2(20.0, 14.0)
 const ENTRY_SIZE: Vector2 = Vector2(64.0, 64.0)
@@ -26,6 +36,7 @@ var entry_backplate: Panel
 var hover_halo: Panel
 var hover_plate: Panel
 var hover_label: Label
+var entry_label: Label
 var overlay: Control
 var board_panel: Control
 var slot_layer: Control
@@ -45,8 +56,12 @@ var feature_panel: Panel
 var feature_title: Label
 var feature_description: Label
 var feature_tween: Tween
+var open_tween: Tween
+var inspection_tween: Tween
 var close_button: Button
 var category_buttons: Dictionary = {}
+var category_count_labels: Dictionary = {}
+var category_grid: Control
 var slot_nodes: Array[Control] = []
 var entries: Array[Dictionary] = []
 var active_category: String = "all"
@@ -55,6 +70,8 @@ var _open: bool = false
 var _hovered: bool = false
 var _paused_before_bag: bool = false
 var _had_inventory: bool = false
+var _entry_suppressed: bool = false
+var _pending_feature_unlock: bool = false
 
 
 func _ready() -> void:
@@ -63,7 +80,7 @@ func _ready() -> void:
 	_create_entry_button()
 	_create_overlay()
 	_create_feature_panel()
-	_had_inventory = not GameState.inventory_items.is_empty()
+	_had_inventory = _has_stored_items()
 	if not GameState.state_changed.is_connected(_on_game_state_changed):
 		GameState.state_changed.connect(_on_game_state_changed)
 
@@ -75,7 +92,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not key_event.pressed or key_event.echo:
 		return
 	# B 键属于大厅证据板（evidence_board 映射），背包使用 Tab 避免冲突。
-	if key_event.keycode == KEY_TAB:
+	if key_event.keycode == KEY_TAB and not _entry_suppressed:
 		toggle_bag()
 		get_viewport().set_input_as_handled()
 	elif key_event.keycode == KEY_ESCAPE and _open:
@@ -84,13 +101,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
-	if icon_button == null:
-		return
-	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-	var icon_rect: Rect2 = Rect2(icon_button.position, icon_button.size)
-	var is_over: bool = icon_rect.has_point(mouse_pos)
-	if is_over != _hovered:
-		_set_hovered(is_over)
+	if _pending_feature_unlock and _can_show_feature_unlock():
+		_pending_feature_unlock = false
+		show_feature_unlock(
+			"BAG HUB AWAKENED",
+			"Your potions and materials are stored in the satchel. Click BAG or press Tab to open it."
+		)
 
 
 func _create_entry_button() -> void:
@@ -117,7 +133,7 @@ func _create_entry_button() -> void:
 	icon_button.texture_normal = load(BAG_ICON_PATH) as Texture2D
 	icon_button.position = ENTRY_POSITION
 	icon_button.size = ENTRY_SIZE
-	icon_button.tooltip_text = "bag"
+	icon_button.tooltip_text = "Case satchel  ·  Tab"
 	icon_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	icon_button.modulate = Color(1.0, 0.92, 0.70, 1.0)
 	icon_button.mouse_entered.connect(_on_entry_mouse_entered)
@@ -157,7 +173,7 @@ func _create_entry_button() -> void:
 	add_child(hover_plate)
 
 	hover_label = Label.new()
-	hover_label.text = "bag"
+	hover_label.text = "SATCHEL"
 	hover_label.position = Vector2(2.0, 1.0)
 	hover_label.size = Vector2(56.0, 22.0)
 	hover_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -169,7 +185,7 @@ func _create_entry_button() -> void:
 	hover_label.add_theme_constant_override("outline_size", 2)
 	hover_plate.add_child(hover_label)
 
-	var entry_label: Label = Label.new()
+	entry_label = Label.new()
 	entry_label.name = "BagEntryLabel"
 	entry_label.text = "BAG"
 	entry_label.position = Vector2(22.0, 82.0)
@@ -185,6 +201,8 @@ func _create_entry_button() -> void:
 
 
 func _set_hovered(is_over: bool) -> void:
+	if _entry_suppressed:
+		is_over = false
 	_hovered = is_over
 	hover_halo.visible = is_over
 	hover_plate.visible = is_over
@@ -219,11 +237,21 @@ func _create_overlay() -> void:
 	dim.color = Color(0.008, 0.006, 0.018, 0.84)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(dim)
+	ArchiveUi.install_screen_atmosphere(overlay, {
+		"lamp_anchor": Vector2(0.50, 0.42),
+		"lamp_strength": 0.19,
+		"lamp_radius": 0.66,
+		"vignette_strength": 0.62,
+		"vignette_radius": 0.34,
+		"mote_strength": 0.30,
+		"grain_strength": 0.022,
+	})
 
 	board_panel = Control.new()
 	board_panel.name = "InventoryBoard"
 	board_panel.position = BOARD_POSITION
 	board_panel.size = BOARD_SIZE
+	board_panel.pivot_offset = BOARD_SIZE * 0.5
 	board_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(board_panel)
 
@@ -234,13 +262,14 @@ func _create_overlay() -> void:
 	board_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	board_texture.stretch_mode = TextureRect.STRETCH_SCALE
 	board_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_texture.set_meta("hub_artwork_fit", "full_frame")
 	board_panel.add_child(board_texture)
 
 	var title: Label = Label.new()
 	title.name = "InventoryTitle"
-	title.text = "ADVENTURER'S SATCHEL"
-	title.position = Vector2(286.0, 20.0)
-	title.size = Vector2(420.0, 34.0)
+	title.text = "CASE SATCHEL"
+	title.position = Vector2(286.0, 16.0)
+	title.size = Vector2(420.0, 30.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(0.96, 0.76, 0.34, 1.0))
@@ -248,6 +277,17 @@ func _create_overlay() -> void:
 	title.add_theme_constant_override("outline_size", 4)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board_panel.add_child(title)
+
+	var subtitle: Label = Label.new()
+	subtitle.name = "InventorySubtitle"
+	subtitle.text = "FIELD ARCHIVE  ·  RECOVERED MATERIALS"
+	subtitle.position = Vector2(286.0, 47.0)
+	subtitle.size = Vector2(420.0, 16.0)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 10)
+	subtitle.add_theme_color_override("font_color", Color(0.66, 0.59, 0.45, 1.0))
+	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_panel.add_child(subtitle)
 
 	close_button = Button.new()
 	close_button.name = "InventoryHubCloseButton"
@@ -257,7 +297,7 @@ func _create_overlay() -> void:
 	close_button.size = Vector2(42.0, 36.0)
 	close_button.z_index = 20
 	close_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	close_button.focus_mode = Control.FOCUS_NONE
+	close_button.focus_mode = Control.FOCUS_ALL
 	close_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	close_button.add_theme_font_size_override("font_size", 26)
 	close_button.add_theme_color_override("font_color", Color(0.96, 0.76, 0.34, 1.0))
@@ -281,38 +321,83 @@ func _create_overlay() -> void:
 
 	_create_detail_panel()
 	_create_bottom_status()
+	ArchiveUi.decorate_hub(board_panel, {
+		"role": "satchel",
+		"accent": Color(0.90, 0.62, 0.24, 0.92),
+		"rule_y": 14.0,
+		"stamp_rect": Rect2(52.0, 20.0, 212.0, 26.0),
+		"stamp": "FIELD KIT · FOUR FILES",
+		"protocol_rect": Rect2(112.0, 598.0, 736.0, 24.0),
+		"protocol": "1 · CHOOSE FILE    2 · INSPECT ITEM    3 · USE / OPEN",
+	})
 
 
 func _create_category_buttons() -> void:
+	var filing_label := Label.new()
+	filing_label.name = "SatchelFilingLabel"
+	filing_label.text = "CASE FILES"
+	# The tab row owns this heading, so it sits directly above the first authored
+	# recess instead of sharing a baseline with the centred case caption.
+	filing_label.position = Vector2(127.0, 56.0)
+	filing_label.size = Vector2(160.0, 16.0)
+	filing_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	filing_label.add_theme_font_size_override("font_size", 10)
+	filing_label.add_theme_color_override("font_color", Color(0.67, 0.57, 0.38, 1.0))
+	filing_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_panel.add_child(filing_label)
+	category_grid = Control.new()
+	category_grid.name = "SatchelCategoryGrid"
+	category_grid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	category_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	category_grid.set_meta("fit_strategy", "four_authored_recesses")
+	board_panel.add_child(category_grid)
 	var categories: Array[Dictionary] = [
-		{"id": "all", "text": "ALL", "position": Vector2(132.0, 72.0), "size": Vector2(96.0, 30.0)},
-		{"id": "potions", "text": "POTIONS", "position": Vector2(240.0, 72.0), "size": Vector2(106.0, 30.0)},
-		{"id": "recipes", "text": "RECIPES", "position": Vector2(358.0, 72.0), "size": Vector2(106.0, 30.0)},
-		{"id": "herbs", "text": "HERBS", "position": Vector2(476.0, 72.0), "size": Vector2(96.0, 30.0)},
-		{"id": "materials", "text": "MATERIALS", "position": Vector2(132.0, 108.0), "size": Vector2(126.0, 30.0)},
-		{"id": "maps", "text": "MAPS", "position": Vector2(270.0, 108.0), "size": Vector2(90.0, 30.0)},
-		{"id": "dishes", "text": "DISHES", "position": Vector2(372.0, 108.0), "size": Vector2(100.0, 30.0)},
-		{"id": "fragments", "text": "FRAGMENTS", "position": Vector2(484.0, 108.0), "size": Vector2(128.0, 30.0)}
+		{"id": "all", "text": "ALL"},
+		{"id": "potions", "text": "POTIONS"},
+		{"id": "materials", "text": "MATERIALS"},
+		{"id": "papers", "text": "PAPERS"},
 	]
-	for category: Dictionary in categories:
+	for category_index: int in range(categories.size()):
+		var category: Dictionary = categories[category_index]
 		var button: Button = Button.new()
 		var category_id: String = str(category["id"])
 		button.name = "Category_" + category_id
 		button.text = str(category["text"])
-		button.position = category["position"] as Vector2
-		button.size = category["size"] as Vector2
+		button.position = CATEGORY_BUTTON_RECTS[category_index].position
+		button.size = CATEGORY_BUTTON_RECTS[category_index].size
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.clip_text = false
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		button.focus_mode = Control.FOCUS_NONE
-		button.add_theme_font_size_override("font_size", 12)
+		button.focus_mode = Control.FOCUS_ALL
+		button.set_meta("base_label", str(category["text"]))
+		button.set_meta("authored_recess", CATEGORY_BUTTON_RECTS[category_index])
+		button.add_theme_font_size_override("font_size", 10)
+		if str(category["text"]).length() >= 9:
+			button.add_theme_font_size_override("font_size", 9)
 		button.add_theme_color_override("font_color", Color(0.78, 0.66, 0.42, 1.0))
 		button.add_theme_color_override("font_hover_color", Color(1.0, 0.90, 0.60, 1.0))
 		button.add_theme_color_override("font_pressed_color", Color(1.0, 0.95, 0.72, 1.0))
-		button.add_theme_stylebox_override("normal", _make_category_style(Color(0.03, 0.02, 0.02, 0.28), Color(0.45, 0.32, 0.14, 0.55)))
-		button.add_theme_stylebox_override("hover", _make_category_style(Color(0.18, 0.10, 0.03, 0.70), Color(0.90, 0.68, 0.26, 0.88)))
-		button.add_theme_stylebox_override("pressed", _make_category_style(Color(0.22, 0.12, 0.03, 0.88), Color(1.0, 0.78, 0.32, 1.0)))
+		button.add_theme_stylebox_override("normal", _make_category_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
+		button.add_theme_stylebox_override("hover", _make_category_style(Color(0.20, 0.10, 0.02, 0.30), Color(0.90, 0.68, 0.26, 0.74)))
+		button.add_theme_stylebox_override("pressed", _make_category_style(Color(0.24, 0.12, 0.02, 0.42), Color(1.0, 0.78, 0.32, 0.88)))
+		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		button.add_theme_stylebox_override("disabled", _make_category_style(Color(0.03, 0.02, 0.02, 0.28), Color(0.32, 0.26, 0.18, 0.45)))
 		button.pressed.connect(_on_category_pressed.bind(category_id))
 		category_buttons[category_id] = button
-		board_panel.add_child(button)
+		category_grid.add_child(button)
+		var count_label := Label.new()
+		count_label.name = "CategoryCount"
+		count_label.position = Vector2(80.0, 4.0)
+		count_label.size = Vector2(17.0, 19.0)
+		count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		count_label.add_theme_font_size_override("font_size", 9)
+		count_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.56, 1.0))
+		count_label.add_theme_color_override("font_outline_color", Color(0.05, 0.02, 0.01, 1.0))
+		count_label.add_theme_constant_override("outline_size", 2)
+		count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(count_label)
+		category_count_labels[category_id] = count_label
 
 
 func _make_category_style(background: Color, border: Color) -> StyleBoxFlat:
@@ -321,6 +406,8 @@ func _make_category_style(background: Color, border: Color) -> StyleBoxFlat:
 	style.border_color = border
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(4)
+	style.content_margin_left = 7.0
+	style.content_margin_right = 19.0
 	return style
 
 
@@ -328,7 +415,7 @@ func _create_detail_panel() -> void:
 	detail_frame = TextureRect.new()
 	detail_frame.name = "InventoryDetailFrame"
 	detail_frame.position = Vector2(504.0, 120.0)
-	detail_frame.size = Vector2(359.0, 384.0)
+	detail_frame.size = Vector2(359.0, 420.0)
 	detail_frame.texture = load(DETAIL_FRAME_PATH) as Texture2D
 	detail_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	detail_frame.stretch_mode = TextureRect.STRETCH_SCALE
@@ -337,7 +424,7 @@ func _create_detail_panel() -> void:
 
 	detail_icon_frame = TextureRect.new()
 	detail_icon_frame.name = "SelectedItemFrame"
-	detail_icon_frame.position = Vector2(614.0, 156.0)
+	detail_icon_frame.position = Vector2(614.0, 150.0)
 	detail_icon_frame.size = Vector2(140.0, 140.0)
 	detail_icon_frame.texture = load(SLOT_FRAME_A_PATH) as Texture2D
 	detail_icon_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -347,17 +434,18 @@ func _create_detail_panel() -> void:
 
 	detail_icon_texture = TextureRect.new()
 	detail_icon_texture.name = "SelectedItemArtwork"
-	detail_icon_texture.position = Vector2(626.0, 168.0)
+	detail_icon_texture.position = Vector2(626.0, 162.0)
 	detail_icon_texture.size = Vector2(116.0, 116.0)
 	detail_icon_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	detail_icon_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	detail_icon_texture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	detail_icon_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail_icon_texture.visible = false
 	detail_layer.add_child(detail_icon_texture)
 
 	detail_icon_label = Label.new()
 	detail_icon_label.name = "SelectedItemGlyph"
-	detail_icon_label.position = Vector2(649.0, 190.0)
+	detail_icon_label.position = Vector2(649.0, 184.0)
 	detail_icon_label.size = Vector2(70.0, 60.0)
 	detail_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -368,11 +456,23 @@ func _create_detail_panel() -> void:
 	detail_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail_layer.add_child(detail_icon_label)
 
+	var inspection_label := Label.new()
+	inspection_label.name = "InspectionLabel"
+	inspection_label.text = "ITEM INSPECTION"
+	inspection_label.position = Vector2(548.0, 128.0)
+	inspection_label.size = Vector2(270.0, 18.0)
+	inspection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inspection_label.add_theme_font_size_override("font_size", 10)
+	inspection_label.add_theme_color_override("font_color", Color(0.70, 0.61, 0.42, 1.0))
+	inspection_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail_layer.add_child(inspection_label)
+
 	detail_title = Label.new()
 	detail_title.name = "SelectedItemTitle"
-	detail_title.position = Vector2(545.0, 304.0)
-	detail_title.size = Vector2(280.0, 44.0)
+	detail_title.position = Vector2(526.0, 288.0)
+	detail_title.size = Vector2(316.0, 42.0)
 	detail_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_title.clip_text = true
 	detail_title.add_theme_font_size_override("font_size", 16)
@@ -384,8 +484,8 @@ func _create_detail_panel() -> void:
 
 	detail_category = Label.new()
 	detail_category.name = "SelectedItemCategory"
-	detail_category.position = Vector2(555.0, 342.0)
-	detail_category.size = Vector2(260.0, 22.0)
+	detail_category.position = Vector2(526.0, 332.0)
+	detail_category.size = Vector2(316.0, 18.0)
 	detail_category.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_category.clip_text = true
 	detail_category.add_theme_font_size_override("font_size", 10)
@@ -395,12 +495,13 @@ func _create_detail_panel() -> void:
 
 	detail_description = Label.new()
 	detail_description.name = "SelectedItemDescription"
-	detail_description.position = Vector2(548.0, 370.0)
-	detail_description.size = Vector2(272.0, 70.0)
+	detail_description.position = Vector2(526.0, 354.0)
+	detail_description.size = Vector2(316.0, 76.0)
 	detail_description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	detail_description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	detail_description.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_description.clip_text = true
+	detail_description.max_lines_visible = 5
 	detail_description.add_theme_font_size_override("font_size", 11)
 	detail_description.add_theme_color_override("font_color", Color(0.88, 0.82, 0.68, 1.0))
 	detail_description.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -408,8 +509,10 @@ func _create_detail_panel() -> void:
 
 	detail_quantity = Label.new()
 	detail_quantity.name = "SelectedItemQuantity"
-	detail_quantity.position = Vector2(548.0, 432.0)
-	detail_quantity.size = Vector2(272.0, 22.0)
+	# The plaque painted into the board ends here; the count has to read as part
+	# of the plaque, not as a line balanced on its lower edge.
+	detail_quantity.position = Vector2(526.0, 434.0)
+	detail_quantity.size = Vector2(316.0, 18.0)
 	detail_quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_quantity.add_theme_font_size_override("font_size", 10)
 	detail_quantity.add_theme_color_override("font_color", Color(0.96, 0.76, 0.34, 1.0))
@@ -418,9 +521,10 @@ func _create_detail_panel() -> void:
 
 	detail_requirements = Label.new()
 	detail_requirements.name = "SelectedItemRequirements"
-	detail_requirements.position = Vector2(548.0, 458.0)
-	detail_requirements.size = Vector2(272.0, 42.0)
+	detail_requirements.position = Vector2(526.0, 478.0)
+	detail_requirements.size = Vector2(316.0, 24.0)
 	detail_requirements.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_requirements.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_requirements.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_requirements.clip_text = true
 	detail_requirements.add_theme_font_size_override("font_size", 10)
@@ -431,24 +535,41 @@ func _create_detail_panel() -> void:
 	detail_use_button = Button.new()
 	detail_use_button.name = "SelectedItemUseButton"
 	detail_use_button.text = "USE"
-	detail_use_button.position = Vector2(632.0, 510.0)
-	detail_use_button.size = Vector2(110.0, 34.0)
+	detail_use_button.position = Vector2(612.0, 508.0)
+	detail_use_button.size = Vector2(144.0, 32.0)
 	detail_use_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	detail_use_button.focus_mode = Control.FOCUS_NONE
+	detail_use_button.focus_mode = Control.FOCUS_ALL
 	detail_use_button.add_theme_font_size_override("font_size", 13)
 	detail_use_button.add_theme_color_override("font_color", Color(0.98, 0.82, 0.42, 1.0))
 	detail_use_button.add_theme_color_override("font_hover_color", Color(1.0, 0.96, 0.72, 1.0))
-	detail_use_button.add_theme_stylebox_override("normal", _make_category_style(Color(0.08, 0.04, 0.015, 0.90), Color(0.70, 0.48, 0.16, 0.90)))
-	detail_use_button.add_theme_stylebox_override("hover", _make_category_style(Color(0.22, 0.12, 0.03, 0.95), Color(1.0, 0.76, 0.28, 1.0)))
+	detail_use_button.add_theme_stylebox_override("normal", _make_action_style(false))
+	detail_use_button.add_theme_stylebox_override("hover", _make_action_style(true))
 	detail_use_button.pressed.connect(_use_selected_item)
 	detail_layer.add_child(detail_use_button)
+
+
+func _make_action_style(is_hovered: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = (
+		Color(0.20, 0.11, 0.025, 0.98)
+		if is_hovered else Color(0.075, 0.040, 0.012, 0.94)
+	)
+	style.border_color = (
+		Color(1.0, 0.78, 0.30, 1.0)
+		if is_hovered else Color(0.72, 0.49, 0.16, 0.92)
+	)
+	style.set_border_width_all(2 if is_hovered else 1)
+	style.set_corner_radius_all(5)
+	style.shadow_color = Color(0.76, 0.42, 0.06, 0.22 if is_hovered else 0.10)
+	style.shadow_size = 6 if is_hovered else 2
+	return style
 
 
 func _create_bottom_status() -> void:
 	bottom_status = Label.new()
 	bottom_status.name = "InventoryBottomStatus"
-	bottom_status.position = Vector2(190.0, 520.0)
-	bottom_status.size = Vector2(580.0, 38.0)
+	bottom_status.position = Vector2(190.0, 550.0)
+	bottom_status.size = Vector2(580.0, 32.0)
 	bottom_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bottom_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bottom_status.add_theme_font_size_override("font_size", 12)
@@ -504,12 +625,42 @@ func _create_feature_panel() -> void:
 
 
 func _on_game_state_changed() -> void:
-	var has_inventory: bool = not GameState.inventory_items.is_empty() or not GameState.recipe_items.is_empty() or not GameState.map_items.is_empty() or not GameState.herb_counts.is_empty() or not GameState.material_counts.is_empty() or not GameState.final_key_fragments.is_empty()
+	var has_inventory: bool = _has_stored_items()
 	if has_inventory and not _had_inventory:
-		show_feature_unlock("BAG HUB AWAKENED", "Your potions and materials are stored in the satchel. Click BAG or press Tab to open it.")
+		if _can_show_feature_unlock():
+			show_feature_unlock("BAG HUB AWAKENED", "Your potions and materials are stored in the satchel. Click BAG or press Tab to open it.")
+		else:
+			_pending_feature_unlock = true
 	_had_inventory = has_inventory
 	if _open:
 		_rebuild_inventory()
+
+
+func _can_show_feature_unlock() -> bool:
+	if _open or _entry_suppressed:
+		return false
+	var scene := get_tree().current_scene
+	if scene == null:
+		return true
+	var dialogue_state: Variant = scene.get("dialogue_active")
+	if dialogue_state is bool and dialogue_state:
+		return false
+	var scene_message: Variant = scene.get("message_panel")
+	if scene_message is CanvasItem and (scene_message as CanvasItem).visible:
+		return false
+	return true
+
+
+func _has_stored_items() -> bool:
+	return (
+		not GameState.inventory_items.is_empty()
+		or not GameState.recipe_items.is_empty()
+		or not GameState.map_items.is_empty()
+		or not GameState.herb_counts.is_empty()
+		or not GameState.material_counts.is_empty()
+		or not GameState.dish_counts.is_empty()
+		or not GameState.final_key_fragments.is_empty()
+	)
 
 
 func show_feature_unlock(title_text: String, message_text: String, duration: float = 4.5) -> void:
@@ -536,6 +687,10 @@ func _hide_feature_unlock() -> void:
 		icon_button.scale = Vector2.ONE
 
 
+func dismiss_feature_unlock() -> void:
+	_hide_feature_unlock()
+
+
 func toggle_bag() -> void:
 	if _open:
 		close_bag()
@@ -548,14 +703,36 @@ func open_bag() -> void:
 	get_tree().paused = true
 	_open = true
 	_hide_feature_unlock()
+	ArchiveUi.set_hub_entries_suppressed(true)
 	overlay.visible = true
 	_rebuild_inventory()
+	_animate_bag_open()
+	call_deferred("_focus_selected_slot")
 
 
 func close_bag() -> void:
 	_open = false
 	overlay.visible = false
+	if open_tween != null and open_tween.is_valid():
+		open_tween.kill()
+	board_panel.scale = Vector2.ONE
+	overlay.modulate = Color.WHITE
 	get_tree().paused = _paused_before_bag
+	ArchiveUi.set_hub_entries_suppressed(false)
+
+
+func set_entry_suppressed(suppressed: bool) -> void:
+	_entry_suppressed = suppressed
+	if entry_backplate != null:
+		entry_backplate.visible = not suppressed
+	if icon_button != null:
+		icon_button.visible = not suppressed
+	if entry_label != null:
+		entry_label.visible = not suppressed
+	if hover_halo != null:
+		hover_halo.visible = not suppressed and _hovered
+	if hover_plate != null:
+		hover_plate.visible = not suppressed and _hovered
 
 
 func _on_close_button_pressed() -> void:
@@ -565,7 +742,9 @@ func _on_close_button_pressed() -> void:
 
 func _on_category_pressed(category_id: String) -> void:
 	active_category = category_id
+	selected_index = 0
 	_rebuild_inventory()
+	_play_inspection_feedback()
 
 
 func _rebuild_inventory() -> void:
@@ -603,8 +782,8 @@ func _build_entries(category_id: String) -> Array[Dictionary]:
 				"requirements": "Consumable item"
 			})
 
-	if category_id == "all" or category_id == "dishes":
-		# 菜肴单独分类，避免与药水混在一起。
+	if category_id == "all" or category_id == "materials":
+		# Edible supplies are physical stock, not a separate filing system.
 		for dish_key: Variant in GameState.dish_counts.keys():
 			var dish_id: String = str(dish_key)
 			var dish_count: int = GameState.get_dish_count(dish_id)
@@ -620,7 +799,7 @@ func _build_entries(category_id: String) -> Array[Dictionary]:
 				"requirements": "Kitchen dish"
 			})
 
-	if category_id == "all" or category_id == "recipes":
+	if category_id == "all" or category_id == "papers":
 		for recipe_id: String in GameState.recipe_items:
 			var recipe_info: Dictionary = GameState.RECIPE_INFO.get(recipe_id, {})
 			result.append({
@@ -632,7 +811,7 @@ func _build_entries(category_id: String) -> Array[Dictionary]:
 				"requirements": "Recipe blueprint"
 			})
 
-	if category_id == "all" or category_id == "herbs":
+	if category_id == "all" or category_id == "materials":
 		for herb_key: Variant in GameState.herb_counts.keys():
 			var herb_id: String = str(herb_key)
 			var herb_count: int = GameState.get_herb_count(herb_id)
@@ -664,9 +843,18 @@ func _build_entries(category_id: String) -> Array[Dictionary]:
 				"requirements": "Circuit Room material"
 			})
 
-	if category_id == "all" or category_id == "maps":
+	if category_id == "all" or category_id == "papers":
 		for map_id: String in GameState.map_items:
-			if map_id == "circuit_repair_map":
+			if map_id == GameState.DR_LIN_PARTIAL_HALL_MAP_ID:
+				result.append({
+					"id": map_id,
+					"kind": "map",
+					"name": "Dr. Lin's Partial Hall Map",
+					"description": "A hand-drawn fragment from Dr. Lin's desk. It shows only the Wake Room and the hall paths you personally uncover.",
+					"quantity": _dev_quantity(1),
+					"requirements": "Open in Castle Hall to track explored routes"
+				})
+			elif map_id == "circuit_repair_map":
 				result.append({
 					"id": map_id,
 					"kind": "map",
@@ -676,7 +864,7 @@ func _build_entries(category_id: String) -> Array[Dictionary]:
 					"requirements": "Use to locate the Circuit Room switches"
 				})
 
-	if (category_id == "all" or category_id == "fragments") and not GameState.has_key("final_room_key"):
+	if (category_id == "all" or category_id == "materials") and not GameState.has_key("final_room_key"):
 		for fragment_index: int in GameState.final_key_fragments:
 			result.append({
 				"id": "final_key_fragment_%d" % fragment_index,
@@ -767,14 +955,30 @@ func _create_slot(entry_index: int, center: Vector2) -> Control:
 	var entry: Dictionary = entries[entry_index]
 	var icon_path: String = _item_icon_path(entry)
 	if not icon_path.is_empty():
+		var accent := GameState.get_item_accent(str(entry.get("id", "")))
+		var model_plate := Panel.new()
+		model_plate.name = "ItemModelPlate"
+		model_plate.position = Vector2(4.0, 2.0)
+		model_plate.size = Vector2(46.0, 45.0)
+		model_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var plate_style := StyleBoxFlat.new()
+		plate_style.bg_color = Color(accent.r * 0.10, accent.g * 0.10, accent.b * 0.10, 0.88)
+		plate_style.border_color = Color(accent.r, accent.g, accent.b, 0.72)
+		plate_style.set_border_width_all(1)
+		plate_style.set_corner_radius_all(6)
+		model_plate.add_theme_stylebox_override("panel", plate_style)
+		slot.add_child(model_plate)
+
 		var artwork: TextureRect = TextureRect.new()
 		artwork.name = "ItemArtwork"
-		artwork.position = Vector2(5.0, 2.0)
-		artwork.size = Vector2(44.0, 44.0)
+		artwork.position = Vector2(7.0, 4.0)
+		artwork.size = Vector2(40.0, 40.0)
 		artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		artwork.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		artwork.texture = load(icon_path) as Texture2D
 		artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		artwork.z_index = 2
 		slot.add_child(artwork)
 	var glyph: Label = Label.new()
 	glyph.name = "ItemGlyph"
@@ -809,8 +1013,9 @@ func _create_slot(entry_index: int, center: Vector2) -> Control:
 	hit_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hit_button.flat = true
 	hit_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	hit_button.focus_mode = Control.FOCUS_NONE
+	hit_button.focus_mode = Control.FOCUS_ALL
 	hit_button.mouse_entered.connect(_on_slot_mouse_entered.bind(slot))
+	hit_button.mouse_exited.connect(_on_slot_mouse_exited.bind(slot, entry_index))
 	hit_button.pressed.connect(_on_slot_pressed.bind(entry_index))
 	hit_button.mouse_filter = Control.MOUSE_FILTER_PASS
 	slot.add_child(hit_button)
@@ -823,39 +1028,25 @@ func _on_slot_mouse_entered(slot: Control) -> void:
 		frame.modulate = Color(1.0, 0.96, 0.72, 1.0)
 
 
+func _on_slot_mouse_exited(slot: Control, entry_index: int) -> void:
+	var frame: TextureRect = slot.get_node_or_null("SlotFrame") as TextureRect
+	if frame != null:
+		frame.modulate = (
+			Color(1.0, 0.94, 0.68, 1.0)
+			if entry_index == selected_index else Color(1.0, 0.86, 0.55, 0.76)
+		)
+
+
 func _on_slot_pressed(entry_index: int) -> void:
 	selected_index = entry_index
 	_rebuild_slots()
 	_update_detail_panel()
+	_play_inspection_feedback()
 
 
 func _item_icon_path(entry: Dictionary) -> String:
 	var item_id: String = str(entry.get("id", ""))
-	var kind: String = str(entry.get("kind", ""))
-	match kind:
-		"potion":
-			if item_id == "swift_potion":
-				return "res://assets/ui/alchemy/swiftness_potion.png"
-			if item_id == "vision_potion":
-				return "res://assets/ui/alchemy/vision_potion_eyes.png"
-			if item_id == "green_potion":
-				return "res://assets/ui/alchemy/green_potion.png"
-		"dish":
-			if item_id == "castle_ration":
-				return "res://assets/ui/alchemy/castle_ration.png"
-		"material":
-			if item_id == "distilled_water":
-				return "res://assets/ui/alchemy/distilled_water.png"
-			if item_id == "iron_salt":
-				return "res://assets/ui/alchemy/iron_salt.png"
-			if item_id == "prism_dust":
-				return "res://assets/ui/alchemy/prism_dust.png"
-		"herb":
-			if item_id == "blue_blossom":
-				return "res://assets/ui/alchemy/blue_blossom.png"
-			if item_id == "moonleaf":
-				return "res://assets/ui/alchemy/moonleaf.png"
-	return ""
+	return GameState.get_item_texture_path(item_id)
 
 
 func _kind_glyph(kind: String) -> String:
@@ -905,10 +1096,29 @@ func _kind_color(kind: String) -> Color:
 func _update_category_visuals() -> void:
 	for category_id: Variant in category_buttons.keys():
 		var button: Button = category_buttons[category_id] as Button
-		if str(category_id) == active_category:
-			button.modulate = Color(1.0, 0.88, 0.58, 1.0)
-		else:
-			button.modulate = Color(0.72, 0.66, 0.52, 1.0)
+		var is_active: bool = str(category_id) == active_category
+		var base_label: String = str(button.get_meta("base_label", button.text))
+		var entry_count: int = _build_entries(str(category_id)).size()
+		button.text = base_label
+		var count_label := category_count_labels.get(category_id) as Label
+		if count_label != null:
+			count_label.text = str(entry_count)
+			count_label.add_theme_color_override(
+				"font_color",
+				Color(1.0, 0.94, 0.70, 1.0) if is_active else Color(0.78, 0.66, 0.42, 1.0)
+			)
+		button.modulate = Color.WHITE
+		button.add_theme_stylebox_override(
+			"normal",
+			_make_category_style(
+				Color(0.28, 0.14, 0.025, 0.40) if is_active else Color(0.0, 0.0, 0.0, 0.0),
+				Color(1.0, 0.74, 0.26, 0.78) if is_active else Color(0.0, 0.0, 0.0, 0.0)
+			)
+		)
+		button.add_theme_color_override(
+			"font_color",
+			Color(1.0, 0.87, 0.58, 1.0) if is_active else Color(0.78, 0.66, 0.42, 1.0)
+		)
 
 
 func _update_detail_panel() -> void:
@@ -917,7 +1127,7 @@ func _update_detail_panel() -> void:
 		detail_icon_label.text = "—"
 		detail_title.text = "Select an item"
 		detail_category.text = "EMPTY SATCHEL SLOT"
-		detail_description.text = "Choose a potion, recipe, or herb to inspect its details."
+		detail_description.text = "Choose a potion, material, or paper to inspect its details."
 		detail_quantity.text = ""
 		detail_requirements.text = ""
 		detail_use_button.visible = false
@@ -928,6 +1138,7 @@ func _update_detail_panel() -> void:
 	var kind: String = str(entry["kind"])
 	var icon_path: String = _item_icon_path(entry)
 	detail_icon_frame.texture = load(SLOT_FRAME_B_PATH) as Texture2D
+	detail_icon_frame.modulate = GameState.get_item_accent(str(entry.get("id", "")))
 	detail_icon_label.text = _kind_glyph(kind)
 	detail_icon_label.visible = icon_path.is_empty()
 	detail_icon_label.add_theme_color_override("font_color", _kind_color(kind))
@@ -935,8 +1146,16 @@ func _update_detail_panel() -> void:
 	if not icon_path.is_empty():
 		detail_icon_texture.texture = load(icon_path) as Texture2D
 	detail_title.text = str(entry["name"])
+	detail_title.add_theme_font_size_override(
+		"font_size",
+		14 if detail_title.text.length() > 24 else 16
+	)
 	detail_category.text = str(kind).to_upper()
 	detail_description.text = str(entry["description"])
+	detail_description.add_theme_font_size_override(
+		"font_size",
+		10 if detail_description.text.length() > 72 else 11
+	)
 	detail_quantity.text = "Quantity: ∞" if int(entry["quantity"]) < 0 else "Quantity: ×" + str(entry["quantity"])
 	detail_requirements.text = str(entry["requirements"])
 	detail_use_button.text = "OPEN MAP" if kind == "map" else "USE"
@@ -950,7 +1169,40 @@ func _update_detail_panel() -> void:
 
 func _update_bottom_status() -> void:
 	var total_items: int = entries.size()
-	bottom_status.text = "SATCHEL  •  %d item entries  •  TAB: close  •  ESC: close" % total_items
+	bottom_status.text = "FILED: %d  •  SELECT AN ITEM TO INSPECT  •  TAB / ESC: CLOSE" % total_items
+
+
+func _animate_bag_open() -> void:
+	if open_tween != null and open_tween.is_valid():
+		open_tween.kill()
+	overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	board_panel.scale = Vector2(0.965, 0.965)
+	open_tween = create_tween()
+	open_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	open_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	open_tween.tween_property(overlay, "modulate:a", 1.0, 0.16)
+	open_tween.parallel().tween_property(board_panel, "scale", Vector2.ONE, 0.22)
+
+
+func _play_inspection_feedback() -> void:
+	if detail_layer == null:
+		return
+	if inspection_tween != null and inspection_tween.is_valid():
+		inspection_tween.kill()
+	detail_layer.pivot_offset = Vector2(684.0, 334.0)
+	detail_layer.scale = Vector2(0.985, 0.985)
+	inspection_tween = create_tween()
+	inspection_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	inspection_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	inspection_tween.tween_property(detail_layer, "scale", Vector2.ONE, 0.18)
+
+
+func _focus_selected_slot() -> void:
+	if selected_index >= 0 and selected_index < slot_nodes.size():
+		var selected_slot: Control = slot_nodes[selected_index]
+		var selected_button: Button = selected_slot.get_node_or_null("SlotButton") as Button
+		if selected_button != null:
+			selected_button.grab_focus()
 
 
 func _use_selected_item() -> void:
@@ -962,7 +1214,10 @@ func _use_selected_item() -> void:
 		close_bag()
 		var map_hud: Node = get_node_or_null("/root/MapHud")
 		if map_hud != null:
-			map_hud.call("show_repair_map")
+			if str(entry["id"]) == GameState.DR_LIN_PARTIAL_HALL_MAP_ID:
+				map_hud.call("open_map")
+			else:
+				map_hud.call("show_repair_map")
 		return
 	# 菜肴系统：食用恢复生命。
 	if str(entry["kind"]) == "dish":
@@ -978,7 +1233,20 @@ func _use_selected_item() -> void:
 	var effect_id: String = str(potion_info.get("effect", ""))
 	if effect_id.is_empty() or not GameState.has_inventory_item(potion_id):
 		return
-	GameState.apply_potion_effect(effect_id, float(potion_info.get("duration", 10.0)))
+	match effect_id:
+		"purify":
+			# Permanent: it strips the tracking serum instead of buffing the
+			# player, so it never enters the timed-effect table.
+			GameState.purify_tracking_serum()
+		"daze":
+			# Thrown at the Guardian, not drunk. The duration belongs to the
+			# Guardian's stun timer.
+			GameState.stun_guardian(float(potion_info.get("duration", 7.0)))
+		_:
+			GameState.apply_potion_effect(
+				effect_id,
+				float(potion_info.get("duration", 10.0))
+			)
 	if potion_id == "vision_potion":
 		# 真正制作并使用的 Vision Potion 解锁本章节的增强观察能力；
 		# Chemistry Room 的一次性样品演示不会走到这里。

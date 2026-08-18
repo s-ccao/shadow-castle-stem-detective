@@ -3,9 +3,59 @@ extends Node
 signal state_changed
 # 获得物品通知：add_* 成功时发出，ItemRewardHud 据此在屏幕中心显示获得提示。
 signal item_acquired(item_id: String, kind: String, amount: int)
+signal guardian_tracking_changed(mode: int, hall_position: Vector2)
 
 const SAVE_PATH: String = "user://shadow_castle_save.json"
 const SAVE_VERSION: int = 1
+## The first usable map is deliberately incomplete: it gives the player a
+## reason to enter the hall, while the Map Hub still reveals the castle through
+## exploration fog rather than handing over the full route.
+const DR_LIN_PARTIAL_HALL_MAP_ID: String = "dr_lin_partial_hall_map"
+const GUARDIAN_HALL_START_POSITION: Vector2 = Vector2(1832.0, 1208.0)
+const GUARDIAN_PATROL_SPEED: float = 82.0
+
+# ============================================================
+# Guardian escalation and the tracking serum
+# ============================================================
+
+## Every cleared room makes the Guardian faster. The serum explains why it can
+## find the player at all: until it is washed off, the Guardian always knows
+## where the player is. A purified player is only found by sight.
+const GUARDIAN_BASE_CHASE_SPEED: float = 145.0
+const GUARDIAN_ESCALATION_STEP: float = 0.12
+const GUARDIAN_MAX_ESCALATION_TIER: int = 6
+## An unaware Guardian only loiters near the player's next objective.
+const GUARDIAN_STAKEOUT_SPEED: float = 44.0
+const GUARDIAN_SEARCH_SPEED: float = 96.0
+const GUARDIAN_SEARCH_DURATION: float = 6.0
+const GUARDIAN_SIGHT_RANGE: float = 300.0
+const GUARDIAN_SIGHT_HALF_ANGLE_DEGREES: float = 46.0
+## Sight is never fully escapable at contact range, otherwise a purified player
+## could stand inside the Guardian without consequence.
+const GUARDIAN_PROXIMITY_ALERT_RADIUS: float = 78.0
+const GUARDIAN_STUN_DURATION: float = 7.0
+
+## Room keys are the canonical "this room is cleared" signal already used by
+## progression, so escalation reads from them instead of a parallel counter.
+const GUARDIAN_ESCALATION_KEY_IDS: Array[String] = [
+	"chemistry_room_key",
+	"library_room_key",
+	"circuit_room_key",
+	"dining_hall_key",
+	"service_corridor_key",
+	"final_room_key",
+]
+
+## Canonical objective order. A purified player is no longer tracked, so the
+## Guardian instead stakes out the passage of the room the player still needs.
+const GUARDIAN_OBJECTIVE_ROOM_ORDER: Array[String] = [
+	"chemistry_room",
+	"greenhouse_room",
+	"circuit_room",
+	"library",
+	"dining_hall",
+	"final_deduction_room",
+]
 var _loading_save: bool = false
 var _save_queued: bool = false
 
@@ -25,6 +75,14 @@ func _sync_global_hud_visibility() -> void:
 	var hide_huds: bool = (
 		scene_path.ends_with("main_menu.tscn")
 		or scene_path.ends_with("intro_cutscene.tscn")
+		# The first Castle Hall visit is a guided arrival. A player who has already
+		# read Dr. Lin's desk briefing must keep the tools that briefing awarded.
+		or (
+			scene_path.ends_with("game_world.tscn")
+			and not hall_arrival_seen
+			and game_started
+			and not has_wake_room_toolkit()
+		)
 	)
 	for hud_name: String in ["InventoryHud", "KeyHud", "NoteHud", "MapHud"]:
 		var hud: CanvasLayer = get_node_or_null("/root/" + hud_name) as CanvasLayer
@@ -103,6 +161,17 @@ func save_to_disk() -> bool:
 		"resume_spawn_id": resume_spawn_id,
 		"hall_arrival_seen": hall_arrival_seen,
 		"enemy_chase_active": enemy_chase_active,
+		"guardian_hunt_active": guardian_hunt_active,
+		"guardian_mode": guardian_mode,
+		"guardian_hall_position": _vector2_payload(guardian_hall_position),
+		"guardian_patrol_index": guardian_patrol_index,
+		"guardian_patrol_route": _vector2_array_payload(guardian_patrol_route),
+		"guardian_tracking_serum": guardian_tracking_serum,
+		"guardian_stun_remaining": guardian_stun_remaining,
+		"guardian_search_remaining": guardian_search_remaining,
+		"guardian_last_known_player_position": _vector2_payload(
+			guardian_last_known_player_position
+		),
 	}
 	if NoteHud != null and NoteHud.has_method("get_saved_clues"):
 		payload["note_clues"] = NoteHud.get_saved_clues()
@@ -165,6 +234,42 @@ func load_saved_game() -> bool:
 	resume_spawn_id = str(data.get("resume_spawn_id", checkpoint_spawn_id))
 	hall_arrival_seen = bool(data.get("hall_arrival_seen", false))
 	enemy_chase_active = bool(data.get("enemy_chase_active", false))
+	guardian_hunt_active = bool(data.get(
+		"guardian_hunt_active",
+		chase_mode or enemy_chase_active
+	))
+	guardian_mode = int(data.get(
+		"guardian_mode",
+		GuardianMode.CHASE if chase_mode else GuardianMode.PATROL if guardian_hunt_active else GuardianMode.DORMANT
+	))
+	guardian_hall_position = _vector2_from_data(
+		data.get("guardian_hall_position", []),
+		GUARDIAN_HALL_START_POSITION
+	)
+	guardian_patrol_route = _vector2_array_from_data(
+		data.get("guardian_patrol_route", [])
+	)
+	guardian_patrol_index = clampi(
+		int(data.get("guardian_patrol_index", 0)),
+		0,
+		maxi(guardian_patrol_route.size() - 1, 0)
+	)
+	# Saves written before the tracking-serum rework have no purification record,
+	# so they correctly resume with the Guardian still able to track the player.
+	guardian_tracking_serum = bool(data.get("guardian_tracking_serum", true))
+	guardian_stun_remaining = maxf(
+		float(data.get("guardian_stun_remaining", 0.0)),
+		0.0
+	)
+	guardian_search_remaining = maxf(
+		float(data.get("guardian_search_remaining", 0.0)),
+		0.0
+	)
+	guardian_last_known_player_position = _vector2_from_data(
+		data.get("guardian_last_known_player_position", []),
+		guardian_hall_position
+	)
+	_sync_legacy_guardian_flags()
 	game_started = true
 	if NoteHud != null and NoteHud.has_method("restore_saved_clues"):
 		NoteHud.restore_saved_clues(_dictionary(data.get("note_clues", {})))
@@ -195,6 +300,36 @@ func _dictionary(value: Variant) -> Dictionary:
 	if value is Dictionary:
 		return (value as Dictionary).duplicate(true)
 	return {}
+
+
+func _vector2_payload(value: Vector2) -> Array[float]:
+	return [value.x, value.y]
+
+
+func _vector2_from_data(value: Variant, fallback: Vector2) -> Vector2:
+	if value is Array and (value as Array).size() >= 2:
+		return Vector2(float((value as Array)[0]), float((value as Array)[1]))
+	return fallback
+
+
+func _vector2_array_payload(values: Array[Vector2]) -> Array:
+	var result: Array = []
+	for value: Vector2 in values:
+		result.append(_vector2_payload(value))
+	return result
+
+
+func _vector2_array_from_data(value: Variant) -> Array[Vector2]:
+	var result: Array[Vector2] = []
+	if not value is Array:
+		return result
+	for entry: Variant in value as Array:
+		if entry is Array and (entry as Array).size() >= 2:
+			result.append(Vector2(
+				float((entry as Array)[0]),
+				float((entry as Array)[1])
+			))
+	return result
 
 
 # ============================================================
@@ -245,6 +380,24 @@ const POTION_INFO: Dictionary = {
 		"effect": "",
 		"duration": 0.0,
 	},
+	"purification_potion": {
+		"name": "Purification Potion",
+		"description": "Washes the Guardian's tracking serum out of your blood. Permanent: after drinking it the Guardian can only find you by sight.",
+		"effect": "purify",
+		"duration": 0.0,
+	},
+	"daze_potion": {
+		"name": "Daze Potion",
+		"description": "Shatters into a numbing vapour. The Guardian is stunned for 7 seconds.",
+		"effect": "daze",
+		"duration": 7.0,
+	},
+	"shroud_potion": {
+		"name": "Shroud Potion",
+		"description": "Bends light around you for 12 seconds. The Guardian cannot see you at all.",
+		"effect": "shroud",
+		"duration": 12.0,
+	},
 }
 
 const RECIPE_INFO: Dictionary = {
@@ -261,6 +414,27 @@ const RECIPE_INFO: Dictionary = {
 		"produces": "vision_potion",
 		"herb_cost": {"moonleaf": 3},
 		"material_cost": {"distilled_water": 1, "prism_dust": 1},
+	},
+	"recipe_purification": {
+		"name": "Purification Potion Blueprint",
+		"description": "Moonleaf x2 + Blue Blossom x1 + Distilled Water x2 -> Purification Potion. Mrs. Lin's counter-formula for the serum served at the last dinner.",
+		"produces": "purification_potion",
+		"herb_cost": {"moonleaf": 2, "blue_blossom": 1},
+		"material_cost": {"distilled_water": 2},
+	},
+	"recipe_daze": {
+		"name": "Daze Potion Recipe",
+		"description": "Blue Blossom x2 + Iron Salt x1 + Prism Dust x1 -> Daze Potion.",
+		"produces": "daze_potion",
+		"herb_cost": {"blue_blossom": 2},
+		"material_cost": {"iron_salt": 1, "prism_dust": 1},
+	},
+	"recipe_shroud": {
+		"name": "Shroud Potion Recipe",
+		"description": "Moonleaf x2 + Prism Dust x2 -> Shroud Potion.",
+		"produces": "shroud_potion",
+		"herb_cost": {"moonleaf": 2},
+		"material_cost": {"prism_dust": 2},
 	},
 }
 
@@ -289,6 +463,124 @@ const MATERIAL_INFO: Dictionary = {
 		"description": "Ground crystal dust that sharpens the eye.",
 	},
 }
+
+const ITEM_VISUAL_INFO: Dictionary = {
+	"recipe_swift": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_swift.png",
+		"accent": Color(0.92, 0.38, 0.22, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_vision": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_vision.png",
+		"accent": Color(0.69, 0.43, 0.94, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_purification": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_purification.png",
+		"accent": Color(0.36, 0.84, 0.90, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_daze": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_daze.png",
+		"accent": Color(0.94, 0.32, 0.62, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_shroud": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_shroud.png",
+		"accent": Color(0.34, 0.36, 0.72, 1.0),
+		"model_class": "formula",
+	},
+	"blue_blossom": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/blue_blossom.png",
+		"accent": Color(0.24, 0.58, 1.0, 1.0),
+		"model_class": "herb",
+	},
+	"moonleaf": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/moonleaf.png",
+		"accent": Color(0.42, 0.72, 0.35, 1.0),
+		"model_class": "herb",
+	},
+	"distilled_water": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/distilled_water.png",
+		"accent": Color(0.38, 0.76, 0.92, 1.0),
+		"model_class": "reagent",
+	},
+	"iron_salt": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/iron_salt.png",
+		"accent": Color(0.84, 0.39, 0.20, 1.0),
+		"model_class": "reagent",
+	},
+	"prism_dust": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/prism_dust.png",
+		"accent": Color(0.72, 0.42, 0.96, 1.0),
+		"model_class": "reagent",
+	},
+	"swift_potion": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/swift_potion.png",
+		"accent": Color(0.94, 0.24, 0.20, 1.0),
+		"model_class": "potion",
+	},
+	"vision_potion": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/vision_potion.png",
+		"accent": Color(0.66, 0.38, 0.94, 1.0),
+		"model_class": "potion",
+	},
+	"green_potion": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/green_potion.png",
+		"accent": Color(0.34, 0.82, 0.44, 1.0),
+		"model_class": "potion",
+	},
+	"purification_potion": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/purification_potion.png",
+		"accent": Color(0.36, 0.86, 0.92, 1.0),
+		"model_class": "potion",
+	},
+	"daze_potion": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/daze_potion.png",
+		"accent": Color(0.95, 0.30, 0.60, 1.0),
+		"model_class": "potion",
+	},
+	"shroud_potion": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/shroud_potion.png",
+		"accent": Color(0.30, 0.34, 0.70, 1.0),
+		"model_class": "potion",
+	},
+	"castle_ration": {
+		"texture": "res://assets/ui/alchemy/castle_ration.png",
+		"accent": Color(0.86, 0.58, 0.28, 1.0),
+		"model_class": "dish",
+	},
+	"cleaning_powder_sample": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/cleaning_powder_sample.png",
+		"accent": Color(0.84, 0.78, 0.64, 1.0),
+		"model_class": "trace_sample",
+	},
+	"indicator_vial_sample": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/indicator_vial_sample.png",
+		"accent": Color(0.76, 0.22, 0.30, 1.0),
+		"model_class": "trace_sample",
+	},
+	"broken_glass_sample": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/broken_glass_sample.png",
+		"accent": Color(0.52, 0.78, 0.82, 1.0),
+		"model_class": "trace_sample",
+	},
+}
+
+
+func get_item_visual_info(item_id: String) -> Dictionary:
+	return (ITEM_VISUAL_INFO.get(item_id, {}) as Dictionary).duplicate(true)
+
+
+func get_item_texture_path(item_id: String) -> String:
+	return str(ITEM_VISUAL_INFO.get(item_id, {}).get("texture", ""))
+
+
+func get_item_accent(item_id: String) -> Color:
+	return ITEM_VISUAL_INFO.get(item_id, {}).get(
+		"accent",
+		Color(0.86, 0.70, 0.34, 1.0)
+	) as Color
 
 
 # ============================================================
@@ -353,8 +645,32 @@ var resume_spawn_id: String = "wake_room_start"
 # Castle Hall state
 # ============================================================
 
+enum GuardianMode {
+	DORMANT,
+	CHASE,
+	PATROL,
+	## Appended after PATROL so previously saved integers keep their meaning.
+	SEARCH,
+	STUNNED,
+}
+
 var hall_arrival_seen: bool = false
 var enemy_chase_active: bool = false
+var guardian_hunt_active: bool = false
+var guardian_mode: int = GuardianMode.DORMANT
+var guardian_hall_position: Vector2 = GUARDIAN_HALL_START_POSITION
+var guardian_patrol_route: Array[Vector2] = []
+var guardian_patrol_index: int = 0
+## True until the player brews and drinks the Purification Potion. While true
+## the Guardian always knows the player's position, which is the in-fiction
+## reason it can hunt through walls.
+var guardian_tracking_serum: bool = true
+var guardian_stun_remaining: float = 0.0
+var guardian_search_remaining: float = 0.0
+var guardian_last_known_player_position: Vector2 = GUARDIAN_HALL_START_POSITION
+## Hall-space entrance of each room, registered by Castle Hall so the Guardian
+## can stake out a doorway without this autoload hard-coding level geometry.
+var room_door_anchors: Dictionary = {}
 var developer_mode: bool = false
 var individual_scene_debug_state_applied: bool = false
 
@@ -428,6 +744,16 @@ func reset_new_game() -> void:
 
 	hall_arrival_seen = false
 	enemy_chase_active = false
+	guardian_hunt_active = false
+	guardian_mode = GuardianMode.DORMANT
+	guardian_hall_position = GUARDIAN_HALL_START_POSITION
+	guardian_patrol_route.clear()
+	guardian_patrol_index = 0
+	guardian_tracking_serum = true
+	guardian_stun_remaining = 0.0
+	guardian_search_remaining = 0.0
+	guardian_last_known_player_position = GUARDIAN_HALL_START_POSITION
+	room_door_anchors.clear()
 
 	state_changed.emit()
 
@@ -509,6 +835,34 @@ func is_map_hub_unlocked() -> bool:
 	return map_hub_unlocked
 
 
+## The Wake Room desk awards a portable investigation kit.  Keep this as a
+## progress query instead of making individual scenes guess which HUDs should
+## survive their handoff into Castle Hall.
+func has_wake_room_toolkit() -> bool:
+	return (
+		has_story_flag("wake_room_toolkit_unlocked")
+		or map_items.has(DR_LIN_PARTIAL_HALL_MAP_ID)
+	)
+
+
+## Grant the persistent Wake Room handoff in one place. It is deliberately
+## idempotent so scenes may also use it to migrate a save made before the map
+## was added to the desk interaction.
+func grant_wake_room_toolkit() -> void:
+	var state_changed_here := false
+	if not has_story_flag("wake_room_toolkit_unlocked"):
+		story_flags["wake_room_toolkit_unlocked"] = true
+		state_changed_here = true
+	if not map_hub_unlocked:
+		map_hub_unlocked = true
+		state_changed_here = true
+	if add_map(DR_LIN_PARTIAL_HALL_MAP_ID):
+		# add_map already emits the state signal and the player-facing reward.
+		state_changed_here = false
+	if state_changed_here:
+		state_changed.emit()
+
+
 ## 主菜单开始游戏时调用：标记正式流程开始。
 func mark_game_started() -> void:
 	game_started = true
@@ -555,8 +909,7 @@ func _grant_individual_scene_debug_state() -> void:
 		for fragment_index: int in [1, 2, 3, 4]:
 			if not final_key_fragments.has(fragment_index):
 				final_key_fragments.append(fragment_index)
-	var recipe_ids: Array[String] = ["recipe_swift", "recipe_vision"]
-	for recipe_id: String in recipe_ids:
+	for recipe_id: String in RECIPE_INFO.keys():
 		if not recipe_items.has(recipe_id):
 			recipe_items.append(recipe_id)
 	for potion_id: String in POTION_INFO.keys():
@@ -643,41 +996,39 @@ func sync_knowledge_notes_from_flags() -> void:
 	var notes: Array[Dictionary] = [
 		{
 			"id": "hall_knowledge_chemical_change",
-			"title": "Chemistry Room Knowledge",
+			"key": "note.knowledge.chemistry",
 			"flag": "hall_knowledge_chemistry_room_collected",
-			"content": "A chemical change creates new substances: burning paper is chemical, while melting ice, breaking glass and dissolving sugar are physical changes.",
 		},
 		{
 			"id": "hall_knowledge_photosynthesis",
-			"title": "Greenhouse Room Knowledge",
+			"key": "note.knowledge.greenhouse",
 			"flag": "hall_knowledge_greenhouse_room_collected",
-			"content": "Plants absorb carbon dioxide and use light and water to make food. Oxygen is released as a product.",
 		},
 		{
 			"id": "hall_knowledge_electricity",
-			"title": "Circuit Room Knowledge",
+			"key": "note.knowledge.circuit",
 			"flag": "hall_knowledge_circuit_room_collected",
-			"content": "A conductor lets charge move through a circuit. Metal is usually a better conductor than rubber, dry wood or glass; a broken circuit cannot carry current.",
 		},
 		{
 			"id": "hall_knowledge_dining_timeline",
-			"title": "Dining Hall Knowledge",
+			"key": "note.knowledge.dining",
 			"flag": "hall_knowledge_dining_hall_collected",
-			"content": "Measure a reasonably steady change and compare several independent indicators before estimating elapsed time.",
 		},
 		{
 			"id": "hall_knowledge_light",
-			"title": "Library Knowledge",
+			"key": "note.knowledge.library",
 			"flag": "hall_knowledge_library_collected",
-			"content": "The primary colors of light are red, green and blue. Combining light adds energy and produces brighter colors.",
 		},
 	]
 	for note: Dictionary in notes:
 		if has_story_flag(str(note["flag"])) and not NoteHud.has_clue(str(note["id"])):
+			var key := str(note["key"])
+			# Keys, not resolved strings: a note filed in English must still read in
+			# Chinese after the player switches language.
 			NoteHud.add_clue(str(note["id"]), {
-				"title": str(note["title"]),
+				"title_key": key + ".title",
+				"content_key": key + ".body",
 				"icon": "icon_book",
-				"content": str(note["content"]),
 				"category": "knowledge",
 			})
 
@@ -765,9 +1116,7 @@ func save_room_checkpoint(
 func load_room_checkpoint() -> bool:
 	if not has_room_checkpoint():
 		return false
-	player_health = 3
-	end_chase_mode()
-	enemy_chase_active = false
+	recover_from_interruption()
 	return true
 
 
@@ -792,6 +1141,11 @@ func prepare_room_transition(
 	current_room_id = next_room_id
 	return_scene_path = scene_to_return_to
 	return_spawn_id = spawn_id_when_returning
+	if guardian_hunt_active:
+		if next_room_id == "floor_1_hub":
+			resume_guardian_chase()
+		else:
+			begin_guardian_patrol()
 
 	set_room_visited(next_room_id)
 
@@ -806,6 +1160,8 @@ func prepare_return_to_hub(
 	resume_scene_path = "res://scenes/game_world.tscn"
 	resume_room_id = "floor_1_hub"
 	resume_spawn_id = hub_spawn_id
+	if guardian_hunt_active:
+		resume_guardian_chase()
 	state_changed.emit()
 
 
@@ -844,14 +1200,322 @@ func set_story_flag(
 # ============================================================
 
 func start_chase_mode() -> void:
-	if chase_mode:
-		return
-	chase_mode = true
-	state_changed.emit()
+	activate_guardian_hunt()
 
 
 func end_chase_mode() -> void:
-	chase_mode = false
+	if guardian_hunt_active:
+		begin_guardian_patrol()
+	else:
+		_set_guardian_mode(GuardianMode.DORMANT)
+
+
+func activate_guardian_hunt() -> void:
+	var was_active := guardian_hunt_active
+	guardian_hunt_active = true
+	if current_room_id == "floor_1_hub" and guardian_tracking_serum:
+		_set_guardian_mode(GuardianMode.CHASE, not was_active)
+	else:
+		_set_guardian_mode(GuardianMode.PATROL, not was_active)
+
+
+func is_guardian_hunt_active() -> bool:
+	return guardian_hunt_active
+
+
+func get_guardian_mode() -> int:
+	return guardian_mode
+
+
+func get_guardian_hall_position() -> Vector2:
+	return guardian_hall_position
+
+
+func get_guardian_patrol_route() -> Array[Vector2]:
+	return guardian_patrol_route.duplicate()
+
+
+func configure_guardian_patrol_route(route: Array[Vector2]) -> void:
+	if route.size() < 2:
+		return
+	guardian_patrol_route = route.duplicate()
+	var nearest_index := _nearest_guardian_patrol_index(guardian_hall_position)
+	guardian_patrol_index = (nearest_index + 1) % guardian_patrol_route.size()
+	guardian_tracking_changed.emit(guardian_mode, guardian_hall_position)
+
+
+func update_guardian_hall_position(new_position: Vector2) -> void:
+	if guardian_hall_position.is_equal_approx(new_position):
+		return
+	guardian_hall_position = new_position
+	guardian_tracking_changed.emit(guardian_mode, guardian_hall_position)
+
+
+func begin_guardian_patrol() -> void:
+	if not guardian_hunt_active:
+		return
+	if not guardian_patrol_route.is_empty():
+		var nearest_index := _nearest_guardian_patrol_index(guardian_hall_position)
+		guardian_hall_position = guardian_patrol_route[nearest_index]
+		guardian_patrol_index = (nearest_index + 1) % guardian_patrol_route.size()
+	_set_guardian_mode(GuardianMode.PATROL)
+
+
+func resume_guardian_chase() -> void:
+	if not guardian_hunt_active:
+		return
+	# A purified player is no longer broadcast to the Guardian, so re-entering
+	# the Hall must not hand it a free lock-on. It goes back to staking out the
+	# next objective and has to earn the chase with line of sight.
+	if not guardian_tracking_serum:
+		begin_guardian_patrol()
+		return
+	_set_guardian_mode(GuardianMode.CHASE)
+
+
+# ============================================================
+# Guardian escalation, tracking serum, sight and counterplay
+# ============================================================
+
+## Rooms cleared so far, measured by the progression keys the player holds.
+func get_guardian_cleared_room_count() -> int:
+	var cleared: int = 0
+	for key_id: String in GUARDIAN_ESCALATION_KEY_IDS:
+		if key_items.has(key_id):
+			cleared += 1
+	return cleared
+
+
+func get_guardian_escalation_tier() -> int:
+	return mini(get_guardian_cleared_room_count(), GUARDIAN_MAX_ESCALATION_TIER)
+
+
+func get_guardian_escalation_multiplier() -> float:
+	return 1.0 + float(get_guardian_escalation_tier()) * GUARDIAN_ESCALATION_STEP
+
+
+## Speed once the Guardian has actually locked onto the player. This is the
+## stacked value the user asked for: it never decays, only rises per room.
+func get_guardian_chase_speed() -> float:
+	return GUARDIAN_BASE_CHASE_SPEED * get_guardian_escalation_multiplier()
+
+
+## Speed while the Guardian has lost the player and is sweeping the last known
+## position. Escalation still applies, but it is well below a full chase.
+func get_guardian_search_speed() -> float:
+	return GUARDIAN_SEARCH_SPEED * get_guardian_escalation_multiplier()
+
+
+## Speed while the Guardian is merely loitering. Deliberately slow so an unseen
+## player can reposition; escalation does not apply here.
+func get_guardian_unaware_speed() -> float:
+	if guardian_tracking_serum:
+		return GUARDIAN_PATROL_SPEED
+	return GUARDIAN_STAKEOUT_SPEED
+
+
+func is_guardian_tracking_serum_active() -> bool:
+	return guardian_tracking_serum
+
+
+## Drinking the Purification Potion. Permanent, and it immediately drops the
+## Guardian out of any active chase.
+func purify_tracking_serum() -> bool:
+	if not guardian_tracking_serum:
+		return false
+	guardian_tracking_serum = false
+	guardian_search_remaining = 0.0
+	set_story_flag("tracking_serum_purified")
+	if guardian_hunt_active:
+		begin_guardian_patrol()
+	state_changed.emit()
+	return true
+
+
+func stun_guardian(duration: float = GUARDIAN_STUN_DURATION) -> void:
+	guardian_stun_remaining = maxf(guardian_stun_remaining, duration)
+	guardian_search_remaining = 0.0
+	if guardian_hunt_active:
+		_set_guardian_mode(GuardianMode.STUNNED)
+	state_changed.emit()
+
+
+func is_guardian_stunned() -> bool:
+	return guardian_stun_remaining > 0.0
+
+
+func get_guardian_stun_remaining() -> float:
+	return maxf(guardian_stun_remaining, 0.0)
+
+
+## The Shroud Potion makes the player undetectable by sight. It does nothing
+## against the tracking serum, which is what makes purification the real fix.
+func is_player_shrouded() -> bool:
+	return is_potion_active("shroud")
+
+
+## Castle Hall registers its own doorway geometry so this autoload never has to
+## hard-code level coordinates.
+func configure_room_door_anchors(anchors: Dictionary) -> void:
+	room_door_anchors.clear()
+	for room_id: Variant in anchors:
+		var anchor: Variant = anchors[room_id]
+		if anchor is Vector2:
+			room_door_anchors[str(room_id)] = anchor
+
+
+## The room the player still has to reach. While the player is inside a room,
+## that room's own doorway is the stakeout, because the player must come back
+## out through it.
+func get_guardian_objective_room_id() -> String:
+	if current_room_id != "floor_1_hub" and room_door_anchors.has(current_room_id):
+		return current_room_id
+	for room_id: String in GUARDIAN_OBJECTIVE_ROOM_ORDER:
+		if not is_room_visited(room_id):
+			return room_id
+	return GUARDIAN_OBJECTIVE_ROOM_ORDER[GUARDIAN_OBJECTIVE_ROOM_ORDER.size() - 1]
+
+
+func get_guardian_stakeout_anchor() -> Vector2:
+	var objective_room_id: String = get_guardian_objective_room_id()
+	if room_door_anchors.has(objective_room_id):
+		return room_door_anchors[objective_room_id]
+	if not guardian_patrol_route.is_empty():
+		return guardian_patrol_route[guardian_patrol_index]
+	return GUARDIAN_HALL_START_POSITION
+
+
+## Called by the Guardian body the moment it acquires the player by sight.
+func report_player_seen(player_position: Vector2) -> void:
+	if not guardian_hunt_active or is_guardian_stunned():
+		return
+	guardian_last_known_player_position = player_position
+	guardian_search_remaining = 0.0
+	if guardian_mode != GuardianMode.CHASE:
+		_set_guardian_mode(GuardianMode.CHASE)
+
+
+## Called when sight is broken. The Guardian sweeps the last known position for
+## a while, then falls back to staking out the player's next room.
+func report_player_lost(last_position: Vector2) -> void:
+	if not guardian_hunt_active or is_guardian_stunned():
+		return
+	guardian_last_known_player_position = last_position
+	guardian_search_remaining = GUARDIAN_SEARCH_DURATION
+	if guardian_mode != GuardianMode.SEARCH:
+		_set_guardian_mode(GuardianMode.SEARCH)
+
+
+func get_guardian_last_known_player_position() -> Vector2:
+	return guardian_last_known_player_position
+
+
+func _update_guardian_timers(delta: float) -> void:
+	if guardian_stun_remaining > 0.0:
+		guardian_stun_remaining = maxf(guardian_stun_remaining - delta, 0.0)
+		if guardian_stun_remaining <= 0.0:
+			if guardian_hunt_active:
+				begin_guardian_patrol()
+			state_changed.emit()
+		return
+	if guardian_search_remaining > 0.0:
+		guardian_search_remaining = maxf(guardian_search_remaining - delta, 0.0)
+		if guardian_search_remaining <= 0.0 and guardian_mode == GuardianMode.SEARCH:
+			begin_guardian_patrol()
+
+
+func _set_guardian_mode(new_mode: int, force_state_emit: bool = false) -> void:
+	var changed := guardian_mode != new_mode
+	guardian_mode = new_mode
+	_sync_legacy_guardian_flags()
+	if guardian_mode == GuardianMode.CHASE:
+		call_deferred("_dismiss_nonessential_hud_notifications")
+	guardian_tracking_changed.emit(guardian_mode, guardian_hall_position)
+	if changed or force_state_emit:
+		state_changed.emit()
+
+
+func _dismiss_nonessential_hud_notifications() -> void:
+	var dismissal_methods: Dictionary = {
+		"InventoryHud": "dismiss_feature_unlock",
+		"KeyHud": "dismiss_unlock_toast",
+		"NoteHud": "hide_feature_unlock",
+		"ItemRewardHud": "dismiss_for_overlay",
+	}
+	for hud_name: String in dismissal_methods:
+		var hud := get_node_or_null("/root/" + hud_name)
+		var method_name: String = str(dismissal_methods[hud_name])
+		if hud != null and hud.has_method(method_name):
+			hud.call(method_name)
+
+
+func _sync_legacy_guardian_flags() -> void:
+	chase_mode = guardian_mode == GuardianMode.CHASE
+	enemy_chase_active = chase_mode
+
+
+func _nearest_guardian_patrol_index(position: Vector2) -> int:
+	if guardian_patrol_route.is_empty():
+		return 0
+	var nearest_index := 0
+	var nearest_distance := INF
+	for index: int in range(guardian_patrol_route.size()):
+		var distance := position.distance_squared_to(guardian_patrol_route[index])
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_index = index
+	return nearest_index
+
+
+func _update_guardian_patrol(delta: float) -> void:
+	if not guardian_hunt_active or is_guardian_stunned():
+		return
+	if guardian_mode != GuardianMode.PATROL:
+		return
+	# Once the serum is washed off the Guardian stops sweeping the whole Hall
+	# and instead creeps toward the doorway of the room the player needs next.
+	if not guardian_tracking_serum:
+		var stakeout := get_guardian_stakeout_anchor()
+		if guardian_hall_position.distance_to(stakeout) <= 1.0:
+			return
+		guardian_hall_position = guardian_hall_position.move_toward(
+			stakeout,
+			get_guardian_unaware_speed() * delta
+		)
+		guardian_tracking_changed.emit(guardian_mode, guardian_hall_position)
+		return
+	if guardian_patrol_route.size() < 2:
+		return
+	var target := guardian_patrol_route[guardian_patrol_index]
+	guardian_hall_position = guardian_hall_position.move_toward(
+		target,
+		GUARDIAN_PATROL_SPEED * delta
+	)
+	if guardian_hall_position.distance_to(target) <= 1.0:
+		guardian_hall_position = target
+		guardian_patrol_index = (
+			guardian_patrol_index + 1
+		) % guardian_patrol_route.size()
+	guardian_tracking_changed.emit(guardian_mode, guardian_hall_position)
+
+
+## Resets only the volatile failure state. Evidence, keys, notes, and the
+## last saved room remain intact whether the player retries, loads a checkpoint,
+## or returns to the archive after an interruption.
+func recover_from_interruption() -> void:
+	player_health = 3
+	guardian_stun_remaining = 0.0
+	guardian_search_remaining = 0.0
+	if guardian_hunt_active:
+		guardian_mode = (
+			GuardianMode.CHASE
+			if resume_room_id == "floor_1_hub" and guardian_tracking_serum
+			else GuardianMode.PATROL
+		)
+	else:
+		guardian_mode = GuardianMode.DORMANT
+	_sync_legacy_guardian_flags()
+	guardian_tracking_changed.emit(guardian_mode, guardian_hall_position)
 	state_changed.emit()
 
 
@@ -1125,6 +1789,8 @@ func get_room_camera_zoom(gameplay_zoom: Vector2, developer_zoom: Vector2) -> Ve
 
 
 func _process(delta: float) -> void:
+	_update_guardian_timers(delta)
+	_update_guardian_patrol(delta)
 	## 全局递减药水效果倒计时（autoload 常驻，跨房间持续）。
 	if potion_effects.is_empty():
 		return

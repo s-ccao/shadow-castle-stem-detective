@@ -61,6 +61,10 @@ const BUTLER_POSITION: Vector2 = Vector2(
 	650.0,
 	270.0
 )
+const BUTLER_VISUAL_SCALE: float = 2.10
+const BUTLER_VISUAL_FOOT_ANCHOR: Vector2 = Vector2(0.0, -48.30)
+const DR_LIN_ECHO_VISUAL_SCALE: float = 0.45
+const DR_LIN_ECHO_VISUAL_FOOT_ANCHOR: Vector2 = Vector2(0.0, -44.55)
 var room_input_enabled: bool = false
 var scene_transitioning: bool = false
 
@@ -90,6 +94,12 @@ const CHEMISTRY_DEVELOPER_CAMERA_ZOOM: Vector2 = Vector2(
 )
 
 const CAMERA_ZOOM_CHANGE_SPEED: float = 7.0
+const PROP_FRONT_Z: int = -20
+const PROP_BACK_Z: int = 20
+const OCCLUSION_PROP_PATHS: Array[NodePath] = [
+	NodePath("Worldsort/ChemistryLabTable"),
+	NodePath("Worldsort/ChemistryPotionCabinet"),
+]
 
 @export var interaction_hint_position: Vector2 = Vector2(238, 696)
 @export var interaction_hint_size: Vector2 = Vector2(548, 68)
@@ -122,10 +132,12 @@ var avatar_panel: Panel
 var avatar_portrait: TextureRect
 var avatar_name_label: Label
 var evidence_overview_preview: TextureRect
+var red_stain_material_strip: Control
 
 var follow_camera: Camera2D
 var vision_demo_markers: Array[Node] = []
 var vision_echo: AnimatedNpc
+var spatial := RoomSpatialRuntime.new()
 
 
 var camera_target_zoom: Vector2 = (
@@ -157,12 +169,16 @@ func _ready() -> void:
 		if not parchment.is_connected("parchment_committed", parchment_callback):
 			parchment.connect("parchment_committed", parchment_callback)
 
-	player.position = PLAYER_SPAWN_POSITION
+	player.position = spatial.resolve_safe_spawn(
+		player,
+		PLAYER_SPAWN_POSITION,
+		get_room_world_bounds()
+	)
 
-	if player.has_method("set_visual_scale"):
+	if player.has_method("set_room_visual_scale"):
 		player.call(
-			"set_visual_scale",
-			1.50
+			"set_room_visual_scale",
+			"chemistry_room"
 		)
 	create_follow_camera()
 	room_input_enabled = false
@@ -197,6 +213,7 @@ func _process(delta: float) -> void:
 		toggle_chemistry_developer_mode()
 
 	update_camera_zoom(delta)
+	_update_prop_occlusion_layers()
 
 	if not room_input_enabled:
 		hide_interaction_feedback()
@@ -222,16 +239,22 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		handle_interaction()
 
+
+func _update_prop_occlusion_layers() -> void:
+	for prop_path: NodePath in OCCLUSION_PROP_PATHS:
+		var prop := get_node_or_null(prop_path) as Node2D
+		if prop == null:
+			continue
+		prop.z_index = 0
+		spatial.update_occlusion(player, prop, PROP_BACK_Z, PROP_FRONT_Z)
+
 func update_interaction_prompt() -> void:
 	current_interaction = ""
 	interact_label.visible = false
 
-	# 所有交互面积与贴图范围一致：玩家在贴图任意一侧
-	# 边缘距离 INTERACT_EDGE_DISTANCE 内即可触发。
-	if _distance_to_rect(
-		player.global_position,
-		EXIT_RECT
-	) <= INTERACT_EDGE_DISTANCE:
+	# 所有交互面积与贴图范围一致：玩家碰撞框接近可见边缘
+	# 14 px 时触发，不再使用物品中心点半径。
+	if _is_near_interaction("exit"):
 		current_interaction = "exit"
 		interact_label.text = (
 			"Press E to return to the Castle Hall"
@@ -239,10 +262,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	if _distance_to_rect(
-		player.global_position,
-		CABINET_RECT
-	) <= INTERACT_EDGE_DISTANCE:
+	if _is_near_interaction("cabinet"):
 		current_interaction = "cabinet"
 		interact_label.text = (
 			"Press E to inspect the potion cabinet"
@@ -252,10 +272,7 @@ func update_interaction_prompt() -> void:
 
 	# 桌子优先于血迹：血迹矩形已收缩到 x≥850，
 	# 玩家接触桌子主体/右缘时优先显示桌子交互。
-	if _distance_to_rect(
-		player.global_position,
-		ALCHEMY_TABLE_RECT
-	) <= INTERACT_EDGE_DISTANCE:
+	if _is_near_interaction("alchemy_table"):
 		current_interaction = "alchemy_table"
 		interact_label.text = (
 			"Press E to inspect the alchemy table"
@@ -263,10 +280,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	if _distance_to_rect(
-		player.global_position,
-		RED_STAIN_RECT
-	) <= INTERACT_EDGE_DISTANCE:
+	if _is_near_interaction("red_stain"):
 		current_interaction = "red_stain"
 
 		if GameState.has_evidence(
@@ -283,10 +297,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	if _distance_to_rect(
-		player.global_position,
-		BUTLER_RECT
-	) <= INTERACT_EDGE_DISTANCE:
+	if _is_near_interaction("butler"):
 		current_interaction = "butler"
 		interact_label.text = (
 			"Press E to talk to the Butler"
@@ -333,6 +344,35 @@ func _distance_to_rect(
 		)
 	)
 	return point.distance_to(nearest)
+
+
+func get_interaction_rect(interaction_id: String) -> Rect2:
+	match interaction_id:
+		"exit":
+			return EXIT_RECT
+		"cabinet":
+			var cabinet := get_node_or_null("Worldsort/ChemistryPotionCabinet") as Node2D
+			return spatial.get_visual_rect(cabinet) if cabinet != null else CABINET_RECT
+		"alchemy_table":
+			var table := get_node_or_null("Worldsort/ChemistryLabTable") as Node2D
+			return spatial.get_visual_rect(table) if table != null else ALCHEMY_TABLE_RECT
+		"red_stain":
+			return RED_STAIN_RECT
+		"butler":
+			if butler_node != null:
+				var butler_rect := spatial.get_visual_rect(butler_node)
+				if butler_rect.size.x > 0.0 and butler_rect.size.y > 0.0:
+					return butler_rect
+			return BUTLER_RECT
+	return Rect2()
+
+
+func _is_near_interaction(interaction_id: String) -> bool:
+	return spatial.is_actor_near_rect(
+		player,
+		get_interaction_rect(interaction_id),
+		14.0
+	)
 
 
 # ============================================================
@@ -661,12 +701,12 @@ func _build_reference_alchemy_panels() -> void:
 	grid.add_theme_constant_override("h_separation", 4)
 	grid.add_theme_constant_override("v_separation", 6)
 	materials_panel.add_child(grid)
-	_add_material_card(grid, "moonleaf", "Herb", "res://assets/ui/alchemy/moonleaf.png", GameState.get_herb_count("moonleaf"))
-	_add_material_card(grid, "blue_blossom", "Blossom", "res://assets/ui/alchemy/blue_blossom.png", GameState.get_herb_count("blue_blossom"))
+	_add_material_card(grid, "moonleaf", "Herb", GameState.get_item_texture_path("moonleaf"), GameState.get_herb_count("moonleaf"))
+	_add_material_card(grid, "blue_blossom", "Blossom", GameState.get_item_texture_path("blue_blossom"), GameState.get_herb_count("blue_blossom"))
 	_add_material_card(grid, "mushrooms", "Mushroom", "res://assets/ui/alchemy/mushrooms.png", GameState.get_herb_count("moonleaf"))
-	_add_material_card(grid, "swift_potion", "Red Potion", "res://assets/ui/alchemy/swiftness_potion.png", 1 if GameState.inventory_items.has("swift_potion") else 0)
-	_add_material_card(grid, "green_potion", "Green Potion", "res://assets/ui/alchemy/green_potion.png", 1 if GameState.inventory_items.has("green_potion") else 0)
-	_add_material_card(grid, "vision_potion", "Vision Potion", "res://assets/ui/alchemy/vision_potion_eyes.png", 1 if GameState.inventory_items.has("vision_potion") else 0)
+	_add_material_card(grid, "swift_potion", "Red Potion", GameState.get_item_texture_path("swift_potion"), 1 if GameState.inventory_items.has("swift_potion") else 0)
+	_add_material_card(grid, "green_potion", "Green Potion", GameState.get_item_texture_path("green_potion"), 1 if GameState.inventory_items.has("green_potion") else 0)
+	_add_material_card(grid, "vision_potion", "Vision Potion", GameState.get_item_texture_path("vision_potion"), 1 if GameState.inventory_items.has("vision_potion") else 0)
 	var selected_title: Label = _reference_label("Selected Material", Vector2(14, 370), Vector2(174, 24), 12, Color(0.90, 0.72, 0.34, 1.0))
 	selected_title.visible = false
 	materials_panel.add_child(selected_title)
@@ -677,7 +717,7 @@ func _build_reference_alchemy_panels() -> void:
 	selected_image.size = Vector2(64, 64)
 	selected_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	selected_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	selected_image.texture = load("res://assets/ui/alchemy/moonleaf.png") as Texture2D
+	selected_image.texture = load(GameState.get_item_texture_path("moonleaf")) as Texture2D
 	selected_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	selected_image.visible = false
 	materials_panel.add_child(selected_image)
@@ -707,7 +747,7 @@ func _build_reference_alchemy_panels() -> void:
 	product_image.size = Vector2(94, 94)
 	product_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	product_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	product_image.texture = load("res://assets/ui/alchemy/swiftness_potion.png") as Texture2D
+	product_image.texture = load(GameState.get_item_texture_path("swift_potion")) as Texture2D
 	product_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	product_panel.add_child(product_image)
 	reference_product_name_label = _reference_label("Swiftness Potion", Vector2(8, 132), Vector2(196, 22), 12, Color(0.96, 0.86, 0.56, 1.0))
@@ -1105,25 +1145,14 @@ func _update_selected_recipe_ui() -> void:
 
 
 func _ingredient_texture_path(item_id: String) -> String:
-	match item_id:
-		"blue_blossom":
-			return "res://assets/ui/alchemy/blue_blossom.png"
-		"moonleaf":
-			return "res://assets/ui/alchemy/moonleaf.png"
-		"distilled_water":
-			return "res://assets/ui/alchemy/distilled_water.png"
-		"iron_salt":
-			return "res://assets/ui/alchemy/iron_salt.png"
-		"prism_dust":
-			return "res://assets/ui/alchemy/prism_dust.png"
-	return ""
+	return GameState.get_item_texture_path(item_id)
 
 
 func _update_reference_recipe_summary(recipe_id: String) -> void:
 	if reference_product_image == null or reference_description_label == null or reference_requirement_icons == null:
 		return
 	if recipe_id.is_empty() or not GameState.RECIPE_INFO.has(recipe_id):
-		reference_product_image.texture = load("res://assets/ui/alchemy/swiftness_potion.png") as Texture2D
+		reference_product_image.texture = load(GameState.get_item_texture_path("swift_potion")) as Texture2D
 		reference_product_name_label.text = "No recipe selected"
 		reference_product_details_label.text = "Select a recipe to preview"
 		reference_description_label.text = "Select a recipe.\n\nRequired Materials:"
@@ -1163,13 +1192,7 @@ func _update_reference_recipe_summary(recipe_id: String) -> void:
 
 
 func _potion_texture_path(potion_id: String) -> String:
-	if potion_id == "vision_potion":
-		return "res://assets/ui/alchemy/vision_potion_eyes.png"
-	if potion_id == "swift_potion":
-		return "res://assets/ui/alchemy/swiftness_potion.png"
-	if potion_id == "green_potion":
-		return "res://assets/ui/alchemy/green_potion.png"
-	return ""
+	return GameState.get_item_texture_path(potion_id)
 
 
 func _synthesize_selected_recipe() -> void:
@@ -1259,8 +1282,7 @@ func show_red_stain_intro() -> void:
 			+ "It is not blood — the colour comes from an "
 			+ "indicator reacting with a basic cleaner."
 		)
-		if evidence_overview_preview != null:
-			evidence_overview_preview.visible = true
+		_show_red_stain_samples()
 
 		clear_message_buttons()
 
@@ -1280,8 +1302,7 @@ func show_red_stain_intro() -> void:
 		+ "I will compare the powder, broken bottle, and indicator "
 		+ "under controlled conditions. Do not taste unknown residue."
 	)
-	if evidence_overview_preview != null:
-		evidence_overview_preview.visible = true
+	_show_red_stain_samples()
 
 	clear_message_buttons()
 
@@ -1301,6 +1322,7 @@ func _on_red_stain_examined() -> void:
 		+ "a reaction, not a wound. Someone staged this "
 		+ "stain to look like blood."
 	)
+	_show_red_stain_samples()
 	clear_message_buttons()
 	add_message_button(
 		"Record this finding",
@@ -1315,6 +1337,7 @@ func _on_red_stain_recorded() -> void:
 		"I have what I need. The Butler asked me to look "
 		+ "at this stain — time to tell him what it really is."
 	)
+	_show_red_stain_samples()
 	clear_message_buttons()
 	add_message_button(
 		"Talk to the Butler",
@@ -1637,11 +1660,12 @@ func _create_vision_echo() -> void:
 	vision_echo.configure(
 		"Dr. Lin Memory Echo",
 		"res://assets/characters/animated_pixel_v3/dr_lin_walk.png",
-		0.20,
+		DR_LIN_ECHO_VISUAL_SCALE,
 		Vector2(18.0, 0.0),
 		8.0,
 		&"left"
 	)
+	vision_echo.set_visual_foot_anchor(DR_LIN_ECHO_VISUAL_FOOT_ANCHOR)
 	add_child(vision_echo)
 
 
@@ -1709,7 +1733,18 @@ func update_interaction_focus() -> void:
 			interaction_focus.clear_focus()
 			return
 
-	interaction_focus.set_focus(target_position, focus_title, is_primary)
+	var focus_rect := spatial.grow_rect(
+		get_interaction_rect(current_interaction),
+		Vector2(10.0, 10.0)
+	)
+	if focus_rect.size.x > 0.0 and focus_rect.size.y > 0.0:
+		target_position = focus_rect.get_center()
+	interaction_focus.set_focus(
+		target_position,
+		focus_title,
+		is_primary,
+		focus_rect.size
+	)
 
 
 func hide_interaction_feedback() -> void:
@@ -1821,6 +1856,7 @@ func create_room_ui() -> void:
 	evidence_overview_preview.visible = false
 	evidence_overview_preview.z_index = 3
 	message_panel.add_child(evidence_overview_preview)
+	_create_red_stain_material_strip()
 
 	avatar_name_label = Label.new()
 	avatar_name_label.name = "DialogueAvatarName"
@@ -1865,6 +1901,8 @@ func show_message(
 ) -> void:
 	if evidence_overview_preview != null:
 		evidence_overview_preview.visible = false
+	if red_stain_material_strip != null:
+		red_stain_material_strip.visible = false
 	_current_speaker = speaker_name
 	_dialogue_segments = _split_dialogue_segments(body_text)
 	_segment_index = 0
@@ -1872,6 +1910,85 @@ func show_message(
 	_set_avatar(speaker_name)
 	message_panel.visible = true
 	_render_segment()
+
+
+func _create_red_stain_material_strip() -> void:
+	red_stain_material_strip = Panel.new()
+	red_stain_material_strip.name = "RedStainTraceSamples"
+	red_stain_material_strip.position = Vector2(14.0, 14.0)
+	red_stain_material_strip.size = Vector2(138.0, 176.0)
+	red_stain_material_strip.z_index = 6
+	red_stain_material_strip.visible = false
+	red_stain_material_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var strip_style := StyleBoxFlat.new()
+	strip_style.bg_color = Color(0.055, 0.035, 0.040, 0.98)
+	strip_style.border_color = Color(0.67, 0.48, 0.23, 0.94)
+	strip_style.set_border_width_all(1)
+	strip_style.set_corner_radius_all(7)
+	strip_style.shadow_color = Color(0.0, 0.0, 0.0, 0.56)
+	strip_style.shadow_size = 7
+	red_stain_material_strip.add_theme_stylebox_override("panel", strip_style)
+	message_panel.add_child(red_stain_material_strip)
+
+	var title := Label.new()
+	title.name = "TraceSamplesTitle"
+	title.text = "TRACE SAMPLES"
+	title.position = Vector2(8.0, 6.0)
+	title.size = Vector2(122.0, 18.0)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 9)
+	title.add_theme_color_override("font_color", Color(0.92, 0.74, 0.40, 1.0))
+	red_stain_material_strip.add_child(title)
+
+	var samples: Array[Dictionary] = [
+		{"id": "cleaning_powder_sample", "label": "POWDER"},
+		{"id": "indicator_vial_sample", "label": "INDICATOR"},
+		{"id": "broken_glass_sample", "label": "GLASS"},
+	]
+	for index: int in range(samples.size()):
+		var sample := samples[index]
+		var row := Panel.new()
+		row.name = "TraceSample_" + str(sample["id"])
+		row.position = Vector2(7.0, 27.0 + float(index) * 47.0)
+		row.size = Vector2(124.0, 42.0)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var accent := GameState.get_item_accent(str(sample["id"]))
+		var row_style := StyleBoxFlat.new()
+		row_style.bg_color = Color(accent.r * 0.10, accent.g * 0.10, accent.b * 0.10, 0.88)
+		row_style.border_color = Color(accent.r, accent.g, accent.b, 0.55)
+		row_style.set_border_width_all(1)
+		row_style.set_corner_radius_all(4)
+		row.add_theme_stylebox_override("panel", row_style)
+		red_stain_material_strip.add_child(row)
+
+		var icon := TextureRect.new()
+		icon.name = "SampleModel"
+		icon.position = Vector2(3.0, 3.0)
+		icon.size = Vector2(36.0, 36.0)
+		icon.texture = load(GameState.get_item_texture_path(str(sample["id"]))) as Texture2D
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(icon)
+
+		var label := Label.new()
+		label.name = "SampleLabel"
+		label.text = str(sample["label"])
+		label.position = Vector2(40.0, 4.0)
+		label.size = Vector2(80.0, 34.0)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 8)
+		label.add_theme_color_override("font_color", Color(0.90, 0.82, 0.66, 1.0))
+		row.add_child(label)
+
+
+func _show_red_stain_samples() -> void:
+	if evidence_overview_preview != null:
+		evidence_overview_preview.visible = false
+	if red_stain_material_strip != null:
+		red_stain_material_strip.visible = true
 
 
 ## ============================================================
@@ -1993,6 +2110,8 @@ func clear_message_buttons(keep_continue: bool = true) -> void:
 
 func close_message_panel() -> void:
 	message_panel.visible = false
+	if red_stain_material_strip != null:
+		red_stain_material_strip.visible = false
 	clear_message_buttons(false)
 	end_dialogue_pause()
 
@@ -2269,15 +2388,20 @@ func create_butler_npc() -> void:
 	butler_node.position = BUTLER_POSITION
 	butler_node.configure(
 		"Butler",
-		"res://assets/characters/animated_pixel_v3/butler_walk.png",
-		0.20,
+		"res://assets/characters/animated_pixel_v5/butler_idle_8dir.png",
+		BUTLER_VISUAL_SCALE,
 		Vector2(14.0, 0.0),
 		11.0,
-		&"down"
+		&"south",
+		Vector2i(48, 68),
+		8,
+		true,
+		true
 	)
-	butler_node.z_index = 6
+	butler_node.set_visual_foot_anchor(BUTLER_VISUAL_FOOT_ANCHOR)
+	butler_node.z_index = 0
 
-	add_child(butler_node)
+	$Worldsort.add_child(butler_node)
 
 
 func add_world_label(

@@ -26,6 +26,7 @@ var close_button: Button
 var _pending_note_id: String = ""
 var _pending_note_data: Dictionary = {}
 var _paused_before: bool = false
+var _open_tween: Tween
 
 
 func _ready() -> void:
@@ -130,6 +131,24 @@ func show_parchment(title: String, content: String, note_id: String, note_data: 
 	)
 	_dim.visible = true
 	_panel.visible = true
+	_panel.pivot_offset = PANEL_SIZE * 0.5
+	_panel.scale = Vector2(0.72, 0.96)
+	_panel.modulate.a = 0.0
+	_dim.modulate.a = 0.0
+	confirm_button.modulate.a = 0.0
+	close_button.modulate.a = 0.0
+	if _open_tween != null and _open_tween.is_valid():
+		_open_tween.kill()
+	_open_tween = create_tween()
+	_open_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_open_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_open_tween.tween_property(_dim, "modulate:a", 1.0, 0.14)
+	_open_tween.parallel().tween_property(_panel, "modulate:a", 1.0, 0.16)
+	_open_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_open_tween.parallel().tween_property(_panel, "scale", Vector2.ONE, 0.26)
+	_open_tween.tween_property(confirm_button, "modulate:a", 1.0, 0.10)
+	_open_tween.parallel().tween_property(close_button, "modulate:a", 1.0, 0.10)
+	_open_tween.tween_callback(func() -> void: confirm_button.grab_focus())
 	_paused_before = get_tree().paused
 	get_tree().paused = true
 

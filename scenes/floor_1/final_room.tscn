@@ -65,7 +65,7 @@ position = Vector2(445, 631)
 
 [node name="BodyVisual" type="Sprite2D" parent="MrsLinBody" unique_id=522058801]
 position = Vector2(-97.999985, -22.999998)
-scale = Vector2(0.1, 0.1)
+scale = Vector2(0.08, 0.08)
 texture = ExtResource("4_mrs_body")
 
 [node name="FurnitureCollision" type="StaticBody2D" parent="MrsLinBody" unique_id=2087001010]

@@ -33,10 +33,20 @@ const EXIT_POSITION: Vector2 = Vector2(
 const EXIT_RADIUS: float = 90.0
 const GARDENER_POSITION: Vector2 = Vector2(780.0, 1000.0)
 const GARDENER_INTERACT_RADIUS: float = 88.0
+const GARDENER_VISUAL_SCALE: float = 0.43
+const GARDENER_VISUAL_FOOT_ANCHOR: Vector2 = Vector2(0.0, -46.44)
+const INTERACTION_CONTACT_MARGIN := 14.0
+const GREENHOUSE_PROP_PATHS: Dictionary = {
+	"magic_planter": NodePath("Worldsort/MagicPlanter"),
+	"workbench": NodePath("Worldsort/Workbench"),
+	"plant_pots_a": NodePath("Worldsort/PlantPotsA"),
+	"plant_pots_b": NodePath("Worldsort/PlantPotsB"),
+	"arch_door": NodePath("Worldsort/ArchDoor"),
+}
 
 # 温室可交互物品（素材已去背景，Y-sort 遮挡由 Worldsort 处理）。
 const ITEM_INTERACT_RADIUS: float = 90.0
-const INTERACT_ITEMS: Array[Dictionary] = [
+var INTERACT_ITEMS: Array[Dictionary] = [
 	{
 		"name": "magic_planter",
 		"label": "the great stone planter",
@@ -106,6 +116,7 @@ var avatar_panel: Panel
 var avatar_portrait: TextureRect
 var avatar_name_label: Label
 var gardener_npc: AnimatedNpc
+var spatial := RoomSpatialRuntime.new()
 
 var room_input_enabled: bool = false
 var scene_transitioning: bool = false
@@ -143,16 +154,19 @@ func _ready() -> void:
 		"greenhouse_room"
 	)
 
-	player.position = (
-		PLAYER_SPAWN_POSITION
+	player.position = spatial.resolve_safe_spawn(
+		player,
+		PLAYER_SPAWN_POSITION,
+		get_room_world_bounds()
 	)
+	_sync_interaction_footprints()
 
 	if player.has_method(
-		"set_visual_scale"
+		"set_room_visual_scale"
 	):
 		player.call(
-			"set_visual_scale",
-			1.0
+			"set_room_visual_scale",
+			"greenhouse_room"
 		)
 
 	create_follow_camera()
@@ -171,6 +185,7 @@ func _process(delta: float) -> void:
 		toggle_developer_view()
 
 	update_camera_zoom(delta)
+	_update_prop_occlusion_layers()
 
 	if not room_input_enabled:
 		hide_interaction_feedback()
@@ -192,15 +207,16 @@ func create_gardener_npc() -> void:
 	gardener_npc = AnimatedNpc.new()
 	gardener_npc.name = "GardenerNPC"
 	gardener_npc.position = GARDENER_POSITION
-	gardener_npc.z_index = 6
+	gardener_npc.z_index = 0
 	gardener_npc.configure(
 		"Gardener",
 		"res://assets/characters/animated_pixel_v3/gardener_walk.png",
-		0.20,
+		GARDENER_VISUAL_SCALE,
 		Vector2(18.0, 0.0),
 		10.0,
 		&"left"
 	)
+	gardener_npc.set_visual_foot_anchor(GARDENER_VISUAL_FOOT_ANCHOR)
 	$Worldsort.add_child(gardener_npc)
 
 
@@ -329,23 +345,82 @@ func update_interaction_focus() -> void:
 		interaction_focus.clear_focus()
 		return
 	if current_interaction == "exit":
-		interaction_focus.set_focus(EXIT_POSITION, "Castle Hall exit", true)
+		_set_rect_focus(get_interaction_rect("exit"), "Castle Hall exit", true)
 		return
 	if current_interaction == "gardener":
-		interaction_focus.set_focus(
-			GARDENER_POSITION,
-			"Gardener",
-			true
-		)
+		_set_rect_focus(get_interaction_rect("gardener"), "Gardener", true)
 		return
 	for item: Dictionary in INTERACT_ITEMS:
 		if current_interaction == str(item["name"]):
+			var focus_rect := spatial.grow_rect(
+				_get_interaction_rect(item),
+				Vector2(10.0, 10.0)
+			)
 			interaction_focus.set_focus(
-				item["position"] as Vector2,
+				focus_rect.get_center(),
 				str(item["label"]),
-				true
+				true,
+				focus_rect.size
 			)
 			return
+
+
+func _set_rect_focus(rect: Rect2, title: String, primary: bool) -> void:
+	var focus_rect := spatial.grow_rect(rect, Vector2(10.0, 10.0))
+	interaction_focus.set_focus(
+		focus_rect.get_center(),
+		title,
+		primary,
+		focus_rect.size
+	)
+
+
+func _sync_interaction_footprints() -> void:
+	for item: Dictionary in INTERACT_ITEMS:
+		var item_name := str(item["name"])
+		if not GREENHOUSE_PROP_PATHS.has(item_name):
+			continue
+		var prop := get_node_or_null(GREENHOUSE_PROP_PATHS[item_name]) as Node2D
+		if prop == null:
+			continue
+		var visual_rect := spatial.get_visual_rect(prop)
+		item["interaction_rect"] = visual_rect
+		item["position"] = spatial.get_visual_feet(prop)
+
+
+func _get_interaction_rect(item: Dictionary) -> Rect2:
+	if item.has("interaction_rect"):
+		return item["interaction_rect"] as Rect2
+	var center := item.get("position", Vector2.ZERO) as Vector2
+	return Rect2(center - Vector2(44.0, 34.0), Vector2(88.0, 68.0))
+
+
+func get_interaction_rect(interaction_id: String) -> Rect2:
+	if interaction_id == "gardener" and gardener_npc != null:
+		return spatial.get_visual_rect(gardener_npc)
+	if interaction_id == "exit":
+		return get_interaction_rect("arch_door")
+	for item: Dictionary in INTERACT_ITEMS:
+		if str(item["name"]) == interaction_id:
+			return _get_interaction_rect(item)
+	return Rect2()
+
+
+func _is_near_interaction(interaction_id: String) -> bool:
+	return spatial.is_actor_near_rect(
+		player,
+		get_interaction_rect(interaction_id),
+		INTERACTION_CONTACT_MARGIN
+	)
+
+
+func _update_prop_occlusion_layers() -> void:
+	for prop_path: NodePath in GREENHOUSE_PROP_PATHS.values():
+		var prop := get_node_or_null(prop_path) as Node2D
+		if prop == null:
+			continue
+		prop.z_index = 0
+		spatial.update_occlusion(player, prop, 20, -20)
 
 
 func hide_interaction_feedback() -> void:
@@ -615,7 +690,10 @@ func update_exit_interaction() -> void:
 		return
 
 	current_interaction = ""
-	if gardener_npc != null and player.global_position.distance_to(gardener_npc.global_position) <= GARDENER_INTERACT_RADIUS:
+	if (
+		gardener_npc != null
+		and _is_near_interaction("gardener")
+	):
 		current_interaction = "gardener"
 		interact_label.text = "Press E to talk to the Gardener"
 		interact_label.visible = true
@@ -625,12 +703,12 @@ func update_exit_interaction() -> void:
 
 	# 物品交互优先：靠近任意可交互物品时显示 Press E 提示。
 	for item: Dictionary in INTERACT_ITEMS:
-		var distance_to_item: float = (
-			player.global_position.distance_to(
-				item["position"] as Vector2
-			)
-		)
-		if distance_to_item <= ITEM_INTERACT_RADIUS:
+		if (
+			str(item["name"]) == "arch_door"
+			and _inspected_items.has("arch_door")
+		):
+			continue
+		if _is_near_interaction(str(item["name"])):
 			current_interaction = str(item["name"])
 			var item_name: String = str(item["name"])
 			interact_label.text = "Press E to inspect " + str(item["label"])
@@ -640,7 +718,10 @@ func update_exit_interaction() -> void:
 				_show_item_dialogue(item_name)
 			return
 
-	if player.global_position.distance_to(EXIT_POSITION) <= EXIT_RADIUS:
+	if (
+		_inspected_items.has("arch_door")
+		and _is_near_interaction("exit")
+	):
 		current_interaction = "exit"
 		interact_label.text = "Press E to return to the Castle Hall"
 		interact_label.visible = true

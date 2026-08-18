@@ -75,10 +75,34 @@ corner_radius_bottom_left = 36
 shadow_color = Color(0.65, 0.35, 0.08, 0.34)
 shadow_size = 8
 
+[sub_resource type="StyleBoxFlat" id="sb_hub_rail"]
+bg_color = Color(0.018, 0.012, 0.026, 0.90)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.52, 0.34, 0.14, 0.82)
+corner_radius_top_left = 42
+corner_radius_top_right = 42
+corner_radius_bottom_right = 42
+corner_radius_bottom_left = 42
+shadow_color = Color(0.0, 0.0, 0.0, 0.62)
+shadow_size = 10
+shadow_offset = Vector2(0, 3)
+
 [node name="NoteHud" type="CanvasLayer"]
 layer = 40
 process_mode = 3
 script = ExtResource("1_hud")
+
+[node name="HubRailBackplate" type="Panel" parent="."]
+visible = false
+mouse_filter = 2
+offset_left = 10.0
+offset_top = 8.0
+offset_right = 364.0
+offset_bottom = 92.0
+theme_override_styles/panel = SubResource("sb_hub_rail")
 
 [node name="IconArea" type="Area2D" parent="."]
 # BagHub 在最左侧；NoteHub 解锁后排在其右侧预留槽位。
@@ -119,6 +143,21 @@ z_index = 1
 texture = ExtResource("2_icon")
 scale = Vector2(0.0625, 0.0625)
 
+[node name="NoteHubLabel" type="Label" parent="IconArea"]
+mouse_filter = 2
+z_index = 2
+offset_left = -31.0
+offset_top = 31.0
+offset_right = 31.0
+offset_bottom = 51.0
+theme_override_colors/font_color = Color(0.96, 0.78, 0.36, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.02, 0.01, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "NOTES"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="HitShape" type="CollisionShape2D" parent="IconArea"]
 visible = false
 shape = SubResource("CircleShape2D_hit")
@@ -128,9 +167,9 @@ visible = false
 mouse_filter = 2
 z_index = 2
 offset_left = -30.0
-offset_top = 32.0
+offset_top = 52.0
 offset_right = 30.0
-offset_bottom = 56.0
+offset_bottom = 76.0
 theme_override_styles/panel = SubResource("sb_hint")
 
 [node name="HoverLabel" type="Label" parent="IconArea/HoverPlate"]

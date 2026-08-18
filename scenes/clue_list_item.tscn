@@ -74,6 +74,7 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 14
 text = "Clue"
+horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 

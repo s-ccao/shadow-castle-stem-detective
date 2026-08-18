@@ -96,6 +96,8 @@ const VISION_RADIUS_PIXELS := 320.0
 const CLEAR_RADIUS_PIXELS := 130.0
 const EDGE_DARKNESS := 0.62
 const DISCOVERED_DARKNESS := 0.68
+const POWER_ROUTE_SCAN_DURATION: float = 1.20
+const POWER_RESTORATION_PROMPT_HOLD: float = 1.15
 const GAMEPLAY_CAMERA_ZOOM: Vector2 = Vector2(
 	2,
 	2
@@ -137,6 +139,16 @@ var circuit_door_position := Vector2.ZERO
 var discovered_fog_cells := {}
 var visible_fog_cells := {}
 var visible_fog_distances := {}
+var powered_memory_hydrated := false
+var power_route_scan_active := false
+var power_route_scan_cells: Array[String] = []
+var power_route_scan_total := 0
+var power_route_scan_revealed := 0
+var power_route_scan_tween: Tween
+var power_restoration_panel: Panel
+var power_restoration_title: Label
+var power_restoration_body: Label
+var power_restoration_scan_fill: ColorRect
 @onready var enemy = get_node_or_null("CastleGuardian")
 var follow_camera: Camera2D
 
@@ -219,14 +231,16 @@ const GREENHOUSE_ROOM_SCENE_PATH: String = \
 # 不再用旧底图推算值覆盖用户调整。
 const CHEMISTRY_ROOM_DOOR_POSITION: Vector2 = Vector2(283, 162)
 const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(283, 162)
-const CHEMISTRY_ROOM_RETURN_POSITION: Vector2 = Vector2(283, 162)
+## Door art and wall collision overlap at the old marker (283, 162). Spawn below
+## the threshold, where the player has room to leave in every direction.
+const CHEMISTRY_ROOM_RETURN_POSITION: Vector2 = Vector2(267, 210)
 const CHEMISTRY_ROOM_DOOR_RADIUS: float = 100.0
 const GREENHOUSE_ROOM_DOOR_POSITION: Vector2 = Vector2(219, 409)
 const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(219, 409)
 const GREENHOUSE_ROOM_DOOR_RADIUS: float = 100.0
 const LIBRARY_DOOR_POSITION: Vector2 = Vector2(1676, 285)
 const DINING_HALL_DOOR_POSITION: Vector2 = Vector2(1774, 715)
-const HALL_ENEMY_START_POSITION := Vector2(1611, 1070)
+const HALL_ENEMY_START_POSITION := Vector2(1744, 1072)
 
 # 新房间场景（用户 2026-08-05 提供的四张 1448×1086 房间图）。
 const CIRCUIT_ROOM_SCENE_PATH: String = (
@@ -263,6 +277,19 @@ const FINAL_KEY_MACHINE_PATHS: Array[NodePath] = [
 	NodePath("WallCollisions/FinalKeyMachine2"),
 	NodePath("WallCollisions/FinalKeyMachine3"),
 ]
+const HALL_OCCLUSION_NODE_PATHS: Array[NodePath] = [
+	NodePath("WallCollisions/StorageRack"),
+	NodePath("WallCollisions/FinalKeyMachine1"),
+	NodePath("WallCollisions/FinalKeyMachine2"),
+	NodePath("WallCollisions/FinalKeyMachine3"),
+	NodePath("WallCollisions/KnowledgeExhibits/LibraryRoomKnowledge"),
+	NodePath("WallCollisions/KnowledgeExhibits/DiningHallKnowledge"),
+	NodePath("WallCollisions/KnowledgeExhibits/CircuitRoomKnowledge"),
+	NodePath("WallCollisions/KnowledgeExhibits/GreenhouseRoomKnowledge"),
+	NodePath("WallCollisions/KnowledgeExhibits/ChemistryRoomKnowledge"),
+]
+const HALL_PROP_FRONT_Z: int = 8
+const HALL_PROP_BACK_Z: int = -8
 const FINAL_KEY_MACHINE_RADIUS: float = 110.0
 
 # ============================================================
@@ -433,6 +460,7 @@ const WAKE_ROOM_DOOR_INTERACT_RADIUS: float = 75.0
 
 # 用户手动确认的 Entrance / Wake Room 位置。
 const HALL_ENTRANCE_POSITION: Vector2 = Vector2(240, 1040)
+const HALL_FIRST_ARRIVAL_POSITION: Vector2 = Vector2(240, 984)
 
 # Upper-left chemistry crime scene.
 const RED_STAIN_POSITION: Vector2 = Vector2(410.7005, 273.7006)
@@ -462,10 +490,89 @@ const MECHANIC_POSITION := Vector2(339.7926, 804.8627)
 const FINAL_ROOM_POSITION: Vector2 = Vector2(955, 138)
 
 # 用户手动确认的敌人复活点。
-const ENEMY_START_POSITION: Vector2 = Vector2(1611, 1070)
+# The Guardian starts in the far bottom-right corner of the 1920x1280 hall, so
+# the first crossing is a long diagonal rather than a short brush past it. The
+# exact point is resolved to the nearest walkable cell at spawn time.
+#
+# Inset from the map border on purpose. The grid reports the outermost cells as
+# walkable because the hall's real walls are collision polygons rather than solid
+# grid cells, so a corner pinned to the border put the Guardian in the dead strip
+# behind the painted room instead of standing in it.
+const ENEMY_START_POSITION: Vector2 = Vector2(1744, 1072)
+# Tier 2 is already 179.8px/s against the player's 180px/s. An 800px return
+# separation preserves at least ~4.3 seconds of reaction before contact without
+# weakening the requested +12% per-key escalation.
+const GUARDIAN_ENTRY_MIN_DISTANCE: float = 800.0
+const GUARDIAN_REVEAL_PAN_DURATION: float = 0.55
+const GUARDIAN_REVEAL_HOLD_DURATION: float = 0.70
+const GUARDIAN_REVEAL_MARCH_DURATION: float = 0.55
+const GUARDIAN_REVEAL_RETURN_DURATION: float = 0.50
+const GUARDIAN_REVEAL_ZOOM: Vector2 = Vector2(3.05, 3.05)
+const GUARDIAN_ETA_REFRESH_INTERVAL: float = 0.12
+# Seconds of estimate the readout may recover per second while the player gains
+# ground. Below 1.0 the clock can slow but never run backwards faster than time.
+const GUARDIAN_ETA_RELIEF_RATE: float = 0.85
+const GUARDIAN_ETA_DISPLAY_HORIZON: float = 18.0
+const GUARDIAN_CATCH_DISTANCE: float = 24.0
+## Sight is sampled every third of a Hall tile so no wall is stepped over.
+const GUARDIAN_SIGHT_SAMPLE_STEP: float = 24.0
+const GUARDIAN_PATROL_ANCHORS: Array[Vector2] = [
+	ENEMY_START_POSITION,
+	DINING_HALL_DOOR_POSITION,
+	LIBRARY_DOOR_POSITION,
+	FINAL_ROOM_DOOR_POSITION,
+	CHEMISTRY_ROOM_RETURN_POSITION,
+	GREENHOUSE_ROOM_DOOR_POSITION,
+	CIRCUIT_DOOR_POSITION,
+	HALL_FIRST_ARRIVAL_POSITION,
+	ENEMY_START_POSITION,
+]
 var hall_arrival_finished := false
 var enemy_chase_started := false
 var _damage_invincible_timer: float = 0.0
+var guardian_entry_sequence_active: bool = false
+var guardian_entry_sequence_played: bool = false
+var guardian_reveal_camera: Camera2D
+var guardian_reveal_overlay: Control
+var guardian_reveal_title: Label
+var guardian_reveal_body: Label
+var guardian_countdown_panel: Panel
+var guardian_countdown_title: Label
+var guardian_countdown_value: Label
+var guardian_countdown_status: Label
+var guardian_countdown_bar: ColorRect
+var guardian_awareness_panel: Panel
+var guardian_awareness_state: Label
+var guardian_awareness_detail: Label
+var guardian_awareness_effects: Label
+var guardian_eta_seconds: float = INF
+var guardian_eta_refresh_remaining: float = 0.0
+var guardian_reveal_fog_was_visible: bool = true
+
+## First arrival is a small state machine: it keeps the hall readable until the
+## player has reached the first door, studied its nearby core, and returned.
+enum HallArrivalStep {
+	NONE,
+	REACH_CHEMISTRY_DOOR,
+	STUDY_CHEMISTRY_CORE,
+	RETURN_TO_CHEMISTRY_DOOR,
+	COMPLETE,
+}
+
+var hall_arrival_step: HallArrivalStep = HallArrivalStep.NONE
+var hall_route_panel: Panel
+var hall_route_title: Label
+var hall_route_body: Label
+var hall_route_compass: Label
+var hall_route_tween: Tween
+var hall_route_target: Vector2 = Vector2.ZERO
+var hall_route_ui_only := false
+var hall_route_trail: Node2D
+var hall_route_trail_tween: Tween
+var hall_route_marker_nodes: Array[Node2D] = []
+const HALL_ROUTE_MARKER_SPACING: float = 96.0
+const HALL_ROUTE_FIRST_MARKER_OFFSET: float = 56.0
+const HALL_ROUTE_TARGET_SEARCH_RADIUS: int = 3
 const CASTLE_FLOOR_1_BACKGROUND := \
 	"res://assets/backgrounds/hall_floor_bg.png"
 # 布局对齐模式已关闭：大厅使用真实网格碰撞（来自 hall_walls.png）+
@@ -485,12 +592,77 @@ var _last_debug_mouse_position := Vector2(-100000, -100000)
 # but hide their colored prototype rectangles.
 const SHOW_PROTOTYPE_WALL_VISUALS := false
 var scene_transitioning: bool = false
+var spatial := RoomSpatialRuntime.new()
+
+
+func get_interaction_rect(interaction_id: String) -> Rect2:
+	if interaction_id.begins_with("corridor_fragment_"):
+		var fragment_index := int(interaction_id.trim_prefix("corridor_fragment_")) - 1
+		if fragment_index >= 0 and fragment_index < CORRIDOR_FRAGMENT_POSITIONS.size():
+			return Rect2(
+				CORRIDOR_FRAGMENT_POSITIONS[fragment_index] - Vector2(24.0, 20.0),
+				Vector2(48.0, 40.0)
+			)
+	if interaction_id == "hidden_library_key":
+		var rack := get_node_or_null("WallCollisions/StorageRack") as Node2D
+		if rack != null:
+			return spatial.get_visual_rect(rack)
+	if interaction_id.begins_with("final_key_machine_"):
+		var machine_index := int(interaction_id.trim_prefix("final_key_machine_")) - 1
+		if machine_index >= 0 and machine_index < FINAL_KEY_MACHINE_PATHS.size():
+			var machine := get_node_or_null(FINAL_KEY_MACHINE_PATHS[machine_index]) as Node2D
+			if machine != null:
+				return spatial.get_visual_rect(machine)
+	if interaction_id.begins_with("hall_knowledge:"):
+		var exhibit_id := interaction_id.trim_prefix("hall_knowledge:")
+		var exhibit := get_node_or_null("WallCollisions/KnowledgeExhibits/" + exhibit_id) as Node2D
+		if exhibit != null:
+			return spatial.get_visual_rect(exhibit)
+	match interaction_id:
+		"chemistry_room_door", "arrival_chemistry_door":
+			return Rect2(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION - Vector2(82.0, 61.0), Vector2(164.0, 122.0))
+		"arrival_chemistry_core":
+			return get_interaction_rect("hall_knowledge:ChemistryRoomKnowledge")
+		"greenhouse_room_door":
+			return Rect2(GREENHOUSE_ROOM_DOOR_FOCUS_POSITION - Vector2(76.0, 64.0), Vector2(152.0, 128.0))
+		"library_door":
+			return Rect2(LIBRARY_DOOR_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0))
+		"dining_hall_door":
+			return Rect2(DINING_HALL_DOOR_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0))
+		"final_room_door":
+			return Rect2(FINAL_ROOM_DOOR_FOCUS_POSITION - Vector2(86.0, 66.0), Vector2(172.0, 132.0))
+		"wake_room_door":
+			return Rect2(WAKE_ROOM_DOOR_FOCUS_POSITION - Vector2(70.0, 58.0), Vector2(140.0, 116.0))
+		"circuit_door":
+			return Rect2(CIRCUIT_DOOR_FOCUS_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0))
+		"service_wall_door":
+			return Rect2(SERVICE_WALL_DOOR_POSITION - Vector2(64.0, 70.0), Vector2(128.0, 140.0))
+		"service_dark_trail":
+			return Rect2(SERVICE_DARK_TRAIL_POSITION - Vector2(58.0, 32.0), Vector2(116.0, 64.0))
+		"service_violet_fiber":
+			return Rect2(SERVICE_FIBER_POSITION - Vector2(36.0, 30.0), Vector2(72.0, 60.0))
+		"service_maintenance_panel":
+			return Rect2(SERVICE_PANEL_POSITION - Vector2(52.0, 46.0), Vector2(104.0, 92.0))
+	return Rect2()
+
+
+func _is_near_hall_interaction(interaction_id: String) -> bool:
+	return spatial.is_actor_near_rect(
+		player,
+		get_interaction_rect(interaction_id),
+		14.0
+	)
 func _ready():
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
 		GameState.unlock_all_hubs()
+	# Save compatibility: players who read the desk before its map reward was
+	# introduced receive the same portable toolkit on their next hall visit.
+	if GameState.has_story_flag("wake_room_desk_read"):
+		GameState.grant_wake_room_toolkit()
 	GameState.current_room_id = "floor_1_hub"
 	GameState.set_room_visited("floor_1_hub")
+	CaseLocale.locale_changed.connect(_on_case_locale_changed)
 	GameState.set_resume_location(
 		"res://scenes/game_world.tscn",
 		"floor_1_hub",
@@ -543,12 +715,12 @@ func _ready():
 	create_developer_mode_label()
 	create_game_over_ui()
 	apply_persistent_visual_state()
-	player.position = get_floor_one_spawn_position()
+	player.position = get_safe_floor_one_spawn_position()
 
-	if player.has_method("set_visual_scale"):
+	if player.has_method("set_room_visual_scale"):
 		player.call(
-			"set_visual_scale",
-			1.0
+			"set_room_visual_scale",
+			"floor_1_hub"
 		)
 
 	var ground_move_callback: Callable = Callable(
@@ -575,12 +747,31 @@ func _ready():
 		create_floor_one_layout_markers()
 
 	if not GameState.hall_arrival_seen:
-		show_castle_hall_arrival()
+		_restore_hall_arrival_route()
+		if hall_arrival_step == HallArrivalStep.NONE:
+			show_castle_hall_arrival()
+		else:
+			resume_castle_hall_after_return()
 	else:
 		resume_castle_hall_after_return()
 
 
+func _exit_tree() -> void:
+	if guardian_entry_sequence_active:
+		ArchiveUi.set_hub_entries_suppressed(false)
+		var map_hud := get_node_or_null("/root/MapHud")
+		if map_hud != null and map_hud.has_method("set_guardian_tracking_suppressed"):
+			map_hud.call("set_guardian_tracking_suppressed", false)
+	guardian_entry_sequence_active = false
+	if enemy != null and is_instance_valid(enemy):
+		if enemy.has_method("set_cinematic_hold"):
+			enemy.call("set_cinematic_hold", false)
+		if enemy.has_method("set_catch_enabled"):
+			enemy.call("set_catch_enabled", true)
+
+
 func _process(delta: float) -> void:
+	_update_hall_prop_occlusion_layers()
 	if Input.is_action_just_pressed(
 		"toggle_developer_mode"
 	):
@@ -590,10 +781,18 @@ func _process(delta: float) -> void:
 	if _damage_invincible_timer > 0.0:
 		_damage_invincible_timer -= delta
 	update_enemy_chase_state()
+	_update_guardian_countdown(delta)
+	_update_music_intensity()
+	_update_guardian_awareness_readout()
+	if guardian_entry_sequence_active:
+		update_fog_of_war()
+		hide_interaction_feedback()
+		return
 
 	update_camera_zoom(delta)
-	# MapHub 持久化大厅探索：玩家走过的 32px 区域会被记录，
-	# 即使离开大厅，真实地图的黑暗也不会恢复。
+	# Record Hall history on the 32px map grid even during the blackout. It is
+	# deliberately invisible until Circuit power returns, then becomes gray
+	# route memory in both the world fog and Map Hub.
 	GameState.reveal_hall_position(player.global_position)
 
 	# 下面保留你原来的代码。
@@ -642,6 +841,7 @@ func _process(delta: float) -> void:
 	update_fog_of_war()
 	update_interaction_prompt()
 	update_interaction_focus()
+	_update_hall_route_compass()
 	if interaction_hint_panel != null:
 		interaction_hint_panel.visible = interact_label.visible
 
@@ -650,6 +850,19 @@ func _process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("evidence_board"):
 		toggle_evidence_board()
+
+
+func _update_hall_prop_occlusion_layers() -> void:
+	for prop_path: NodePath in HALL_OCCLUSION_NODE_PATHS:
+		var prop := get_node_or_null(prop_path) as Node2D
+		if prop == null:
+			continue
+		spatial.update_occlusion(
+			player,
+			prop,
+			HALL_PROP_FRONT_Z,
+			HALL_PROP_BACK_Z
+		)
 
 func create_floor():
 	var floor = ColorRect.new()
@@ -924,13 +1137,21 @@ func update_fog_of_war():
 		return
 
 	var player_world = player.global_position
+	var power_restored := GameState.has_story_flag("circuit_power_restored")
+	if power_restored and not powered_memory_hydrated:
+		if not power_route_scan_active and not _should_play_power_restoration_sequence():
+			_hydrate_powered_hall_memory()
+			powered_memory_hydrated = true
+	elif not power_restored:
+		powered_memory_hydrated = false
 
 	# 基础全黑。
 	fog_image.fill(Color(0.0, 0.0, 0.0, 1.0))
 
-	# 曾经发现过、但当前视线不可达的格子：暗影轮廓。
-	# 追逐模式：走过的地方不留记忆，保持全黑（只有手电筒范围可见）。
-	if not GameState.chase_mode:
+	# The blackout has no visual memory: outside the current flashlight even
+	# previously crossed walls return to pure black. Restoring Circuit power is
+	# the one progression event that enables gray explored-ground memory.
+	if power_restored:
 		for key: Variant in discovered_fog_cells.keys():
 			var parts: PackedStringArray = str(key).split(",")
 			if parts.size() != 2:
@@ -945,12 +1166,13 @@ func update_fog_of_war():
 				Color(0.0, 0.0, 0.0, DISCOVERED_DARKNESS)
 			)
 
-	# 追逐模式：手电筒式视野（更小的半径、更暗的边缘）。
-	# Vision Potion 生效时扩大视野——药水降低追逐难度。
+	# Before power restoration the Hall always uses the tighter flashlight,
+	# regardless of Guardian mode. Pursuit keeps that pressure after power is on.
+	# Vision Potion enlarges the beam without revealing anything behind walls.
 	var vision_radius: float = VISION_RADIUS_PIXELS
 	var clear_radius: float = CLEAR_RADIUS_PIXELS
 	var edge_darkness: float = EDGE_DARKNESS
-	if GameState.chase_mode:
+	if not power_restored or GameState.chase_mode:
 		vision_radius = 230.0
 		clear_radius = 80.0
 		edge_darkness = 0.85
@@ -988,6 +1210,179 @@ func update_fog_of_war():
 				fog_image.set_pixel(x, y, Color(0.0, 0.0, 0.0, alpha))
 
 	fog_texture.update(fog_image)
+
+
+func _hydrate_powered_hall_memory() -> void:
+	# Hall history is stored on a 32px grid for the Map Hub; world fog uses 16px
+	# cells. Expanding each recorded Hall cell into 2×2 fog cells makes every
+	# route walked during the blackout appear immediately when power returns,
+	# including after leaving and re-entering the Hall.
+	for hall_key: Variant in GameState.hall_explored_cells.keys():
+		_reveal_powered_hall_cell(str(hall_key))
+
+
+func _reveal_powered_hall_cell(hall_key: String) -> void:
+	var parts: PackedStringArray = hall_key.split(",")
+	if parts.size() != 2:
+		return
+	var hall_x := int(parts[0])
+	var hall_y := int(parts[1])
+	for offset_y: int in range(2):
+		for offset_x: int in range(2):
+			var fog_cell := Vector2i(hall_x * 2 + offset_x, hall_y * 2 + offset_y)
+			if fog_cell.x < 0 or fog_cell.x >= FOG_COLS or fog_cell.y < 0 or fog_cell.y >= FOG_ROWS:
+				continue
+			discovered_fog_cells[fog_key(fog_cell)] = true
+
+
+func _should_play_power_restoration_sequence() -> bool:
+	return (
+		GameState.has_story_flag("circuit_power_restored")
+		and GameState.has_story_flag("power_restoration_sequence_pending")
+		and not GameState.has_story_flag("power_restoration_sequence_seen")
+	)
+
+
+func _begin_power_restoration_return_sequence() -> void:
+	if power_route_scan_active or not _should_play_power_restoration_sequence():
+		return
+	power_route_scan_active = true
+	powered_memory_hydrated = false
+	power_route_scan_cells.clear()
+	for hall_key: Variant in GameState.hall_explored_cells.keys():
+		power_route_scan_cells.append(str(hall_key))
+	power_route_scan_cells.sort_custom(_sort_power_route_scan_cells)
+	power_route_scan_total = power_route_scan_cells.size()
+	power_route_scan_revealed = 0
+
+	player.set_physics_process(false)
+	if enemy != null:
+		enemy.set_physics_process(false)
+		if enemy.has_method("set_cinematic_hold"):
+			enemy.call("set_cinematic_hold", true)
+		if enemy.has_method("set_catch_enabled"):
+			enemy.call("set_catch_enabled", false)
+	ArchiveUi.set_hub_entries_suppressed(true)
+
+	if power_restoration_panel != null:
+		power_restoration_panel.visible = true
+		power_restoration_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		power_restoration_panel.scale = Vector2(0.97, 0.97)
+		power_restoration_title.text = "RESTORING ROUTE MEMORY..."
+		power_restoration_body.text = "SCANNING RECORDED HALL CELLS"
+		power_restoration_scan_fill.size.x = 0.0
+		var panel_in := create_tween()
+		panel_in.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		panel_in.tween_property(power_restoration_panel, "modulate:a", 1.0, 0.16)
+		panel_in.parallel().tween_property(power_restoration_panel, "scale", Vector2.ONE, 0.22)
+
+	var scan_ring := OpticalFxRuntime.pulse_ring(
+		self,
+		self,
+		CIRCUIT_DOOR_POSITION,
+		Color(0.50, 0.90, 1.0, 0.92),
+		42.0,
+		5.5,
+		POWER_ROUTE_SCAN_DURATION
+	)
+	scan_ring.name = "PowerRouteScanWave"
+	scan_ring.z_index = 112
+
+	if power_route_scan_total <= 0:
+		_finish_power_route_scan()
+		return
+	if power_route_scan_tween != null and power_route_scan_tween.is_valid():
+		power_route_scan_tween.kill()
+	power_route_scan_tween = create_tween()
+	power_route_scan_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	power_route_scan_tween.tween_method(
+		_set_power_route_scan_progress,
+		0.0,
+		1.0,
+		POWER_ROUTE_SCAN_DURATION
+	)
+	power_route_scan_tween.tween_callback(_finish_power_route_scan)
+
+
+func _sort_power_route_scan_cells(first: String, second: String) -> bool:
+	return _power_route_cell_distance(first) < _power_route_cell_distance(second)
+
+
+func _power_route_cell_distance(cell_key_text: String) -> float:
+	var parts := cell_key_text.split(",")
+	if parts.size() != 2:
+		return INF
+	var world_center := (Vector2(float(parts[0]), float(parts[1])) + Vector2(0.5, 0.5)) * CELL_SIZE
+	return world_center.distance_squared_to(CIRCUIT_DOOR_POSITION)
+
+
+func _set_power_route_scan_progress(progress: float) -> void:
+	if not power_route_scan_active:
+		return
+	var target_count := clampi(
+		ceili(float(power_route_scan_total) * clampf(progress, 0.0, 1.0)),
+		0,
+		power_route_scan_total
+	)
+	while power_route_scan_revealed < target_count:
+		_reveal_powered_hall_cell(power_route_scan_cells[power_route_scan_revealed])
+		power_route_scan_revealed += 1
+	if power_restoration_scan_fill != null:
+		power_restoration_scan_fill.size.x = 516.0 * clampf(progress, 0.0, 1.0)
+	if power_restoration_body != null:
+		power_restoration_body.text = "RECOVERING ROUTES · %d / %d" % [
+			power_route_scan_revealed,
+			power_route_scan_total,
+		]
+
+
+func _finish_power_route_scan() -> void:
+	if not power_route_scan_active:
+		return
+	_set_power_route_scan_progress(1.0)
+	power_route_scan_active = false
+	powered_memory_hydrated = true
+	GameState.set_story_flag("power_restoration_sequence_seen")
+	GameState.set_story_flag("power_restoration_sequence_pending", false)
+	GameState.set_story_flag("power_map_objective_active")
+	if power_restoration_panel != null:
+		power_restoration_title.text = "POWER RESTORED · ROUTE MEMORY ONLINE"
+		power_restoration_body.text = "WALKED ROUTES ARE NOW GRAY · OPEN MAP (U)"
+		power_restoration_scan_fill.size.x = 516.0
+		power_restoration_scan_fill.color = Color(0.58, 1.0, 0.72, 1.0)
+		power_restoration_panel.modulate = Color.WHITE
+	_refresh_hall_route_ui(true)
+	update_objective_text()
+	player.set_physics_process(true)
+	ArchiveUi.set_hub_entries_suppressed(false)
+	call_deferred("_finish_power_restoration_prompt")
+
+
+func _finish_power_restoration_prompt() -> void:
+	await get_tree().create_timer(POWER_RESTORATION_PROMPT_HOLD).timeout
+	if not is_inside_tree():
+		return
+	if power_restoration_panel != null:
+		var panel_out := create_tween()
+		panel_out.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		panel_out.tween_property(power_restoration_panel, "modulate:a", 0.0, 0.20)
+		panel_out.tween_callback(func() -> void:
+			if power_restoration_panel != null:
+				power_restoration_panel.visible = false
+		)
+	ArchiveUi.set_hub_entries_suppressed(false)
+	if enemy != null:
+		if enemy.has_method("set_cinematic_hold"):
+			enemy.call("set_cinematic_hold", false)
+		if enemy.has_method("set_catch_enabled"):
+			enemy.call("set_catch_enabled", true)
+		enemy.set_physics_process(true)
+	_update_guardian_countdown(0.0)
+
+
+func _on_power_map_reviewed() -> void:
+	_refresh_hall_route_ui(true)
+	update_objective_text()
 
 
 func build_sight_blockers() -> void:
@@ -1095,6 +1490,22 @@ func is_inside_map(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.x < MAP_WIDTH and cell.y >= 0 and cell.y < MAP_HEIGHT
 
 
+## Line-of-sight test for the Guardian. It samples the A* solidity grid rather
+## than is_player_position_walkable() because doorways block movement but not
+## sight, and the Guardian must be able to see a player standing in a doorway.
+func is_sight_line_clear(from_position: Vector2, to_position: Vector2) -> bool:
+	var span: Vector2 = to_position - from_position
+	var steps: int = int(ceilf(span.length() / GUARDIAN_SIGHT_SAMPLE_STEP))
+	for step: int in range(1, maxi(steps, 1)):
+		var sample: Vector2 = from_position + span * (float(step) / float(steps))
+		var cell: Vector2i = world_to_cell(sample)
+		if not is_inside_map(cell):
+			return false
+		if astar_grid.is_point_solid(cell):
+			return false
+	return true
+
+
 func is_player_position_walkable(world_position: Vector2) -> bool:
 	# 地图边界和锁门仍由网格数据判断；墙体本身使用
 	# wall_collisions.tscn 中可在 Inspector 编辑的真实多边形。
@@ -1148,7 +1559,13 @@ func has_authored_wall_collision(world_position: Vector2) -> bool:
 	query.collision_mask = 1
 	query.collide_with_bodies = true
 	query.collide_with_areas = false
+	# The Guardian shares the wall layer, so leaving it in makes it a moving piece
+	# of level geometry: the player is stopped by it and A* re-routes around
+	# wherever it happened to stand when the grid was built.
 	var excluded_rids: Array[RID] = [player_body.get_rid()]
+	var guardian_body := enemy as CollisionObject2D
+	if guardian_body != null and is_instance_valid(guardian_body):
+		excluded_rids.append(guardian_body.get_rid())
 	query.exclude = excluded_rids
 
 	var collisions: Array[Dictionary] = (
@@ -1229,31 +1646,142 @@ func setup_enemy():
 	if enemy == null:
 		return
 
-	enemy.position = ENEMY_START_POSITION
+	var patrol_route := _build_guardian_patrol_route()
+	GameState.configure_guardian_patrol_route(patrol_route)
+	GameState.configure_room_door_anchors(_guardian_room_door_anchors())
+	GameState.activate_guardian_hunt()
+	enemy.position = _guardian_hall_spawn_position(patrol_route)
+	GameState.update_guardian_hall_position(enemy.position)
 	enemy.setup(self, player)
+	if enemy.has_method("set_catch_enabled"):
+		enemy.call("set_catch_enabled", false)
+	if enemy.has_method("set_cinematic_hold"):
+		enemy.call("set_cinematic_hold", true)
 
 	if LAYOUT_ALIGNMENT_MODE:
 		enemy.visible = false
 		enemy.set_physics_process(false)
 		return
 
-	enemy.visible = false
-	enemy.set_physics_process(false)
+	enemy.visible = true
+	enemy.set_physics_process(true)
+	enemy_chase_started = true
+	if enemy.has_method("set_behavior"):
+		enemy.call("set_behavior", GameState.get_guardian_mode())
 
 
-## 追逐模式开启时让敌人出现并开始追击；结束后停止。
+## Hall-space doorway of every room the Guardian may stake out. Published to
+## GameState so the persistent FSM can loiter at a passage without this level's
+## geometry leaking into the autoload.
+func _guardian_room_door_anchors() -> Dictionary:
+	return {
+		"chemistry_room": _nearest_guardian_walkable_position(
+			CHEMISTRY_ROOM_RETURN_POSITION
+		),
+		"greenhouse_room": _nearest_guardian_walkable_position(
+			GREENHOUSE_ROOM_DOOR_POSITION
+		),
+		"circuit_room": _nearest_guardian_walkable_position(
+			CIRCUIT_DOOR_POSITION
+		),
+		"library": _nearest_guardian_walkable_position(LIBRARY_DOOR_POSITION),
+		"dining_hall": _nearest_guardian_walkable_position(
+			DINING_HALL_DOOR_POSITION
+		),
+		"final_deduction_room": _nearest_guardian_walkable_position(
+			FINAL_ROOM_DOOR_POSITION
+		),
+	}
+
+
+func _build_guardian_patrol_route() -> Array[Vector2]:
+	var route: Array[Vector2] = []
+	var from_position := _nearest_guardian_walkable_position(
+		GUARDIAN_PATROL_ANCHORS[0]
+	)
+	for anchor_index: int in range(1, GUARDIAN_PATROL_ANCHORS.size()):
+		var target_position := _nearest_guardian_walkable_position(
+			GUARDIAN_PATROL_ANCHORS[anchor_index]
+		)
+		var segment_cells := find_path(
+			world_to_cell(from_position),
+			world_to_cell(target_position)
+		)
+		if segment_cells.size() < 2:
+			continue
+		for cell: Variant in segment_cells:
+			var point := cell_to_world(cell as Vector2i)
+			if not is_player_position_walkable(point):
+				continue
+			if not route.is_empty() and route[route.size() - 1].is_equal_approx(point):
+				continue
+			route.append(point)
+		from_position = target_position
+	return route
+
+
+func _nearest_guardian_walkable_position(target: Vector2) -> Vector2:
+	var target_cell := world_to_cell(target)
+	var best_position := ENEMY_START_POSITION
+	var best_distance := INF
+	for radius: int in range(0, 7):
+		for offset_y: int in range(-radius, radius + 1):
+			for offset_x: int in range(-radius, radius + 1):
+				if max(abs(offset_x), abs(offset_y)) != radius:
+					continue
+				var cell := target_cell + Vector2i(offset_x, offset_y)
+				if not is_inside_map(cell) or astar_grid.is_point_solid(cell):
+					continue
+				var candidate := cell_to_world(cell)
+				var distance := candidate.distance_squared_to(target)
+				if distance < best_distance:
+					best_distance = distance
+					best_position = candidate
+		if best_distance < INF:
+			break
+	return best_position
+
+
+func _guardian_hall_spawn_position(patrol_route: Array[Vector2]) -> Vector2:
+	var preferred := GameState.get_guardian_hall_position()
+	if (
+		is_player_position_walkable(preferred)
+		and preferred.distance_to(player.global_position) >= GUARDIAN_ENTRY_MIN_DISTANCE
+	):
+		return preferred
+	# The authored corner is a design intent, not necessarily a walkable cell.
+	var corner := _nearest_guardian_walkable_position(ENEMY_START_POSITION)
+	if corner.distance_to(player.global_position) >= GUARDIAN_ENTRY_MIN_DISTANCE:
+		return corner
+	var farthest_position := corner
+	var farthest_distance := -1.0
+	for point: Vector2 in patrol_route:
+		if not is_player_position_walkable(point):
+			continue
+		var distance := point.distance_squared_to(player.global_position)
+		if distance > farthest_distance:
+			farthest_distance = distance
+			farthest_position = point
+	return farthest_position
+
+
+## Keep the rendered Hall entity synchronized with the persistent FSM. The
+## PATROL state normally runs while another room scene is loaded; this branch
+## also makes transitions deterministic if a frame is rendered before unload.
 func update_enemy_chase_state() -> void:
 	if enemy == null:
 		return
-	if GameState.chase_mode and not enemy_chase_started:
+	if GameState.is_guardian_hunt_active() and not enemy_chase_started:
 		enemy_chase_started = true
-		enemy.position = ENEMY_START_POSITION
+		enemy.position = GameState.get_guardian_hall_position()
 		enemy.visible = true
 		enemy.set_physics_process(true)
-	elif not GameState.chase_mode and enemy_chase_started:
+	elif not GameState.is_guardian_hunt_active() and enemy_chase_started:
 		enemy_chase_started = false
 		enemy.visible = false
 		enemy.set_physics_process(false)
+	if enemy_chase_started and enemy.has_method("set_behavior"):
+		enemy.call("set_behavior", GameState.get_guardian_mode())
 
 
 func create_game_over_ui() -> void:
@@ -1282,7 +1810,8 @@ func create_game_over_ui() -> void:
 func on_player_caught():
 	if game_over:
 		return
-	# 受击后短暂无敌，避免连续扣血。
+	# Hall pursuit is intentionally a one-hit failure state. `take_damage()`
+	# preserves the older multi-hit behavior for non-pursuit hazards only.
 	if _damage_invincible_timer > 0.0:
 		return
 
@@ -1299,11 +1828,21 @@ func on_player_caught():
 
 	game_over = true
 	player.set_physics_process(false)
+	if guardian_countdown_panel != null:
+		guardian_countdown_panel.visible = false
+	if guardian_awareness_panel != null:
+		guardian_awareness_panel.visible = false
 
 	if enemy != null:
 		enemy.set_physics_process(false)
 
 	if game_over_screen_root != null:
+		if game_over_screen_root.has_method("configure_recovery"):
+			game_over_screen_root.call(
+				"configure_recovery",
+				GameState.has_room_checkpoint(),
+				GameState.checkpoint_room_id
+			)
 		game_over_screen_root.visible = true
 
 
@@ -1343,6 +1882,16 @@ func create_interaction_focus() -> void:
 func update_interaction_focus() -> void:
 	if interaction_focus == null:
 		return
+	if _is_hall_arrival_active() and current_interaction.is_empty():
+		var arrival_focus: Dictionary = _hall_arrival_focus()
+		if not arrival_focus.is_empty():
+			interaction_focus.set_focus(
+				arrival_focus["position"] as Vector2,
+				str(arrival_focus["title"]),
+				true,
+				arrival_focus["size"] as Vector2
+			)
+			return
 	if current_interaction.is_empty():
 		interaction_focus.clear_focus()
 		return
@@ -1355,14 +1904,29 @@ func update_interaction_focus() -> void:
 		var exhibit_id: String = current_interaction.trim_prefix("hall_knowledge:")
 		for item: Dictionary in hall_knowledge_items:
 			if str(item["id"]) == exhibit_id:
-				interaction_focus.set_focus(
-					item["position"] as Vector2,
+				_set_hall_interaction_focus(
+					current_interaction,
 					str(item["title"]),
 					false
 				)
 				return
+	if current_interaction.begins_with("corridor_fragment_"):
+		_set_hall_interaction_focus(
+			current_interaction,
+			"Torn note",
+			true
+		)
+		return
 
 	match current_interaction:
+		"arrival_chemistry_door":
+			target_position = CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
+			focus_title = "Chemistry Room"
+			is_primary = true
+		"arrival_chemistry_core":
+			target_position = _get_hall_knowledge_position("ChemistryRoomKnowledge")
+			focus_title = "Brass core"
+			is_primary = true
 		"chemistry_room_door":
 			target_position = CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
 			focus_title = "Chemistry Room"
@@ -1427,7 +1991,32 @@ func update_interaction_focus() -> void:
 			interaction_focus.clear_focus()
 			return
 
-	interaction_focus.set_focus(target_position, focus_title, is_primary)
+	var interaction_rect := get_interaction_rect(current_interaction)
+	if interaction_rect.size.x > 0.0 and interaction_rect.size.y > 0.0:
+		_set_hall_interaction_focus(
+			current_interaction,
+			focus_title,
+			is_primary
+		)
+	else:
+		interaction_focus.set_focus(target_position, focus_title, is_primary)
+
+
+func _set_hall_interaction_focus(
+	interaction_id: String,
+	title: String,
+	primary: bool
+) -> void:
+	var focus_rect := spatial.grow_rect(
+		get_interaction_rect(interaction_id),
+		Vector2(10.0, 10.0)
+	)
+	interaction_focus.set_focus(
+		focus_rect.get_center(),
+		title,
+		primary,
+		focus_rect.size
+	)
 
 
 func hide_interaction_feedback() -> void:
@@ -1452,6 +2041,9 @@ func create_game_ui():
 	objective_summary_label = null
 
 	create_objective_panel_ui()
+	_create_hall_route_ui()
+	_create_power_restoration_ui()
+	_create_guardian_pursuit_ui()
 
 	# 统一大厅交互提示：世界空间角标 + 屏幕底部旧铜 E 面板。
 	interaction_hint_panel = Panel.new()
@@ -1654,6 +2246,10 @@ func update_interaction_prompt() -> void:
 	if knowledge_panel_open:
 		return
 
+	if _is_hall_arrival_active():
+		_update_hall_arrival_prompt()
+		return
+
 	# ========================================================
 	# Corridor note fragments (Mrs. Lin's torn pages)
 	# ========================================================
@@ -1665,12 +2261,7 @@ func update_interaction_prompt() -> void:
 		var flag_id: String = "corridor_fragment_%d" % fragment_index
 		if GameState.has_story_flag(flag_id):
 			continue
-		var fragment_distance: float = (
-			player.global_position.distance_to(
-				CORRIDOR_FRAGMENT_POSITIONS[index]
-			)
-		)
-		if fragment_distance <= CORRIDOR_FRAGMENT_RADIUS:
+		if _is_near_hall_interaction(flag_id):
 			current_interaction = flag_id
 			interact_label.text = "Press E to pick up a torn note"
 			interact_label.visible = true
@@ -1681,10 +2272,7 @@ func update_interaction_prompt() -> void:
 	# ========================================================
 
 	if not GameState.has_key("library_room_key"):
-		var hidden_key_distance: float = (
-			player.global_position.distance_to(_get_storage_rack_position())
-		)
-		if hidden_key_distance <= HIDDEN_LIBRARY_KEY_RADIUS:
+		if _is_near_hall_interaction("hidden_library_key"):
 			current_interaction = "hidden_library_key"
 			interact_label.text = "Press E to search the storage rack"
 			interact_label.visible = true
@@ -1705,10 +2293,7 @@ func update_interaction_prompt() -> void:
 			continue
 		if GameState.has_final_key_fragment(station_index):
 			continue
-		var machine_distance: float = (
-			player.global_position.distance_to(_get_final_key_machine_position(machine_index))
-		)
-		if machine_distance <= FINAL_KEY_MACHINE_RADIUS:
+		if _is_near_hall_interaction("final_key_machine_%d" % station_index):
 			current_interaction = "final_key_machine_%d" % station_index
 			interact_label.text = machine_labels[machine_index]
 			interact_label.visible = true
@@ -1724,10 +2309,7 @@ func update_interaction_prompt() -> void:
 		)
 		if GameState.has_story_flag(collected_flag):
 			continue
-		var exhibit_distance: float = player.global_position.distance_to(
-			item["position"] as Vector2
-		)
-		if exhibit_distance <= 100.0:
+		if _is_near_hall_interaction("hall_knowledge:" + exhibit_id):
 			current_interaction = "hall_knowledge:" + exhibit_id
 			interact_label.text = "Press E to study " + str(item["prompt"])
 			interact_label.visible = true
@@ -1737,15 +2319,7 @@ func update_interaction_prompt() -> void:
 	# Chemistry Room entrance
 	# ========================================================
 
-	var chemistry_door_distance: float = (
-		player.global_position.distance_to(
-			CHEMISTRY_ROOM_DOOR_POSITION
-		)
-	)
-
-	if chemistry_door_distance <= (
-		CHEMISTRY_ROOM_DOOR_RADIUS
-	):
+	if _is_near_hall_interaction("chemistry_room_door"):
 		current_interaction = "chemistry_room_door"
 		if not GameState.has_key("chemistry_room_key"):
 			interact_label.text = (
@@ -1762,15 +2336,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	var greenhouse_door_distance: float = (
-		player.global_position.distance_to(
-			GREENHOUSE_ROOM_DOOR_POSITION
-		)
-	)
-
-	if greenhouse_door_distance <= (
-		GREENHOUSE_ROOM_DOOR_RADIUS
-	):
+	if _is_near_hall_interaction("greenhouse_room_door"):
 		current_interaction = "greenhouse_room_door"
 		if not GameState.has_key("greenhouse_room_key"):
 			interact_label.text = (
@@ -1787,13 +2353,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	var library_door_distance: float = (
-		player.global_position.distance_to(
-			LIBRARY_DOOR_POSITION
-		)
-	)
-
-	if library_door_distance <= GREENHOUSE_ROOM_DOOR_RADIUS:
+	if _is_near_hall_interaction("library_door"):
 		current_interaction = "library_door"
 		if not GameState.has_key("library_room_key"):
 			interact_label.text = (
@@ -1808,13 +2368,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	var dining_hall_distance: float = (
-		player.global_position.distance_to(
-			DINING_HALL_DOOR_POSITION
-		)
-	)
-
-	if dining_hall_distance <= GREENHOUSE_ROOM_DOOR_RADIUS:
+	if _is_near_hall_interaction("dining_hall_door"):
 		current_interaction = "dining_hall_door"
 		if not GameState.has_key("dining_hall_key"):
 			interact_label.text = (
@@ -1829,13 +2383,7 @@ func update_interaction_prompt() -> void:
 		interact_label.visible = true
 		return
 
-	var final_room_distance: float = (
-		player.global_position.distance_to(
-			FINAL_ROOM_DOOR_POSITION
-		)
-	)
-
-	if final_room_distance <= FINAL_ROOM_DOOR_RADIUS:
+	if _is_near_hall_interaction("final_room_door"):
 		current_interaction = "final_room_door"
 		if not GameState.has_key("final_room_key"):
 			interact_label.text = (
@@ -1859,12 +2407,7 @@ func update_interaction_prompt() -> void:
 
 	if GameState.has_key("service_corridor_key"):
 		if not GameState.has_story_flag("service_wall_door_open"):
-			var service_door_distance: float = (
-				player.global_position.distance_to(
-					SERVICE_WALL_DOOR_POSITION
-				)
-			)
-			if service_door_distance <= SERVICE_WALL_DOOR_RADIUS:
+			if _is_near_hall_interaction("service_wall_door"):
 				current_interaction = "service_wall_door"
 				interact_label.text = (
 					"Press E to unlock the service passage"
@@ -1873,28 +2416,19 @@ func update_interaction_prompt() -> void:
 				return
 		else:
 			if not GameState.has_evidence("service_corridor_dark_trail"):
-				var blood_distance: float = (
-					player.global_position.distance_to(SERVICE_DARK_TRAIL_POSITION)
-				)
-				if blood_distance <= SERVICE_INVESTIGATION_RADIUS:
+				if _is_near_hall_interaction("service_dark_trail"):
 					current_interaction = "service_dark_trail"
 					interact_label.text = "Press E to inspect the dark trail"
 					interact_label.visible = true
 					return
 			if not GameState.has_evidence("service_corridor_fiber"):
-				var fiber_distance: float = (
-					player.global_position.distance_to(SERVICE_FIBER_POSITION)
-				)
-				if fiber_distance <= SERVICE_INVESTIGATION_RADIUS:
+				if _is_near_hall_interaction("service_violet_fiber"):
 					current_interaction = "service_violet_fiber"
 					interact_label.text = "Press E to inspect the violet fiber"
 					interact_label.visible = true
 					return
 			if not GameState.has_story_flag("service_maintenance_panel_opened"):
-				var panel_distance: float = (
-					player.global_position.distance_to(SERVICE_PANEL_POSITION)
-				)
-				if panel_distance <= SERVICE_INVESTIGATION_RADIUS:
+				if _is_near_hall_interaction("service_maintenance_panel"):
 					current_interaction = "service_maintenance_panel"
 					interact_label.text = "Press E to open the maintenance panel"
 					interact_label.visible = true
@@ -1904,15 +2438,7 @@ func update_interaction_prompt() -> void:
 	# Wake Room return door（答对知识锁解锁后可从大厅返回）
 	# ========================================================
 
-	var wake_room_door_distance: float = (
-		player.global_position.distance_to(
-			WAKE_ROOM_DOOR_POSITION
-		)
-	)
-
-	if wake_room_door_distance <= (
-		WAKE_ROOM_DOOR_INTERACT_RADIUS
-	):
+	if _is_near_hall_interaction("wake_room_door"):
 		current_interaction = "wake_room_door"
 		interact_label.text = (
 			"Press E to return to the Wake Room"
@@ -1925,15 +2451,7 @@ func update_interaction_prompt() -> void:
 	# ========================================================
 
 	if not circuit_door_open:
-		var door_distance: float = (
-			player.global_position.distance_to(
-				circuit_door_position
-			)
-		)
-
-		if door_distance <= (
-			CIRCUIT_DOOR_INTERACT_RADIUS
-		):
+		if _is_near_hall_interaction("circuit_door"):
 			current_interaction = "circuit_door"
 			if not GameState.has_key("circuit_room_key"):
 				interact_label.text = (
@@ -1982,6 +2500,9 @@ func _is_final_key_station_active(station_index: int) -> bool:
 
 
 func try_investigate_clue() -> void:
+	if _is_hall_arrival_active():
+		_try_hall_arrival_interaction()
+		return
 	if current_interaction.begins_with("hall_knowledge:"):
 		_inspect_hall_knowledge(
 			current_interaction.trim_prefix("hall_knowledge:")
@@ -2565,16 +3086,21 @@ func create_butler_npc():
 	butler_node.position = butler_position
 	butler_node.configure(
 		"Butler",
-		"res://assets/characters/animated_pixel_v3/butler_walk.png",
-		0.20,
+		"res://assets/characters/animated_pixel_v5/butler_idle_8dir.png",
+		2.10,
 		Vector2(14.0, 0.0),
 		11.0,
-		&"down"
+		&"south",
+		Vector2i(48, 68),
+		8,
+		true,
+		true
 	)
+	butler_node.set_visual_foot_anchor(Vector2(0.0, -48.30))
 	butler_node.z_index = 6
 
 	add_child(butler_node)
-	add_world_label(butler_node, "Butler", Vector2(-24, -74))
+	add_world_label(butler_node, "Butler", Vector2(-30, -122))
 func show_butler_dialogue():
 	start_dialogue_pause()
 	clear_buttons()
@@ -2608,15 +3134,16 @@ func create_gardener_npc():
 	gardener_node.configure(
 		"Gardener",
 		"res://assets/characters/animated_pixel_v3/gardener_walk.png",
-		0.20,
+		0.43,
 		Vector2(14.0, 0.0),
 		11.0,
 		&"left"
 	)
+	gardener_node.set_visual_foot_anchor(Vector2(0.0, -46.44))
 	gardener_node.z_index = 6
 
 	add_child(gardener_node)
-	add_world_label(gardener_node, "Gardener", Vector2(-30, -74))
+	add_world_label(gardener_node, "Gardener", Vector2(-34, -122))
 func show_pollen_intro():
 	start_dialogue_pause()
 	clear_buttons()
@@ -2729,15 +3256,16 @@ func create_mechanic_npc():
 	mechanic_node.configure(
 		"Mechanic",
 		"res://assets/characters/animated_pixel_v3/mechanic_walk.png",
-		0.20,
+		0.426,
 		Vector2(14.0, 0.0),
 		11.0,
 		&"right"
 	)
+	mechanic_node.set_visual_foot_anchor(Vector2(0.0, -41.322))
 	mechanic_node.z_index = 6
 
 	add_child(mechanic_node)
-	add_world_label(mechanic_node, "Mechanic", Vector2(-30, -74))
+	add_world_label(mechanic_node, "Mechanic", Vector2(-34, -122))
 func show_circuit_intro():
 	start_dialogue_pause()
 	clear_buttons()
@@ -2978,9 +3506,7 @@ func show_wrong_accusation_ending(suspect_id: String):
 	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nMrs. Lin:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
 func restart_current_game():
 	# Retry 只重载当前场景；玩家保留实时调查进度。
-	GameState.player_health = 3
-	GameState.end_chase_mode()
-	GameState.enemy_chase_active = false
+	GameState.recover_from_interruption()
 	var current_path: String = "res://scenes/game_world.tscn"
 	if get_tree().current_scene != null and not get_tree().current_scene.scene_file_path.is_empty():
 		current_path = get_tree().current_scene.scene_file_path
@@ -2989,17 +3515,28 @@ func restart_current_game():
 
 func restart_from_checkpoint() -> void:
 	# Load Checkpoint 回到最近一次进入房间时记录的场景。
-	var checkpoint_path: String = "res://scenes/game_world.tscn"
-	if GameState.load_room_checkpoint():
-		checkpoint_path = GameState.checkpoint_scene_path
+	if not GameState.load_room_checkpoint():
+		restart_current_game()
+		return
+	var checkpoint_path: String = GameState.checkpoint_scene_path
 	get_tree().change_scene_to_file(checkpoint_path)
 
 
 func return_to_main_menu():
+	# Main-menu return is also a recovery path: never serialize a dead player
+	# or an active chase for the next Continue action.
+	GameState.recover_from_interruption()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 func update_objective_text():
 	if objective_summary_label == null:
-		return
+		# The compact summary is intentionally absent, but the detailed objective
+		# panel still needs to stay current.
+		pass
+
+	var power_map_pending := (
+		GameState.has_story_flag("power_map_objective_active")
+		and not GameState.has_story_flag("power_map_reviewed")
+	)
 
 	var red_done = evidence_items.has("fake_red_stain")
 	var pollen_done = evidence_items.has("greenhouse_pollen")
@@ -3013,22 +3550,24 @@ func update_objective_text():
 	if circuit_done:
 		collected_count += 1
 
-	if not hall_arrival_finished:
+	if objective_summary_label != null and power_map_pending:
+		objective_summary_label.text = "Objective: Open Map — Route Memory Online   [U]"
+	elif objective_summary_label != null and not hall_arrival_finished:
 		objective_summary_label.text = (
 			"Objective: Enter the First-Floor Castle Hall"
 		)
 
-	elif evidence_items.is_empty():
+	elif objective_summary_label != null and evidence_items.is_empty():
 		objective_summary_label.text = (
 			"Objective: Investigate the Castle Hall   [O: Details]"
 		)
 
-	elif has_all_evidence():
+	elif objective_summary_label != null and has_all_evidence():
 		objective_summary_label.text = (
 			"Objective: Go to Final Deduction Room   [O: Details]"
 		)
 
-	else:
+	elif objective_summary_label != null:
 		objective_summary_label.text = (
 			"Objective: Evidence "
 			+ str(collected_count)
@@ -3043,6 +3582,9 @@ func update_objective_text():
 	var circuit_status = "✓" if circuit_done else "✗"
 
 	var detail = "Current Mission:\n\n"
+	if power_map_pending:
+		detail += "POWER RESTORED · ROUTE MEMORY ONLINE\n"
+		detail += "Open Map now (U) to inspect the gray routes recovered by the Circuit scan.\n\n"
 	if not circuit_door_open:
 		detail += "Locked Door:\n"
 		if learned_circuit_rule:
@@ -3189,6 +3731,404 @@ func create_follow_camera() -> void:
 
 	player.add_child(follow_camera)
 	follow_camera.make_current()
+
+
+func _begin_guardian_entry_sequence(start_route_after: bool = false) -> void:
+	if guardian_entry_sequence_active:
+		return
+	if guardian_entry_sequence_played or enemy == null or follow_camera == null or game_over:
+		if player != null and not game_over:
+			player.set_physics_process(true)
+		if enemy != null:
+			if enemy.has_method("set_cinematic_hold"):
+				enemy.call("set_cinematic_hold", false)
+			if enemy.has_method("set_catch_enabled"):
+				enemy.call("set_catch_enabled", true)
+		if start_route_after:
+			_begin_hall_arrival_route()
+		return
+
+	guardian_entry_sequence_played = true
+	guardian_entry_sequence_active = true
+	# The reveal is the loudest story beat in the Hall, so the stinger gets the room
+	# to itself for a moment rather than competing with the layer that just came in.
+	GameAudio.play(&"guardian_alert")
+	GameAudio.duck_music(1.4)
+	guardian_eta_refresh_remaining = 0.0
+	guardian_countdown_panel.visible = false
+	hide_interaction_feedback()
+	if hall_route_panel != null:
+		hall_route_panel.visible = false
+	if player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
+	player.set_physics_process(false)
+	ArchiveUi.set_hub_entries_suppressed(true)
+	var map_hud := get_node_or_null("/root/MapHud")
+	if map_hud != null and map_hud.has_method("set_guardian_tracking_suppressed"):
+		map_hud.call("set_guardian_tracking_suppressed", true)
+	if fog_sprite != null:
+		guardian_reveal_fog_was_visible = fog_sprite.visible
+		fog_sprite.visible = false
+	if enemy.has_method("set_catch_enabled"):
+		enemy.call("set_catch_enabled", false)
+	if enemy.has_method("set_cinematic_hold"):
+		enemy.call("set_cinematic_hold", true)
+	if enemy.has_method("face_toward"):
+		enemy.call("face_toward", player.global_position)
+
+	guardian_reveal_overlay.visible = true
+	guardian_reveal_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	guardian_reveal_title.text = "城堡守卫" if CaseLocale.is_chinese() else "CASTLE GUARDIAN"
+	guardian_reveal_body.text = "它发现了你的踪迹" if CaseLocale.is_chinese() else "IT HAS YOUR TRAIL"
+	var overlay_in := create_tween()
+	overlay_in.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	overlay_in.tween_property(guardian_reveal_overlay, "modulate:a", 1.0, 0.20)
+
+	guardian_reveal_camera = Camera2D.new()
+	guardian_reveal_camera.name = "GuardianRevealCamera"
+	guardian_reveal_camera.global_position = follow_camera.get_screen_center_position()
+	guardian_reveal_camera.zoom = follow_camera.zoom
+	guardian_reveal_camera.position_smoothing_enabled = false
+	guardian_reveal_camera.limit_left = 0
+	guardian_reveal_camera.limit_top = 0
+	guardian_reveal_camera.limit_right = MAP_PIXEL_WIDTH
+	guardian_reveal_camera.limit_bottom = MAP_PIXEL_HEIGHT
+	add_child(guardian_reveal_camera)
+	guardian_reveal_camera.make_current()
+
+	var pan_to_guardian := create_tween()
+	pan_to_guardian.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN_OUT)
+	pan_to_guardian.tween_property(
+		guardian_reveal_camera,
+		"global_position",
+		enemy.global_position,
+		GUARDIAN_REVEAL_PAN_DURATION
+	)
+	pan_to_guardian.parallel().tween_property(
+		guardian_reveal_camera,
+		"zoom",
+		GUARDIAN_REVEAL_ZOOM,
+		GUARDIAN_REVEAL_PAN_DURATION
+	)
+	await pan_to_guardian.finished
+	if not is_inside_tree() or enemy == null:
+		return
+
+	guardian_reveal_body.text = (
+		"守卫停住了。它正在辨认你的方向。"
+		if CaseLocale.is_chinese()
+		else "IT STOPS. IT TURNS TOWARD YOU."
+	)
+	await get_tree().create_timer(GUARDIAN_REVEAL_HOLD_DURATION).timeout
+	if not is_inside_tree() or enemy == null:
+		return
+
+	guardian_reveal_body.text = "追捕开始" if CaseLocale.is_chinese() else "PURSUIT STARTED"
+	guardian_reveal_camera.reparent(enemy, true)
+	guardian_reveal_camera.position = Vector2.ZERO
+	if enemy.has_method("set_cinematic_hold"):
+		enemy.call("set_cinematic_hold", false)
+	await get_tree().create_timer(GUARDIAN_REVEAL_MARCH_DURATION).timeout
+	if not is_inside_tree() or enemy == null:
+		return
+
+	guardian_reveal_camera.reparent(self, true)
+	var return_to_player := create_tween()
+	return_to_player.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN_OUT)
+	return_to_player.tween_property(
+		guardian_reveal_camera,
+		"global_position",
+		player.global_position,
+		GUARDIAN_REVEAL_RETURN_DURATION
+	)
+	return_to_player.parallel().tween_property(
+		guardian_reveal_camera,
+		"zoom",
+		camera_target_zoom,
+		GUARDIAN_REVEAL_RETURN_DURATION
+	)
+	await return_to_player.finished
+	if not is_inside_tree():
+		return
+
+	follow_camera.zoom = camera_target_zoom
+	follow_camera.make_current()
+	follow_camera.reset_smoothing()
+	guardian_reveal_camera.queue_free()
+	guardian_reveal_camera = null
+	# The sequence that froze the Guardian has to be the one that thaws it. Lifting
+	# only the catch flag leaves a Guardian that is allowed to catch the player and
+	# physically unable to move, which reads in play as no hunt at all.
+	if enemy.has_method("set_cinematic_hold"):
+		enemy.call("set_cinematic_hold", false)
+	if enemy.has_method("set_catch_enabled"):
+		enemy.call("set_catch_enabled", true)
+	player.set_physics_process(true)
+	guardian_entry_sequence_active = false
+	ArchiveUi.set_hub_entries_suppressed(false)
+	if map_hud != null and map_hud.has_method("set_guardian_tracking_suppressed"):
+		map_hud.call("set_guardian_tracking_suppressed", false)
+	if fog_sprite != null:
+		fog_sprite.visible = guardian_reveal_fog_was_visible
+	_sync_hall_arrival_huds()
+	_update_guardian_countdown(0.0)
+	var overlay_out := create_tween()
+	overlay_out.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	overlay_out.tween_property(guardian_reveal_overlay, "modulate:a", 0.0, 0.18)
+	overlay_out.tween_callback(func() -> void:
+		if guardian_reveal_overlay != null:
+			guardian_reveal_overlay.visible = false
+	)
+	if start_route_after:
+		_begin_hall_arrival_route()
+	else:
+		_refresh_hall_route_ui(false)
+
+
+func _update_music_intensity() -> void:
+	# The score follows the Guardian, not the room. Intensity is a gain change on
+	# layers that never stop, so this can be called every frame without restarting
+	# anything; GameAudio ignores a repeat of the level it is already at.
+	var chasing := (
+		GameState.is_guardian_hunt_active()
+		and GameState.get_guardian_mode() == GameState.GuardianMode.CHASE
+		and not game_over
+	)
+	GameAudio.set_music_for_guardian(GameState.is_guardian_hunt_active() and not game_over, chasing)
+
+
+func _notification(what: int) -> void:
+	# Hubs pause the tree, which stops `_update_guardian_countdown` mid-pursuit and
+	# leaves the panel showing a time that has stopped being true. Worse, it shows
+	# through the hub's own backdrop. The readout is only honest while the world is
+	# running, so it withdraws on the pause itself rather than waiting for a frame
+	# that will not arrive.
+	# through the hub's own backdrop. The readout is only honest while the world is
+	# running, so it withdraws on the pause itself rather than waiting for a frame
+	# that will not arrive.
+	if what == NOTIFICATION_PAUSED:
+		if guardian_countdown_panel != null:
+			guardian_countdown_panel.visible = false
+	elif what == NOTIFICATION_UNPAUSED:
+		_update_guardian_countdown(0.0)
+
+
+func _update_guardian_countdown(delta: float) -> void:
+	if guardian_countdown_panel == null:
+		return
+	var should_show := (
+		GameState.is_guardian_hunt_active()
+		and GameState.get_guardian_mode() == GameState.GuardianMode.CHASE
+		and enemy != null
+		and not guardian_entry_sequence_active
+		and not power_route_scan_active
+		and (power_restoration_panel == null or not power_restoration_panel.visible)
+		and not game_over
+	)
+	guardian_countdown_panel.visible = should_show
+	if not should_show:
+		return
+	guardian_eta_refresh_remaining -= delta
+	# The estimate is re-measured on an interval, but between measurements it has
+	# to keep running down. Snapping to each new sample made the readout look like
+	# a value that only refreshes while the pursuit itself never advances.
+	guardian_eta_seconds = maxf(0.0, guardian_eta_seconds - delta)
+	if guardian_eta_refresh_remaining <= 0.0:
+		var measured := get_guardian_catch_eta()
+		# Danger is reported immediately; relief is rate-limited, so gaining ground
+		# reads as the clock slowing rather than as the clock resetting.
+		guardian_eta_seconds = (
+			measured
+			if measured <= guardian_eta_seconds
+			else minf(
+				measured,
+				guardian_eta_seconds + GUARDIAN_ETA_RELIEF_RATE * GUARDIAN_ETA_REFRESH_INTERVAL
+			)
+		)
+		guardian_eta_refresh_remaining = GUARDIAN_ETA_REFRESH_INTERVAL
+
+	var display_seconds := clampf(guardian_eta_seconds, 0.0, 99.9)
+	guardian_countdown_value.text = "%04.1f s" % display_seconds
+	var urgency := 1.0 - clampf(
+		guardian_eta_seconds / GUARDIAN_ETA_DISPLAY_HORIZON,
+		0.0,
+		1.0
+	)
+	guardian_countdown_bar.size = Vector2(268.0 * urgency, 7.0)
+	var imminent := guardian_eta_seconds <= 4.0
+	guardian_countdown_value.add_theme_color_override(
+		"font_color",
+		Color(1.0, 0.34, 0.22, 1.0) if imminent else Color(1.0, 0.88, 0.70, 1.0)
+	)
+	guardian_countdown_bar.color = (
+		Color(1.0, 0.12, 0.10, 1.0)
+		if imminent
+		else Color(0.92, 0.28, 0.18, 1.0)
+	)
+	if CaseLocale.is_chinese():
+		guardian_countdown_title.text = "预计守卫接触时间"
+		guardian_countdown_status.text = "马上被抓  •  立刻躲入房间" if imminent else "路径已锁定  •  保持移动"
+	else:
+		guardian_countdown_title.text = "GUARDIAN CONTACT ESTIMATE"
+		guardian_countdown_status.text = "IMMINENT  •  REACH A ROOM" if imminent else "PATH LOCKED  •  KEEP MOVING"
+
+
+## Compact readout for the awareness model. Without it the escalation tier, the
+## tracking serum, and the stun/shroud timers are all invisible systems.
+func _create_guardian_awareness_ui() -> void:
+	if ui_layer == null or guardian_awareness_panel != null:
+		return
+
+	guardian_awareness_panel = Panel.new()
+	guardian_awareness_panel.name = "GuardianAwarenessStrip"
+	guardian_awareness_panel.anchor_left = 0.5
+	guardian_awareness_panel.anchor_right = 0.5
+	guardian_awareness_panel.offset_left = -148.0
+	guardian_awareness_panel.offset_top = 90.0
+	guardian_awareness_panel.offset_right = 148.0
+	guardian_awareness_panel.offset_bottom = 148.0
+	guardian_awareness_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	guardian_awareness_panel.z_index = 52
+	guardian_awareness_panel.visible = false
+	var awareness_style := StyleBoxFlat.new()
+	awareness_style.bg_color = Color(0.035, 0.030, 0.050, 0.94)
+	awareness_style.border_color = Color(0.52, 0.60, 0.86, 0.92)
+	awareness_style.set_border_width_all(2)
+	awareness_style.set_corner_radius_all(7)
+	awareness_style.shadow_color = Color(0.0, 0.0, 0.06, 0.66)
+	awareness_style.shadow_size = 8
+	awareness_style.shadow_offset = Vector2(0.0, 3.0)
+	guardian_awareness_panel.add_theme_stylebox_override("panel", awareness_style)
+	ui_layer.add_child(guardian_awareness_panel)
+
+	guardian_awareness_state = Label.new()
+	guardian_awareness_state.name = "AwarenessState"
+	guardian_awareness_state.position = Vector2(14.0, 6.0)
+	guardian_awareness_state.size = Vector2(268.0, 18.0)
+	guardian_awareness_state.add_theme_font_size_override("font_size", 13)
+	guardian_awareness_state.add_theme_color_override(
+		"font_color",
+		Color(0.86, 0.90, 1.0, 1.0)
+	)
+	guardian_awareness_panel.add_child(guardian_awareness_state)
+
+	guardian_awareness_detail = Label.new()
+	guardian_awareness_detail.name = "AwarenessDetail"
+	guardian_awareness_detail.position = Vector2(14.0, 25.0)
+	guardian_awareness_detail.size = Vector2(268.0, 15.0)
+	guardian_awareness_detail.add_theme_font_size_override("font_size", 9)
+	guardian_awareness_detail.add_theme_color_override(
+		"font_color",
+		Color(0.68, 0.74, 0.92, 1.0)
+	)
+	guardian_awareness_panel.add_child(guardian_awareness_detail)
+
+	guardian_awareness_effects = Label.new()
+	guardian_awareness_effects.name = "AwarenessEffects"
+	guardian_awareness_effects.position = Vector2(14.0, 40.0)
+	guardian_awareness_effects.size = Vector2(268.0, 15.0)
+	guardian_awareness_effects.add_theme_font_size_override("font_size", 9)
+	guardian_awareness_effects.add_theme_color_override(
+		"font_color",
+		Color(0.62, 0.86, 0.72, 1.0)
+	)
+	guardian_awareness_panel.add_child(guardian_awareness_effects)
+
+
+func _update_guardian_awareness_readout() -> void:
+	if guardian_awareness_panel == null:
+		return
+	var should_show := (
+		GameState.is_guardian_hunt_active()
+		and not guardian_entry_sequence_active
+		and not power_route_scan_active
+		and (power_restoration_panel == null or not power_restoration_panel.visible)
+		and not game_over
+	)
+	guardian_awareness_panel.visible = should_show
+	if not should_show:
+		return
+
+	var chinese := CaseLocale.is_chinese()
+	var mode: int = GameState.get_guardian_mode()
+	var state_text: String = ""
+	if GameState.is_guardian_stunned():
+		state_text = (
+			"守卫：眩晕 %.0f 秒" % GameState.get_guardian_stun_remaining()
+			if chinese
+			else "GUARDIAN: STUNNED %.0fs" % GameState.get_guardian_stun_remaining()
+		)
+	elif GameState.is_guardian_tracking_serum_active():
+		state_text = "守卫：药剂追踪中" if chinese else "GUARDIAN: TRACKING SERUM"
+	elif mode == GameState.GuardianMode.CHASE:
+		state_text = "守卫：已发现你" if chinese else "GUARDIAN: SIGHTED YOU"
+	elif mode == GameState.GuardianMode.SEARCH:
+		state_text = "守卫：正在搜寻" if chinese else "GUARDIAN: SEARCHING"
+	else:
+		state_text = "守卫：通道口驻守" if chinese else "GUARDIAN: STAKING OUT PASSAGE"
+	guardian_awareness_state.text = state_text
+
+	var tier: int = GameState.get_guardian_escalation_tier()
+	if chinese:
+		guardian_awareness_detail.text = (
+			"提速档位 %d  •  追击速度 %d" % [tier, int(GameState.get_guardian_chase_speed())]
+		)
+	else:
+		guardian_awareness_detail.text = (
+			"ESCALATION T%d  •  CHASE SPEED %d" % [tier, int(GameState.get_guardian_chase_speed())]
+		)
+
+	var effects: Array[String] = []
+	if GameState.is_player_shrouded():
+		effects.append(
+			"隐身 %.0fs" % GameState.get_potion_remaining("shroud")
+			if chinese
+			else "SHROUD %.0fs" % GameState.get_potion_remaining("shroud")
+		)
+	if GameState.is_potion_active("swift"):
+		effects.append(
+			"疾行 %.0fs" % GameState.get_potion_remaining("swift")
+			if chinese
+			else "SWIFT %.0fs" % GameState.get_potion_remaining("swift")
+		)
+	if GameState.is_potion_active("vision"):
+		effects.append(
+			"洞察 %.0fs" % GameState.get_potion_remaining("vision")
+			if chinese
+			else "VISION %.0fs" % GameState.get_potion_remaining("vision")
+		)
+	if not GameState.is_guardian_tracking_serum_active():
+		effects.append("血液已净化" if chinese else "BLOOD PURIFIED")
+	guardian_awareness_effects.text = (
+		"  •  ".join(effects)
+		if not effects.is_empty()
+		else ("无生效药剂" if chinese else "NO ACTIVE REAGENTS")
+	)
+
+
+func get_guardian_catch_eta() -> float:
+	if enemy == null or player == null:
+		return INF
+	var path_distance := _guardian_path_distance()
+	var chase_speed := maxf(GameState.get_guardian_chase_speed(), 1.0)
+	return maxf(path_distance - GUARDIAN_CATCH_DISTANCE, 0.0) / chase_speed
+
+
+func _guardian_path_distance() -> float:
+	var route: Array = find_path(
+		world_to_cell(enemy.global_position),
+		world_to_cell(player.global_position)
+	)
+	if route.is_empty():
+		return enemy.global_position.distance_to(player.global_position)
+	var distance := 0.0
+	var previous: Vector2 = enemy.global_position
+	for cell_variant: Variant in route:
+		var route_point := cell_to_world(cell_variant as Vector2i)
+		distance += previous.distance_to(route_point)
+		previous = route_point
+	distance += previous.distance_to(player.global_position)
+	return distance
 func create_locked_circuit_door():
 	# This door blocks the y=8 passage at x 21..23 (original
 	# knowledge-lock position in the castle layout).
@@ -3872,65 +4812,976 @@ func start_investigation_from_intro():
 	message_panel.visible = false
 	clear_buttons()
 	end_dialogue_pause()
+	if not GameState.hall_arrival_seen:
+		_begin_guardian_entry_sequence(true)
+
+
+func _restore_hall_arrival_route() -> void:
+	if GameState.has_story_flag("hall_first_route_complete"):
+		hall_arrival_step = HallArrivalStep.COMPLETE
+	elif GameState.has_story_flag("hall_first_route_core_studied"):
+		hall_arrival_step = HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR
+	elif GameState.has_story_flag("hall_first_route_door_reached"):
+		hall_arrival_step = HallArrivalStep.STUDY_CHEMISTRY_CORE
+	else:
+		hall_arrival_step = HallArrivalStep.NONE
+	_refresh_hall_route_ui(false)
+	_sync_hall_arrival_huds()
+	call_deferred("_sync_hall_arrival_huds")
+
+
+func _begin_hall_arrival_route() -> void:
+	if GameState.hall_arrival_seen:
+		return
+	_set_hall_arrival_step(HallArrivalStep.REACH_CHEMISTRY_DOOR)
+	call_deferred("_sync_hall_arrival_huds")
+	_show_hall_route_arrival_toast()
+
+
+func _is_hall_arrival_active() -> bool:
+	return (
+		not GameState.hall_arrival_seen
+		and hall_arrival_step != HallArrivalStep.NONE
+		and hall_arrival_step != HallArrivalStep.COMPLETE
+	)
+
+
+func _set_hall_arrival_step(next_step: HallArrivalStep) -> void:
+	if hall_arrival_step == next_step:
+		return
+	hall_arrival_step = next_step
+	match next_step:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
+			GameState.set_story_flag("hall_first_route_started")
+		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+			GameState.set_story_flag("hall_first_route_door_reached")
+		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+			GameState.set_story_flag("hall_first_route_core_studied")
+		HallArrivalStep.COMPLETE:
+			GameState.set_story_flag("hall_first_route_complete")
+	_refresh_hall_route_ui(true)
+	_sync_hall_arrival_huds()
+
+
+func _hall_arrival_focus() -> Dictionary:
+	var interaction_id := ""
+	var title := ""
+	match hall_arrival_step:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR, HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+			interaction_id = "arrival_chemistry_door"
+			title = "Chemistry Room"
+		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+			interaction_id = "arrival_chemistry_core"
+			title = "Brass core"
+	if interaction_id.is_empty():
+		return {}
+	var focus_rect := spatial.grow_rect(
+		get_interaction_rect(interaction_id),
+		Vector2(10.0, 10.0)
+	)
+	return {
+		"position": focus_rect.get_center(),
+		"title": title,
+		"size": focus_rect.size,
+	}
+
+
+func _get_hall_knowledge_position(exhibit_id: String) -> Vector2:
+	for item: Dictionary in hall_knowledge_items:
+		if str(item.get("id", "")) == exhibit_id:
+			return item.get("position", Vector2.ZERO) as Vector2
+	return Vector2.ZERO
+
+
+func _update_hall_arrival_prompt() -> void:
+	if interact_label == null:
+		return
+	# The guided route may point toward Chemistry, but it must never trap the
+	# player in the hall. The already-unlocked Wake Room entrance remains a
+	# usable retreat point at every first-arrival step.
+	if _is_near_hall_interaction("wake_room_door"):
+		current_interaction = "wake_room_door"
+		interact_label.text = "Press E to return to the Wake Room"
+		interact_label.visible = true
+		return
+	match hall_arrival_step:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
+			if _is_near_hall_interaction("arrival_chemistry_door"):
+				current_interaction = "arrival_chemistry_door"
+				interact_label.text = "Press E to inspect the Chemistry Room lock"
+				interact_label.visible = true
+		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+			if _is_near_hall_interaction("arrival_chemistry_core"):
+				current_interaction = "arrival_chemistry_core"
+				interact_label.text = "Press E to study the active brass core"
+				interact_label.visible = true
+		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+			if _is_near_hall_interaction("arrival_chemistry_door"):
+				current_interaction = "arrival_chemistry_door"
+				interact_label.text = "Press E to open the Chemistry Room lock"
+				interact_label.visible = true
+
+
+func _try_hall_arrival_interaction() -> void:
+	if current_interaction == "wake_room_door":
+		enter_wake_room()
+		return
+	match current_interaction:
+		"arrival_chemistry_door":
+			if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
+				_show_hall_chemistry_door_lock()
+			elif hall_arrival_step == HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+				_open_first_chemistry_room()
+		"arrival_chemistry_core":
+			_show_hall_chemistry_core()
+
+
+func _show_hall_chemistry_door_lock() -> void:
+	start_dialogue_pause()
+	clear_buttons()
+	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_text("Mrs. Lin", CaseLocale.text("hall.chemistry_door_locked"))
+	show_continue_button("FOLLOW THE PULSE", _advance_to_hall_chemistry_core)
+
+
+func _advance_to_hall_chemistry_core() -> void:
+	close_message_panel()
+	_set_hall_arrival_step(HallArrivalStep.STUDY_CHEMISTRY_CORE)
+
+
+func _show_hall_chemistry_core() -> void:
+	start_dialogue_pause()
+	clear_buttons()
+	set_dialogue_speaker("You")
+	set_dialogue_text("You", CaseLocale.text("hall.chemistry_core_body"))
+	show_continue_button(
+		CaseLocale.text("hall.chemistry_core_continue"),
+		_complete_hall_chemistry_core
+	)
+
+
+func _complete_hall_chemistry_core() -> void:
+	if NoteHud != null:
+		NoteHud.unlock()
+		NoteHud.add_clue("hall_knowledge_chemical_change", {
+			"title": "Chemistry Room Knowledge",
+			"icon": "icon_book",
+			"content": "A chemical change creates a new substance. Burning paper is chemical; melting ice, breaking glass, and dissolving sugar are physical changes.",
+			"category": "knowledge",
+			"silent": true,
+		})
+	GameState.set_story_flag("hall_knowledge_chemistry_room_collected")
+	close_message_panel()
+	_set_hall_arrival_step(HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR)
+	# The bookshelf in the Wake Room normally provides the physical Chemistry
+	# Room key. Keep this fallback for legacy/checkpoint saves that reached the
+	# hall without it; the brass core's main reward is the knowledge answer.
+	if not GameState.has_key("chemistry_room_key"):
+		GameState.add_key("chemistry_room_key")
+
+
+func _open_first_chemistry_room() -> void:
+	GameState.set_story_flag("door_chemistry_unlocked")
+	_set_hall_arrival_step(HallArrivalStep.COMPLETE)
+	GameState.hall_arrival_seen = true
+	GameState.set_room_completed("wake_room")
+	enter_chemistry_room()
+
+
+func _sync_hall_arrival_huds() -> void:
+	# Deferred callbacks may outlive this scene during a room handoff.
+	if not is_inside_tree():
+		return
+	# A normal first-arrival route stays restrained until the brass core is read.
+	# Reading the Wake Room desk is the intentional exception: its field kit is
+	# portable and should still be available when the player reaches the hall.
+	var show_first_tools: bool = (
+		GameState.hall_arrival_seen
+		or hall_arrival_step == HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR
+		or hall_arrival_step == HallArrivalStep.COMPLETE
+	)
+	var has_portable_toolkit: bool = (
+		GameState.has_wake_room_toolkit()
+		or not GameState.is_game_started()
+	)
+	var show_hud_row: bool = show_first_tools or has_portable_toolkit
+	for hub_name: String in ["InventoryHud", "KeyHud", "NoteHud", "MapHud"]:
+		# This method can be deferred across a room swap; resolve from SceneTree.root
+		# instead of the outgoing hall node so cleanup never writes a console error.
+		var hub := get_tree().root.get_node_or_null(hub_name) as CanvasLayer
+		if hub != null:
+			# The first core earns NoteHub and KeyHub. Dr. Lin's desk map is a
+			# useful Bag/Map item already, so do not hide it after the room handoff.
+			hub.visible = (
+				show_hud_row
+				and (
+					has_portable_toolkit
+					or hub_name == "KeyHud"
+					or hub_name == "NoteHud"
+					or (hub_name == "MapHud" and GameState.is_map_hub_unlocked())
+				)
+			)
+	var reward_hud := get_tree().root.get_node_or_null("ItemRewardHud") as CanvasLayer
+	if reward_hud != null and not show_hud_row:
+		reward_hud.visible = false
+		if reward_hud.has_method("dismiss_for_overlay"):
+			reward_hud.call("dismiss_for_overlay")
+	elif reward_hud != null:
+		reward_hud.visible = true
+	if show_hud_row:
+		call_deferred("_refresh_global_hud_entries")
+
+
+func _refresh_global_hud_entries() -> void:
+	if not is_inside_tree():
+		return
+	var key_hud: Node = get_tree().root.get_node_or_null("KeyHud")
+	if key_hud != null and key_hud.has_method("_sync_key_state"):
+		key_hud.call("_sync_key_state")
+	var map_hud: Node = get_tree().root.get_node_or_null("MapHud")
+	if map_hud != null and map_hud.has_method("_sync_map_state"):
+		map_hud.call("_sync_map_state")
+
+
+func _create_guardian_pursuit_ui() -> void:
+	if ui_layer == null or guardian_countdown_panel != null:
+		return
+
+	guardian_countdown_panel = Panel.new()
+	guardian_countdown_panel.name = "GuardianContactCountdown"
+	guardian_countdown_panel.anchor_left = 0.5
+	guardian_countdown_panel.anchor_right = 0.5
+	guardian_countdown_panel.offset_left = -148.0
+	guardian_countdown_panel.offset_top = 15.0
+	guardian_countdown_panel.offset_right = 148.0
+	guardian_countdown_panel.offset_bottom = 84.0
+	guardian_countdown_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	guardian_countdown_panel.z_index = 52
+	guardian_countdown_panel.visible = false
+	var countdown_style := StyleBoxFlat.new()
+	countdown_style.bg_color = Color(0.055, 0.012, 0.018, 0.96)
+	countdown_style.border_color = Color(0.86, 0.22, 0.20, 0.96)
+	countdown_style.set_border_width_all(2)
+	countdown_style.set_corner_radius_all(7)
+	countdown_style.shadow_color = Color(0.18, 0.0, 0.015, 0.72)
+	countdown_style.shadow_size = 10
+	countdown_style.shadow_offset = Vector2(0.0, 3.0)
+	guardian_countdown_panel.add_theme_stylebox_override("panel", countdown_style)
+	ui_layer.add_child(guardian_countdown_panel)
+
+	guardian_countdown_title = Label.new()
+	guardian_countdown_title.name = "ContactEstimateTitle"
+	guardian_countdown_title.position = Vector2(14.0, 7.0)
+	guardian_countdown_title.size = Vector2(178.0, 17.0)
+	guardian_countdown_title.text = "GUARDIAN CONTACT ESTIMATE"
+	guardian_countdown_title.add_theme_font_size_override("font_size", 10)
+	guardian_countdown_title.add_theme_color_override("font_color", Color(0.90, 0.62, 0.50, 1.0))
+	guardian_countdown_panel.add_child(guardian_countdown_title)
+
+	guardian_countdown_value = Label.new()
+	guardian_countdown_value.name = "ContactEstimateValue"
+	guardian_countdown_value.position = Vector2(194.0, 3.0)
+	guardian_countdown_value.size = Vector2(88.0, 28.0)
+	guardian_countdown_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	guardian_countdown_value.text = "--.- s"
+	guardian_countdown_value.add_theme_font_size_override("font_size", 20)
+	guardian_countdown_value.add_theme_color_override("font_color", Color(1.0, 0.88, 0.70, 1.0))
+	guardian_countdown_value.add_theme_color_override("font_outline_color", Color(0.12, 0.0, 0.01, 1.0))
+	guardian_countdown_value.add_theme_constant_override("outline_size", 3)
+	guardian_countdown_panel.add_child(guardian_countdown_value)
+
+	var bar_track := ColorRect.new()
+	bar_track.name = "ThreatTrack"
+	bar_track.position = Vector2(14.0, 35.0)
+	bar_track.size = Vector2(268.0, 7.0)
+	bar_track.color = Color(0.17, 0.045, 0.055, 0.96)
+	bar_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	guardian_countdown_panel.add_child(bar_track)
+
+	guardian_countdown_bar = ColorRect.new()
+	guardian_countdown_bar.name = "ThreatFill"
+	guardian_countdown_bar.size = Vector2.ZERO
+	guardian_countdown_bar.color = Color(0.92, 0.28, 0.18, 1.0)
+	guardian_countdown_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar_track.add_child(guardian_countdown_bar)
+
+	guardian_countdown_status = Label.new()
+	guardian_countdown_status.name = "ContactEstimateStatus"
+	guardian_countdown_status.position = Vector2(14.0, 46.0)
+	guardian_countdown_status.size = Vector2(268.0, 16.0)
+	guardian_countdown_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	guardian_countdown_status.text = "PATH LOCKED  •  KEEP MOVING"
+	guardian_countdown_status.add_theme_font_size_override("font_size", 9)
+	guardian_countdown_status.add_theme_color_override("font_color", Color(0.80, 0.62, 0.54, 1.0))
+	guardian_countdown_panel.add_child(guardian_countdown_status)
+
+	_create_guardian_awareness_ui()
+
+	guardian_reveal_overlay = Control.new()
+	guardian_reveal_overlay.name = "GuardianRevealOverlay"
+	guardian_reveal_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	guardian_reveal_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	guardian_reveal_overlay.z_index = 90
+	guardian_reveal_overlay.visible = false
+	ui_layer.add_child(guardian_reveal_overlay)
+
+	var reveal_veil := ColorRect.new()
+	reveal_veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	reveal_veil.color = Color(0.02, 0.0, 0.01, 0.18)
+	reveal_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	guardian_reveal_overlay.add_child(reveal_veil)
+
+	for top_edge: bool in [true, false]:
+		var letterbox := ColorRect.new()
+		letterbox.name = "TopLetterbox" if top_edge else "BottomLetterbox"
+		letterbox.anchor_right = 1.0
+		letterbox.anchor_top = 0.0 if top_edge else 1.0
+		letterbox.anchor_bottom = 0.0 if top_edge else 1.0
+		letterbox.offset_top = 0.0 if top_edge else -84.0
+		letterbox.offset_bottom = 84.0 if top_edge else 0.0
+		letterbox.color = Color(0.012, 0.004, 0.009, 0.96)
+		letterbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		guardian_reveal_overlay.add_child(letterbox)
+
+	guardian_reveal_title = Label.new()
+	guardian_reveal_title.name = "GuardianRevealTitle"
+	guardian_reveal_title.anchor_left = 0.5
+	guardian_reveal_title.anchor_right = 0.5
+	guardian_reveal_title.anchor_top = 1.0
+	guardian_reveal_title.anchor_bottom = 1.0
+	guardian_reveal_title.offset_left = -300.0
+	guardian_reveal_title.offset_top = -76.0
+	guardian_reveal_title.offset_right = 300.0
+	guardian_reveal_title.offset_bottom = -48.0
+	guardian_reveal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	guardian_reveal_title.text = "CASTLE GUARDIAN"
+	guardian_reveal_title.add_theme_font_size_override("font_size", 20)
+	guardian_reveal_title.add_theme_color_override("font_color", Color(1.0, 0.52, 0.34, 1.0))
+	guardian_reveal_title.add_theme_color_override("font_outline_color", Color(0.08, 0.0, 0.01, 1.0))
+	guardian_reveal_title.add_theme_constant_override("outline_size", 5)
+	guardian_reveal_overlay.add_child(guardian_reveal_title)
+
+	guardian_reveal_body = Label.new()
+	guardian_reveal_body.name = "GuardianRevealBody"
+	guardian_reveal_body.anchor_left = 0.5
+	guardian_reveal_body.anchor_right = 0.5
+	guardian_reveal_body.anchor_top = 1.0
+	guardian_reveal_body.anchor_bottom = 1.0
+	guardian_reveal_body.offset_left = -330.0
+	guardian_reveal_body.offset_top = -49.0
+	guardian_reveal_body.offset_right = 330.0
+	guardian_reveal_body.offset_bottom = -25.0
+	guardian_reveal_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	guardian_reveal_body.text = "IT HAS YOUR TRAIL"
+	guardian_reveal_body.add_theme_font_size_override("font_size", 11)
+	guardian_reveal_body.add_theme_color_override("font_color", Color(0.90, 0.76, 0.66, 1.0))
+	guardian_reveal_overlay.add_child(guardian_reveal_body)
+
+
+func _create_hall_route_ui() -> void:
+	if ui_layer == null or hall_route_panel != null:
+		return
+	hall_route_panel = Panel.new()
+	hall_route_panel.name = "HallRouteObjective"
+	hall_route_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	hall_route_panel.offset_left = -346.0
+	hall_route_panel.offset_top = 22.0
+	hall_route_panel.offset_right = -26.0
+	hall_route_panel.offset_bottom = 112.0
+	hall_route_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hall_route_panel.z_index = 45
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.025, 0.018, 0.045, 0.94)
+	panel_style.border_color = Color(0.44, 0.70, 0.96, 0.88)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(7)
+	panel_style.shadow_color = Color(0.002, 0.003, 0.01, 0.76)
+	panel_style.shadow_size = 9
+	panel_style.shadow_offset = Vector2(0.0, 3.0)
+	hall_route_panel.add_theme_stylebox_override("panel", panel_style)
+	ui_layer.add_child(hall_route_panel)
+
+	hall_route_title = Label.new()
+	hall_route_title.position = Vector2(16.0, 9.0)
+	hall_route_title.size = Vector2(286.0, 19.0)
+	hall_route_title.add_theme_font_size_override("font_size", 11)
+	hall_route_title.add_theme_color_override("font_color", Color(0.58, 0.80, 1.0, 1.0))
+	hall_route_panel.add_child(hall_route_title)
+
+	hall_route_body = Label.new()
+	hall_route_body.position = Vector2(16.0, 28.0)
+	hall_route_body.size = Vector2(286.0, 34.0)
+	hall_route_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hall_route_body.add_theme_font_size_override("font_size", 14)
+	hall_route_body.add_theme_color_override("font_color", Color(0.94, 0.91, 0.76, 1.0))
+	hall_route_panel.add_child(hall_route_body)
+
+	hall_route_compass = Label.new()
+	hall_route_compass.position = Vector2(16.0, 65.0)
+	hall_route_compass.size = Vector2(286.0, 17.0)
+	hall_route_compass.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hall_route_compass.add_theme_font_size_override("font_size", 10)
+	hall_route_compass.add_theme_color_override("font_color", Color(0.54, 0.75, 1.0, 0.95))
+	hall_route_panel.add_child(hall_route_compass)
+
+
+func _create_power_restoration_ui() -> void:
+	if ui_layer == null or power_restoration_panel != null:
+		return
+	power_restoration_panel = Panel.new()
+	power_restoration_panel.name = "PowerRestorationStatus"
+	power_restoration_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	power_restoration_panel.offset_left = -300.0
+	power_restoration_panel.offset_top = 138.0
+	power_restoration_panel.offset_right = 300.0
+	power_restoration_panel.offset_bottom = 246.0
+	power_restoration_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	power_restoration_panel.z_index = 72
+	power_restoration_panel.visible = false
+	power_restoration_panel.add_theme_stylebox_override(
+		"panel",
+		ArchiveUi.panel_style(
+			Color(0.018, 0.035, 0.060, 0.97),
+			Color(0.46, 0.84, 1.0, 0.96),
+			2,
+			8,
+			12
+		)
+	)
+	ui_layer.add_child(power_restoration_panel)
+
+	power_restoration_title = Label.new()
+	power_restoration_title.name = "PowerRestorationTitle"
+	power_restoration_title.position = Vector2(20.0, 12.0)
+	power_restoration_title.size = Vector2(560.0, 27.0)
+	power_restoration_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	power_restoration_title.add_theme_font_size_override("font_size", 17)
+	power_restoration_title.add_theme_color_override("font_color", Color(0.68, 0.94, 1.0, 1.0))
+	power_restoration_title.add_theme_color_override("font_outline_color", Color(0.01, 0.03, 0.08, 1.0))
+	power_restoration_title.add_theme_constant_override("outline_size", 3)
+	power_restoration_panel.add_child(power_restoration_title)
+
+	power_restoration_body = Label.new()
+	power_restoration_body.name = "PowerRestorationBody"
+	power_restoration_body.position = Vector2(20.0, 42.0)
+	power_restoration_body.size = Vector2(560.0, 24.0)
+	power_restoration_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	power_restoration_body.add_theme_font_size_override("font_size", 12)
+	power_restoration_body.add_theme_color_override("font_color", Color(0.92, 0.90, 0.72, 1.0))
+	power_restoration_panel.add_child(power_restoration_body)
+
+	var scan_track := ColorRect.new()
+	scan_track.name = "RouteScanTrack"
+	scan_track.position = Vector2(42.0, 78.0)
+	scan_track.size = Vector2(516.0, 9.0)
+	scan_track.color = Color(0.08, 0.12, 0.20, 0.96)
+	scan_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	power_restoration_panel.add_child(scan_track)
+
+	power_restoration_scan_fill = ColorRect.new()
+	power_restoration_scan_fill.name = "RouteScanFill"
+	power_restoration_scan_fill.position = Vector2.ZERO
+	power_restoration_scan_fill.size = Vector2(0.0, 9.0)
+	power_restoration_scan_fill.color = Color(0.36, 0.86, 1.0, 1.0)
+	power_restoration_scan_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scan_track.add_child(power_restoration_scan_fill)
+
+
+func _refresh_hall_route_ui(animate: bool) -> void:
+	var copy: Dictionary = _hall_route_copy()
+	_refresh_hall_route_trail(copy)
+	if hall_route_panel == null:
+		return
+	hall_route_panel.visible = not copy.is_empty()
+	if not hall_route_panel.visible:
+		return
+	hall_route_title.text = str(copy["title"])
+	hall_route_body.text = str(copy["body"])
+	hall_route_ui_only = bool(copy.get("ui_only", false))
+	if hall_route_ui_only:
+		hall_route_target = player.global_position
+		hall_route_compass.text = "PRESS U · OPEN MAP"
+	else:
+		hall_route_target = copy["target"] as Vector2
+		_update_hall_route_compass()
+	if not animate:
+		hall_route_panel.modulate = Color.WHITE
+		hall_route_panel.scale = Vector2.ONE
+		return
+	if hall_route_tween != null and hall_route_tween.is_valid():
+		hall_route_tween.kill()
+	hall_route_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	hall_route_panel.scale = Vector2(0.97, 0.97)
+	hall_route_tween = create_tween()
+	hall_route_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	hall_route_tween.tween_property(hall_route_panel, "modulate:a", 1.0, 0.18)
+	hall_route_tween.parallel().tween_property(hall_route_panel, "scale", Vector2.ONE, 0.24)
+
+
+func _hall_route_copy() -> Dictionary:
+	if (
+		GameState.has_story_flag("power_map_objective_active")
+		and not GameState.has_story_flag("power_map_reviewed")
+	):
+		return {
+			"title": "ROUTE MEMORY ONLINE",
+			"body": "Open Map now to review every route recovered by the Circuit scan.",
+			"ui_only": true,
+		}
+	match hall_arrival_step:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
+			return {
+				"title": CaseLocale.text("hall.route_step_1_title"),
+				"body": CaseLocale.text("hall.route_step_1_body"),
+				"target": CHEMISTRY_ROOM_DOOR_FOCUS_POSITION,
+			}
+		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+			return {
+				"title": CaseLocale.text("hall.route_step_2_title"),
+				"body": CaseLocale.text("hall.route_step_2_body"),
+				"target": _get_hall_knowledge_position("ChemistryRoomKnowledge"),
+			}
+		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+			return {
+				"title": CaseLocale.text("hall.route_step_3_title"),
+				"body": CaseLocale.text("hall.route_step_3_body"),
+				"target": CHEMISTRY_ROOM_DOOR_FOCUS_POSITION,
+			}
+	return {}
+
+
+func _refresh_hall_route_trail(route_copy: Dictionary) -> void:
+	_clear_hall_route_trail()
+	if route_copy.is_empty() or player == null or bool(route_copy.get("ui_only", false)):
+		return
+	var target: Vector2 = route_copy.get("target", Vector2.ZERO) as Vector2
+	var path_points: Array[Vector2] = _get_hall_route_path(player.global_position, target)
+	if path_points.size() < 2:
+		push_warning("Could not build first-arrival floor route to: " + str(target))
+		return
+
+	hall_route_trail = Node2D.new()
+	hall_route_trail.name = "FirstArrivalFloorRoute"
+	# Fog is normally drawn at 100. These are intentionally visible through it:
+	# Dr. Lin's one-time signal is a diegetic beacon, not player knowledge.
+	hall_route_trail.z_index = 108
+	add_child(hall_route_trail)
+
+	var marker_positions: Array[Vector2] = _sample_hall_route_markers(path_points)
+	for index: int in range(marker_positions.size()):
+		var marker_position: Vector2 = marker_positions[index]
+		var direction: Vector2 = _hall_route_marker_direction(
+			path_points,
+			marker_position
+		)
+		var is_destination: bool = index == marker_positions.size() - 1
+		var marker: Node2D = _create_hall_route_floor_marker(
+			marker_position,
+			direction,
+			is_destination
+		)
+		hall_route_trail.add_child(marker)
+		hall_route_marker_nodes.append(marker)
+	for corner_index: int in range(1, path_points.size() - 1):
+		var incoming := _cardinal_route_direction(
+			path_points[corner_index] - path_points[corner_index - 1]
+		)
+		var outgoing := _cardinal_route_direction(
+			path_points[corner_index + 1] - path_points[corner_index]
+		)
+		if incoming == outgoing:
+			continue
+		var corner := _create_hall_route_corner_marker(
+			path_points[corner_index],
+			incoming,
+			outgoing
+		)
+		hall_route_trail.add_child(corner)
+		hall_route_marker_nodes.append(corner)
+	_animate_hall_route_trail()
+
+
+func _clear_hall_route_trail() -> void:
+	if hall_route_trail_tween != null and hall_route_trail_tween.is_valid():
+		hall_route_trail_tween.kill()
+	hall_route_trail_tween = null
+	hall_route_marker_nodes.clear()
+	if hall_route_trail != null and is_instance_valid(hall_route_trail):
+		hall_route_trail.queue_free()
+	hall_route_trail = null
+
+
+func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vector2]:
+	var start_cell: Vector2i = world_to_cell(from_position)
+	var target_cell: Vector2i = world_to_cell(target)
+	var best_path: Array = []
+	var best_score: float = INF
+	for radius: int in range(HALL_ROUTE_TARGET_SEARCH_RADIUS + 1):
+		for offset_y: int in range(-radius, radius + 1):
+			for offset_x: int in range(-radius, radius + 1):
+				if max(abs(offset_x), abs(offset_y)) != radius:
+					continue
+				var candidate: Vector2i = target_cell + Vector2i(offset_x, offset_y)
+				if not is_inside_map(candidate) or astar_grid.is_point_solid(candidate):
+					continue
+				var candidate_path: Array = find_path(start_cell, candidate)
+				if candidate_path.is_empty():
+					continue
+				var candidate_score: float = (
+					cell_to_world(candidate).distance_squared_to(target)
+					+ float(candidate_path.size()) * 0.01
+				)
+				if candidate_score < best_score:
+					best_score = candidate_score
+					best_path = candidate_path
+	if best_path.is_empty():
+		return []
+
+	var route_points: Array[Vector2] = [from_position]
+	var smoothed_cells := _smooth_hall_route_cells(best_path)
+	var first_forward_index := 1 if smoothed_cells.size() > 1 else 0
+	for cell_index: int in range(first_forward_index, smoothed_cells.size()):
+		route_points.append(cell_to_world(smoothed_cells[cell_index]))
+	if route_points.size() >= 2:
+		var first_grid_point := route_points[1]
+		if (
+			not is_equal_approx(from_position.x, first_grid_point.x)
+			and not is_equal_approx(from_position.y, first_grid_point.y)
+		):
+			route_points.insert(1, Vector2(first_grid_point.x, from_position.y))
+	return _simplify_hall_route_path(route_points)
+
+
+func _smooth_hall_route_cells(raw_path: Array) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for cell_variant: Variant in raw_path:
+		cells.append(cell_variant as Vector2i)
+	if cells.size() < 3:
+		return cells
+	var smoothed: Array[Vector2i] = [cells[0]]
+	var cursor := 0
+	while cursor < cells.size() - 1:
+		var chosen_index := cursor + 1
+		var chosen_link: Array[Vector2i] = [cells[chosen_index]]
+		for candidate_index: int in range(cells.size() - 1, cursor, -1):
+			var link := _orthogonal_route_link(cells[cursor], cells[candidate_index])
+			if link.is_empty():
+				continue
+			chosen_index = candidate_index
+			chosen_link = link
+			break
+		for linked_cell: Vector2i in chosen_link:
+			if smoothed[smoothed.size() - 1] != linked_cell:
+				smoothed.append(linked_cell)
+		cursor = chosen_index
+	return smoothed
+
+
+func _orthogonal_route_link(from_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2i]:
+	if (
+		(from_cell.x == to_cell.x or from_cell.y == to_cell.y)
+		and _axis_route_clear(from_cell, to_cell)
+	):
+		return [to_cell]
+	var horizontal_corner := Vector2i(to_cell.x, from_cell.y)
+	if (
+		_axis_route_clear(from_cell, horizontal_corner)
+		and _axis_route_clear(horizontal_corner, to_cell)
+	):
+		return [horizontal_corner, to_cell]
+	var vertical_corner := Vector2i(from_cell.x, to_cell.y)
+	if (
+		_axis_route_clear(from_cell, vertical_corner)
+		and _axis_route_clear(vertical_corner, to_cell)
+	):
+		return [vertical_corner, to_cell]
+	return []
+
+
+func _axis_route_clear(from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	if from_cell.x != to_cell.x and from_cell.y != to_cell.y:
+		return false
+	var step := Vector2i(
+		0 if from_cell.x == to_cell.x else (1 if to_cell.x > from_cell.x else -1),
+		0 if from_cell.y == to_cell.y else (1 if to_cell.y > from_cell.y else -1)
+	)
+	var cell := from_cell
+	while true:
+		if not is_inside_map(cell) or astar_grid.is_point_solid(cell):
+			return false
+		if cell == to_cell:
+			return true
+		cell += step
+	return false
+
+
+func _simplify_hall_route_path(path_points: Array[Vector2]) -> Array[Vector2]:
+	var simplified: Array[Vector2] = []
+	for point: Vector2 in path_points:
+		if not simplified.is_empty() and simplified[simplified.size() - 1].is_equal_approx(point):
+			continue
+		if simplified.size() < 2:
+			simplified.append(point)
+			continue
+		var previous_direction := _cardinal_route_direction(
+			simplified[simplified.size() - 1] - simplified[simplified.size() - 2]
+		)
+		var next_direction := _cardinal_route_direction(
+			point - simplified[simplified.size() - 1]
+		)
+		if previous_direction == next_direction:
+			simplified[simplified.size() - 1] = point
+		else:
+			simplified.append(point)
+	return simplified
+
+
+func _sample_hall_route_markers(path_points: Array[Vector2]) -> Array[Vector2]:
+	var sampled: Array[Vector2] = []
+	if path_points.size() < 2:
+		return sampled
+	var travelled: float = 0.0
+	var next_marker_at: float = HALL_ROUTE_FIRST_MARKER_OFFSET
+	for index: int in range(path_points.size() - 1):
+		var from_point: Vector2 = path_points[index]
+		var to_point: Vector2 = path_points[index + 1]
+		var segment: Vector2 = to_point - from_point
+		var segment_length: float = segment.length()
+		if segment_length <= 0.01:
+			continue
+		while travelled + segment_length >= next_marker_at:
+			var fraction: float = (next_marker_at - travelled) / segment_length
+			sampled.append(from_point.lerp(to_point, fraction))
+			next_marker_at += HALL_ROUTE_MARKER_SPACING
+		travelled += segment_length
+	var destination: Vector2 = path_points[path_points.size() - 1]
+	if sampled.is_empty() or sampled[sampled.size() - 1].distance_to(destination) > 20.0:
+		sampled.append(destination)
+	return sampled
+
+
+func _hall_route_marker_direction(
+	path_points: Array[Vector2],
+	marker_position: Vector2
+) -> Vector2:
+	var best_direction := Vector2.UP
+	var best_distance := INF
+	for index: int in range(path_points.size() - 1):
+		var segment_start := path_points[index]
+		var segment_end := path_points[index + 1]
+		var closest := Geometry2D.get_closest_point_to_segment(
+			marker_position,
+			segment_start,
+			segment_end
+		)
+		var distance := marker_position.distance_squared_to(closest)
+		if distance < best_distance:
+			best_distance = distance
+			best_direction = _cardinal_route_direction(segment_end - segment_start)
+	return best_direction
+
+
+func _cardinal_route_direction(direction: Vector2) -> Vector2:
+	if direction.length_squared() <= 0.01:
+		return Vector2.UP
+	if absf(direction.x) >= absf(direction.y):
+		return Vector2.RIGHT if direction.x > 0.0 else Vector2.LEFT
+	return Vector2.DOWN if direction.y > 0.0 else Vector2.UP
+
+
+func _create_hall_route_floor_marker(
+	position_on_floor: Vector2,
+	direction: Vector2,
+	is_destination: bool
+) -> Node2D:
+	var marker := Node2D.new()
+	marker.name = "RouteBeacon" if is_destination else "RouteGlyph"
+	marker.position = position_on_floor
+	var cardinal_direction := _cardinal_route_direction(direction)
+	marker.rotation = cardinal_direction.angle()
+	marker.set_meta("route_kind", "destination" if is_destination else "straight")
+	marker.set_meta("route_direction", cardinal_direction)
+	marker.modulate = Color(0.62, 0.82, 1.0, 0.58)
+
+	var glow := Polygon2D.new()
+	glow.polygon = PackedVector2Array([
+		Vector2(-23.0, -16.0), Vector2(10.0, -16.0),
+		Vector2(27.0, 0.0), Vector2(10.0, 16.0),
+		Vector2(-23.0, 16.0), Vector2(-7.0, 0.0),
+	])
+	glow.color = Color(0.10, 0.48, 0.98, 0.22)
+	marker.add_child(glow)
+
+	var arrow := Polygon2D.new()
+	arrow.polygon = PackedVector2Array([
+		Vector2(-16.0, -9.0), Vector2(2.0, -9.0),
+		Vector2(17.0, 0.0), Vector2(2.0, 9.0),
+		Vector2(-16.0, 9.0), Vector2(-5.0, 0.0),
+	])
+	arrow.color = Color(0.25, 0.72, 1.0, 0.88)
+	marker.add_child(arrow)
+
+	var core := Polygon2D.new()
+	core.polygon = PackedVector2Array([
+		Vector2(-10.0, -4.5), Vector2(3.0, -4.5),
+		Vector2(10.0, 0.0), Vector2(3.0, 4.5),
+		Vector2(-10.0, 4.5), Vector2(-3.0, 0.0),
+	])
+	core.color = Color(0.85, 0.94, 1.0, 0.95)
+	marker.add_child(core)
+
+	if is_destination:
+		var ring := Line2D.new()
+		ring.width = 2.5
+		ring.default_color = Color(0.50, 0.82, 1.0, 0.96)
+		ring.points = _make_route_beacon_ring(25.0)
+		marker.add_child(ring)
+		var center := Polygon2D.new()
+		center.polygon = _make_route_beacon_ring(14.0)
+		center.color = Color(0.16, 0.42, 0.82, 0.34)
+		marker.add_child(center)
+	return marker
+
+
+func _create_hall_route_corner_marker(
+	position_on_floor: Vector2,
+	incoming: Vector2,
+	outgoing: Vector2
+) -> Node2D:
+	var marker := Node2D.new()
+	marker.name = "RouteCorner90"
+	marker.position = position_on_floor
+	marker.modulate = Color(0.62, 0.82, 1.0, 0.66)
+	marker.set_meta("route_kind", "corner_90")
+	marker.set_meta("incoming_direction", incoming)
+	marker.set_meta("outgoing_direction", outgoing)
+	var points := PackedVector2Array([
+		-incoming * 22.0,
+		Vector2.ZERO,
+		outgoing * 22.0,
+	])
+	var glow := Line2D.new()
+	glow.width = 11.0
+	glow.default_color = Color(0.08, 0.38, 0.98, 0.28)
+	glow.joint_mode = Line2D.LINE_JOINT_SHARP
+	glow.points = points
+	marker.add_child(glow)
+	var corner_line := Line2D.new()
+	corner_line.width = 4.0
+	corner_line.default_color = Color(0.72, 0.91, 1.0, 0.96)
+	corner_line.joint_mode = Line2D.LINE_JOINT_SHARP
+	corner_line.points = points
+	marker.add_child(corner_line)
+	var corner_core := Polygon2D.new()
+	corner_core.polygon = PackedVector2Array([
+		Vector2(-5.0, -5.0),
+		Vector2(5.0, -5.0),
+		Vector2(5.0, 5.0),
+		Vector2(-5.0, 5.0),
+	])
+	corner_core.color = Color(0.90, 0.97, 1.0, 0.98)
+	marker.add_child(corner_core)
+	return marker
+
+
+func _make_route_beacon_ring(radius: float) -> PackedVector2Array:
+	var ring := PackedVector2Array()
+	for step: int in range(13):
+		var angle: float = TAU * float(step) / 12.0
+		ring.append(Vector2(cos(angle), sin(angle)) * radius)
+	return ring
+
+
+func _animate_hall_route_trail() -> void:
+	if hall_route_marker_nodes.is_empty():
+		return
+	hall_route_trail_tween = create_tween().set_loops()
+	for marker: Node2D in hall_route_marker_nodes:
+		if not is_instance_valid(marker):
+			continue
+		hall_route_trail_tween.tween_property(
+			marker,
+			"modulate",
+			Color(0.92, 1.0, 1.0, 1.0),
+			0.11
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		hall_route_trail_tween.parallel().tween_property(
+			marker,
+			"scale",
+			Vector2(1.20, 1.20),
+			0.11
+		).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		hall_route_trail_tween.tween_property(
+			marker,
+			"modulate",
+			Color(0.62, 0.82, 1.0, 0.58),
+			0.25
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		hall_route_trail_tween.parallel().tween_property(
+			marker,
+			"scale",
+			Vector2.ONE,
+			0.25
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+func _update_hall_route_compass() -> void:
+	if hall_route_panel == null or not hall_route_panel.visible or hall_route_compass == null:
+		return
+	if hall_route_ui_only:
+		hall_route_compass.text = "PRESS U · OPEN MAP"
+		return
+	var delta: Vector2 = hall_route_target - player.global_position
+	if delta.length_squared() < 1.0:
+		hall_route_compass.text = ""
+		return
+	hall_route_compass.text = CaseLocale.text(
+		"hall.route_compass",
+		{"direction": _hall_route_direction(delta)}
+	)
+
+
+func _hall_route_direction(delta: Vector2) -> String:
+	var horizontal: String = ""
+	var vertical: String = ""
+	if absf(delta.x) > 40.0:
+		horizontal = CaseLocale.text("hall.direction_east" if delta.x > 0.0 else "hall.direction_west")
+	if absf(delta.y) > 40.0:
+		vertical = CaseLocale.text("hall.direction_south" if delta.y > 0.0 else "hall.direction_north")
+	if horizontal.is_empty():
+		return vertical
+	if vertical.is_empty():
+		return horizontal
+	var direction_key: String = (
+		"hall.direction_north_east" if delta.y < 0.0 and delta.x > 0.0
+		else "hall.direction_north_west" if delta.y < 0.0
+		else "hall.direction_south_east" if delta.x > 0.0
+		else "hall.direction_south_west"
+	)
+	return CaseLocale.text(direction_key)
+
+
+func _show_hall_route_arrival_toast() -> void:
+	if hall_route_panel == null:
+		return
+	# The panel already carries the task; this short blue flare gives the door
+	# opening a satisfying arrival beat without shaking the player or camera.
+	hall_route_panel.modulate = Color(1.10, 1.16, 1.26, 1.0)
+	var flare: Tween = create_tween()
+	flare.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	flare.tween_property(hall_route_panel, "modulate", Color.WHITE, 0.32)
+
+
+func _on_case_locale_changed(_language: String) -> void:
+	_refresh_hall_route_ui(false)
 func show_castle_hall_arrival():
 	start_dialogue_pause()
 	clear_buttons()
-
-	set_dialogue_speaker("Mrs. Lin")
-	message_panel.visible = true
-
-	set_dialogue_text(
-		"Mrs. Lin",
-		"The knowledge lock releases with a heavy click.\n\n"
-		+ "You step through the doorway, and the door slams shut behind you.\n\n"
-		+ "This is the first-floor Castle Hall. The room where you woke lies behind the sealed southern door.\n\n"
-		+ "Stay close. This hall connects the major investigation areas of Shadow Castle."
-	)
-
+	set_dialogue_text("Mrs. Lin", CaseLocale.text("hall.arrival_body"))
 	show_continue_button(
-		"Look around",
-		show_castle_hall_arrival_page_two
+		CaseLocale.text("hall.arrival_continue"),
+		start_investigation_from_intro
 	)
-func show_castle_hall_arrival_page_two():
-	clear_buttons()
-
-	set_dialogue_text(
-		"Mrs. Lin",
-		"I can see several possible investigation areas from here.\n\n"
-		+ "The laboratory wing lies to the northwest. The greenhouse is northeast, and the castle's electrical machinery is somewhere to the west.\n\n"
-		+ "Do not rush to accuse anyone. Search for scientific evidence, read nearby notes, and use the knowledge locks carefully.\n\n"
-		+ "Something else is moving inside the castle. We may not be alone."
-	)
-
-	show_continue_button(
-		"Begin the investigation",
-		start_castle_hall_exploration
-	)
-func start_castle_hall_exploration():
-	GameState.hall_arrival_seen = true
-	message_panel.visible = false
-	clear_buttons()
-
-	dialogue_active = false
-	hall_arrival_finished = true
-
-	player.set_physics_process(true)
-
-	update_objective_text()
-
-	# Give the player a moment to look around.
-	if LAYOUT_ALIGNMENT_MODE:
-		return
-
-	await get_tree().create_timer(2.0).timeout
-
-	if game_over or dialogue_active:
-		return
-
-	if enemy != null:
-		enemy.visible = true
-		enemy_chase_started = true
-		enemy.set_physics_process(true)
 
 func create_floor_one_layout_markers():
 	# Actual clues and NPCs already create their own visual
@@ -4117,7 +5968,7 @@ func enter_greenhouse_room() -> void:
 	player.set_physics_process(false)
 	if enemy != null:
 		enemy.set_physics_process(false)
-	GameState.enemy_chase_active = false
+	_record_guardian_before_room_transition()
 
 	GameState.prepare_room_transition(
 		"greenhouse_room",
@@ -4162,7 +6013,7 @@ func _enter_new_room(
 	player.set_physics_process(false)
 	if enemy != null:
 		enemy.set_physics_process(false)
-	GameState.enemy_chase_active = false
+	_record_guardian_before_room_transition()
 
 	GameState.prepare_room_transition(
 		room_id,
@@ -4268,7 +6119,7 @@ func enter_chemistry_room() -> void:
 	if enemy != null:
 		enemy.set_physics_process(false)
 
-	GameState.enemy_chase_active = false
+	_record_guardian_before_room_transition()
 
 	GameState.prepare_room_transition(
 		"chemistry_room",
@@ -4330,7 +6181,7 @@ func enter_wake_room() -> void:
 	if enemy != null:
 		enemy.set_physics_process(false)
 
-	GameState.enemy_chase_active = false
+	_record_guardian_before_room_transition()
 
 	GameState.prepare_room_transition(
 		"wake_room",
@@ -4352,8 +6203,16 @@ func enter_wake_room() -> void:
 			"Failed to enter Wake Room. Error: "
 			+ str(change_error)
 		)
+
+
+func _record_guardian_before_room_transition() -> void:
+	if enemy != null and is_instance_valid(enemy):
+		GameState.update_guardian_hall_position(enemy.global_position)
 func get_floor_one_spawn_position() -> Vector2:
 	match GameState.return_spawn_id:
+		"wake_room_first_arrival":
+			return HALL_FIRST_ARRIVAL_POSITION
+
 		"chemistry_door":
 			return (
 				CHEMISTRY_ROOM_RETURN_POSITION
@@ -4381,8 +6240,21 @@ func get_floor_one_spawn_position() -> Vector2:
 			return HALL_ENTRANCE_POSITION
 
 
+func get_safe_floor_one_spawn_position() -> Vector2:
+	var preferred_position: Vector2 = get_floor_one_spawn_position()
+	return spatial.resolve_safe_spawn(
+		player,
+		preferred_position,
+		Rect2(
+			Vector2.ZERO,
+			Vector2(MAP_PIXEL_WIDTH, MAP_PIXEL_HEIGHT)
+		),
+		3
+	)
+
+
 func resume_castle_hall_after_return() -> void:
-	hall_arrival_finished = true
+	hall_arrival_finished = GameState.hall_arrival_seen
 	dialogue_active = false
 	scene_transitioning = false
 
@@ -4396,9 +6268,15 @@ func resume_castle_hall_after_return() -> void:
 	if interact_label != null:
 		interact_label.visible = false
 
-	player.set_physics_process(true)
+	player.set_physics_process(false)
+	_refresh_hall_route_ui(false)
+	_sync_hall_arrival_huds()
 
 	update_objective_text()
+	if _should_play_power_restoration_sequence():
+		call_deferred("_begin_power_restoration_return_sequence")
+	else:
+		call_deferred("_begin_guardian_entry_sequence", false)
 
 func toggle_developer_mode() -> void:
 	GameState.toggle_developer_mode()

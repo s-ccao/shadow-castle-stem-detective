@@ -2,10 +2,6 @@
 
 [ext_resource type="Script" uid="uid://h7dexx6uut8i" path="res://scripts/main_menu.gd" id="1_l6cm7"]
 [ext_resource type="PackedScene" path="res://scenes/ui/start_ui.tscn" id="2_start"]
-[ext_resource type="Texture2D" uid="uid://c4j70uh678eak" path="res://assets/ui/panels/button_states/button_normal.png" id="3_normal"]
-[ext_resource type="Texture2D" uid="uid://8bp4e2rv7xkb" path="res://assets/ui/panels/button_states/button_hover.png" id="4_hover"]
-[ext_resource type="Texture2D" uid="uid://yd16liks3wxg" path="res://assets/ui/panels/button_states/button_pressed.png" id="5_pressed"]
-[ext_resource type="Texture2D" uid="uid://cq5jkhbwnt3ua" path="res://assets/ui/panels/button_states/button_disabled.png" id="6_disabled"]
 
 [node name="MainMenu" type="Control" unique_id=1384218071]
 layout_mode = 3
@@ -22,7 +18,3 @@ offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-button_normal_texture = ExtResource("3_normal")
-button_hover_texture = ExtResource("4_hover")
-button_pressed_texture = ExtResource("5_pressed")
-button_disabled_texture = ExtResource("6_disabled")

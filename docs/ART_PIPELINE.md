@@ -44,6 +44,20 @@ The final pass created the gameplay sheets used by the game. Every sheet is 1024
 3. **Collision and interaction remain independent.** NPC art is a visual child of the gameplay interaction/collision point. This lets the feet align with the ground while keeping player interaction zones stable.
 4. **Guardian uses the same specification.** The Castle Guardian's `AnimatedSprite2D` uses the final sheet while its existing A* chase script selects animation direction from velocity.
 
+## Pass 4 — Raster alchemy and evidence icons
+
+The earlier SVG item models were useful layout prototypes but not the final illustration treatment. A fourth pass generated a cohesive 13-piece pixel-art item family for the Bag, workbench, and Chemistry evidence sequence:
+
+- Two text-free formula sheets: Swiftness and Vision.
+- Two herbs: Blue Blossom and Moonleaf.
+- Three reagents: Distilled Water, Iron Salt, and Prism Dust.
+- Three potions: Swiftness, Vision, and Green Potion.
+- Three trace samples: Cleaning Powder, Indicator Vial, and Broken Glass.
+
+**Final files:** `assets/ui/item_models/pixel_art_v1/`
+
+Each PNG has alpha support and keeps functional words out of the art so localization, quantities, and puzzle feedback remain real Godot UI. `GameState.ITEM_VISUAL_INFO` is the shared source of texture paths; Bag, workbench, and Chemistry reference panels query that catalog instead of maintaining copied paths. The earlier SVGs remain in the repository as documented prototype material rather than shipping art.
+
 ## AI-art transparency
 
 The image source material was generated through prompt-based image generation with visual references to the existing player sprite. It was then art-directed through the three passes above, chroma-keyed to transparent backgrounds, standardized into 1024 × 1024 sheets, checked for alpha support, and integrated into Godot scenes/scripts. The final artistic decision, technical integration, and playability checks were made in the project rather than treating the generated image as a finished asset.

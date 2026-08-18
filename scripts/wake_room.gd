@@ -120,6 +120,24 @@ var click_marker: Node2D
 var click_marker_tween: Tween
 var first_lock_rule_learned := false
 var exit_door_unlocked := false
+var scene_transitioning := false
+
+## Kept for compatibility with older saves that recorded the former linear
+## opening. The Wake Room now uses the same rule as every other room:
+## discover the room's key, study the nearby answer, then solve the door.
+enum FirstLeadStep {
+	LETTER,
+	CANDLE_NOTE,
+	BRASS_MARK,
+	CASTLE_DOOR,
+	COMPLETE,
+}
+
+var first_lead_step: FirstLeadStep = FirstLeadStep.LETTER
+var first_lead_objective_panel: Panel
+var first_lead_objective_title: Label
+var first_lead_objective_body: Label
+var first_lead_objective_tween: Tween
 
 var clue_node: ColorRect
 var door_marker_node: ColorRect
@@ -136,12 +154,21 @@ var debug_path_line: Line2D
 var walkable_mask_image: Image
 var _user_collision_polys: Array = []
 var debug_walkable_overlay: Sprite2D
+var desk_briefing_read := false
+var spatial := RoomSpatialRuntime.new()
+var door_interaction_rect := Rect2()
 func _ready():
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
 		GameState.unlock_all_hubs()
 	GameState.current_room_id = "wake_room"
 	GameState.set_room_visited("wake_room")
+	if player.has_method("set_room_visual_scale"):
+		player.call("set_room_visual_scale", "wake_room")
+	# Restore this before resolving the first-lead stage so a returned player is
+	# never shown an already-completed opening again.
+	exit_door_unlocked = GameState.wake_room_door_unlocked
+	CaseLocale.locale_changed.connect(_on_case_locale_changed)
 
 	# 你原来的代码继续……
 
@@ -169,7 +196,6 @@ func _ready():
 
 	create_click_marker()
 	create_door()
-	create_first_room_clue()
 	create_prop_interactions()
 	create_interaction_focus()
 	create_ui()
@@ -177,21 +203,25 @@ func _ready():
 	create_scroll_ui()
 	create_book_ui()
 	create_clue_journal()
+	_restore_first_lead_step()
 
-	# 解锁状态持久化：从大厅返回时门保持解锁，不用再答题。
-	exit_door_unlocked = GameState.wake_room_door_unlocked
-
-	# 从大厅返回时出现在门内侧（door_position 附近）；
-	# 首次进入才播放开场引导对话。
+	# 从大厅返回时出现在门内侧（door_position 附近）。首次进入不再
+	# 自动播放一段例外剧情：桌上的卷轴就是本房间的第一条可交互信息。
+	var preferred_spawn := Vector2(500, 550)
 	if GameState.return_spawn_id == "wake_room_door":
-		player.position = door_position + Vector2(-46, 0)
+		preferred_spawn = door_position + Vector2(-46, 0)
 		if exit_door_unlocked and door_marker_node != null:
 			door_marker_node.color = Color(0.25, 0.95, 0.45, 0.85)
 	else:
-		player.position = Vector2(500, 550)
-		show_wake_dialogue()
+		_refresh_first_lead_objective(false)
+	player.position = spatial.resolve_safe_spawn(
+		player,
+		preferred_spawn,
+		Rect2(Vector2.ZERO, Vector2(ROOM_WIDTH, ROOM_HEIGHT))
+	)
 
 func _process(delta):
+	_update_prop_occlusion_layers()
 	if temporary_prompt_time_left > 0.0:
 		temporary_prompt_time_left = max(
 			0.0,
@@ -463,6 +493,10 @@ func create_door():
 		if door_poly != null and door_poly.polygon.size() >= 2:
 			var world_poly := _get_world_polygon(door_poly)
 			door_position = _get_reachable_point(world_poly)
+			door_interaction_rect = _polygon_bounds(world_poly)
+		var visual_rect := spatial.get_visual_rect(door_node)
+		if visual_rect.size.x > 0.0 and visual_rect.size.y > 0.0:
+			door_interaction_rect = visual_rect
 
 	if SHOW_DEBUG_OBJECTS:
 		var door = ColorRect.new()
@@ -506,7 +540,8 @@ func create_door():
 
 func create_prop_interactions():
 	# 房间里的可交互物品（用户提供的道具插图）：
-	# 床 / 书桌 / 书架。点击或靠近按 E 打开检查面板。
+	# 床 / 书桌 / 书架。三者从开局都可调查：这是本房间的
+	# “信息 → 钥匙 → 解题知识 → 门锁”新手教程，而不是特殊的强制路线。
 	props["bed"] = {
 		"position": bed_position,
 		"prompt": "the bed",
@@ -555,8 +590,20 @@ func create_prop_interactions():
 				if poly != null and poly.polygon.size() >= 2:
 					var world_poly := _get_world_polygon(poly)
 					p["position"] = _get_reachable_point(world_poly)
+					p["interaction_rect"] = _polygon_bounds(world_poly)
 				else:
 					p["position"] = area.position
+				var visual_rect := spatial.get_visual_rect(area)
+				if visual_rect.size.x > 0.0 and visual_rect.size.y > 0.0:
+					# The visible art owns highlight/contact geometry. Reachability is
+					# separate: resolve a walkable point along that exact rectangle's
+					# 14px contact band instead of reusing the collision edge midpoint.
+					p["interaction_rect"] = visual_rect
+					p["focus_position"] = visual_rect.get_center()
+					p["position"] = _get_visual_interaction_approach(
+						visual_rect,
+						p["position"] as Vector2
+					)
 
 		if area == null:
 			area = create_mouse_hotspot(
@@ -564,6 +611,7 @@ func create_prop_interactions():
 				p["position"],
 				Vector2(96, 96)
 			)
+		props[id] = p
 		area.mouse_entered.connect(_on_prop_mouse_entered.bind(id))
 		area.mouse_exited.connect(_on_prop_mouse_exited.bind(id))
 		area.input_event.connect(_on_prop_input_event.bind(id))
@@ -579,7 +627,23 @@ func create_prop_interactions():
 			add_child(marker)
 
 
+func _update_prop_occlusion_layers() -> void:
+	var props_root := get_node_or_null("Props")
+	if props_root == null:
+		return
+	for child: Node in props_root.get_children():
+		if not child is Node2D:
+			continue
+		var prop := child as Node2D
+		if spatial.find_visual_node(prop) == null:
+			continue
+		prop.z_index = 0
+		spatial.update_occlusion(player, prop, 20, -20)
+
+
 func _on_prop_mouse_entered(id: String):
+	if not _is_prop_available_in_first_lead(id):
+		return
 	mouse_over_prop[id] = true
 	update_world_cursor()
 
@@ -595,6 +659,8 @@ func _on_prop_input_event(
 	_shape_index: int,
 	id: String
 ):
+	if not _is_prop_available_in_first_lead(id):
+		return
 	if dialogue_active or puzzle_open or knowledge_panel_open:
 		# 面板开着时点物品：不自动关面板，等玩家主动取消（X / E / ESC）。
 		return
@@ -605,7 +671,7 @@ func _on_prop_input_event(
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			get_viewport().set_input_as_handled()
 			var p: Dictionary = props[id]
-			if player.global_position.distance_to(p["position"]) <= PROP_INTERACT_RADIUS:
+			if _is_near_interaction("prop:" + id):
 				show_inspect(id)
 			else:
 				# 走位前先确认可达，避免寻路失败导致交互卡死。
@@ -616,7 +682,7 @@ func _on_prop_input_event(
 					temporary_prompt_text = "Can't reach that spot."
 					temporary_prompt_time_left = 2.0
 					return
-				pending_mouse_interaction = id
+				pending_mouse_interaction = "prop:" + id
 
 
 func create_inspect_ui() -> void:
@@ -690,6 +756,8 @@ func create_inspect_ui() -> void:
 func show_inspect(id: String):
 	if not props.has(id):
 		return
+	if not _is_prop_available_in_first_lead(id):
+		return
 	var p: Dictionary = props[id]
 
 	# 床 → 第一把实体钥匙，钥匙拾取后 Key Hub 自动解锁。
@@ -754,7 +822,7 @@ func show_chemistry_key_inspect() -> void:
 	else:
 		inspect_label.text = (
 			"Behind the books, Mrs. Lin has left a heavy laboratory key.\n\n"
-			+ "\"I am leaving the Chemistry Room key here. After you leave this room, follow the purple marks I left behind. Do not cross the middle of the hall — it is not safe.\n\n— Mrs. Lin\""
+			+ "\"This is the key for the Chemistry Room. The door beyond this chamber still asks a question; the answer will be hidden near that lock.\n\n— Dr. Lin\""
 		)
 		inspect_confirm_button.visible = true
 		inspect_confirm_button.text = "Take the Chemistry Room Key"
@@ -769,9 +837,9 @@ func show_door_inspect():
 	var texture: Texture2D = load("res://assets/sprites/wake_room/door_magical.png")
 	if texture != null:
 		inspect_texture.texture = texture
-	inspect_label.text = "A massive armored door bars the way into the castle hall.\n\nPurple crystals pulse along its frame, and a large golden lock wheel glows at its center.\n\nMrs. Lin:\nLord Ashford sealed every passage with a knowledge lock. The question will be written on the lock — the answer is always hidden somewhere in this room."
+	inspect_label.text = "A massive armored door bars the way into the castle hall.\n\nYour brass key has awakened its purple lock wheel. A question is now written in the center: \"What does a flame need from the air to keep burning?\"\n\nThe answer is somewhere in this room. Review the bookshelf before you answer."
 	inspect_confirm_button.visible = true
-	inspect_confirm_button.text = "Approach the knowledge lock"
+	inspect_confirm_button.text = "Read the door question"
 	_show_dialogue(inspect_panel)
 
 
@@ -788,6 +856,8 @@ func _on_inspect_confirm_pressed():
 		GameState.add_key(WAKE_ROOM_KEY_ID)
 		inspect_confirm_button.visible = false
 		current_inspect_confirm = ""
+		_refresh_first_lead_objective(true)
+		_sync_first_lead_hud_visibility()
 		return
 
 	if current_inspect_confirm == "chemistry_room_key":
@@ -797,7 +867,9 @@ func _on_inspect_confirm_pressed():
 		return
 
 	if current_inspect_confirm == "door":
-		if not GameState.has_key(WAKE_ROOM_KEY_ID):
+		if not desk_briefing_read:
+			show_desk_first_hint()
+		elif not GameState.has_key(WAKE_ROOM_KEY_ID):
 			show_no_key_hint()
 		elif first_lock_rule_learned:
 			show_first_door_question()
@@ -856,10 +928,10 @@ func create_scroll_ui():
 	scroll_close_button.pressed.connect(_on_scroll_close_pressed)
 	scroll_panel.add_child(scroll_close_button)
 
-	# 书桌交互结束后，Continue 与 X 都会进入路线 MapHub。
+	# 桌上卷轴只负责本房间的起步规则；地图会在有实际用途时再出现。
 	scroll_continue_button = Button.new()
 	scroll_continue_button.name = "ScrollContinueButton"
-	scroll_continue_button.text = "Continue to the route map"
+	scroll_continue_button.text = "Close note"
 	scroll_continue_button.position = Vector2(144.0, 672.0)
 	scroll_continue_button.size = Vector2(212.0, 42.0)
 	scroll_continue_button.add_theme_font_size_override("font_size", 14)
@@ -887,32 +959,39 @@ func create_scroll_ui():
 
 
 func show_scroll_clue() -> void:
-	# 书桌卷轴：居中大图 + 内容 + 线索系统激活。
+	# 书桌卷轴：本房间的初始信息，同时教会玩家所有房间共享的门锁规则。
 	start_dialogue_pause()
 
-	if not first_lock_rule_learned:
-		first_lock_rule_learned = true
+	if not desk_briefing_read:
+		desk_briefing_read = true
+		GameState.set_story_flag("wake_room_desk_read")
 		unlock_notes_tool()
+		_grant_dr_lin_field_kit()
 		update_knowledge_panel_text()
 		if clue_journal != null:
 			clue_journal.add_clue("scroll_clue")
 
-	scroll_label.text = "To whoever finds this —\n\nThe master of this castle loved knowledge. His doors open neither for keys alone, nor for answers alone.\n\nFirst find the physical key that belongs to a door. Insert it, and only then will the knowledge lock awaken and pose its question.\n\nThe answer is always hidden nearby. Do not guess — read, observe, understand.\n\nIf you are reading this, I may already be gone.\n\n— Mrs. Lin"
+	scroll_label.text = "To whoever finds this —\n\nAshford sealed every room twice. First find the physical key belonging to that room. Then the knowledge lock will reveal its question.\n\nThe answer is always hidden nearby. Do not guess — read, observe, understand.\n\nFor this chamber, begin with the bed, then consult the bookshelf before facing the door.\n\n— Dr. Lin"
 	_show_dialogue(scroll_panel)
+
+
+func _grant_dr_lin_field_kit() -> void:
+	# The desk is the player's first real archive handoff: the Note Hub explains
+	# the lock system, while Dr. Lin's incomplete hall sketch unlocks Map + Bag.
+	# The existing hall-map fog preserves discovery instead of revealing rooms.
+	GameState.grant_wake_room_toolkit()
 
 
 func _on_scroll_close_pressed():
 	scroll_panel.visible = false
 	end_dialogue_pause()
-	if MapHud != null:
-		MapHud.unlock_and_open()
+	_refresh_first_lead_objective(true)
 
 
 func _on_scroll_continue_pressed() -> void:
 	scroll_panel.visible = false
 	end_dialogue_pause()
-	if MapHud != null:
-		MapHud.unlock_and_open()
+	_refresh_first_lead_objective(true)
 
 
 func create_book_ui():
@@ -974,10 +1053,10 @@ func create_book_ui():
 	book_close_button.pressed.connect(_on_book_close_pressed)
 	book_panel.add_child(book_close_button)
 
-	# 书架教学读完后：Continue 进入 Chemistry Room Key 领取。
+	# 书架的古书提供本房间大门问题的答案，并藏着下一扇门的钥匙。
 	book_continue_button = Button.new()
 	book_continue_button.name = "BookContinueButton"
-	book_continue_button.text = "Continue"
+	book_continue_button.text = "Take the Chemistry Room Key"
 	book_continue_button.position = Vector2(620, 536)
 	book_continue_button.size = Vector2(180, 42)
 	book_continue_button.visible = false
@@ -1023,9 +1102,11 @@ func show_book_clue() -> void:
 
 	if not book_rule_learned:
 		book_rule_learned = true
-		# 书桌/书架任一交互后即可触发大门知识锁问题
+		GameState.set_story_flag("wake_room_bookshelf_read")
+		# 只有书架给出门锁的答案；书桌只解释所有房间通用的规则。
 		first_lock_rule_learned = true
-		# 保险：确保笔记工具已解锁（书桌交互正常会先解锁；幂等）
+		GameState.learned_fire_oxygen_rule = true
+		# 允许玩家先看书架，也不会丢失笔记功能。
 		unlock_notes_tool()
 		if NoteHud != null:
 			NoteHud.add_clue("book_clue", {
@@ -1036,14 +1117,10 @@ func show_book_clue() -> void:
 			})
 
 	book_label_left.text = "The Science of Flame\n\nEvery fire needs air to burn. But not all of the air — only one part of it: oxygen.\n\nWithout oxygen, no flame can keep burning."
-	if GameState.has_key(CHEMISTRY_ROOM_KEY_ID):
-		# 化学钥匙已领取：书页只保留教学，不再重复弹出钥匙流程。
-		book_label_right.text = "The Knowledge Lock asks:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is oxygen.\n\n— Ashford Library, Shelf 3\n\n(Mrs. Lin's key behind the books has already been taken.)"
-		book_continue_button.visible = false
-	else:
-		book_label_right.text = "The Knowledge Lock asks:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is oxygen.\n\n— Ashford Library, Shelf 3\n\nBehind these books, Mrs. Lin left something for you."
-		book_continue_button.visible = true
+	book_label_right.text = "The Knowledge Lock asks:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is oxygen.\n\n— Ashford Library, Shelf 3\n\nBehind these books, Dr. Lin left the Chemistry Room key."
+	book_continue_button.visible = true
 	_show_dialogue(book_panel)
+	_refresh_first_lead_objective(true)
 
 
 func _on_book_continue_pressed() -> void:
@@ -1051,6 +1128,7 @@ func _on_book_continue_pressed() -> void:
 	book_continue_button.visible = false
 	end_dialogue_pause()
 	show_chemistry_key_inspect()
+	_refresh_first_lead_objective(true)
 
 
 func _on_book_close_pressed():
@@ -1108,7 +1186,7 @@ func on_candle_note_input_event(
 	event: InputEvent,
 	_shape_index: int
 ):
-	if first_lock_rule_learned:
+	if first_lead_step != FirstLeadStep.CANDLE_NOTE:
 		return
 
 	if dialogue_active or puzzle_open or knowledge_panel_open:
@@ -1133,7 +1211,7 @@ func on_candle_note_input_event(
 					clue_approach_position
 	)
 func on_candle_note_mouse_entered():
-	if first_lock_rule_learned:
+	if first_lead_step != FirstLeadStep.CANDLE_NOTE:
 		return
 
 	mouse_over_clue = true
@@ -1154,6 +1232,25 @@ func create_interaction_focus() -> void:
 
 func update_interaction_focus() -> void:
 	if interaction_focus == null:
+		return
+	if _is_first_lead_locked():
+		match first_lead_step:
+			FirstLeadStep.CANDLE_NOTE:
+				interaction_focus.set_focus(
+					clue_position,
+					"Candle note",
+					true,
+					Vector2(142, 96)
+				)
+			FirstLeadStep.BRASS_MARK, FirstLeadStep.CASTLE_DOOR:
+				interaction_focus.set_focus(
+					door_position,
+					"Brass-marked door",
+					true,
+					Vector2(156, 116)
+				)
+			_:
+				interaction_focus.clear_focus()
 		return
 	if current_interaction.is_empty():
 		interaction_focus.clear_focus()
@@ -1186,7 +1283,44 @@ func update_interaction_focus() -> void:
 		interaction_focus.clear_focus()
 		return
 
-	interaction_focus.set_focus(target_position, focus_title, is_primary)
+	var focus_rect := spatial.grow_rect(
+		get_interaction_rect(current_interaction),
+		Vector2(10.0, 10.0)
+	)
+	if focus_rect.size.x > 0.0 and focus_rect.size.y > 0.0:
+		target_position = focus_rect.get_center()
+	interaction_focus.set_focus(
+		target_position,
+		focus_title,
+		is_primary,
+		focus_rect.size
+	)
+
+
+func get_interaction_rect(interaction_id: String) -> Rect2:
+	if interaction_id == "door":
+		if door_interaction_rect.size.x > 0.0 and door_interaction_rect.size.y > 0.0:
+			return door_interaction_rect
+		return Rect2(door_position - Vector2(50.0, 80.0), Vector2(100.0, 160.0))
+	if interaction_id.begins_with("prop:"):
+		var prop_id := interaction_id.trim_prefix("prop:")
+		if props.has(prop_id):
+			var prop: Dictionary = props[prop_id]
+			if prop.has("interaction_rect"):
+				return prop["interaction_rect"] as Rect2
+			var center := prop.get("focus_position", prop.get("position", Vector2.ZERO)) as Vector2
+			return Rect2(center - Vector2(48.0, 48.0), Vector2(96.0, 96.0))
+	if interaction_id == "room_clue":
+		return Rect2(clue_position - Vector2(24.0, 18.0), Vector2(48.0, 36.0))
+	return Rect2()
+
+
+func _is_near_interaction(interaction_id: String) -> bool:
+	return spatial.is_actor_near_rect(
+		player,
+		get_interaction_rect(interaction_id),
+		14.0
+	)
 
 
 func hide_interaction_feedback() -> void:
@@ -1435,23 +1569,230 @@ func show_wake_dialogue():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	# 开局不生成 Mrs. Lin 实体：玩家只读到她留下的信。
-	# mrs_lin 是剧情内部 ID，Mrs. Lin 是信件和笔记的显示名称。
-	if not GameState.has_story_flag("wake_dish_granted"):
-		GameState.set_story_flag("wake_dish_granted")
-		GameState.add_dish("castle_ration", 1)
 	show_dialogue(
 		"Mrs. Lin's Letter",
 		"To the investigator who wakes in this room,\n\n"
-		+ "When you read this, I may already be dead. Do not come looking for me until you have learned this castle's rules.\n\n"
-		+ "Lord Ashford sealed the important doors with two locks: a physical key first, then a Knowledge Lock. The question will not appear until the correct key is used. The answer is always hidden nearby.\n\n"
-		+ "I hid the Wake Room Key where you can reach it, and I left the Chemistry Room Key behind the books. The candle note explains the first rule you will need.\n\n"
-		+ "Do not trust a scene just because it looks frightening. Observe the materials, record the evidence, and follow the route I marked.\n\n"
-		+ "If I am gone, follow my notes — not my voice.\n\n"
-		+ "— Mrs. Lin\n\n"
-		+ "The Castle Ration in your satchel can restore your strength."
+		+ "If you found this, the castle has already separated us. Do not follow voices. Follow evidence.\n\n"
+		+ "Begin with the candle note beside the bed. It contains the first answer you will need.\n\n"
+		+ "— Dr. Lin"
 	)
-	add_dialogue_button("Read the letter", close_message_panel)
+	add_dialogue_button("Find the candle note", finish_wake_letter)
+
+
+func finish_wake_letter() -> void:
+	close_message_panel()
+	if first_lead_step == FirstLeadStep.LETTER:
+		_set_first_lead_step(FirstLeadStep.CANDLE_NOTE)
+
+
+func _restore_first_lead_step() -> void:
+	# Old saves may contain first-lead flags. Treat them as safely completed and
+	# restore the actual, reusable door state from the key/knowledge records.
+	first_lead_step = (
+		FirstLeadStep.COMPLETE
+		if exit_door_unlocked or GameState.wake_room_door_unlocked
+		else FirstLeadStep.LETTER
+	)
+	desk_briefing_read = GameState.has_story_flag("wake_room_desk_read")
+	var legacy_answer_known := (
+		GameState.has_story_flag("wake_first_lead_candle_read")
+		or GameState.has_story_flag("wake_first_lead_brass_seen")
+		or GameState.has_story_flag("wake_first_lead_door_open")
+	)
+	book_rule_learned = GameState.learned_fire_oxygen_rule or legacy_answer_known
+	first_lock_rule_learned = book_rule_learned
+	if desk_briefing_read or book_rule_learned:
+		notes_unlocked = true
+		if NoteHud != null:
+			NoteHud.unlock()
+	if desk_briefing_read:
+		# Migrate saves made after reading the desk before the portable toolkit
+		# existed, so a returning player is not asked to replay the opening.
+		_grant_dr_lin_field_kit()
+	_create_first_lead_objective()
+	_refresh_first_lead_objective(false)
+	_sync_first_lead_hud_visibility()
+	call_deferred("_sync_first_lead_hud_visibility")
+
+
+func _is_first_lead_locked() -> bool:
+	return false
+
+
+func _is_prop_available_in_first_lead(prop_id: String) -> bool:
+	return true
+
+
+func _set_first_lead_step(next_step: FirstLeadStep) -> void:
+	if first_lead_step == next_step:
+		return
+	first_lead_step = next_step
+	match next_step:
+		FirstLeadStep.CANDLE_NOTE:
+			GameState.set_story_flag("wake_first_lead_letter_read")
+		FirstLeadStep.BRASS_MARK:
+			GameState.set_story_flag("wake_first_lead_candle_read")
+		FirstLeadStep.CASTLE_DOOR:
+			GameState.set_story_flag("wake_first_lead_door_open")
+		FirstLeadStep.COMPLETE:
+			GameState.set_story_flag("wake_first_lead_complete")
+	_refresh_first_lead_objective(true)
+	_sync_first_lead_hud_visibility()
+	update_world_cursor()
+
+
+func _sync_first_lead_hud_visibility() -> void:
+	# Let rewards teach their own tools as they are earned. The Wake Room is no
+	# longer an exception that hides every hub until the player exits.
+	if not is_inside_tree():
+		return
+	var show_hubs := true
+	for hub_name: String in ["InventoryHud", "KeyHud", "NoteHud", "MapHud"]:
+		var hub := get_tree().root.get_node_or_null(hub_name) as CanvasLayer
+		if hub != null:
+			hub.visible = show_hubs
+	var reward_hud := get_tree().root.get_node_or_null("ItemRewardHud") as CanvasLayer
+	if reward_hud != null:
+		reward_hud.visible = true
+
+
+func _advance_to_brass_mark() -> void:
+	close_message_panel()
+	_set_first_lead_step(FirstLeadStep.BRASS_MARK)
+
+
+func _show_brass_mark_reveal() -> void:
+	start_dialogue_pause()
+	clear_buttons()
+	_show_dialogue(message_panel)
+	show_dialogue(
+		"Brass Mark",
+		"The note's answer makes the brass wheel answer in return. The violet crystal settles, and the lock releases with a heavy click.\n\nThe castle is not asking you to guess. It opens when your observation is correct."
+	)
+	reset_dialogue_scrolls()
+	add_dialogue_button("Open the way", _unlock_first_lead_door)
+
+
+func _unlock_first_lead_door() -> void:
+	exit_door_unlocked = true
+	GameState.wake_room_door_unlocked = true
+	close_message_panel()
+	_set_first_lead_step(FirstLeadStep.CASTLE_DOOR)
+
+
+func _create_first_lead_objective() -> void:
+	if ui_layer == null or first_lead_objective_panel != null:
+		return
+	first_lead_objective_panel = Panel.new()
+	first_lead_objective_panel.name = "FirstLeadObjective"
+	first_lead_objective_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	first_lead_objective_panel.offset_left = -334.0
+	first_lead_objective_panel.offset_top = 22.0
+	first_lead_objective_panel.offset_right = -26.0
+	first_lead_objective_panel.offset_bottom = 96.0
+	first_lead_objective_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	first_lead_objective_panel.z_index = 45
+	first_lead_objective_panel.add_theme_stylebox_override(
+		"panel",
+		_first_lead_objective_style()
+	)
+	ui_layer.add_child(first_lead_objective_panel)
+
+	first_lead_objective_title = Label.new()
+	first_lead_objective_title.name = "ObjectiveKicker"
+	first_lead_objective_title.position = Vector2(16.0, 10.0)
+	first_lead_objective_title.size = Vector2(276.0, 18.0)
+	first_lead_objective_title.add_theme_font_size_override("font_size", 11)
+	first_lead_objective_title.add_theme_color_override(
+		"font_color",
+		Color(0.92, 0.70, 0.30, 1.0)
+	)
+	first_lead_objective_panel.add_child(first_lead_objective_title)
+
+	first_lead_objective_body = Label.new()
+	first_lead_objective_body.name = "ObjectiveBody"
+	first_lead_objective_body.position = Vector2(16.0, 29.0)
+	first_lead_objective_body.size = Vector2(276.0, 34.0)
+	first_lead_objective_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	first_lead_objective_body.add_theme_font_size_override("font_size", 14)
+	first_lead_objective_body.add_theme_color_override(
+		"font_color",
+		Color(0.97, 0.90, 0.73, 1.0)
+	)
+	first_lead_objective_panel.add_child(first_lead_objective_body)
+
+
+func _refresh_first_lead_objective(animate: bool) -> void:
+	if first_lead_objective_panel == null:
+		return
+	var objective: Dictionary = _first_lead_objective_copy()
+	# A small route card teaches the common door loop without preventing any
+	# interaction. It disappears only when this room's door has opened.
+	first_lead_objective_panel.visible = not exit_door_unlocked
+	if not first_lead_objective_panel.visible:
+		return
+	first_lead_objective_title.text = str(objective["title"])
+	first_lead_objective_body.text = str(objective["body"])
+	if not animate:
+		first_lead_objective_panel.modulate = Color.WHITE
+		first_lead_objective_panel.scale = Vector2.ONE
+		return
+	if first_lead_objective_tween != null and first_lead_objective_tween.is_valid():
+		first_lead_objective_tween.kill()
+	first_lead_objective_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	first_lead_objective_panel.scale = Vector2(0.97, 0.97)
+	first_lead_objective_tween = create_tween()
+	first_lead_objective_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	first_lead_objective_tween.tween_property(
+		first_lead_objective_panel,
+		"modulate:a",
+		1.0,
+		0.18
+	)
+	first_lead_objective_tween.parallel().tween_property(
+		first_lead_objective_panel,
+		"scale",
+		Vector2.ONE,
+		0.24
+	)
+
+
+func _first_lead_objective_copy() -> Dictionary:
+	if not desk_briefing_read:
+		return {
+			"title": CaseLocale.text("guide.wake_desk_title"),
+			"body": CaseLocale.text("guide.wake_desk_body"),
+		}
+	if not GameState.has_key(WAKE_ROOM_KEY_ID):
+		return {
+			"title": CaseLocale.text("guide.wake_key_title"),
+			"body": CaseLocale.text("guide.wake_key_body"),
+		}
+	if not first_lock_rule_learned:
+		return {
+			"title": CaseLocale.text("guide.wake_answer_title"),
+			"body": CaseLocale.text("guide.wake_answer_body"),
+		}
+	return {
+		"title": CaseLocale.text("guide.wake_door_title"),
+		"body": CaseLocale.text("guide.wake_door_body"),
+	}
+
+
+func _on_case_locale_changed(_language: String) -> void:
+	_refresh_first_lead_objective(false)
+
+
+func _first_lead_objective_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.028, 0.018, 0.040, 0.94)
+	style.border_color = Color(0.77, 0.54, 0.20, 0.90)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	style.shadow_color = Color(0.005, 0.002, 0.010, 0.72)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0.0, 3.0)
+	return style
 
 
 func update_interaction_prompt():
@@ -1463,53 +1804,33 @@ func update_interaction_prompt():
 		return
 	if not pending_mouse_interaction.is_empty():
 		match pending_mouse_interaction:
-			"room_clue":
-				interact_label.text = "Walking to the Candle Note..."
-
 			"door":
 				interact_label.text = "Walking to the castle door..."
-
-		interact_label.visible = true
-		return
-	if mouse_over_clue and not first_lock_rule_learned:
-		var mouse_clue_distance = player.global_position.distance_to(
-			clue_position
-		)
-
-		if mouse_clue_distance <= CLUE_INTERACT_RADIUS:
-			current_interaction = "room_clue"
-			interact_label.text = "Click or press E to read the Candle Note"
-		else:
-			interact_label.text = "Move closer to inspect the Candle Note"
+			_:
+				if pending_mouse_interaction.begins_with("prop:"):
+					interact_label.text = "Walking to the interaction..."
 
 		interact_label.visible = true
 		return
 
 	if mouse_over_door:
-		var mouse_door_distance = player.global_position.distance_to(
-			door_position
-		)
-
-		if mouse_door_distance <= DOOR_INTERACT_RADIUS:
+		if _is_near_interaction("door"):
 			current_interaction = "door"
 
 			if exit_door_unlocked:
 				interact_label.text = "Click or press E to enter the castle hall"
-			elif first_lock_rule_learned:
-				interact_label.text = "Click or press E to solve the knowledge lock"
 			else:
-				interact_label.text = "Click or press E to inspect the locked door"
+				interact_label.text = "Click or press E to read the door lock"
 		else:
 			interact_label.text = "Move closer to inspect the door"
 
 		interact_label.visible = true
 		return
 	for id in props.keys():
+		if not _is_prop_available_in_first_lead(id):
+			continue
 		if mouse_over_prop.get(id, false):
-			var prop_distance = player.global_position.distance_to(
-				props[id]["position"]
-			)
-			if prop_distance <= PROP_INTERACT_RADIUS:
+			if _is_near_interaction("prop:" + id):
 				current_interaction = "prop:" + id
 				interact_label.text = "Click or press E to inspect " + props[id]["prompt"]
 			else:
@@ -1517,33 +1838,21 @@ func update_interaction_prompt():
 			interact_label.visible = true
 			return
 
-	if not first_lock_rule_learned:
-		var clue_distance = player.global_position.distance_to(clue_position)
-		if clue_distance < CLUE_INTERACT_RADIUS:
-			current_interaction = "room_clue"
-			interact_label.text = "Press E to read the candle note"
-			interact_label.visible = true
-			return
-
-	var door_distance = player.global_position.distance_to(door_position)
-	if door_distance < DOOR_INTERACT_RADIUS:
+	if _is_near_interaction("door"):
 		current_interaction = "door"
 
 		if exit_door_unlocked:
 			interact_label.text = "Press E to enter the castle hall"
-		elif GameState.has_key(WAKE_ROOM_KEY_ID):
-			interact_label.text = "Press E to solve the knowledge lock"
 		else:
-			interact_label.text = "Press E to inspect the locked door"
+			interact_label.text = "Press E to read the door lock"
 
 		interact_label.visible = true
 		return
 
 	for id in props.keys():
-		var prop_distance = player.global_position.distance_to(
-			props[id]["position"]
-		)
-		if prop_distance < PROP_INTERACT_RADIUS:
+		if not _is_prop_available_in_first_lead(id):
+			continue
+		if _is_near_interaction("prop:" + str(id)):
 			current_interaction = "prop:" + id
 			interact_label.text = "Press E to inspect " + props[id]["prompt"]
 			interact_label.visible = true
@@ -1552,6 +1861,11 @@ func update_interaction_prompt():
 
 func handle_exit_door():
 	if exit_door_unlocked:
+		var unclaimed := unclaimed_room_items()
+		if not unclaimed.is_empty():
+			show_room_unsearched_hint(unclaimed)
+			return
+		_set_first_lead_step(FirstLeadStep.COMPLETE)
 		leave_wake_room()
 		return
 
@@ -1560,10 +1874,39 @@ func handle_exit_door():
 		show_no_key_hint()
 		return
 
-	if first_lock_rule_learned:
-		show_door_inspect()
-	else:
-		show_door_locked_hint()
+	show_door_inspect()
+
+
+## Everything this room still owes the player, named the way the player would
+## name it. The Chemistry key is the one that used to be missable: the door only
+## checked its own lock, so a player could walk out without the key the next room
+## needs and not find out until they were locked out of it.
+func unclaimed_room_items() -> Array[String]:
+	var missing: Array[String] = []
+	if not GameState.has_key(WAKE_ROOM_KEY_ID):
+		missing.append(CaseLocale.text("wake.unclaimed.wake_key"))
+	if not GameState.has_key(CHEMISTRY_ROOM_KEY_ID):
+		missing.append(CaseLocale.text("wake.unclaimed.chemistry_key"))
+	if not desk_briefing_read:
+		missing.append(CaseLocale.text("wake.unclaimed.desk_note"))
+	if not first_lock_rule_learned:
+		missing.append(CaseLocale.text("wake.unclaimed.candle_note"))
+	return missing
+
+
+func show_room_unsearched_hint(missing: Array[String]) -> void:
+	start_dialogue_pause()
+	clear_buttons()
+	_show_dialogue(message_panel)
+	var lines := ""
+	for item: String in missing:
+		lines += "\n  ·  " + item
+	show_dialogue(
+		"Mrs. Lin",
+		CaseLocale.text("wake.unclaimed.body") + "\n" + lines
+	)
+	reset_dialogue_scrolls()
+	add_dialogue_button(CaseLocale.text("wake.unclaimed.button"), close_message_panel)
 
 
 func show_no_key_hint():
@@ -1572,40 +1915,51 @@ func show_no_key_hint():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Narrator", "The golden lock wheel stays dark and silent.\n\nThe knowledge lock remains dormant — a physical key is required before the question can appear.\n\nYou don't have this key yet. Search the room: the Wake Room key must be hidden somewhere nearby.")
+	show_dialogue("Narrator", "The question is etched into the door, but the golden wheel stays dark.\n\nA physical key is required before the lock will accept an answer. Search the room: the Wake Room key is hidden beneath the bed pillow.")
 	reset_dialogue_scrolls()
 	add_dialogue_button("Search the room", close_message_panel)
 
 
+func show_desk_first_hint() -> void:
+	start_dialogue_pause()
+	clear_buttons()
+	_show_dialogue(message_panel)
+	show_dialogue("Mrs. Lin", "Before you test the lock, read the note on the study desk. It explains the rule that governs every sealed room in Ashford Castle.")
+	reset_dialogue_scrolls()
+	add_dialogue_button("Inspect the desk", close_message_panel)
+
+
 func show_door_locked_hint():
-	# 新手教程：第一次点门 —— 打不开，提示去书桌找线索。
+	# The player has the key but has not learned the answer yet.
 	start_dialogue_pause()
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "The massive armored door won't budge.\n\nNo handle, no keyhole — only a strange golden lock wheel with pulsing purple crystals.\n\nMrs. Lin:\nIt seems we don't have a key. But the master of this castle loved knowledge... maybe the study desk over there holds a clue about how these doors open.")
+	show_dialogue("Mrs. Lin", "The brass key wakes the lock, and one question appears:\n\n\"What does a flame need from the air to keep burning?\"\n\nDo not guess. The bookshelf in this room holds the answer.")
 	reset_dialogue_scrolls()
-	add_dialogue_button("Check the desk", close_message_panel)
+	add_dialogue_button("Search the bookshelf", close_message_panel)
 
 
 func show_locked_door_intro():
 	start_dialogue_pause()
 	clear_buttons()
 
-	show_dialogue("Mrs. Lin", "The exit door glows with a faint purple light.\n\nA question appears on the lock:\n\n\"What does a flame need from the air to keep burning?\"\n\nMrs. Lin:\nDo not guess. Lord Ashford designed these locks so the answer can be learned nearby. Search the room first. Look for notes, candles, or anything connected to the question.")
+	show_dialogue("Mrs. Lin", "The exit door glows with a faint purple light.\n\nA question appears on the lock:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is recorded in the bookshelf's science volume.")
 	reset_dialogue_scrolls()
 	add_dialogue_button("I'll search the room.", close_message_panel)
 
 
 func show_first_room_clue():
+	if first_lead_step != FirstLeadStep.CANDLE_NOTE:
+		return
 	start_dialogue_pause()
 	clear_buttons()
 
 	first_lock_rule_learned = true
-	unlock_notes_tool()
+	GameState.learned_fire_oxygen_rule = true
 	update_knowledge_panel_text()
 	if clue_journal != null:
-		clue_journal.add_clue("candle_note")
+		clue_journal.add_clue("candle_note", {"silent": true})
 	mouse_over_clue = false
 	update_world_cursor()
 
@@ -1614,9 +1968,9 @@ func show_first_room_clue():
 	if clue_node != null:
 		clue_node.color = Color(0.45, 0.38, 0.12, 0.7)
 
-	show_dialogue("Candle Note", "\"A flame cannot keep burning without oxygen from the air. If the air supply is blocked, the flame weakens and dies.\"\n\nMrs. Lin:\nThat's the clue we needed. The lock asked what a flame needs from the air.\n\nConcept learned: Fire needs oxygen to keep burning.")
+	show_dialogue("Candle Note", "\"A flame cannot keep burning without oxygen from the air. If the air supply is blocked, the flame weakens and dies.\"\n\nThat is the answer hidden in the room: fire needs oxygen.\n\nThe brass-marked door should react now.")
 	reset_dialogue_scrolls()
-	add_dialogue_button("Return to the door.", close_message_panel)
+	add_dialogue_button("Follow the brass mark", _advance_to_brass_mark)
 
 
 func show_first_door_question():
@@ -1665,6 +2019,7 @@ func on_first_lock_correct():
 	exit_door_unlocked = true
 	# 持久化：从大厅返回 wake_room 时门保持解锁，不用再答题。
 	GameState.wake_room_door_unlocked = true
+	_set_first_lead_step(FirstLeadStep.COMPLETE)
 
 	if door_marker_node != null:
 		door_marker_node.color = Color(0.25, 0.95, 0.45, 0.85)
@@ -1693,19 +2048,50 @@ func on_first_lock_wrong():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "Not quite.\n\nMrs. Lin:\nThink back to the candle note. It said a flame needs something from the air to keep burning.\n\nYou can try again, review your notes, or take more time to think.")
+	show_dialogue("Mrs. Lin", "Not quite.\n\nMrs. Lin:\nThink back to the science book on the bookshelf. It explains what a flame needs from the air to keep burning.\n\nYou can try again, review your notes, or take more time to think.")
 	add_dialogue_button("Try Again", show_first_door_question)
 	add_dialogue_button("Review Notes", open_knowledge_panel_from_dialogue)
 	add_dialogue_button("Let me think", close_message_panel)
 
 func leave_wake_room():
-	# 记录返回点：进大厅后出现在大厅侧 wake_room 门旁（wake_room_door）。
-	GameState.prepare_room_transition(
-		"floor_1_hub",
-		"res://scenes/game_world.tscn",
-		"wake_room_door"
+	if scene_transitioning:
+		return
+	scene_transitioning = true
+	player.set_physics_process(false)
+	if player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
+
+	# The first exit is an arrival, not a return. The hall uses this distinct spawn
+	# to play its one-time handoff and point the player north without replaying it
+	# when they later revisit the Wake Room.
+	var hall_spawn: String = (
+		"wake_room_first_arrival"
+		if not GameState.hall_arrival_seen
+		else "wake_room_door"
 	)
-	get_tree().change_scene_to_file("res://scenes/game_world.tscn")
+	var switch_to_hall := func() -> void:
+		GameState.prepare_room_transition(
+			"floor_1_hub",
+			"res://scenes/game_world.tscn",
+			hall_spawn
+		)
+		GameState.save_room_checkpoint(
+			"res://scenes/game_world.tscn",
+			"floor_1_hub",
+			hall_spawn
+		)
+		var change_error: Error = get_tree().change_scene_to_file(
+			"res://scenes/game_world.tscn"
+		)
+		if change_error != OK:
+			scene_transitioning = false
+			player.set_physics_process(true)
+			push_error("Failed to enter Castle Hall. Error: " + str(change_error))
+	ArchiveUi.play_room_transition(
+		switch_to_hall,
+		CaseLocale.text("transition.hall_title"),
+		CaseLocale.text("transition.hall_detail")
+	)
 
 
 func add_dialogue_button(text: String, callback: Callable):
@@ -2009,18 +2395,19 @@ func update_knowledge_panel_text():
 		text += "As you progress, more tools may unlock here, such as Evidence, Objectives, Map, or Inventory.\n\n"
 		text += "--------------------------------\n\n"
 
-	if not first_lock_rule_learned:
-		text += "No notes collected yet.\n\nExplore the room and inspect useful clues. Notes you discover will appear here."
-	else:
+	if desk_briefing_read:
 		text += "Parchment Scroll (Study Desk)\n\n"
-		text += "Observation:\nA parchment on the study desk says the master of this castle loved knowledge, and every door holds a question — answer it correctly and the door opens even without a key.\n\n"
-		text += "Science Concept:\nKnowledge locks open when you answer their question correctly.\n\n"
-		text += "How to Apply It:\nInspect the locked door to read its question, then search the room for the answer.\n\n"
-		text += "--------------------------------\n\n"
-		text += "Candle Note\n\n"
-		text += "Observation:\nA note near the candle explains that a flame cannot keep burning without oxygen from the air.\n\n"
+		text += "Observation:\nEach Ashford room is sealed by a physical key and a knowledge question. The question appears on the door only after the matching key is used.\n\n"
+		text += "How to Apply It:\nFind the room's key, read the question on its door, then search the room for evidence of the answer.\n\n"
+	if first_lock_rule_learned:
+		if desk_briefing_read:
+			text += "--------------------------------\n\n"
+		text += "Bookshelf: The Science of Flame\n\n"
+		text += "Observation:\nA science volume on the bookshelf explains that a flame cannot keep burning without oxygen from the air.\n\n"
 		text += "Science Concept:\nFire needs oxygen to keep burning. If oxygen is removed or blocked, the flame weakens and goes out.\n\n"
 		text += "How to Apply It:\nIf the knowledge lock asks what a flame needs from the air, the answer is oxygen."
+	if not desk_briefing_read and not first_lock_rule_learned:
+		text += "No notes collected yet.\n\nInspect the study desk to learn how Ashford's room locks work."
 
 	knowledge_label.text = text
 func open_knowledge_panel_from_dialogue():
@@ -2091,11 +2478,7 @@ func on_door_input_event(
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			get_viewport().set_input_as_handled()
 
-			var distance_to_door = player.global_position.distance_to(
-				door_position
-			)
-
-			if distance_to_door <= DOOR_INTERACT_RADIUS:
+			if _is_near_interaction("door"):
 				cancel_pending_mouse_interaction()
 				show_click_marker(door_position)
 				handle_exit_door()
@@ -2112,10 +2495,12 @@ func update_world_cursor():
 		or knowledge_panel_open
 	)
 
-	var over_interactable = (
-		mouse_over_clue
-		or mouse_over_door
-	)
+	var over_prop := false
+	for id: String in mouse_over_prop:
+		if bool(mouse_over_prop[id]):
+			over_prop = true
+			break
+	var over_interactable = mouse_over_door or over_prop
 
 	if not ui_is_blocking and over_interactable:
 		Input.set_default_cursor_shape(
@@ -2250,9 +2635,7 @@ func on_player_click_target_reached():
 				show_failed_approach_message()
 
 		"door":
-			if player.global_position.distance_to(
-				door_position
-			) <= DOOR_INTERACT_RADIUS:
+			if _is_near_interaction("door"):
 				handle_exit_door()
 			else:
 				show_failed_approach_message()
@@ -2261,9 +2644,7 @@ func on_player_click_target_reached():
 			if interaction_to_run.begins_with("prop:"):
 				var prop_id: String = interaction_to_run.trim_prefix("prop:")
 				if props.has(prop_id):
-					if player.global_position.distance_to(
-						props[prop_id]["position"]
-					) <= PROP_INTERACT_RADIUS:
+					if _is_near_interaction("prop:" + prop_id):
 						show_inspect(prop_id)
 					else:
 						show_failed_approach_message()
@@ -2515,7 +2896,7 @@ func show_debug_room_path(
 	if debug_path_line == null:
 		return
 
-	if not SHOW_DEBUG_PATH:
+	if not SHOW_DEBUG_PATH or not GameState.developer_mode:
 		debug_path_line.visible = false
 		return
 
@@ -2651,6 +3032,17 @@ func _get_world_polygon(shape: CollisionPolygon2D) -> PackedVector2Array:
 	return points
 
 
+func _polygon_bounds(points: PackedVector2Array) -> Rect2:
+	if points.is_empty():
+		return Rect2()
+	var minimum := points[0]
+	var maximum := points[0]
+	for point: Vector2 in points:
+		minimum = minimum.min(point)
+		maximum = maximum.max(point)
+	return Rect2(minimum, maximum - minimum)
+
+
 func _get_reachable_point(poly_pts: PackedVector2Array) -> Vector2:
 	# 交互点 = 碰撞多边形包围盒中"玩家可达"的边中点
 	# （玩家能走到碰撞边缘触发交互，而不是被困在碰撞内部）。
@@ -2681,6 +3073,48 @@ func _get_reachable_point(poly_pts: PackedVector2Array) -> Vector2:
 
 	# 四个边都不可达时退回中心（极少见，用户会调整碰撞）。
 	return center
+
+
+func _get_visual_interaction_approach(visual_rect: Rect2, fallback: Vector2) -> Vector2:
+	if player == null or visual_rect.size.x <= 0.0 or visual_rect.size.y <= 0.0:
+		return fallback
+	var player_rect: Rect2 = spatial.get_player_collision_rect(player)
+	var player_origin: Vector2 = player.global_position
+	var left_offset: float = player_rect.position.x - player_origin.x
+	var right_offset: float = player_rect.end.x - player_origin.x
+	var top_offset: float = player_rect.position.y - player_origin.y
+	var bottom_offset: float = player_rect.end.y - player_origin.y
+	var center_x_offset: float = player_rect.get_center().x - player_origin.x
+	var center_y_offset: float = player_rect.get_center().y - player_origin.y
+	var contact_gap: float = 13.5
+	var edge_fractions: Array[float] = [0.5, 0.30, 0.70, 0.15, 0.85]
+	var candidates: Array[Vector2] = []
+	for fraction: float in edge_fractions:
+		var edge_y := lerpf(visual_rect.position.y, visual_rect.end.y, fraction)
+		var edge_x := lerpf(visual_rect.position.x, visual_rect.end.x, fraction)
+		candidates.append(Vector2(
+			edge_x - center_x_offset,
+			visual_rect.end.y - top_offset + contact_gap
+		))
+		candidates.append(Vector2(
+			visual_rect.position.x - right_offset - contact_gap,
+			edge_y - center_y_offset
+		))
+		candidates.append(Vector2(
+			visual_rect.end.x - left_offset + contact_gap,
+			edge_y - center_y_offset
+		))
+		candidates.append(Vector2(
+			edge_x - center_x_offset,
+			visual_rect.position.y - bottom_offset - contact_gap
+		))
+	candidates.sort_custom(func(first: Vector2, second: Vector2) -> bool:
+		return first.distance_squared_to(fallback) < second.distance_squared_to(fallback)
+	)
+	for candidate: Vector2 in candidates:
+		if is_player_position_walkable(candidate):
+			return candidate
+	return fallback
 
 
 func _point_in_user_collision(world_position: Vector2) -> bool:

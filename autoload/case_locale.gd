@@ -21,9 +21,11 @@ const TEXT: Dictionary = {
 	"menu.close": {"en": "Close", "zh": "关闭"},
 	"menu.settings_title": {"en": "SETTINGS", "zh": "设置"},
 	"menu.settings_body": {
-		"en": "Controls: WASD move · E interact · B evidence · O objectives.",
-		"zh": "操作：WASD 移动 · E 交互 · B 证物 · O 目标。",
+		"en": "Move — WASD or click the floor\nInvestigate — E\nEvidence — B   ·   Notes — K   ·   Objectives — O\nHubs — Tab bag   ·   I keys   ·   U map\nClose a panel — Esc",
+		"zh": "移动 — WASD 或点击地面\n调查 — E\n证物 — B   ·   笔记 — K   ·   目标 — O\n工具栏 — Tab 背包   ·   I 钥匙   ·   U 地图\n关闭面板 — Esc",
 	},
+	"menu.guidance_on": {"en": "FIELD PROMPTS: ON", "zh": "字段提示：开启"},
+	"menu.guidance_off": {"en": "FIELD PROMPTS: OFF", "zh": "字段提示：关闭"},
 	"menu.language_title": {"en": "CASE LANGUAGE", "zh": "案件语言"},
 	"menu.language_body": {
 		"en": "Choose the language used by the case files, interface, and dialogue.",
@@ -33,6 +35,222 @@ const TEXT: Dictionary = {
 	"menu.case_opened_detail": {
 		"en": "The archive is waiting.",
 		"zh": "档案室正在等候。",
+	},
+	"intro.page_count": {"en": "{current} / {total}", "zh": "{current} / {total}"},
+	"intro.skip": {"en": "SKIP", "zh": "跳过"},
+	"intro.continue": {"en": "CONTINUE", "zh": "继续"},
+	"intro.begin": {"en": "ENTER THE WAKE ROOM", "zh": "进入苏醒室"},
+	"intro.advance_hint": {
+		"en": "Click / E / Space to advance · the story continues automatically.",
+		"zh": "点击、按 E 或空格可推进 · 剧情也会自动继续。",
+	},
+	"intro.advance_hint_final": {
+		"en": "Click / E / Space when you are ready to investigate.",
+		"zh": "准备开始调查时，点击、按 E 或空格。",
+	},
+	"intro.invitation_kicker": {
+		"en": "PROLOGUE  /  THREE NIGHTS EARLIER",
+		"zh": "序章  /  三天前",
+	},
+	"intro.invitation_title": {
+		"en": "THE INVITATION",
+		"zh": "那封邀请函",
+	},
+	"intro.invitation_body": {
+		"en": "Dr. Lin asked you to investigate the failures spreading through Ashford Castle — and the orders someone has been sending in her name.",
+		"zh": "林博士邀请你调查阿什福德城堡里不断扩大的实验故障，以及有人冒用她的名字发出的命令。",
+	},
+	"intro.invitation_detail_title": {"en": "YOUR APPOINTMENT", "zh": "你的约见"},
+	"intro.invitation_detail": {
+		"en": "Meet Dr. Lin at the north gate before the storm closes the hill road.",
+		"zh": "在暴风雨封住山路前，于北门与林博士会面。",
+	},
+	"intro.signal_kicker": {
+		"en": "ASHFORD OBSERVATORY  /  23:17",
+		"zh": "阿什福德观测室  /  23:17",
+	},
+	"intro.signal_title": {
+		"en": "THE SIGNAL GOES DARK",
+		"zh": "讯号忽然中断",
+	},
+	"intro.signal_body": {
+		"en": "At the gate, Dr. Lin's message reaches you through the storm: “Do not trust the emergency order.” Then every lamp in the estate dies.",
+		"zh": "在城堡大门前，林博士的讯息穿过暴雨传来：“不要相信那道紧急命令。” 随后，庄园里的灯火全部熄灭。",
+	},
+	"intro.signal_detail_title": {"en": "LAST CONFIRMED FACT", "zh": "最后确认的信息"},
+	"intro.signal_detail": {
+		"en": "Dr. Lin is still somewhere inside the castle.",
+		"zh": "林博士仍在城堡的某处。",
+	},
+	"intro.interruption_kicker": {
+		"en": "ASHFORD GRAND HALL  /  MOMENTS LATER",
+		"zh": "阿什福德大厅  /  片刻之后",
+	},
+	"intro.interruption_title": {
+		"en": "THE MISSING MINUTES",
+		"zh": "消失的几分钟",
+	},
+	"intro.interruption_body": {
+		"en": "You follow the open gate. A violet flash. The locks turn by themselves. When footsteps answer from the hall, your memory breaks apart.",
+		"zh": "你穿过敞开的铁门。紫光一闪，锁扣自行转动。走廊深处传来脚步声时，你的记忆忽然断裂。",
+	},
+	"intro.interruption_detail_title": {"en": "UNANSWERED", "zh": "尚未解开的疑问"},
+	"intro.interruption_detail": {
+		"en": "Who locked the castle — and what did they take from you?",
+		"zh": "是谁封锁了城堡？又从你身上带走了什么？",
+	},
+	"intro.wake_kicker": {
+		"en": "FIRST ROOM  /  THE WAKE ROOM",
+		"zh": "第一间房  /  苏醒室",
+	},
+	"intro.wake_title": {
+		"en": "THE FIRST LEAD",
+		"zh": "第一条线索",
+	},
+	"intro.wake_body": {
+		"en": "You wake in a locked room with Dr. Lin missing. Her letter and the objects marked in brass are the only trail left for you to follow.",
+		"zh": "你在一间锁住的房里醒来，林博士已经失踪。她留下的信，以及带黄铜标记的物体，是你仅剩的追踪线索。",
+	},
+	"intro.wake_detail_title": {"en": "FIRST LEAD", "zh": "首条线索"},
+	"intro.wake_detail": {
+		"en": "Find Dr. Lin. Read the evidence. Solve each room's lock.",
+		"zh": "找到林博士，阅读证据，并解开每一间房的锁。",
+	},
+	"guide.field_title": {"en": "FIELD ORIENTATION", "zh": "现场方位确认"},
+	"guide.field_kicker": {"en": "INVESTIGATOR'S FIELD CARD", "zh": "调查员现场卡"},
+	"guide.field_intro": {
+		"en": "Only two actions matter before your first lead.",
+		"zh": "找到第一条线索前，只需记住两项操作。",
+	},
+	"guide.move_detail": {"en": "MOVE\n—or click ground", "zh": "移动\n或点击地面"},
+	"guide.inspect_detail": {
+		"en": "INSPECT a highlighted object",
+		"zh": "调查被标记的物体",
+	},
+	"guide.first_lead": {
+		"en": "Start with the candle note or any object marked by a brass corner.",
+		"zh": "先调查烛光便签，或任何带黄铜角标的物体。",
+	},
+	"guide.first_lead_kicker": {"en": "FIRST LEAD", "zh": "首条线索"},
+	"guide.begin": {"en": "BEGIN SEARCH", "zh": "开始搜查"},
+	"guide.first_lead_step_1_title": {"en": "FIRST LEAD  ·  1 / 3", "zh": "第一条线索  ·  1 / 3"},
+	"guide.first_lead_step_1_body": {
+		"en": "Read the candle note beside the bed.",
+		"zh": "阅读床边的烛光便签。",
+	},
+	"guide.first_lead_step_2_title": {"en": "FIRST LEAD  ·  2 / 3", "zh": "第一条线索  ·  2 / 3"},
+	"guide.first_lead_step_2_body": {
+		"en": "Follow the brass mark on the locked door.",
+		"zh": "跟随锁门上的黄铜标记。",
+	},
+	"guide.first_lead_step_3_title": {"en": "FIRST LEAD  ·  3 / 3", "zh": "第一条线索  ·  3 / 3"},
+	"guide.first_lead_step_3_body": {
+		"en": "Open the brass-marked door to the castle hall.",
+		"zh": "打开带黄铜标记的门，前往城堡大厅。",
+	},
+	"guide.wake_desk_title": {"en": "WAKE ROOM  ·  START HERE", "zh": "苏醒室  ·  从这里开始"},
+	"guide.wake_desk_body": {
+		"en": "Inspect the study desk for Dr. Lin's note on castle locks.",
+		"zh": "调查书桌，阅读林博士留下的城堡门锁说明。",
+	},
+	"guide.wake_key_title": {"en": "WAKE ROOM  ·  FIND THE KEY", "zh": "苏醒室  ·  寻找钥匙"},
+	"note.knowledge.chemistry.title": {"en": "Chemistry Room Knowledge", "zh": "化学室知识"},
+	"note.knowledge.chemistry.body": {
+		"en": "A chemical change creates new substances: burning paper is chemical, while melting ice, breaking glass and dissolving sugar are physical changes.",
+		"zh": "化学变化会生成新物质：纸张燃烧属于化学变化，而冰融化、玻璃破碎、糖溶解都是物理变化。",
+	},
+	"note.knowledge.greenhouse.title": {"en": "Greenhouse Room Knowledge", "zh": "温室知识"},
+	"note.knowledge.greenhouse.body": {
+		"en": "Plants absorb carbon dioxide and use light and water to make food. Oxygen is released as a product.",
+		"zh": "植物吸收二氧化碳，利用光和水制造养分，并释放氧气作为产物。",
+	},
+	"note.knowledge.circuit.title": {"en": "Circuit Room Knowledge", "zh": "线路室知识"},
+	"note.knowledge.circuit.body": {
+		"en": "A conductor lets charge move through a circuit. Metal is usually a better conductor than rubber, dry wood or glass; a broken circuit cannot carry current.",
+		"zh": "导体让电荷在电路中流动。金属通常比橡胶、干木或玻璃更导电；断路无法通过电流。",
+	},
+	"note.knowledge.dining.title": {"en": "Dining Hall Knowledge", "zh": "餐厅知识"},
+	"note.knowledge.dining.body": {
+		"en": "Measure a reasonably steady change and compare several independent indicators before estimating elapsed time.",
+		"zh": "先测量一个足够稳定的变化量，并比对多个独立线索，再据此推算经过的时间。",
+	},
+	"note.knowledge.library.title": {"en": "Library Knowledge", "zh": "图书馆知识"},
+	"note.knowledge.library.body": {
+		"en": "The primary colors of light are red, green and blue. Combining light adds energy and produces brighter colors.",
+		"zh": "光的三原色是红、绿、蓝。光的叠加会增加能量，混合后得到更明亮的颜色。",
+	},
+	"wake.unclaimed.body": {
+		"en": "The door will open — but you are not finished in here.\n\nGo back for what this room still holds. You will not be able to return once the hall takes you:",
+		"zh": "门可以开了 —— 但你在这间屋子里还没做完。\n\n回去取走这间屋子还留着的东西。一旦踏入大厅，就没那么容易回头了：",
+	},
+	"wake.unclaimed.button": {"en": "Search the room again", "zh": "再搜一遍房间"},
+	"wake.unclaimed.wake_key": {"en": "the Wake Room key, beneath the bed pillow", "zh": "苏醒室钥匙（床枕下）"},
+	"wake.unclaimed.chemistry_key": {
+		"en": "the Chemistry Room key, behind the books on the shelf",
+		"zh": "化学室钥匙（书架书本后）",
+	},
+	"wake.unclaimed.desk_note": {"en": "Mrs. Lin's note on the study desk", "zh": "书桌上林夫人的字条"},
+	"wake.unclaimed.candle_note": {"en": "the candle note beside the bed", "zh": "床边的蜡烛笔记"},
+	"guide.wake_key_body": {
+		"en": "The Wake Room key is hidden beneath the bed pillow.",
+		"zh": "苏醒室的钥匙藏在床枕下。",
+	},
+	"guide.wake_answer_title": {"en": "WAKE ROOM  ·  FIND THE ANSWER", "zh": "苏醒室  ·  寻找答案"},
+	"guide.wake_answer_body": {
+		"en": "Read the bookshelf's science volume before answering the door.",
+		"zh": "在回答门锁前，阅读书架上的科学书籍。",
+	},
+	"guide.wake_door_title": {"en": "WAKE ROOM  ·  TEST THE LOCK", "zh": "苏醒室  ·  测试门锁"},
+	"guide.wake_door_body": {
+		"en": "Return to the door. Use the key, then answer its question.",
+		"zh": "回到大门前：使用钥匙，然后回答门上的问题。",
+	},
+	"hall.arrival_body": {
+		"en": "The brass lock shuts behind you. Castle Hall lies silent beneath violet glass.\n\nA blue signal pulses in the north wing. Follow it.",
+		"zh": "黄铜锁在你身后合拢。紫色玻璃下，城堡大厅一片寂静。\n\n北翼传来一道蓝色脉冲。跟上它。",
+	},
+	"hall.arrival_continue": {"en": "FOLLOW THE BLUE SIGNAL", "zh": "跟随蓝色讯号"},
+	"hall.route_step_1_title": {"en": "HALL ROUTE  ·  1 / 3", "zh": "大厅路线  ·  1 / 3"},
+	"hall.route_step_1_body": {
+		"en": "Reach the Chemistry Room door in the north wing.",
+		"zh": "前往北翼的化学室门。",
+	},
+	"hall.route_step_2_title": {"en": "HALL ROUTE  ·  2 / 3", "zh": "大厅路线  ·  2 / 3"},
+	"hall.route_step_2_body": {
+		"en": "Study the active brass core beside the route.",
+		"zh": "调查路线旁仍在运作的黄铜核心。",
+	},
+	"hall.route_step_3_title": {"en": "HALL ROUTE  ·  3 / 3", "zh": "大厅路线  ·  3 / 3"},
+	"hall.route_step_3_body": {
+		"en": "Return to the Chemistry Room and answer its lock.",
+		"zh": "返回化学室，回答门锁提出的问题。",
+	},
+	"hall.route_compass": {"en": "BLUE FLOOR MARKERS  ·  {direction}", "zh": "蓝色地面路标  ·  {direction}"},
+	"hall.direction_north": {"en": "NORTH", "zh": "北方"},
+	"hall.direction_south": {"en": "SOUTH", "zh": "南方"},
+	"hall.direction_east": {"en": "EAST", "zh": "东方"},
+	"hall.direction_west": {"en": "WEST", "zh": "西方"},
+	"hall.direction_north_east": {"en": "NORTH-EAST", "zh": "东北"},
+	"hall.direction_north_west": {"en": "NORTH-WEST", "zh": "西北"},
+	"hall.direction_south_east": {"en": "SOUTH-EAST", "zh": "东南"},
+	"hall.direction_south_west": {"en": "SOUTH-WEST", "zh": "西南"},
+	"hall.chemistry_door_locked": {
+		"en": "The laboratory key turns, but a second ring stays dark. Its blue pulse answers the brass core nearby — the lock wants an observation, not a guess.",
+		"zh": "实验室钥匙转动了，但第二道锁环仍然黯淡。它的蓝光回应着附近的黄铜核心——门锁需要的是观察，而不是猜测。",
+	},
+	"hall.chemistry_core_body": {
+		"en": "The brass core is warm. Inside its chamber, matter is changing into something new. The same mark flares on the Chemistry Room lock.\n\nThe observation is recorded in your notebook. Return to the door.",
+		"zh": "黄铜核心仍有余温。它的腔室里，物质正转变为新的物质；同样的标记在化学室门锁上亮起。\n\n观察结果已记录进笔记。回到门前吧。",
+	},
+	"hall.chemistry_core_continue": {"en": "RETURN TO THE LOCK", "zh": "返回门锁"},
+	"hall.chemistry_enter": {"en": "ENTER THE CHEMISTRY ROOM", "zh": "进入化学室"},
+	"transition.hall_title": {"en": "CASTLE HALL", "zh": "城堡大厅"},
+	"transition.hall_detail": {"en": "NORTH WING SIGNAL DETECTED", "zh": "已侦测到北翼讯号"},
+	"menu.intake_kicker": {"en": "CASE INTAKE  /  ASHFORD ESTATE", "zh": "案件接收  /  阿什福德庄园"},
+	"menu.intake_title": {"en": "OPEN A CASE FILE", "zh": "开启案件档案"},
+	"menu.intake_detail": {
+		"en": "Begin a new investigation, or reopen an archived case.",
+		"zh": "开始新的调查，或继续一份已归档的案件。",
 	},
 	"save.none": {"en": "AUTOSAVE · No active case", "zh": "自动存档 · 尚无进行中的案件"},
 	"save.resume": {"en": "AUTOSAVE · Resume: {room}", "zh": "自动存档 · 从这里继续：{room}"},
@@ -49,22 +267,46 @@ const TEXT: Dictionary = {
 		"en": "The Guardian forced you from the trail. Your notes and evidence are safe.",
 		"zh": "守卫迫使你离开现场。你的笔记与证物已被保留。",
 	},
-	"death.retry_room": {"en": "Retry Room", "zh": "重试当前房间"},
-	"death.retry_checkpoint": {"en": "Retry Checkpoint", "zh": "从检查点重试"},
-	"death.main_menu": {"en": "Return to Archive", "zh": "返回档案室"},
-	"ending.continue": {"en": "Review Sealed Archives", "zh": "复查密封档案"},
-	"ending.review": {"en": "Return to Analysis Table", "zh": "返回分析圆桌"},
+	"death.kicker": {"en": "CASE FILE  /  INTERRUPTION REPORT", "zh": "案件档案  /  中断记录"},
+	"death.retention": {"en": "EVIDENCE RETAINED  ·  CHECKPOINT READY", "zh": "证物已保留  ·  检查点已就绪"},
+	"death.retention_ready": {
+		"en": "EVIDENCE RETAINED  ·  CHECKPOINT: {room}",
+		"zh": "证物已保留  ·  检查点：{room}",
+	},
+	"death.retention_missing": {
+		"en": "EVIDENCE RETAINED  ·  RETRY THIS ROOM",
+		"zh": "证物已保留  ·  请重试当前房间",
+	},
+	"death.retry_room": {"en": "RETRY ROOM", "zh": "重试当前房间"},
+	"death.retry_checkpoint": {"en": "RETURN TO CHECKPOINT", "zh": "从检查点继续"},
+	"death.main_menu": {"en": "RETURN TO ARCHIVE", "zh": "返回档案室"},
+	"ending.kicker_ordinary": {"en": "CASE RECORD  /  PARTIAL CLOSURE", "zh": "案件记录  /  阶段结案"},
+	"ending.title_ordinary": {"en": "THE EXECUTOR IS IDENTIFIED", "zh": "执行者已确认"},
+	"ending.summary_ordinary": {
+		"en": "The Butler operated the apparatus. The author of the emergency order is still absent from the record.",
+		"zh": "管家执行了装置操作；紧急指令的真正发起者尚未出现在档案中。",
+	},
+	"ending.status_ordinary": {"en": "SEALED REVIEW AVAILABLE", "zh": "可进入密封复查"},
+	"ending.kicker_true": {"en": "CASE RECORD  /  COMPLETE CLOSURE", "zh": "案件记录  /  完整结案"},
+	"ending.title_true": {"en": "THE FORGED ORDER IS EXPOSED", "zh": "伪造指令已揭露"},
+	"ending.summary_true": {
+		"en": "The Mechanic forged the order, used the maintenance route, and silenced Dr. Lin to seize her work.",
+		"zh": "机械师伪造指令、利用维修路线，并令林博士沉默以夺取她的研究成果。",
+	},
+	"ending.status_true": {"en": "TRUE RECORD SEALED", "zh": "真相记录已封存"},
+	"ending.continue": {"en": "OPEN SEALED REVIEW", "zh": "进入密封复查"},
+	"ending.review": {"en": "REVIEW CASE CHAIN", "zh": "复查案件链"},
 	"ending.ordinary_record": {
 		"en": "ORDINARY CASE RECORD\nThe Butler operated the apparatus — but who authored the order?",
 		"zh": "普通案件记录\n管家操作了装置——但命令究竟来自谁？",
 	},
-	"ending.true_continue": {"en": "Return to Sealed Review", "zh": "返回密封复查"},
-	"ending.true_review": {"en": "Review Full Case Chain", "zh": "查看完整案件链"},
+	"ending.true_continue": {"en": "RETURN TO SEALED REVIEW", "zh": "返回密封复查"},
+	"ending.true_review": {"en": "REVIEW CASE CHAIN", "zh": "复查案件链"},
 	"ending.true_record": {
 		"en": "TRUE CASE RECORD\nThe Mechanic forged the command, silenced Dr. Lin, and tried to claim her work.",
 		"zh": "真相案件记录\n机械师伪造命令、令林博士沉默，并企图夺取她的成果。",
 	},
-	"ending.main_menu": {"en": "Return to Archive", "zh": "返回档案室"},
+	"ending.main_menu": {"en": "RETURN TO ARCHIVE", "zh": "返回档案室"},
 	"language.english": {"en": "English", "zh": "English"},
 	"language.chinese": {"en": "中文", "zh": "中文"},
 }
@@ -119,6 +361,9 @@ func _load_preference() -> String:
 
 func _save_preference() -> void:
 	var config := ConfigFile.new()
+	# PlayerPreferences shares this file for guidance options. Load before writing
+	# so changing language never clears a separate player-facing preference.
+	config.load(PREFERENCE_PATH)
 	config.set_value("display", "language", _language)
 	config.save(PREFERENCE_PATH)
 
