@@ -14,7 +14,7 @@ const FOG_ROWS := MAP_PIXEL_HEIGHT / FOG_CELL_SIZE
 
 # ============================================================
 # Castle Hall visual assets:
-#   hall_floor_bg.png - 1152x768, uniform x1.666667 to 1920x1280
+#   hall_floor_bg.png - 1536x1024, uniform x1.25 to 1920x1280
 #   hall_walls.png    - 1536x1024, uniform x1.25 to 1920x1280
 #
 # Both are 3:2 like the map, so neither is distorted, and the floor image
