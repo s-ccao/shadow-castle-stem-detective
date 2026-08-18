@@ -288,7 +288,51 @@ func _collect_sealed_instruction_archive() -> String:
 	return "A false bottom clicks loose beneath the glove record. A scraped emergency instruction has been filed where no ordinary inspection would look."
 
 
+## 合闸之前先要求玩家把断掉的线路接通。线路房知识展品讲的是导体与闭合
+## 回路，这个小游戏把"金属导电"扩展到石墨、盐水这些反直觉的导体上。
+func _open_conductor_minigame() -> void:
+	var launched: bool = MinigameLauncher.launch(
+		self,
+		ConductorMinigame.new(),
+		_mg_text("Repair Bench", "线路维修台"),
+		_mg_text(
+			"The maintenance rail is broken in several places. Bridge every"
+			+ " gap with something that actually carries current.",
+			"维修导轨断了好几处。每个缺口都得用真正导电的东西接上。"
+		),
+		Color(1.0, 0.82, 0.42, 1.0),
+		_on_conductor_minigame_finished
+	)
+	if not launched:
+		interaction_runtime.present_feedback("The repair bench is already open.")
+
+
+func _on_conductor_minigame_finished(cleared_all: bool, stages: int) -> void:
+	if cleared_all:
+		GameState.set_story_flag("circuit_rail_repaired")
+		interaction_runtime.present_feedback(
+			"Every rail is closed. The switch bank has power again — now the"
+			+ " sequence."
+		)
+		return
+	interaction_runtime.present_feedback(
+		"You closed %d of the broken rails before stepping away. The switch"
+		% stages
+		+ " bank stays dead until all of them carry current."
+	)
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english
+
+
 func _handle_switch_interaction(item_name: String, item: Dictionary) -> void:
+	# 导轨没修好之前，开关排根本没电，谈不上按顺序合闸。
+	if not GameState.has_story_flag("circuit_rail_repaired"):
+		_open_conductor_minigame()
+		return
 	var sequence: Array[String] = ["switch_left", "switch_right", "master_switch"]
 	var expected: String = sequence[_switch_sequence_index]
 	if item_name != expected:

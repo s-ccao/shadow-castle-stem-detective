@@ -468,7 +468,11 @@ func try_interact() -> void:
 				_use_rgb_filter(item_name)
 				return
 			if item_name == "research_desk":
-				_collect_archive_record()
+				# 先过光学练习，练完这张桌子才读得出档案。
+				if GameState.has_story_flag("library_optics_drilled"):
+					_collect_archive_record()
+				else:
+					_open_optics_minigame()
 				return
 			if item_name == "upper_drawer_cabinet":
 				var sealed_archive_feedback := _collect_sealed_lin_decision_archive()
@@ -573,3 +577,44 @@ func return_to_castle_hall() -> void:
 			"Failed to return to Castle Hall. Error: "
 			+ str(change_error)
 		)
+
+
+## 光学台的加色练习。图书馆知识展品讲的就是"光的三原色 + 混光是加法"，
+## 这里把它变成可操作的：调不出目标色就读不出档案上的隐藏字迹。
+func _open_optics_minigame() -> void:
+	var launched: bool = MinigameLauncher.launch(
+		self,
+		AdditiveColorMinigame.new(),
+		_mg_text("Optical Bench", "光学工作台"),
+		_mg_text(
+			"The archive plate only gives up its hidden strokes under the"
+			+ " right colour of light.",
+			"只有在正确颜色的光下，档案页上的隐藏字迹才会显现。"
+		),
+		Color(0.62, 0.80, 1.0, 1.0),
+		_on_optics_minigame_finished
+	)
+	if not launched:
+		interaction_runtime.present_feedback(
+			"The optical bench is already in use."
+		)
+
+
+func _on_optics_minigame_finished(cleared_all: bool, stages: int) -> void:
+	if cleared_all:
+		GameState.set_story_flag("library_optics_drilled")
+		interaction_runtime.present_feedback(
+			"Every mix matched. The archive plate is fully legible now."
+		)
+		_collect_archive_record()
+		return
+	interaction_runtime.present_feedback(
+		"You worked through %d of the colour plates before stepping away."
+		% stages
+	)
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english

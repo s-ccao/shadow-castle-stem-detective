@@ -397,7 +397,55 @@ func show_cabinet_dialogue() -> void:
 # Alchemy table
 # ============================================================
 
+## 炼金台旁的变化分拣。化学室知识展品讲的是"生成新物质才叫化学变化"，
+## 这个小游戏用铁生锈、蜡熔化这类反直觉样本把那条判据练到手。
+func _open_change_sorting_minigame() -> void:
+	var launched: bool = MinigameLauncher.launch(
+		self,
+		ChangeSortingMinigame.new(),
+		_mg_text("Sample Tray", "样本分拣盘"),
+		_mg_text(
+			"Mrs. Lin left a tray of samples to be filed. A change is chemical"
+			+ " only when a new substance appears.",
+			"林女士留下了一盘待归档的样本。只有生成了新物质才算化学变化。"
+		),
+		Color(0.86, 0.52, 0.98, 1.0),
+		_on_change_sorting_finished
+	)
+	if not launched:
+		show_message("You", "The sample tray is already open.")
+
+
+func _on_change_sorting_finished(cleared_all: bool, stages: int) -> void:
+	if cleared_all:
+		GameState.set_story_flag("chemistry_change_sorted")
+		show_message(
+			"You",
+			"Every sample filed. The red stain belongs with the chemical"
+			+ " changes — a new substance formed when the indicator met the"
+			+ " cleaning powder. It was never blood."
+		)
+		return
+	show_message(
+		"You",
+		"You filed %d trays before setting the samples down." % stages
+	)
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english
+
+
 func show_alchemy_table_dialogue() -> void:
+	# 读完笔记本之后，炼金台先出一盘分拣练习再进配药界面。
+	if (
+		GameState.has_story_flag("mrs_lin_lab_note_seen")
+		and not GameState.has_story_flag("chemistry_change_sorted")
+	):
+		_open_change_sorting_minigame()
+		return
 	# 剧情：首次交互炼金台 → Mrs. Lin 留下的笔记本（羊皮纸弹窗）。
 	if not GameState.has_story_flag("mrs_lin_lab_note_seen"):
 		GameState.set_story_flag("mrs_lin_lab_note_seen")
