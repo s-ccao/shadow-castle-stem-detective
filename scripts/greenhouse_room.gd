@@ -18,6 +18,35 @@ const DEVELOPER_CAMERA_ZOOM: Vector2 = Vector2(
 
 const CAMERA_ZOOM_SPEED: float = 7.0
 
+## 全清一条花坛额外给几份收成。配套的花坛定义在下面的 HERB_BED_GAMES；
+## 这两个常量放在这里是因为文件后半段的常量都排在 var 之后，加在那边
+## 每条都会多一个定义顺序告警。
+const MASTERY_BONUS: int = 2
+
+## 全清之后存进笔记的东西。写的是这条花坛真正教会的科学，并点出这味药在
+## 林老师的反制配方里做什么——练习要能接回主线，笔记就是那根线。
+const BED_MASTERY_NOTES: Dictionary = {
+	"herb_bed_left": {
+		"title": "Blue Blossom and the Limiting Factor",
+		"content": (
+			"Growth is capped by whichever of light, water and carbon "
+			+ "dioxide is scarcest; pouring more of the others in changes "
+			+ "nothing. That is why this bed keeps all three in step.\n\n"
+			+ "Blue Blossom is one of the two herbs Mrs. Lin's formula "
+			+ "names for washing the marker out of a person."
+		),
+	},
+	"herb_bed_right": {
+		"title": "Moonleaf and Light It Can Use",
+		"content": (
+			"Moonleaf opens only under the cold end of the spectrum, so "
+			+ "the light it is given matters as much as how much.\n\n"
+			+ "It is the second herb in Mrs. Lin's formula — moonleaf and "
+			+ "blue blossom in twice-distilled water."
+		),
+	},
+}
+
 @export var interaction_hint_position: Vector2 = Vector2(238, 696)
 @export var interaction_hint_size: Vector2 = Vector2(548, 68)
 
@@ -125,6 +154,7 @@ const HERB_BED_GAMES: Dictionary = {
 		"per_stage": 1,
 	},
 }
+
 
 @onready var player: CharacterBody2D = (
 	$Worldsort/player
@@ -840,16 +870,46 @@ func _on_herb_bed_minigame_finished(cleared_all: bool, stages_cleared: int) -> v
 		)
 		return
 	GameState.add_herb(herb_id, amount)
-	if cleared_all:
-		GameState.set_story_flag("greenhouse_%s_mastered" % bed_name)
 	var herb_name: String = str(
 		GameState.HERB_INFO.get(herb_id, {}).get("name", herb_id)
 	)
+	if cleared_all:
+		_master_bed(bed_name, herb_id, herb_name)
 	show_message(
 		"You",
 		_bilingual(
 			"Gathered %d %s from the bed." % [amount, herb_name],
 			"从这条花坛采到了 %d 份%s。" % [amount, herb_name]
+		)
+	)
+
+
+## 全清一条花坛的奖励。原来这里只置一个 greenhouse_*_mastered 标志，而那个
+## 标志全仓库没有第二处读到——练习做满了却什么也不解锁，等于这一段和主线
+## 断开。现在它给一份额外收成，并把这条花坛真正教会的东西存进笔记：两味药
+## 都是林老师反制配方里点名的材料，笔记要让玩家看得出这层关系。
+func _master_bed(bed_name: String, herb_id: String, herb_name: String) -> void:
+	var flag: String = "greenhouse_%s_mastered" % bed_name
+	if GameState.has_story_flag(flag):
+		return
+	GameState.set_story_flag(flag)
+	GameState.add_herb(herb_id, MASTERY_BONUS)
+	var note: Dictionary = BED_MASTERY_NOTES.get(bed_name, {})
+	if NoteHud != null and not note.is_empty():
+		NoteHud.add_clue("greenhouse_%s_mastery" % bed_name, {
+			"title": str(note["title"]),
+			"content": str(note["content"]),
+			"category": "herb",
+		})
+	show_message(
+		"You",
+		_bilingual(
+			(
+				"Every trial on this bed answered. The gardener's reserve "
+				+ "yields %d more %s."
+			) % [MASTERY_BONUS, herb_name],
+			"这条花坛的每一道题都答上来了。园丁的存货又给了 %d 份%s。"
+				% [MASTERY_BONUS, herb_name]
 		)
 	)
 

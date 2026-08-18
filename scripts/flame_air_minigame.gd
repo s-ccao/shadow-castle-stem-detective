@@ -349,22 +349,37 @@ func _settle() -> void:
 			first_wrong = place
 			break
 	var should_be: Dictionary = _jars[_expected[first_wrong]]
-	# 拼接必须先用括号收口再取 %：% 绑定得比 + 紧，不加括号的话格式化只作用
-	# 在最后一段字面量上，而占位符在第一段里，玩家读到的会是字面的 "%s"。
+	var you_put: Dictionary = _jars[_order[first_wrong]]
+	# 被点名的这只是**该在这一位熄灭**的罐子，所以它必然比玩家放在这一位的
+	# 那只先灭。原来这里写的是"比你排的撑得久"，182 种错误排列里错了 182 次；
+	# 后半句还固定挂着通气孔的解释，而被点名的罐子有四成根本没有通气孔。
+	# 现在只说两只各自能烧多久——这句永远成立，而且直接把公式摆出来。
 	var numbers: Array = [
-		_num(float(should_be["air"])), _num(float(should_be["vents"]))
+		first_wrong + 1,
+		_num(float(should_be["air"])), _num(float(should_be["vents"])),
+		_ticks_text(should_be), _ticks_text(you_put),
 	]
 	report_level_failed(_text(
 		(
-			"Not that order. The jar with air %s and vents %s outlasts the "
-			+ "rest of your guess — a vent keeps feeding the flame, so a "
-			+ "small vented jar can beat a large sealed one."
+			"Not there. Position %d belongs to the jar with air %s and "
+			+ "vents %s: it lasts %s, and the one you put there lasts %s. "
+			+ "Air divided by (wick minus vents) gives the burn."
 		) % numbers,
 		(
-			"顺序不对。空气 %s、通气 %s 的那只罐子，比你排的撑得久——"
-			+ "通气孔会一直补进空气，所以带孔的小罐可以赢过密封的大罐。"
+			"这一位不对。第 %d 位该是空气 %s、通气 %s 的那只：它只能烧 %s，"
+			+ "而你放在这一位的那只能烧 %s。用「空气 ÷（灯芯 − 通气）」"
+			+ "算一遍就分得出先后。"
 		) % numbers
 	))
+
+
+## 一只罐子能烧多久，写成给玩家看的样子。通气量压过耗氧量的罐子永不熄灭，
+## 这时给一个数字反而会让人以为它也会灭。
+func _ticks_text(jar: Dictionary) -> String:
+	var value: float = burn_ticks(jar)
+	if value >= NEVER:
+		return _text("forever", "烧不完")
+	return _text("%s ticks" % _num(value), "%s 刻" % _num(value))
 
 
 ## 按燃烧时长升序；同时长的按原始顺序，保证答案唯一。

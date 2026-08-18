@@ -588,4 +588,16 @@ const LINES: Dictionary = {
 		"砧板账簿里压着三道配方，是林老师的字迹。「标记物下在酒里，不在食物里。走廊里那东西之所以从来不必去找，就是这个缘故。用月叶和蓝花在二次蒸馏水里把它洗掉，你一离开它的视线，它就会跟丢你。另外两道，留给光靠躲还不够的时候：铁盐加棱镜粉可以让它失明，单用棱镜粉能把光在你周身折开。」",
 	"A chemical change creates a new substance. Burning paper is chemical; melting ice, breaking glass, and dissolving sugar are physical changes.":
 		"化学变化会生成新的物质。纸张燃烧是化学变化；冰融化、玻璃破碎、砂糖溶解，则都是物理变化。",
+
+	# ---------- 温室：花坛全清的知识笔记 ----------
+	"Blue Blossom and the Limiting Factor":
+		"蓝花与限制因子",
+	"Growth is capped by whichever of light, water and carbon dioxide is scarcest; pouring more of the others in changes nothing. That is why this bed keeps all three in step.\n\nBlue Blossom is one of the two herbs Mrs. Lin's formula names for washing the marker out of a person.":
+		"生长的上限，由光照、水分、二氧化碳里最缺的那一项定死；把其余两项加得再多也没有用。这条花坛之所以要三项齐头并进，就是这个道理。\n\n蓝花正是林老师配方里点名的两味药之一——用来把标记物从人身上洗掉。",
+	"Moonleaf and Light It Can Use":
+		"月叶与它用得上的光",
+	"Moonleaf opens only under the cold end of the spectrum, so the light it is given matters as much as how much.\n\nIt is the second herb in Mrs. Lin's formula — moonleaf and blue blossom in twice-distilled water.":
+		"月叶只在光谱偏冷的那一端才张开，所以给它什么光，和给它多少光一样要紧。\n\n它是林老师配方里的第二味药——月叶配蓝花，在二次蒸馏水里。",
+	"Every trial on this bed answered. The gardener's reserve yields %d more %s.":
+		"这条花坛的每一道题都答上来了。园丁的存货又给了 %d 份%s。",
 }

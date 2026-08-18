@@ -304,3 +304,41 @@ of things a parser waves through:
 `python3 tools/check_static.py` covers all four and CI runs it. Run it after
 any merge, rebase or conflict resolution — that is when this class of damage
 appears, and it is the one class a parser cannot warn you about.
+
+## A minigame that unlocks nothing is a worksheet
+
+Every minigame has to close a three-part loop: the room raises a question, the
+play teaches the concept, and clearing it hands back something the case needs —
+evidence, a key, a device, a route. Two of the eight failed that test and were
+easy to miss, because both *looked* wired up:
+
+- The greenhouse set `greenhouse_<bed>_mastered` on a full clear and nothing in
+  the repository ever read it. The herb payout was real, but mastery bought
+  nothing. It now grants a bonus yield and files what the bed actually taught,
+  including where that herb turns up in Mrs. Lin's counter-formula.
+- The chemistry sorter is reached from `scenes/floor_1/chemistry_room.gd`, not
+  `scripts/`. A grep confined to `scripts/` says it is orphaned. Four of the
+  room scripts live under `scenes/`, so an audit that only walks `scripts/`
+  will draw the wrong conclusion twice over.
+
+When adding a minigame, grep for its completion flag and confirm something
+*reads* it. Writing a flag is not a reward.
+
+## The minigame data is the lesson, so it is under test
+
+`tests/minigame_science_contract_test.gd` asserts the properties the teaching
+rests on, not that the code runs:
+
+- the sorter's colour-is-substance encoding reproduces every authored
+  `chemical` flag, and every substance and texture it names is one the dish can
+  actually draw;
+- every photosynthesis stage has an allocation that fits the ration;
+- a gear train's ratio depends only on its first and last gear;
+- a timeline stage's reliable clues agree and its liar is a whole number that
+  reaches the answer buttons;
+- no two jars in a flame stage burn for the same time, which is what makes the
+  failure hint's "it goes out sooner" strictly true.
+
+These fail silently in play — a wrong encoding teaches the opposite lesson
+without erroring — so they are worth more than any smoke test. Run with
+`godot --headless --script tests/minigame_science_contract_test.gd`.
