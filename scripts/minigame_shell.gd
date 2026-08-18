@@ -26,6 +26,11 @@ const INK_OUTLINE := Color(0.09, 0.05, 0.02, 1.0)
 
 const PANEL_SIZE := Vector2(820.0, 560.0)
 
+## 过关后停留多久再切下一关，让特效播完。
+const LEVEL_CLEAR_DELAY: float = 0.9
+## 全部通关后停留得久一点，这是整局最值得看的一下。
+const FINAL_CLEAR_DELAY: float = 1.5
+
 var content: Control
 var accent: Color = GOLD
 
@@ -42,6 +47,8 @@ var _level_index: int = 0
 var _cleared_count: int = 0
 ## 过关特效播放期间为真，用来挡住重复过关。
 var _advancing: bool = false
+## finished 只应发一次；收尾延时期间关闭按钮仍然是可按的。
+var _finished: bool = false
 var _banner_tween: Tween
 
 
@@ -229,6 +236,7 @@ func start() -> void:
 	visible = true
 	_level_index = 0
 	_cleared_count = 0
+	_finished = false
 	_enter_level()
 
 
@@ -285,13 +293,19 @@ func report_level_cleared(message: String) -> void:
 	show_banner(message, true)
 	_spawn_clear_effect()
 	_cleared_count += 1
-	if _level_index + 1 >= level_count():
-		_finish(true)
-		return
-	_level_index += 1
-	# 留一点时间让过关特效播完再切下一关。
-	var timer: SceneTreeTimer = get_tree().create_timer(0.9, true, false, true)
-	timer.timeout.connect(_enter_level)
+	var is_last: bool = _level_index + 1 >= level_count()
+	if not is_last:
+		_level_index += 1
+	# 留一点时间让过关特效播完再切下一关。最后一关同样要等——原来这里直接
+	# _finish()，面板瞬间关闭，全通关那一下的横幅和光环玩家根本看不到，
+	# 而那正是整局最该被看见的一刻。
+	var timer: SceneTreeTimer = get_tree().create_timer(
+		FINAL_CLEAR_DELAY if is_last else LEVEL_CLEAR_DELAY, true, false, true
+	)
+	if is_last:
+		timer.timeout.connect(_finish.bind(true))
+	else:
+		timer.timeout.connect(_enter_level)
 
 
 func report_level_failed(message: String) -> void:
@@ -327,6 +341,11 @@ func _on_close_pressed() -> void:
 
 
 func _finish(cleared_all: bool) -> void:
+	# 全通关的收尾是延时触发的，那段时间里关闭按钮仍然可以按，会走到
+	# 第二次 _finish。只发一次 finished，房间的奖励结算才不会重复执行。
+	if _finished:
+		return
+	_finished = true
 	visible = false
 	_clear_content()
 	finished.emit(cleared_all)
