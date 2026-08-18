@@ -164,6 +164,11 @@ func open() -> void:
 
 
 func add_clue(id: String, data: Dictionary = {}) -> void:
+	# 线索的标题与正文同样在入口处翻译一次，日志、弹窗、案件板共用结果。
+	if data.has("title"):
+		data["title"] = CaseLocale.line(str(data["title"]))
+	if data.has("content"):
+		data["content"] = CaseLocale.line(str(data["content"]))
 	var is_new: bool = not get_journal().has_clue(id)
 	get_journal().add_clue(id, data)
 	if is_new:

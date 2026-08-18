@@ -3710,6 +3710,7 @@ func _set_avatar_style(speaker_name: String) -> void:
 
 
 func set_dialogue_text(speaker_name: String, text: String):
+	text = CaseLocale.line(text)
 	_current_speaker = speaker_name
 	_dialogue_segments = _split_dialogue_segments(text)
 	_segment_index = 0

@@ -34,6 +34,10 @@ jobs:
           done < <(find scripts autoload -name '*.gd' | sort)
           exit "$failed"
 
+      # case_script_zh.gd is excluded: it is a translation table whose lines
+      # are long because sentences are long, so max-line-length says nothing
+      # useful about it and would drown the real signal as it grows.
+      #
       # gdlint reports a large number of pre-existing style issues, mostly
       # class-definitions-order in the two oldest files. Failing on any of
       # them would make this job permanently red and therefore ignored, so
@@ -47,7 +51,8 @@ jobs:
           while IFS= read -r file; do
             count=$(gdlint "$file" 2>&1 | grep -c 'Error:' || true)
             total=$((total + count))
-          done < <(find scripts autoload -name '*.gd' | sort)
+          done < <(find scripts autoload -name '*.gd' \
+                   -not -name 'case_script_zh.gd' | sort)
           echo "gdlint problems: $total (baseline $BASELINE)"
           if [ "$total" -gt "$BASELINE" ]; then
             echo "::error::gdlint problems rose from $BASELINE to $total."
@@ -74,3 +79,10 @@ jobs:
           done < <(sed -n '/^\[autoload\]/,/^\[/p' project.godot \
                    | grep -o 'res://[^"]*' || true)
           exit "$failed"
+
+      # A translation whose format specifiers or BBCode drift from the English
+      # crashes or misrenders at runtime, and one whose English was reworded
+      # silently stops being used. Coverage itself is reported, never gated --
+      # translating is incremental.
+      - name: Check translations
+        run: python3 tools/check_translations.py

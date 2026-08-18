@@ -122,6 +122,9 @@ func refresh(input_enabled: bool, priority_interaction: Dictionary = {}) -> Stri
 
 
 func present_feedback(text: String) -> void:
+	# 在出口处翻译：房间里几百个 present_feedback("...") 调用点保持原样，
+	# 也就不存在"漏改一处就永远是英文"的问题。
+	text = CaseLocale.line(text)
 	_feedback_text = text
 	_show_prompt(text, _prompt_position, _prompt_offset)
 

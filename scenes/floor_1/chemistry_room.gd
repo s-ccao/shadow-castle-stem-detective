@@ -1911,6 +1911,7 @@ func show_message(
 	speaker_name: String,
 	body_text: String
 ) -> void:
+	body_text = CaseLocale.line(body_text)
 	if evidence_overview_preview != null:
 		evidence_overview_preview.visible = false
 	_current_speaker = speaker_name

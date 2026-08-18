@@ -519,6 +519,7 @@ func create_dialogue_ui() -> void:
 
 
 func show_message(speaker_name: String, body_text: String) -> void:
+	body_text = CaseLocale.line(body_text)
 	_current_speaker = speaker_name
 	_dialogue_segments = _split_dialogue_segments(body_text)
 	_segment_index = 0

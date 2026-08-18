@@ -171,6 +171,21 @@ func room_name(room_id: String) -> String:
 	return text("room." + room_id)
 
 
+## 房间正文的翻译入口。键就是英文原句本身（见 CaseScriptZh），所以房间脚本
+## 里的调用点不用改；查不到就原样返回英文，缺译只是没翻译，不会显示成键名。
+##
+## 这个函数由文本的出口函数调用（present_feedback / show_message /
+## set_dialogue_text / NoteHud.add_clue），而不是散在几百个调用点上——
+## 后者每漏一处就是一句永远翻不到的英文。
+func line(english: String) -> String:
+	if _language != CHINESE:
+		return english
+	var translated: Variant = CaseScriptZh.LINES.get(english)
+	if translated == null:
+		return english
+	return str(translated)
+
+
 func _load_preference() -> String:
 	var config := ConfigFile.new()
 	if config.load(PREFERENCE_PATH) != OK:
