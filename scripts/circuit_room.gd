@@ -316,9 +316,10 @@ func _on_conductor_minigame_finished(cleared_all: bool, stages: int) -> void:
 		)
 		return
 	interaction_runtime.present_feedback(
-		"You closed %d of the broken rails before stepping away. The switch"
-		% stages
-		+ " bank stays dead until all of them carry current."
+		(
+			"You closed %d of the broken rails before stepping away."
+			+ " The switch bank stays dead until all of them carry current."
+		) % stages
 	)
 
 

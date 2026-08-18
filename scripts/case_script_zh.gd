@@ -40,6 +40,9 @@ const LINES: Dictionary = {
 	"Every mix matched. The archive plate is fully legible now.":
 		"每一种配色都对上了。档案页现在完整可读。",
 
+	"[center][b]A Torn Note Page[/b][/center]\n\nHalf a page of handwriting, torn across the middle:\n\n\"...the gardener swears the greenhouse was locked. Yet [color=#7a2e2e]dark pollen[/color] — the deep-room kind, not from any plant here — clings to the tool handles. It does not prove the gardener used the route; it only proves that maintenance equipment entered the deep room.\n\nIf that pollen came from outside, someone entered the greenhouse through the maintenance tunnel.\n\nThe gardener is the obvious suspect. Obvious is not the same as proven. You know how often I say that.\"":
+		"[center][b]撕下的半页笔记[/b][/center]\n\n半页手写字，从中间被撕开：\n\n「……园丁一口咬定温室当时是锁着的。可是工具把手上沾着[color=#7a2e2e]深色花粉[/color]——深室那一种，这里任何一株植物都产不出来。这不能证明园丁走过那条路，它只能证明：维修器具进过深室。\n\n如果那些花粉来自外面，就有人是从维修隧道进的温室。\n\n园丁是最显眼的嫌疑人。显而易见，不等于已被证明。我这句话说过多少遍，你是知道的。」",
+
 	# ---------- 线路房 ----------
 	"Wrong sequence. The circuit resets. Follow the repair map from step 1.":
 		"顺序不对，电路复位了。照着维修图，从第 1 步重新来。",
@@ -155,6 +158,72 @@ const LINES: Dictionary = {
 		"这些屋子我照料了这么多年，什么东西该在这儿、什么不该，我心里有数。那种深色花粉，不该在这儿。\n\n灌溉泵和下层厅堂共用一段维修电路，这能解释我台子上那张维修图。但它解释不了——是谁把深室的痕迹带进了我的温室。",
 	"The greenhouse gate clicks open just enough to reveal a hidden brass hook. A dark metal key threaded with violet current hangs from it.\n\nThe Circuit Room Key. The next room is waiting beyond the greenhouse trail.":
 		"温室的门「咔」地松开一道缝，露出里面一枚暗藏的黄铜挂钩。钩上垂着一把深色金属钥匙，纹路里游着紫色的电流。\n\n电路室钥匙。穿过温室这条路，下一个房间正等着你。",
-	"[center][b]A Torn Note Page[/b][/center]\n\nHalf a page of handwriting, torn across the middle:\n\n\"...the gardener swears the greenhouse was locked. Yet [color=#7a2e2e]dark pollen[/color] — the deep-room kind, not from any plant here — clings to the tool handles. It does not prove the gardener used the route; it only proves that maintenance equipment entered the deep room.\n\nIf that pollen came from outside, someone entered the greenhouse through the maintenance tunnel.\n\nThe gardener is the obvious suspect. Obvious is not the same as proven. You know how often I say that.\"":
-		"[center][b]撕下的半页笔记[/b][/center]\n\n半页手写字，从中间被撕开：\n\n「……园丁一口咬定温室当时是锁着的。可是工具把手上沾着[color=#7a2e2e]深色花粉[/color]——深室那一种，这里任何一株植物都产不出来。这不能证明园丁走过那条路，它只能证明：维修器具进过深室。\n\n如果那些花粉来自外面，就有人是从维修隧道进的温室。\n\n园丁是最显眼的嫌疑人。显而易见，不等于已被证明。我这句话说过多少遍，你是知道的。」",
+	# ---------- 线路房 ----------
+	"A cluttered workbench. Tools, coils and an open journal cover the surface. The last entry is cut off mid-sentence.":
+		"一张堆满东西的工作台。工具、线圈、一本摊开的日志铺满台面。最后一条记录写到一半就断了。",
+	"A massive arcane generator. Blue arcs crackle behind its glass chamber. The mechanism still hums.":
+		"一台巨大的秘能发电机。玻璃腔体后面蓝色电弧噼啪作响，机构仍在低鸣。",
+	"A reinforced equipment cabinet. Its padlock is firmly shut, but the keyhole glints as if recently used.":
+		"一只加固过的器材柜。挂锁扣得很牢，但锁孔泛着光——像是最近才被人开过。",
+	"A left-side power switch. Its purpose is unclear.":
+		"左侧的一个电闸。作用不明。",
+	"A right-side power switch. Its purpose is unclear.":
+		"右侧的一个电闸。作用不明。",
+	"A large master power switch. Its purpose is unclear.":
+		"一个大号总闸。作用不明。",
+	"The switch clicks into position. Continue to the next numbered switch.":
+		"电闸咔一声推到位。按编号继续下一个。",
+	"The master switch engages. The workshop power is restored.":
+		"总闸合上了。工坊恢复供电。",
+	"You closed %d of the broken rails before stepping away. The switch bank stays dead until all of them carry current.":
+		"你在离开前接通了 %d 条断轨。只要还有一条不通电，整排开关就一直是死的。",
+	"A Stained Note Page": "沾污的笔记页",
+	"Violet Insulating Weave": "紫色绝缘编织物",
+	"Mechanic's Maintenance Glove Record": "机械师的维修手套登记",
+	"SEALED ARCHIVE II — The Forged Instruction": "密封档案 II —— 被伪造的命令",
+	"The castle's electrical maintenance gloves and cable wraps use a distinctive violet insulating weave. It is a maintenance material, not proof that one particular worker committed a crime.":
+		"城堡的电气维修手套和线缆包覆，用的都是一种很好认的紫色绝缘编织物。这是一种维修材料——它本身并不能证明某一个人犯了案。",
+	"One pair of maintenance gloves was assigned to the Mechanic. The right glove had previously been repaired with a distinctive copper-thread cross-stitch. The right glove is now missing after the blackout. The same access log records the Mechanic's statement that he was checking the west-side electrical system during the blackout; the Dining timeline will test whether that account is possible.":
+		"有一副维修手套登记在机械师名下。其中右手那只曾用铜线十字缝补过，针脚很好认。停电之后，这只右手手套不见了。同一份出入记录里还有机械师本人的说法：停电期间他在检查西侧电力系统——这个说法成不成立，餐厅那条时间线会替你检验。",
+	"The false-bottom cabinet has nothing more to give. The damaged instruction slip is already in your notes.":
+		"那只带假底的柜子再没有别的东西了。破损的命令便条已经在你的笔记里。",
+	"Mechanic: The blackout did not start here. Someone used the workshop's maintenance route, then left the generators to take the blame.":
+		"机械师：停电不是从这儿开始的。有人走了工坊的维修通道，然后把锅甩给发电机。",
+
+	# ---------- 餐厅 ----------
+	"The long banquet table still bears the remnants of a feast. Wine stains and scattered cutlery tell a hurried story.":
+		"长餐桌上还留着宴席的残迹。酒渍和散落的刀叉，讲的是一个仓促收场的故事。",
+	"The clock has stopped at midnight. Its pendulum hangs motionless.":
+		"钟停在午夜。钟摆一动不动地垂着。",
+	"The hearth crackles warmly. Embers glow beneath the worn mantel.":
+		"壁炉噼啪作响，暖意未散。磨旧的炉台下面，余烬还亮着。",
+	"The fire is warm, but no log has burned evenly. Ash marks continue behind the hearth toward the barred wall door.":
+		"火还是热的，但没有一根柴是均匀烧过的。灰痕从炉膛后面一路延伸，指向那扇被闩住的墙门。",
+	"A heavy sideboard laden with dishes and silver. A torn red cloth hangs over its front edge.":
+		"一张沉重的餐边柜，摆满盘碟和银器。前沿垂着一块撕破的红布。",
+	"A tall storage cabinet. Cookware and jugs crowd its dark shelves.":
+		"一只高身储物柜。炊具和陶罐把暗处的隔板塞得满满当当。",
+	"A heavy wooden door set in the stone wall. It is barred from the other side.":
+		"石墙里嵌着一扇厚重的木门。门闩在另一侧。",
+	"A strip of red fabric is caught on the silver drawer. Its threads match the service uniforms, not the table decorations.":
+		"银器抽屉上挂着一条红布。它的织线对得上侍应制服，而不是桌面装饰。",
+	"A folded kitchen record names the service passage as the only route that bypasses the main corridor. The last entry is signed just before midnight.":
+		"一份折起来的厨房记录写明：服务通道是唯一能绕开主走廊的路线。最后一条签名，就落在午夜之前。",
+	"The pendulum was stopped by hand. The minute hand is bent toward twelve, as if someone wanted the room to remember a false time.":
+		"钟摆是被人用手按停的。分针被掰向十二点——像是有人要让这间屋子记住一个假的时刻。",
+	"The pendulum was stopped by hand. The minute hand is bent toward twelve, as if someone wanted the room to remember a false time. Every other indicator in this room disagrees with it, and they all agree with each other.":
+		"钟摆是被人用手按停的。分针被掰向十二点——像是有人要让这间屋子记住一个假的时刻。这屋里其余每一条线索都与它相左，而它们彼此之间却完全吻合。",
+	"The plates were cleared at 11:40. The clock stopped at midnight, but the fireplace ash is fresh. Someone moved through the hall during the missing twenty minutes.":
+		"餐盘是 11:40 撤下的。钟停在午夜，可壁炉的灰是新的。在这消失的二十分钟里，有人穿过了这个厅。",
+	"You reconstructed %d of the timings before stepping back from the clock.":
+		"你在离开钟前推算出了 %d 个时刻。",
+	"The Service Corridor Key fits the hidden lock. The passage lies behind the hall's east wall — the way back is marked in the Castle Hall.":
+		"服务通道钥匙对上了那把暗锁。通道就在大厅东墙后面——回去的路已经标在城堡大厅里了。",
+	"A Torn Red Cloth": "撕破的红布",
+	"The Last Twenty Minutes": "消失的二十分钟",
+	"The Service Passage Record": "服务通道记录",
+	"Mrs. Lin's Last Dining Note": "林女士在餐厅留下的最后一条笔记",
+	"SEALED ARCHIVE I — The Butler's Pressure": "密封档案 I —— 管家的处境",
+	"The narrow compartment behind the service ledger is empty. Its private archive has already been copied.":
+		"服务台账后面那道窄格已经空了。里面的私人档案早被誊抄走了。",
 }

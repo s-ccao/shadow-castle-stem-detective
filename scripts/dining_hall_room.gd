@@ -321,9 +321,10 @@ func _open_timeline_minigame() -> void:
 func _on_timeline_minigame_finished(cleared_all: bool, stages: int) -> void:
 	if not cleared_all:
 		interaction_runtime.present_feedback(
-			"You reconstructed %d of the timings before stepping back from the"
-			% stages
-			+ " clock."
+			(
+				"You reconstructed %d of the timings before stepping back"
+				+ " from the clock."
+			) % stages
 		)
 		return
 	GameState.set_story_flag("dining_timeline_reconstructed")
