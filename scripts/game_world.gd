@@ -3445,6 +3445,7 @@ func _on_door_question_correct() -> void:
 			GameState.set_story_flag("door_final_unlocked")
 	# 六扇门共用同一条解锁后刷新路径，目标面板才会立刻反映新状态。
 	update_objective_text()
+	AudioManager.play_ui("answer_correct")
 	set_dialogue_text("Mrs. Lin", CaseLocale.text("knowledge.correct"))
 	show_continue_button(
 		CaseLocale.text("knowledge.continue"),
@@ -3456,6 +3457,7 @@ func _on_door_question_wrong() -> void:
 	if _final_synthesis_active:
 		_show_final_synthesis_wrong()
 		return
+	AudioManager.play_ui("answer_wrong")
 	clear_buttons()
 	set_dialogue_text("Mrs. Lin", CaseLocale.text("knowledge.wrong"))
 	var retry_button := Button.new()

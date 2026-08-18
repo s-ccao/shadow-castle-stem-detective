@@ -28,6 +28,7 @@ InventoryHud="*res://scripts/inventory_hud.gd"
 ItemRewardHud="*res://scripts/item_reward_hud.gd"
 ParchmentHud="*res://scripts/parchment_hud.gd"
 PotionHud="*res://autoload/potion_effects_hud.gd"
+AudioManager="*res://autoload/audio_manager.gd"
 
 [display]
 

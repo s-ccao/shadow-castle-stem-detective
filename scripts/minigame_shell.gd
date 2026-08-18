@@ -189,7 +189,13 @@ func make_button(text: String) -> Button:
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("disabled", disabled)
+	# 所有小游戏按钮共用同一个点击音，不必每个玩法各接一次。
+	button.pressed.connect(_on_any_button_pressed)
 	return button
+
+
+func _on_any_button_pressed() -> void:
+	AudioManager.play_ui("ui_click")
 
 
 func configure(title: String, subtitle: String, tint: Color) -> void:
@@ -241,6 +247,7 @@ func _clear_content() -> void:
 
 ## 具体玩法在过关时调用；最后一关过掉会触发 finished(true)。
 func report_level_cleared(message: String) -> void:
+	AudioManager.play_ui("stage_clear")
 	show_banner(message, true)
 	_spawn_clear_effect()
 	_cleared_count += 1
@@ -254,6 +261,7 @@ func report_level_cleared(message: String) -> void:
 
 
 func report_level_failed(message: String) -> void:
+	AudioManager.play_ui("answer_wrong")
 	show_banner(message, false)
 
 

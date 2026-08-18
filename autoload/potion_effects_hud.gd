@@ -134,12 +134,14 @@ func _on_potion_applied(effect_id: String, duration: float) -> void:
 	var style: Dictionary = EFFECT_STYLE.get(effect_id, {})
 	if style.is_empty():
 		return
+	AudioManager.play_sfx("potion_drink")
 	_spawn_burst(style)
 	_ensure_chip(effect_id, style, duration)
 	_raise_aura(style["aura"] as Color)
 
 
 func _on_potion_expired(effect_id: String) -> void:
+	AudioManager.play_sfx("potion_expire")
 	var chip: PotionStatusChip = _chips.get(effect_id) as PotionStatusChip
 	if chip != null:
 		_chips.erase(effect_id)
