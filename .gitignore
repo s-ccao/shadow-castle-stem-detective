@@ -11,3 +11,7 @@
 # Godot import metadata for legacy portrait source files that are no longer in
 # the project. Current portraits live in portraits_pixel_v2/.
 /assets/characters/portraits/
+
+# Byte-compiled output from the Python checks in tools/. Regenerated on every
+# run and specific to the local interpreter version.
+__pycache__/

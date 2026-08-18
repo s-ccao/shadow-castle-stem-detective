@@ -2189,7 +2189,7 @@ func create_game_ui():
 	create_evidence_board_ui()
 	create_knowledge_journal_ui()
 	update_objective_text()
-	
+
 
 
 func sync_hall_knowledge_items() -> void:

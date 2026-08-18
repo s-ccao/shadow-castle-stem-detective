@@ -2143,7 +2143,7 @@ func start_dialogue_pause():
 	update_world_cursor()
 
 func end_dialogue_pause():
-	
+
 	dialogue_active = false
 	player.set_physics_process(true)
 	update_world_cursor()
@@ -2152,7 +2152,7 @@ func reset_dialogue_scrolls():
 		message_scroll.scroll_vertical = 0
 		message_scroll.set_deferred("scroll_vertical", 0)
 
-	
+
 func create_puzzle_overlay_ui():
 	puzzle_panel = Panel.new()
 	puzzle_panel.position = Vector2(170, 120)

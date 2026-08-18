@@ -154,7 +154,7 @@ The English literal in the room script is both the source text and the lookup
 key, so adding a translation touches no logic and a reworded line cannot
 silently point at a stale entry.
 
-All 274 player-facing lines are translated. Run
+All 287 player-facing lines are translated. Run
 `python3 tools/check_translations.py` after any text change; CI runs it too.
 It fails on a translation whose English no longer exists, and on one whose
 format specifiers, BBCode tags or line breaks drift from the original — the
@@ -272,3 +272,24 @@ Every `"correct"` index in `DOOR_QUESTIONS` and `FINAL_SYNTHESIS_QUESTIONS` is
 numbered list printed into the dialogue panel is generated from that same
 shuffled order — if you regenerate one without the other, the panel tells the
 player an answer number that maps to a different button.
+
+## Validating without opening Godot
+
+`gdparse` proves a file is *syntactically* well-formed and nothing more. Godot
+rejects several things it accepts, and all of them fail at **load** time, which
+means the first symptom is a scene that will not run — usually every scene,
+because the offending file is usually an autoload.
+
+Three have actually bitten this project, all of them merge artifacts:
+
+- **A duplicate key in a dictionary literal.** Bringing the same block of
+  entries in twice parses clean and then refuses to load. This is how
+  `case_locale.gd` broke: two copies of `potion.swift_short`.
+- **A duplicate top-level `func`/`const`/`signal`.** Same shape, same silence.
+- **A `res://` path whose target was deleted.** Removing a script during a
+  merge without updating the scenes that reference it leaves scenes that cannot
+  be instantiated.
+
+`python3 tools/check_static.py` covers all three and CI runs it. Run it after
+any merge, rebase or conflict resolution — that is when this class of damage
+appears, and it is the one class a parser cannot warn you about.

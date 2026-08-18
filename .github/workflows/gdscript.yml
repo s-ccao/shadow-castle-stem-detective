@@ -34,17 +34,28 @@ jobs:
           done < <(find scripts autoload -name '*.gd' | sort)
           exit "$failed"
 
+      # gdparse only proves a file is syntactically well-formed. Godot rejects
+      # more than that at load time -- duplicate dictionary keys, duplicate
+      # top-level definitions, res:// paths whose target was deleted -- and a
+      # merge is very good at producing all three. Those failures only show up
+      # when you press Play, so they are checked here instead.
+      - name: Check for load-time errors gdparse misses
+        run: python3 tools/check_static.py
+
       # case_script_zh.gd is excluded: it is a translation table whose lines
       # are long because sentences are long, so max-line-length says nothing
       # useful about it and would drown the real signal as it grows.
       #
-      # gdlint reports a large number of pre-existing style issues, mostly
-      # class-definitions-order in the two oldest files. Failing on any of
-      # them would make this job permanently red and therefore ignored, so
-      # the count is pinned instead: new code must not add to it.
+      # gdlint reports a large number of pre-existing style issues, almost all
+      # of them max-line-length and class-definitions-order in the largest room
+      # scripts. Failing on any of them would make this job permanently red and
+      # therefore ignored, so the count is pinned instead: new code must not add
+      # to it. The baseline rose from 760 when the two development lines were
+      # merged and the larger versions of game_world.gd, circuit_lab_ui.gd and
+      # library_light_lab_ui.gd came in with their existing warnings.
       - name: Lint against the recorded baseline
         env:
-          BASELINE: "760"
+          BASELINE: "1065"
         run: |
           set -uo pipefail
           total=0

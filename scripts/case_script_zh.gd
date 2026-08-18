@@ -31,14 +31,8 @@ const LINES: Dictionary = {
 		"一条长长的抬高花坛，种满蓝铃花。光照、水分和空气的供给阀，全都接到这里。",
 	"A long raised bed of moonleaf. The silver pods open and close, each on its own slow rhythm.":
 		"一条长长的抬高花坛，种着月叶。银色的花苞一开一合，每一株都按自己的节奏来。",
-
-	# ---------- 图书馆 ----------
-	"The red, green and blue filters remain active. Their combined pale light keeps the hidden archive text visible.":
-		"红、绿、蓝三片滤镜都还亮着。它们叠出的那层淡白光，让档案上的隐藏字迹一直显形。",
 	"Red, green and blue combine into pale neutral light. The additive color key reveals the hidden archive text.":
 		"红、绿、蓝叠加成了近乎中性的淡白光。加色这把钥匙，把档案里藏着的字迹显了出来。",
-	"Every mix matched. The archive plate is fully legible now.":
-		"每一种配色都对上了。档案页现在完整可读。",
 
 	"[center][b]A Torn Note Page[/b][/center]\n\nHalf a page of handwriting, torn across the middle:\n\n\"...the gardener swears the greenhouse was locked. Yet [color=#7a2e2e]dark pollen[/color] — the deep-room kind, not from any plant here — clings to the tool handles. It does not prove the gardener used the route; it only proves that maintenance equipment entered the deep room.\n\nIf that pollen came from outside, someone entered the greenhouse through the maintenance tunnel.\n\nThe gardener is the obvious suspect. Obvious is not the same as proven. You know how often I say that.\"":
 		"[center][b]撕下的半页笔记[/b][/center]\n\n半页手写字，从中间被撕开：\n\n「……园丁一口咬定温室当时是锁着的。可是工具把手上沾着[color=#7a2e2e]深色花粉[/color]——深室那一种，这里任何一株植物都产不出来。这不能证明园丁走过那条路，它只能证明：维修器具进过深室。\n\n如果那些花粉来自外面，就有人是从维修隧道进的温室。\n\n园丁是最显眼的嫌疑人。显而易见，不等于已被证明。我这句话说过多少遍，你是知道的。」",
@@ -46,8 +40,6 @@ const LINES: Dictionary = {
 	# ---------- 线路房 ----------
 	"Wrong sequence. The circuit resets. Follow the repair map from step 1.":
 		"顺序不对，电路复位了。照着维修图，从第 1 步重新来。",
-	"Every rail is closed. The switch bank has power again — now the sequence.":
-		"每条导轨都闭合了，开关排重新有电。接下来是顺序问题。",
 
 	# ---------- 餐厅 ----------
 	"The Last Dinner Timeline":
@@ -58,25 +50,10 @@ const LINES: Dictionary = {
 	# ---------- 化学室 ----------
 	"Mrs. Lin's Lab Notebook":
 		"林女士的实验笔记",
-
-	# ---------- 通用交互反馈 ----------
-	"The optical bench is already in use.":
-		"光学台正被占用着。",
-	"The repair bench is already open.":
-		"维修台已经打开了。",
 	"You are already working this out.":
 		"你正在推算这件事。",
 	"The sample tray is already open.":
 		"样本盘已经打开了。",
-
-	# ---------- 开场过场：章节标题 ----------
-	"Shadow Castle": "影堡",
-	"The Night of the Case": "案发之夜",
-	"Lord Ashford": "阿什福德勋爵",
-	"The Knowledge Locks": "知识锁",
-	"The Darkness": "那片黑暗",
-	"Mrs. Lin's Last Note": "林女士最后的字条",
-	"Your Investigation Begins": "你的调查，从这里开始",
 
 	# ---------- 大厅知识展品（存入侦探笔记的版本） ----------
 	"Chemistry Room Knowledge": "化学室知识",
@@ -84,16 +61,6 @@ const LINES: Dictionary = {
 	"Dining Hall Knowledge": "餐厅知识",
 	"Greenhouse Room Knowledge": "温室知识",
 	"Library Knowledge": "图书馆知识",
-	"A chemical change creates new substances: burning paper is chemical, while melting ice, breaking glass and dissolving sugar are physical changes.":
-		"化学变化会生成新物质：纸张燃烧是化学变化；而冰块融化、玻璃破碎、白糖溶解都只是物理变化。",
-	"A conductor lets charge move through a circuit. Metal is usually a better conductor than rubber, dry wood or glass; a broken circuit cannot carry current.":
-		"导体能让电荷在电路里流动。金属通常比橡胶、干木头和玻璃更善于导电；而断开的电路是通不了电流的。",
-	"Measure a reasonably steady change and compare several independent indicators before estimating elapsed time.":
-		"先找一个变化速度足够稳定的量去测量，再比对几个互相独立的线索——然后才谈得上推算过了多久。",
-	"Plants absorb carbon dioxide and use light and water to make food. Oxygen is released as a product.":
-		"植物吸收二氧化碳，借助光和水制造养分，同时把氧气作为产物释放出来。",
-	"The primary colors of light are red, green and blue. Combining light adds energy and produces brighter colors.":
-		"光的三原色是红、绿、蓝。把光叠加起来是在增加能量，颜色只会更亮。",
 
 	# ---------- 侦探笔记：早期线索 ----------
 	"A Broken Key": "半截钥匙",
@@ -111,8 +78,6 @@ const LINES: Dictionary = {
 		"[center][b]主人的日志[/b][/center]\n\n一本磨损的皮面日志。字里行间反复提到[color=#4a306d]古老的知识锁[/color]，以及那把[color=#7a2e2e]唯一的、名为「理解」的钥匙[/color]……",
 	"[center][b]The Science of Flame[/b][/center]\n\nA flame cannot keep burning without [color=#7a2e2e]oxygen[/color] from the air. If the air supply is blocked, the flame weakens and dies.\n\n[color=#4a306d]This answers the knowledge lock on the door: what does a flame need from the air to keep burning?[/color]":
 		"[center][b]火焰背后的道理[/b][/center]\n\n火焰离开空气里的[color=#7a2e2e]氧气[/color]就烧不下去。一旦断了供气，火苗会先变弱，然后熄灭。\n\n[color=#4a306d]门上那道知识锁问的正是这个：火焰要持续燃烧，需要从空气里得到什么？[/color]",
-	"To whoever finds this —\n\nThe master of this castle loved knowledge. His doors open neither for keys alone, nor for answers alone.\n\nFirst find the physical key that belongs to a door. Insert it, and only then will the knowledge lock awaken and pose its question.\n\nThe answer is always hidden nearby. Do not guess — read, observe, understand.\n\nIf you are reading this, I may already be gone.\n\n— Mrs. Lin":
-		"致捡到这张纸的人——\n\n这座城堡的主人珍视知识。他的门，光有钥匙开不了，光有答案也开不了。\n\n先找到属于那扇门的实体钥匙。插进去，知识锁才会醒过来，向你发问。\n\n答案永远就藏在附近。不要猜——去读，去看，去弄懂。\n\n如果你正在读这段话，我大概已经不在了。\n\n—— 林",
 
 	# ---------- 拾取弹窗：钥匙与道具 ----------
 	"Wake Room Key": "苏醒室钥匙",
@@ -173,10 +138,6 @@ const LINES: Dictionary = {
 		"一个大号总闸。作用不明。",
 	"The switch clicks into position. Continue to the next numbered switch.":
 		"电闸咔一声推到位。按编号继续下一个。",
-	"The master switch engages. The workshop power is restored.":
-		"总闸合上了。工坊恢复供电。",
-	"You closed %d of the broken rails before stepping away. The switch bank stays dead until all of them carry current.":
-		"你在离开前接通了 %d 条断轨。只要还有一条不通电，整排开关就一直是死的。",
 	"A Stained Note Page": "沾污的笔记页",
 	"Violet Insulating Weave": "紫色绝缘编织物",
 	"Mechanic's Maintenance Glove Record": "机械师的维修手套登记",
@@ -300,10 +261,6 @@ const LINES: Dictionary = {
 		"侦探，你现在就在影堡里。\n\n这座城堡曾属于阿什福德勋爵——一位学者，他坚信知识是唯一真正的钥匙。\n\n他把许多扇门设计成了知识锁。它们不认普通钥匙，只认「有人真的弄懂了」这件事。",
 	"Tonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\nThis castle is not a normal building. Lord Ashford, the former owner, believed that knowledge was the only true key. He designed many doors as knowledge locks. They do not open with ordinary keys. They open only when someone understands the question written on them.\n\nThat means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\nYour investigation has three goals:\n\n1. Explore the castle safely.\n2. Learn from clues and use STEM knowledge to open locked paths.\n3. Collect evidence, question suspects, and identify the real culprit.\n\nUse the Evidence Board to review evidence. Use the Knowledge Journal to review concepts you have learned. Use Mission Objectives when you are unsure what to do next.\n\nControls:\nWASD - Move\nE - Interact\nB - Evidence Board\nK - Knowledge Journal\nO - Mission Objectives\nR - Restart\nM - Main Menu":
 		"今夜，影堡里有人布置了一处犯罪现场，而凶手仍在厅堂之间走动。\n\n这不是一座寻常的建筑。前主人阿什福德勋爵相信，知识是唯一真正的钥匙。他把许多扇门做成了知识锁：它们不认普通钥匙，只有当有人真的读懂了门上那个问题，它们才会开。\n\n所以，不要瞎猜。先四处看看：读笔记，检查那些不对劲的东西，找嫌疑人谈话，留意科学线索。一扇锁着的门，答案通常就藏在离它不远的地方。\n\n你这次调查有三个目标：\n\n1. 安全地探索这座城堡。\n2. 从线索里学到东西，用 STEM 知识打开被锁住的路。\n3. 收集证据、询问嫌疑人，找出真正的凶手。\n\n用证物板复查证据，用知识日志复习学过的概念；不确定下一步做什么时，看任务目标。\n\n操作：\nWASD - 移动\nE - 交互\nB - 证物板\nK - 知识日志\nO - 任务目标\nR - 重新开始\nM - 主菜单",
-	"The knowledge lock releases with a heavy click.\n\nYou step through the doorway, and the door slams shut behind you.\n\nThis is the first-floor Castle Hall. The room where you woke lies behind the sealed southern door.\n\nStay close. This hall connects the major investigation areas of Shadow Castle.":
-		"知识锁沉沉地一响，松开了。\n\n你迈过门槛，门在身后砰地合上。\n\n这里是一层的城堡大厅。你醒来的那个房间，就在南面那扇已经封死的门后。\n\n跟紧点。这个厅连着主要的几处调查区域。",
-	"I can see several possible investigation areas from here.\n\nThe laboratory wing lies to the northwest. The greenhouse is northeast, and the castle's electrical machinery is somewhere to the west.\n\nDo not rush to accuse anyone. Search for scientific evidence, read nearby notes, and use the knowledge locks carefully.\n\nSomething else is moving inside the castle. We may not be alone.":
-		"从这里我能看到好几个可以着手的方向。\n\n实验区在西北，温室在东北，城堡的电力机械大概在西边。\n\n别急着指认任何人。去找科学证据，读一读附近的笔记，谨慎地使用知识锁。\n\n城堡里还有别的东西在动。我们恐怕不是只有两个人。",
 	"We have three major pieces of evidence now:\n\n1. The red stain may have been staged.\n2. The pollen links someone to the greenhouse area.\n3. The blackout was likely caused by a deliberate short circuit.\n\nWho do you accuse?":
 		"现在我们手上有三条主要证据：\n\n1. 那摊红色污渍可能是布置出来的。\n2. 花粉把某个人和温室一带联系了起来。\n3. 停电很可能是人为短路造成的。\n\n你要指认谁？",
 	"The final lock accepts the chain of knowledge.\n\nMatter, life, energy, and the passage of time all point to one connected investigation.\n\nThe Final Room door is open.":
@@ -406,8 +363,6 @@ const LINES: Dictionary = {
 		"[center][b]密封档案 I —— 私人侍应附录[/b][/center]\n\n服务台账下面藏着一封信，记录了管家多年前因一起安全事故被降职的事。机械办公室给了他一条恢复身份的路：一字不差地执行一次紧急隔离令，不许多问。\n\n那道命令承诺，林博士会被安全地护在阿什福德分析台的力场之后。管家后来写下的字条，末尾是颤抖的一行：[color=#4a306d]「装置是我操作的。我以为我在保护她。」[/color]\n\n这解释了他承受的压力和他做过的事。但它没有指出——命令是谁写的。",
 	"\"The clock is a distraction. Follow the heat, the ash, and the service route. If the lights fail, do not trust the first person who claims to have been trapped. Someone knows I am following the route now. I can hear movement behind the wall. If you find this note, do not follow just because I did. Of course, you probably will.\"":
 		"「钟是用来分散注意力的。跟着热度、跟着灰烬、跟着服务通道走。如果灯灭了，别去相信第一个声称自己被困住的人。有人已经察觉我在走这条路了，我能听见墙后有动静。如果你找到这张纸条，别只因为我走过就跟着走。——当然，你多半还是会走的。」",
-	"\"A flame cannot keep burning without oxygen from the air. If the air supply is blocked, the flame weakens and dies.\"\n\nMrs. Lin:\nThat's the clue we needed. The lock asked what a flame needs from the air.\n\nConcept learned: Fire needs oxygen to keep burning.":
-		"「火焰离开空气里的氧气就烧不下去。一旦断了供气，火苗会先变弱，然后熄灭。」\n\n林女士：\n这就是我们要的线索。锁问的正是：火焰需要从空气里得到什么。\n\n已掌握概念：火焰持续燃烧需要氧气。",
 	"\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nMrs. Lin:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases.":
 		"「电流一大，这道电路锁就会过热。提高电阻可以把电流降下来。绝对不要跳过电阻器。」\n\n林女士：\n这张纸条给了我们要的规则。电流太大时，加大电阻就能把它压下来。\n\n已掌握概念：电阻增大，电流减小。",
 	"A short circuit? I maintain the castle wiring, but anyone could have damaged that panel.\n\nMrs. Lin:\nMaybe. But the burn pattern suggests the blackout was triggered intentionally. Someone who understands circuits would know exactly where to interfere.":
@@ -476,8 +431,6 @@ const LINES: Dictionary = {
 		"密封档案 III —— 林博士的决定",
 	"Recipe learned: %s":
 		"已学会配方：%s",
-	"%s light is already active in the optical stand.":
-		"光学台上的%s光已经亮着了。",
 	"%s light is active. Activate the other two filters in any order; the archive will appear when all three colors overlap.":
 		"%s光已亮。另外两片滤镜的顺序随意；三色叠在一起时，档案就会显形。",
 	"Red, green and blue light are all active in the optical stand. Their additive combination becomes a pale neutral light, revealing the layered diagram and the route to the Ashford Archive Record.":
@@ -490,30 +443,14 @@ const LINES: Dictionary = {
 		"阿什福德的这份档案记录，你已经抄进笔记了。",
 	"You already copied this recipe into your notes.":
 		"这张配方你已经抄进笔记了。",
-	"You worked through %d of the colour plates before stepping away.":
-		"你在离开前做完了 %d 张配色板。",
 	"The violet archive drawer is bare. Dr. Lin's private decision has already been copied.":
 		"那只紫色档案抽屉空了。林博士的私人决定已经被誊抄走了。",
-	"A red filter rests in the small optical stand. The Library Knowledge note says the three light colors must be applied in sequence.":
-		"小光学台上架着一片红色滤镜。图书馆知识笔记写着：三种色光必须依次施加。",
-	"A green filter rests in the small optical stand.":
-		"小光学台上架着一片绿色滤镜。",
-	"A blue filter rests in the small optical stand.":
-		"小光学台上架着一片蓝色滤镜。",
 	"A rolled scroll tucked between alchemical volumes. It holds the recipe for the Swiftness Potion.":
 		"夹在几本炼金典籍之间的一卷卷轴。上面写着迅捷药水的配方。",
 	"A scroll hidden inside an old atlas. It holds the recipe for the Vision Potion.":
 		"藏在一本旧地图册里的卷轴。上面写着洞察药水的配方。",
 	"A detective's work table covered in papers, candles and a magnifying glass. The notes point toward the lower hall.":
 		"一张侦探的工作台，铺满纸张、蜡烛和一只放大镜。那些笔记指向下层厅堂。",
-	"An open illuminated book lies on the desk beside a magnifying glass. The pages are dense with notes and diagrams.":
-		"书桌上摊着一本泥金彩绘的书，旁边放着放大镜。书页上密密麻麻是笔记和图解。",
-	"A desk with an antique globe, an oil lamp and an open book. The lamp is still warm.":
-		"一张书桌，上面有古董地球仪、一盏油灯和一本摊开的书。灯还是温的。",
-	"A writing desk. An open book, pinned parchment and an inkwell rest on its worn surface.":
-		"一张写字台。磨旧的桌面上放着摊开的书、别住的羊皮纸和一只墨水瓶。",
-	"A three-tier bookcase. The top surface still holds an open book and several small cases.":
-		"一座三层书架。顶层还摆着一本摊开的书和几只小盒。",
 	"A broad chest-cabinet packed with books and bundled scrolls. The bindings are worn with age.":
 		"一只宽大的箱柜，塞满书籍和成捆的卷轴。装帧都已年久磨损。",
 	"A divided storage chest filled with banded books, scrolls and small sealed bundles.":
@@ -528,8 +465,6 @@ const LINES: Dictionary = {
 		"一只窄柜，两只环形把手，下方是沉重的搭扣。这把锁被开过又合上过很多次。",
 	"A narrow cabinet. A circular lock with an hourglass mark guards whatever lies within.":
 		"一只窄柜。一把带沙漏标记的圆形锁，守着里面的东西。",
-	"A narrow two-part case with ring handles and reinforced straps. Something rattles behind the lower panel.":
-		"一只上下两截的窄柜，环形把手，加固皮带。下层面板后面有东西在响。",
 	"A tall cabinet of dark wood, marked with a compass-like emblem. Its door will not budge.":
 		"一只深色木质高柜，标着类似罗盘的纹章。柜门纹丝不动。",
 	"A tall ring-marked cabinet. Its lower emblem is scratched with a symbol that matches no library catalogue.":
@@ -540,18 +475,117 @@ const LINES: Dictionary = {
 		"一面高大的木板，嵌着轮盘状的机构。上面的符号，看样子要按某个精确的顺序转动。",
 	"A reinforced archive cabinet with deep shelves and brass fasteners. Its contents are carefully sorted.":
 		"一只加固的档案柜，隔板很深，配黄铜扣件。里面的东西分类得很仔细。",
-	"A reinforced storage cabinet. Its shelves hold rolled scrolls and odd brass instruments.":
-		"一只加固的储物柜。隔板上放着卷好的卷轴和一些奇形怪状的黄铜器具。",
-	"A storage cabinet packed with dark violet volumes and sealed drawers. One compartment is empty.":
-		"一只储物柜，塞满深紫色的册子和封好的抽屉。其中一格是空的。",
 	"A cabinet of bottles, powders and sealed jars. The dust around one vial has been recently disturbed.":
 		"一只放着瓶子、粉末和封口罐的柜子。其中一支小瓶周围的灰尘，最近被人碰过。",
-	"An open shelf of dusty volumes and sealed containers. Several spines have been deliberately turned around.":
-		"一排敞开的书架，摆着积灰的册子和封口容器。有几本书脊被人刻意调转了方向。",
 	"Rows of archive drawers filled with brittle notes, labels and fragments of old casework.":
 		"一排排档案抽屉，装满脆化的笔记、标签，和旧案卷的残页。",
 	"A restricted archive card describes the Knowledge Engine and the castle's security network. Lord Ashford restricted the complete Knowledge Engine plans to the Master Archive. Several maintenance copies of Ashford engineering diagrams were produced without authorization, and the archive access records contain irregular maintenance-level requests. The archive route is hidden behind the final vault, and the security system can be redirected through the maintenance circuit. Whoever made those requests needed technical access, a route through the service systems, and a reason to create a blackout.":
 		"一张受限档案卡描述了知识引擎与城堡的安保网络。阿什福德勋爵把知识引擎的完整图纸限制在主档案库内。有若干份阿什福德工程图解的维修副本在未获授权的情况下被制作出来，而档案调阅记录里，还留着一些不合规的维修级申请。",
 	"[center][b]SEALED ARCHIVE III — DR. LIN'S PRIVATE DECISION[/b][/center]\n\nDr. Lin's unsigned memorandum confirms that she rejected the Mechanic's request for independent funding and access to the complete Knowledge Engine plans. She had discovered unauthorized maintenance copies, so she prepared a controlled verification at the analysis table to trace the person directing them.\n\nHer final margin note reads: [color=#4a306d]“The Butler is frightened, not secretive. If an emergency order reaches him, verify its routing mark before he acts.”[/color]\n\nDr. Lin expected a forged instruction; she did not expect its isolation field to become lethal. The person who needed her silent also needed her research recognized as his own.":
 		"[center][b]密封档案 III —— 林博士的私人决定[/b][/center]\n\n林博士一份未署名的备忘录确认：她驳回了机械师索取独立经费、以及查阅知识引擎完整图纸的请求。她发现了那些未经授权的维修副本，于是在分析台上准备了一次受控验证，想追出到底是谁在背后调度它们。\n\n她在页边的最后一句写着：[color=#4a306d]「管家是害怕，不是有意隐瞒。如果有紧急命令递到他手上，务必在他动手之前核实转递标记。」[/color]\n\n林博士预料到会有一份伪造的指令；她没有预料到，那道隔离力场会致命。那个需要她沉默的人，同时也需要她的研究成果被认成自己的。",
+	# ---------- 图书馆 · 光学阵列（反射矩阵 / 光谱定序器 / 加色中继） ----------
+	"Reflection Matrix":
+		"反射矩阵",
+	"Spectrum Sequencer":
+		"光谱定序器",
+	"Additive Relay":
+		"加色中继",
+	"Reflection, Absorption & Color":
+		"反射、吸收与颜色",
+	"Visible Spectrum & Wavelength":
+		"可见光谱与波长",
+	"Additive Color Mixing":
+		"加色法混色",
+	"A brass reflection matrix overlays the east writing desk.":
+		"东侧那张书桌上，覆着一具黄铜反射矩阵。",
+	"A wavelength sequencer is embedded in the illuminated research desk.":
+		"一台波长定序器，嵌在那张亮着灯的研究桌里。",
+	"Three emitter controls have been fitted around the west globe desk.":
+		"西侧那张地球仪桌的四周，装上了三组发射器控制。",
+	"An empty verdant lens slot waits for a filter recovered from the Reflection Matrix.":
+		"一个空着的翠绿镜位，等着从反射矩阵取回的那片滤光片。",
+	"An empty crimson lens slot waits for a filter recovered from the Spectrum Sequencer.":
+		"一个空着的绯红镜位，等着从光谱定序器取回的那片滤光片。",
+	"An empty cobalt lens slot waits for a filter recovered from the Additive Relay.":
+		"一个空着的钴蓝镜位，等着从加色中继取回的那片滤光片。",
+	"This slot is empty. Complete the %s to recover its %s filter.":
+		"这个镜位是空的。先通过%s，取回它的 %s 滤光片。",
+	"The %s filter is already seated and active.":
+		"%s 滤光片已经装好并生效了。",
+	"%s complete. Take the recovered %s filter to the central optical array.":
+		"%s 已完成。把取回的 %s 滤光片装到中央光学阵列上。",
+	"This challenge is complete. Carry the recovered %s filter to the central optical array.":
+		"这道关卡完成了。把取回的 %s 滤光片带到中央光学阵列去。",
+	"All three recovered filters remain seated. Their combined pale light keeps the hidden archive text visible.":
+		"三片取回的滤光片都还嵌在位上。它们叠合出的淡光，让隐藏的档案文字持续显形。",
+	"A three-tier bookcase. The top surface still holds an open book.":
+		"一座三层书架。最上层还摊着一本翻开的书。",
+	"An open shelf of dusty volumes and sealed containers.":
+		"一排敞开的架子，堆着积灰的书册和封死的容器。",
+	"A narrow two-part case, almost emptied. One volume remains on its shelf: a field study of visible wavelengths.":
+		"一只狭长的两截式书柜，几乎被搬空了。架上只剩一册：一份关于可见光波长的实地研究。",
+	"A violet archive cabinet with one empty compartment. A single field guide on reflection and absorption is still filed here.":
+		"一只紫色档案柜，有一格是空的。这里还归档着一本讲反射与吸收的实地指南。",
+	"An empty reinforced shelf holds a single filed volume on additive light.":
+		"一层加固的空架子上，只归档着一册讲加色光的书。",
+	"Seen color is reflected light. A green leaf reflects green wavelengths and absorbs much of the red and blue light.":
+		"你看见的颜色，是被反射回来的光。绿叶反射绿色波长，同时吸收掉大部分红光和蓝光。",
+	"A green leaf appears green because green wavelengths are reflected toward the eye while much of the red and blue light is absorbed.":
+		"绿叶看上去是绿的，是因为绿色波长被反射进了眼睛，而红光和蓝光大部分都被吸收掉了。",
+	"Visible-light wavelength decreases from red through green toward blue. Longest to shortest: red, green, blue.":
+		"可见光的波长从红经绿向蓝递减。由长到短依次是：红、绿、蓝。",
+	"Visible-light wavelength decreases from red through green toward blue. The recovered crimson filter was sealed behind a longest-to-shortest spectrum lock.":
+		"可见光的波长从红经绿向蓝递减。取回的那片绯红滤光片，正是封在一道「由长到短」的光谱锁后面。",
+	"Light adds: green plus blue makes cyan, red plus blue makes magenta, and red plus green plus blue makes white.":
+		"光是相加的：绿加蓝得到青，红加蓝得到品红，红、绿、蓝三者相加得到白。",
+	"Colored light adds: green plus blue makes cyan, red plus blue makes magenta, and red plus green plus blue makes white light.":
+		"彩色光是相加的：绿加蓝得到青，红加蓝得到品红，红、绿、蓝三者相加得到白光。",
+
+	# ---------- 线路房 · 联锁闸板与供电恢复 ----------
+	"Three Flush Junction Plates":
+		"三块齐平联锁闸板",
+	"FOLLOW THE PULSE":
+		"跟住脉冲",
+	"The blueprint locates three flush junction plates. Their positions are now on record.":
+		"图纸标出了三块与外壳齐平的联锁闸板。它们的位置已经记录在案。",
+	"The bench is cleared. The plate will now throw in numbered order.":
+		"台面已经清空。闸板现在会按编号顺序合闸。",
+	"[center][b]Three Flush Junction Plates[/b][/center]\n\nThe workshop's junction plates are set level with their housings, so nothing protrudes for a hand to find. The repair blueprint numbers them [color=#4a306d]1 auxiliary[/color], [color=#4a306d]2 regulator[/color], [color=#4a306d]3 master[/color].\n\nThey must be thrown in that order; any other order trips the interlock and resets the run.":
+		"[center][b]三块齐平联锁闸板[/b][/center]\n\n工坊里的联锁闸板与外壳装得齐平，没有任何凸起可供手摸到。维修图纸把它们编号为 [color=#4a306d]1 辅路[/color]、[color=#4a306d]2 调压[/color]、[color=#4a306d]3 主闸[/color]。\n\n必须按这个顺序合闸；换成任何别的顺序，都会触发联锁并把整轮重置。",
+	"POWER RESTORED · The generator is online. Return to the Hall and open Map to recover your route memory.":
+		"供电已恢复 · 发电机上线。回到大厅打开地图，取回你的路径记忆。",
+	"ROUTE MEMORY ONLINE":
+		"路径记忆已上线",
+	"Dr. Lin's Partial Hall Map":
+		"林博士的大厅残图",
+
+	# ---------- 知识锁与合成锁的通用提示 ----------
+	"Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened.":
+		"答对了。\n\n知识锁接受了你的答案。\n\n门开了。",
+	"Not quite.\n\nThe lock remains sealed. Think about the science behind the question and try again.":
+		"还差一点。\n\n锁没有开。想一想这道题背后的科学原理，再试一次。",
+	"That answer does not fit the evidence you have learned.\n\nReview the corresponding room Knowledge note and try again.":
+		"这个答案跟你掌握的证据对不上。\n\n回去复习对应房间的知识笔记，再试一次。",
+	"Final Synthesis Lock — Question %d/%d:\n\n%s":
+		"最终合成锁 —— 第 %d/%d 题：\n\n%s",
+	"Question terminal locked. Study and file '%s' at the marked knowledge shelf first.":
+		"问答终端已锁定。先到标记的知识书架研读并归档「%s」。",
+	"The key fits, but the knowledge lock is still sealed.\n\nStudy the ":
+		"钥匙对得上，但知识锁仍然封着。\n\n先去城堡大厅研究",
+	" Knowledge exhibit in Castle Hall and save it to NoteHub before answering this question.":
+		" 知识展品，存进 NoteHub，再来回答这个问题。",
+	"the missing knowledge record":
+		"那份缺失的知识记录",
+	"\n\nThis knowledge has been added to NoteHub.":
+		"\n\n这条知识已存入 NoteHub。",
+
+	# ---------- 苏醒室与餐厅补遗 ----------
+	"To whoever finds this —\n\nAshford sealed every room twice. First find the physical key belonging to that room. Then the knowledge lock will reveal its question.\n\nThe answer is always hidden nearby. Do not guess — read, observe, understand.\n\nFor this chamber, begin with the bed, then consult the bookshelf before facing the door.\n\n— Dr. Lin":
+		"致找到这张字条的人 ——\n\n阿什福德把每个房间都封了两道。先找到属于那个房间的实体钥匙，知识锁才会显出它的问题。\n\n答案永远就藏在近旁。不要猜 —— 去读，去看，去想明白。\n\n这间屋子，从床开始，再去查书架，然后再面对那扇门。\n\n—— 林博士",
+	"Mrs. Lin's Counter-Formulas":
+		"林老师的反制配方",
+	"Pressed inside the carving-board ledger are three formulas in Mrs. Lin's hand. \"They put the marker in the wine, not the food. It is why the thing in the corridor never has to search. Wash it out with moonleaf and blue blossom in twice-distilled water and it will lose you the moment you leave its sight. Two more, for when sight is not enough: iron salt and prism dust to blind it, prism dust alone to bend the light around you.\"":
+		"砧板账簿里压着三道配方，是林老师的字迹。「标记物下在酒里，不在食物里。走廊里那东西之所以从来不必去找，就是这个缘故。用月叶和蓝花在二次蒸馏水里把它洗掉，你一离开它的视线，它就会跟丢你。另外两道，留给光靠躲还不够的时候：铁盐加棱镜粉可以让它失明，单用棱镜粉能把光在你周身折开。」",
+	"A chemical change creates a new substance. Burning paper is chemical; melting ice, breaking glass, and dissolving sugar are physical changes.":
+		"化学变化会生成新的物质。纸张燃烧是化学变化；冰融化、玻璃破碎、砂糖溶解，则都是物理变化。",
 }
