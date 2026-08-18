@@ -150,6 +150,83 @@ Coverage is currently the menus, endings and the knowledge locks. Room
 investigation dialogue, the objective panel and the journal are still
 English-only.
 
+## Minigames
+
+Every room has a minigame, and each one teaches that room's own hall exhibit
+subject. They all extend `MinigameShell` (`scripts/minigame_shell.gd`), which
+owns the panel chrome, stage counter, instruction line, result banner, clear
+effect and level flow. A concrete game overrides two methods:
+
+```gdscript
+func level_count() -> int
+func build_level(index: int) -> void   # add widgets to `content`
+```
+
+and calls `report_level_cleared()` / `report_level_failed()`. Rooms launch
+them through `MinigameLauncher.launch(...)`, which spawns, freezes, awaits and
+cleans up in one call and enforces one game at a time.
+
+| Room | Game | Teaches |
+|---|---|---|
+| Greenhouse, left bed | Photosynthesis Bench | growth = min(light, water, CO2) |
+| Greenhouse, right bed | Moonlight Harvest | periodic cycles, timing |
+| Chemistry | Sample Tray | new substance = chemical change |
+| Library | Optical Bench | additive colour mixing |
+| Circuit | Repair Bench | conductors, closed circuits |
+| Dining Hall | Timeline | rate x time, discarding an outlier |
+
+Everything is built in code; no minigame needs a `.tscn`. New text is
+bilingual from the start via the shell's `_text(english, chinese)` helper.
+
+**Level tables must be proven solvable before shipping.** Hand-authoring
+budgets and targets has already produced two levels that could not be
+completed at all, which is a hard progression block. Solve every level
+exhaustively against a port of the rules, and also assert the lesson cannot
+be bypassed — that no photosynthesis stage can be cleared by dumping the
+whole ration into one supply, that no sorting stage is single-category, that
+every conductor bin holds both a conductor and an insulator, and that the
+outlier's value is actually offered as a pickable wrong answer.
+
+Drawing code has to be checked too, not just the numbers. The supply bars
+originally scaled to each channel's own cap, so the limiting supply could be
+drawn taller than a healthy one and the picture contradicted the lesson.
+
+## Audio
+
+`AudioManager` (autoload) creates the Music, SFX and UI buses at runtime
+rather than shipping a binary bus layout, and resolves sounds by name from
+`assets/audio/<id>.wav`:
+
+```gdscript
+AudioManager.play_ui("ui_click")
+AudioManager.play_sfx("potion_drink")
+```
+
+Volumes are stored linear 0-1 and converted at the bus; zero uses the mute
+flag because `linear_to_db(0)` is negative infinity. Preferences share
+`user://shadow_castle_preferences.cfg` with the language setting, so the file
+must be re-read before writing or the language choice is wiped.
+
+Missing files are a silent no-op by design; audio must never crash the game.
+Eight voices round-robin, and a 45ms guard stops one sound retriggering into
+a noise wall.
+
+The shipped sounds are **procedurally synthesised placeholders**, generated
+from sine tones and filtered noise rather than sourced from any library.
+Swapping in real recordings is a file swap with no code change.
+
+## Potion feedback
+
+`PotionHud` (autoload) reacts to `GameState.potion_applied` and
+`potion_expired` — `state_changed` cannot distinguish those two cases. The
+vignette sits on canvas layer 25 (below the room UI at 30, so it never covers
+dialogue); the status chips sit at 43 (above the bag and map at 42). Nothing
+overrides `process_mode`, so the HUD freezes in lockstep with the GameState
+countdown when the tree is paused.
+
+Effect colours are the hue of the halo each bottle casts in its own artwork,
+with saturation raised only enough to read at low alpha.
+
 ## Answer options are shuffled at display time
 
 Every `"correct"` index in `DOOR_QUESTIONS` and `FINAL_SYNTHESIS_QUESTIONS` is
