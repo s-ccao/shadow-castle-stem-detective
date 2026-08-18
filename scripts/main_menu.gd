@@ -6,8 +6,6 @@ const MENU_PURPLE_FRAME_PATH: String = "res://assets/ui/frames/menu_purple_frame
 const MENU_BANNER_FRAME_PATH: String = "res://assets/ui/frames/menu_banner_frame.png"
 const MENU_EMPTY_FRAME_PATH: String = "res://assets/ui/frames/menu_empty_frame.png"
 
-@onready var start_ui: Control = $StartUI
-
 var menu_dialog_layer: CanvasLayer
 var menu_dialog_overlay: ColorRect
 var menu_dialog_frame: TextureRect
@@ -16,7 +14,13 @@ var menu_dialog_text: Label
 var menu_dialog_close_button: Button
 var menu_dialog_english_button: Button
 var menu_dialog_chinese_button: Button
+## 设置面板里的三条音量行。AudioManager 一直有音量接口，但此前没有任何
+## 界面能调它——一个可能在教室里播放的游戏，必须让人关得掉声音。
+var audio_settings_root: Control
+var audio_rows: Dictionary = {}
 var active_dialog := ""
+
+@onready var start_ui: Control = $StartUI
 
 
 func _ready() -> void:
@@ -116,6 +120,98 @@ func create_menu_dialog() -> void:
 	)
 	menu_dialog_overlay.add_child(menu_dialog_chinese_button)
 
+	_create_audio_settings()
+
+
+## 三条总线各一行：名称 + 滑块 + 百分比 + 静音开关。
+## 位置排在正文与关闭按钮之间（y 382~462），关闭按钮在 468，不重叠。
+func _create_audio_settings() -> void:
+	audio_settings_root = Control.new()
+	audio_settings_root.name = "AudioSettings"
+	audio_settings_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	audio_settings_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	audio_settings_root.visible = false
+	menu_dialog_overlay.add_child(audio_settings_root)
+
+	var row_y: float = 382.0
+	for bus: String in AudioManager.BUSES:
+		audio_rows[bus] = _create_audio_row(bus, row_y)
+		row_y += 28.0
+
+
+func _create_audio_row(bus: String, row_y: float) -> Dictionary:
+	var name_label := Label.new()
+	name_label.position = Vector2(210.0, row_y)
+	name_label.size = Vector2(110.0, 24.0)
+	name_label.add_theme_font_size_override("font_size", 15)
+	ArchiveUi.apply_label(name_label, &"body")
+	audio_settings_root.add_child(name_label)
+
+	var slider := HSlider.new()
+	slider.position = Vector2(326.0, row_y + 2.0)
+	slider.size = Vector2(300.0, 20.0)
+	slider.min_value = 0.0
+	slider.max_value = 1.0
+	slider.step = 0.05
+	slider.value = AudioManager.volume(bus)
+	slider.value_changed.connect(_on_audio_slider_changed.bind(bus))
+	audio_settings_root.add_child(slider)
+
+	var percent := Label.new()
+	percent.position = Vector2(636.0, row_y)
+	percent.size = Vector2(56.0, 24.0)
+	percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	percent.add_theme_font_size_override("font_size", 15)
+	ArchiveUi.apply_label(percent, &"body")
+	audio_settings_root.add_child(percent)
+
+	var mute := Button.new()
+	mute.position = Vector2(704.0, row_y)
+	mute.size = Vector2(96.0, 24.0)
+	ArchiveUi.apply_button(mute, ArchiveUi.ROLE_ARCHIVE)
+	mute.pressed.connect(_on_audio_mute_pressed.bind(bus))
+	audio_settings_root.add_child(mute)
+
+	return {"name": name_label, "slider": slider, "percent": percent, "mute": mute}
+
+
+func _on_audio_slider_changed(value: float, bus: String) -> void:
+	AudioManager.set_volume(bus, value)
+	_refresh_audio_rows()
+	# 放开滑块时立刻听到结果，否则玩家只能盲调。
+	AudioManager.play_ui("ui_click")
+
+
+func _on_audio_mute_pressed(bus: String) -> void:
+	AudioManager.set_muted(bus, not AudioManager.is_muted(bus))
+	_refresh_audio_rows()
+	AudioManager.play_ui("ui_click")
+
+
+func _refresh_audio_rows() -> void:
+	for bus: String in audio_rows:
+		var row: Dictionary = audio_rows[bus]
+		row["name"].text = _bus_label(bus)
+		row["percent"].text = "%d%%" % int(round(AudioManager.volume(bus) * 100.0))
+		row["mute"].text = (
+			CaseLocale.text("audio.unmute")
+			if AudioManager.is_muted(bus)
+			else CaseLocale.text("audio.mute")
+		)
+		var slider: HSlider = row["slider"]
+		if not is_equal_approx(slider.value, AudioManager.volume(bus)):
+			slider.set_value_no_signal(AudioManager.volume(bus))
+
+
+func _bus_label(bus: String) -> String:
+	match bus:
+		AudioManager.MUSIC_BUS:
+			return CaseLocale.text("audio.music")
+		AudioManager.SFX_BUS:
+			return CaseLocale.text("audio.sfx")
+		_:
+			return CaseLocale.text("audio.ui")
+
 
 func _show_menu_dialog(title: String, text: String, frame_path: String, language_picker: bool = false) -> void:
 	menu_dialog_frame.texture = load(frame_path) as Texture2D
@@ -130,6 +226,9 @@ func _show_menu_dialog(title: String, text: String, frame_path: String, language
 		menu_dialog_english_button.text = CaseLocale.text("language.english")
 		menu_dialog_chinese_button.text = CaseLocale.text("language.chinese")
 	menu_dialog_overlay.visible = true
+	# 音量行只属于设置面板；语言面板和继续面板不显示。
+	if audio_settings_root != null:
+		audio_settings_root.visible = false
 
 
 func _show_continue_dialog() -> void:
@@ -157,6 +256,17 @@ func _show_settings_dialog() -> void:
 		CaseLocale.text("menu.settings_body"),
 		MENU_WOOD_FRAME_PATH
 	)
+	# 正文让出下半部分给音量行，否则会和滑块叠在一起。
+	menu_dialog_text.size = Vector2(604.0, 40.0)
+	if audio_settings_root != null:
+		audio_settings_root.visible = true
+		_refresh_audio_rows()
+
+
+func _hide_settings_extras() -> void:
+	menu_dialog_text.size = Vector2(604.0, 90.0)
+	if audio_settings_root != null:
+		audio_settings_root.visible = false
 
 
 func _show_language_dialog() -> void:
@@ -172,6 +282,7 @@ func _show_language_dialog() -> void:
 func _hide_menu_dialog() -> void:
 	active_dialog = ""
 	menu_dialog_overlay.visible = false
+	_hide_settings_extras()
 
 
 func start_game() -> void:

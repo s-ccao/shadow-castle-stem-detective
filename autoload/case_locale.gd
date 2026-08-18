@@ -118,7 +118,12 @@ const TEXT: Dictionary = {
 	# 药水状态角标空间很窄，用短名而不是 POTION_INFO 里的完整名字。
 	"potion.swift_short": {"en": "SWIFT", "zh": "迅捷"},
 	"potion.vision_short": {"en": "VISION", "zh": "洞察"},
-	"potion.green_short": {"en": "GREEN", "zh": "青藤"},
+	# 音量行空间很窄，用短标签。
+	"audio.music": {"en": "Music", "zh": "音乐"},
+	"audio.sfx": {"en": "Sound", "zh": "音效"},
+	"audio.ui": {"en": "Interface", "zh": "界面音"},
+	"audio.mute": {"en": "Mute", "zh": "静音"},
+	"audio.unmute": {"en": "Unmute", "zh": "取消静音"},
 }
 
 
@@ -170,7 +175,10 @@ func _load_preference() -> String:
 
 
 func _save_preference() -> void:
+	# 音量设置也写在同一个文件里（AudioManager 的 [audio] 段），
+	# 不先读回来就写会把它整段抹掉——切一次语言，音量就全被重置。
 	var config := ConfigFile.new()
+	config.load(PREFERENCE_PATH)
 	config.set_value("display", "language", _language)
 	config.save(PREFERENCE_PATH)
 
