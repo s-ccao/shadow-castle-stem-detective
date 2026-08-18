@@ -14,9 +14,22 @@ const FOG_ROWS := MAP_PIXEL_HEIGHT / FOG_CELL_SIZE
 
 # ============================================================
 # Castle Hall visual assets (user-provided GPT art):
-#   hall_floor_bg.png - full floor art (1448x1086 -> 1920x1280)
-#   hall_walls.png    - wall pieces (RGBA, 1536x1024 -> 1920x1280,
-#                       exact x1.25 scale, aligned with the floor)
+#   hall_floor_bg.png - 1448x1086, stretched to 1920x1280
+#   hall_walls.png    - 1536x1024, uniform x1.25 to 1920x1280
+#
+# These are NOT two layers of one map. Each is a complete dungeon with its
+# own walls, rooms and doors, and they do not correspond: phase correlation
+# between them peaks at 6.1x the mean, where a genuine match measures
+# 614339x, and an exhaustive search over scale 0.9-1.2 and offset +-160
+# never rises above 2.1% overlap. The floor art is also 4:3 forced into 3:2,
+# so it is stretched 12.5% wider than tall on top of that.
+#
+# The wall image is the one that matters: the collision polygons in
+# scenes/wall_collisions.tscn and every door position were derived from it,
+# and it alone shares the map's aspect ratio. The floor layer is dimmed to
+# 0.5 there so its own painted walls recede into texture instead of reading
+# as walls the player cannot touch. That is a mitigation, not a fix -- the
+# hall needs one map, not two.
 # ============================================================
 const HALL_FLOOR_BG: String = \
 	"res://assets/backgrounds/hall_floor_bg.png"

@@ -363,3 +363,29 @@ The other four rooms already branch on `cleared_all`. `check_static.py` now
 fails a handler that underscores both parameters, because the omission is
 invisible on the page — underscoring a parameter is exactly how you say you
 meant to ignore it.
+
+## The hall is two different maps stacked on each other
+
+`hall_floor_bg.png` and `hall_walls.png` were committed together and the code
+described them as one map's floor and walls, scaled to agree. They do not
+agree, and no adjustment will make them:
+
+- The floor art is 1448x1086 (4:3) forced into a 1920x1280 (3:2) map, so it is
+  stretched 12.5% wider than tall. The wall art is 1536x1024, already 3:2, and
+  scales uniformly by 1.25 with no distortion.
+- Phase correlation between the two peaks at 6.1x the mean. The same test
+  against a shifted copy of one image measures 614339x. An exhaustive search
+  over scale 0.9-1.2 and offset ±160 never exceeds 2.1% overlap.
+- Looking at either alone settles it: the floor art is a complete dungeon with
+  its own walls, rooms and coloured doorways. It is not a floor.
+
+**The wall image is the authority.** The 44 collision polygons and all seven
+door positions were derived from it, and it is the one whose aspect ratio
+matches the map. The floor layer is dimmed to 0.5 in `wall_collisions.tscn` so
+its painted walls recede into texture rather than reading as walls the player
+walks straight through.
+
+That is a mitigation. The hall wants one map: either a floor image with no
+walls in it, or a decision to make the floor art authoritative and re-export
+every collision polygon and door position against it. Do not "fix the
+alignment" — there is no alignment to find.

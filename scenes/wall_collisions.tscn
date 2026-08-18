@@ -42,7 +42,9 @@ radius = 63.505905
 [node name="WallCollisions" type="Node2D" unique_id=1742691660]
 
 [node name="BackgroundVisual" type="Sprite2D" parent="." unique_id=1718016071]
+editor_description = "地板视觉层。注意：这张图和 hall_walls.png 不是同一张地图的两层，而是两张各自独立的完整地牢图——它自己就画着一整套墙、房间和拱门，而那套墙没有任何碰撞。两张图的尺寸比也不同（1448x1086 是 4:3，被非均匀拉成 1920x1280；墙图 1536x1024 是 3:2，均匀 x1.25），相位相关测下来峰均比 6.1，对照组是 614339——不存在任何结构对应，任何缩放或位移都对不齐。碰撞多边形和七扇门位跟的都是墙图，所以这里把地板压暗到 0.5，让它退成地面纹理、不再和真墙抢读。这只是缓解；真正的修法是二选一：要么给地板换一张只有地面没有墙的图，要么改以这张图为准重新导出全部碰撞并重校门位。"
 z_index = -100
+modulate = Color(0.5, 0.5, 0.5, 1)
 scale = Vector2(1.325967, 1.178637)
 texture = ExtResource("1_floor")
 centered = false
