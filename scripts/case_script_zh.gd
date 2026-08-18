@@ -226,4 +226,108 @@ const LINES: Dictionary = {
 	"SEALED ARCHIVE I — The Butler's Pressure": "密封档案 I —— 管家的处境",
 	"The narrow compartment behind the service ledger is empty. Its private archive has already been copied.":
 		"服务台账后面那道窄格已经空了。里面的私人档案早被誊抄走了。",
+
+	# ---------- 大厅：短句与标题 ----------
+	"A Hidden Library Key":
+		"藏起来的图书馆钥匙",
+	"Corridor Fragments":
+		"走廊纸片",
+	"Maintenance Route":
+		"维修路线",
+	"Three Ashford Seal Stations":
+		"阿什福德三处封印台",
+	"Violet Fiber on the Pipe":
+		"管道上的紫色纤维",
+	"The Trail Behind the Banquet":
+		"宴席之后的拖痕",
+	"Ashford Verification Relay System":
+		"阿什福德验证中继系统",
+	"I think I know.":
+		"我大概想明白了。",
+	"A. Real blood exposed to oxygen":
+		"A. 真血接触氧气后的颜色",
+	"B. Indicator solution reacting with a basic cleaner":
+		"B. 指示剂与碱性清洁剂发生的反应",
+	"Fragment %d/%d:\n\n%s":
+		"第 %d/%d 块碎片：\n\n%s",
+	"Not yet. We still need enough evidence before making a final accusation.\n\n":
+		"还不到时候。证据不够，就还不能下最终结论。\n\n",
+	"\n\nThis room is not developed yet.":
+		"\n\n这个房间还没有做完。",
+	"This lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer.":
+		"这道锁用的是一条电学规则，但我们还没把它确认下来。\n\n先在附近找找维修笔记或电路线索，别急着硬答。",
+	"The lock is dormant — a physical key is required before the question will appear.\n\nSearch the rooms you have already explored.":
+		"锁还睡着——得先有实体钥匙，问题才会浮现。\n\n回你已经走过的房间里找找。",
+	"The fourth fragment locks into place. The Final Room Key is complete.":
+		"第四块碎片扣了进去。终局档案室钥匙，完整了。",
+	"The dark trail contains violet grit and a chemical smell. Something heavy was dragged from the workshop through the service passage.":
+		"那道暗痕里混着紫色颗粒，还带着化学品的气味。有重物被人从工坊一路拖过服务通道。",
+
+	# ---------- 大厅：三段调查问答 ----------
+	"This red liquid looks like blood at first glance, but a good detective never relies on color alone.\n\nWhat do you think caused the red color?":
+		"这摊红色液体乍看像血，可一个好侦探从不只凭颜色下判断。\n\n你觉得，这个红是怎么来的？",
+	"Question:\nWhat most likely caused the red color?\n\nUse what you observed. A good detective does not rely on color alone.":
+		"问题：\n这个红色最可能是什么造成的？\n\n用你亲眼观察到的东西。好侦探不会只看颜色。",
+	"Correct.\n\nExcellent reasoning. The red color is likely caused by an indicator reacting with a basic cleaning substance. This means the stain may have been staged, not left by the victim.\n\nEvidence added: Fake Red Stain":
+		"答对了。\n\n推得很漂亮。这个红多半是指示剂遇上碱性清洁物质产生的。也就是说，这摊污渍可能是被人做出来的，而不是死者留下的。\n\n已加入证物：伪造的红色污渍",
+	"Not quite.\n\nThe important clue is not just the color. If an indicator solution mixes with a basic cleaner, it can turn red or pink. This stain may be fake.\n\nEvidence added: Fake Red Stain":
+		"还差一点。\n\n关键的线索不只是颜色。指示剂溶液一旦混进碱性清洁剂，就会变红或变粉。这摊污渍很可能是假的。\n\n已加入证物：伪造的红色污渍",
+	"That's okay. A good detective knows when to ask for help.\n\nThe red color may come from an indicator solution reacting with a basic cleaner. So this does not prove it is blood. Someone may have staged the crime scene.\n\nEvidence added: Fake Red Stain":
+		"没问题。知道什么时候该开口求助，本身就是好侦探的一部分。\n\n这个红可能来自指示剂与碱性清洁剂的反应——所以它证明不了那是血。有人可能布置过这个现场。\n\n已加入证物：伪造的红色污渍",
+	"There is yellow pollen on the door handle. That may not look important, but pollen can connect a person to a specific place.\n\nWhat do you think this clue tells us?":
+		"门把手上有黄色花粉。这东西看着不起眼，但花粉能把一个人和一个特定的地方连起来。\n\n你觉得这条线索说明了什么？",
+	"Question:\nWhat is the best scientific use of this pollen evidence?\n\nThink about how small traces can connect a suspect to a specific place.":
+		"问题：\n这份花粉证据，科学上最好的用法是什么？\n\n想一想：微量痕迹是怎么把嫌疑人和某个具体地点联系起来的。",
+	"Correct.\n\nGood reasoning. Pollen grains can help identify where someone has been, especially if the pollen matches a plant from a specific room such as the greenhouse.\n\nEvidence added: Greenhouse Pollen":
+		"答对了。\n\n思路很对。花粉粒能帮我们判断一个人去过哪里——尤其当这些花粉能对上某个特定房间（比如温室）里的植物时。\n\n已加入证物：温室花粉",
+	"Not quite.\n\nPollen can act like biological trace evidence. If it matches a plant from the greenhouse, it may show that someone recently came from there.\n\nEvidence added: Greenhouse Pollen":
+		"还差一点。\n\n花粉可以充当生物微量物证。如果它能对上温室里的某种植物，就可能说明有人刚从那边过来。\n\n已加入证物：温室花粉",
+	"That's okay. Pollen is useful because different plants can produce different pollen patterns. If we match this pollen to the greenhouse, it can connect a suspect to that location.\n\nEvidence added: Greenhouse Pollen":
+		"没关系。花粉之所以有用，是因为不同植物产出的花粉形态各不相同。只要把这份花粉和温室对上，就能把嫌疑人和那个地点连起来。\n\n已加入证物：温室花粉",
+	"The wall panel has burn marks, and the lights went out right before the chase began.\n\nThis may not be an accident. What do you think caused the blackout?":
+		"墙板上有灼烧痕迹，而灯正是在追逐开始前一刻灭的。\n\n这未必是意外。你觉得停电是什么造成的？",
+	"Question:\nWhat is the best explanation for the burned circuit panel?\n\nUse the burn marks and blackout as evidence.":
+		"问题：\n烧焦的电路板，最合理的解释是什么？\n\n把灼痕和停电这两件事当作证据一起用。",
+	"Correct.\n\nExactly. A short circuit can allow too much current to flow, producing heat and burn marks. This suggests the blackout may have been caused deliberately.\n\nEvidence added: Deliberate Short Circuit":
+		"答对了。\n\n正是如此。短路会让过大的电流通过，从而产生热量和灼痕。这说明停电很可能是人为造成的。\n\n已加入证物：人为制造的短路",
+	"Not quite.\n\nThe burn marks suggest excess current and heat. A short circuit could explain the sudden blackout, which means someone may have caused it on purpose.\n\nEvidence added: Deliberate Short Circuit":
+		"还差一点。\n\n灼痕说明电流过大、温度过高。短路可以解释这场突然的停电——也就意味着，可能有人是故意的。\n\n已加入证物：人为制造的短路",
+	"A short circuit creates a path with very low resistance. That can cause a large current, heat, and burn marks.\n\nSo the blackout may not be accidental. Someone may have used the circuit panel to create confusion.\n\nEvidence added: Deliberate Short Circuit":
+		"短路会形成一条电阻极低的通路，因而可能产生很大的电流、热量和灼痕。\n\n所以这场停电未必是意外。有人可能借着电路板制造了混乱。\n\n已加入证物：人为制造的短路",
+
+	# ---------- 大厅：叙事与关键节点 ----------
+	"Detective, you are inside Shadow Castle.\n\nThis castle once belonged to Lord Ashford, a scholar who believed knowledge was the only true key.\n\nHe designed many doors as knowledge locks. They do not open with ordinary keys. They open when someone understands the question written on them.":
+		"侦探，你现在就在影堡里。\n\n这座城堡曾属于阿什福德勋爵——一位学者，他坚信知识是唯一真正的钥匙。\n\n他把许多扇门设计成了知识锁。它们不认普通钥匙，只认「有人真的弄懂了」这件事。",
+	"Tonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\nThis castle is not a normal building. Lord Ashford, the former owner, believed that knowledge was the only true key. He designed many doors as knowledge locks. They do not open with ordinary keys. They open only when someone understands the question written on them.\n\nThat means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\nYour investigation has three goals:\n\n1. Explore the castle safely.\n2. Learn from clues and use STEM knowledge to open locked paths.\n3. Collect evidence, question suspects, and identify the real culprit.\n\nUse the Evidence Board to review evidence. Use the Knowledge Journal to review concepts you have learned. Use Mission Objectives when you are unsure what to do next.\n\nControls:\nWASD - Move\nE - Interact\nB - Evidence Board\nK - Knowledge Journal\nO - Mission Objectives\nR - Restart\nM - Main Menu":
+		"今夜，影堡里有人布置了一处犯罪现场，而凶手仍在厅堂之间走动。\n\n这不是一座寻常的建筑。前主人阿什福德勋爵相信，知识是唯一真正的钥匙。他把许多扇门做成了知识锁：它们不认普通钥匙，只有当有人真的读懂了门上那个问题，它们才会开。\n\n所以，不要瞎猜。先四处看看：读笔记，检查那些不对劲的东西，找嫌疑人谈话，留意科学线索。一扇锁着的门，答案通常就藏在离它不远的地方。\n\n你这次调查有三个目标：\n\n1. 安全地探索这座城堡。\n2. 从线索里学到东西，用 STEM 知识打开被锁住的路。\n3. 收集证据、询问嫌疑人，找出真正的凶手。\n\n用证物板复查证据，用知识日志复习学过的概念；不确定下一步做什么时，看任务目标。\n\n操作：\nWASD - 移动\nE - 交互\nB - 证物板\nK - 知识日志\nO - 任务目标\nR - 重新开始\nM - 主菜单",
+	"The knowledge lock releases with a heavy click.\n\nYou step through the doorway, and the door slams shut behind you.\n\nThis is the first-floor Castle Hall. The room where you woke lies behind the sealed southern door.\n\nStay close. This hall connects the major investigation areas of Shadow Castle.":
+		"知识锁沉沉地一响，松开了。\n\n你迈过门槛，门在身后砰地合上。\n\n这里是一层的城堡大厅。你醒来的那个房间，就在南面那扇已经封死的门后。\n\n跟紧点。这个厅连着主要的几处调查区域。",
+	"I can see several possible investigation areas from here.\n\nThe laboratory wing lies to the northwest. The greenhouse is northeast, and the castle's electrical machinery is somewhere to the west.\n\nDo not rush to accuse anyone. Search for scientific evidence, read nearby notes, and use the knowledge locks carefully.\n\nSomething else is moving inside the castle. We may not be alone.":
+		"从这里我能看到好几个可以着手的方向。\n\n实验区在西北，温室在东北，城堡的电力机械大概在西边。\n\n别急着指认任何人。去找科学证据，读一读附近的笔记，谨慎地使用知识锁。\n\n城堡里还有别的东西在动。我们恐怕不是只有两个人。",
+	"We have three major pieces of evidence now:\n\n1. The red stain may have been staged.\n2. The pollen links someone to the greenhouse area.\n3. The blackout was likely caused by a deliberate short circuit.\n\nWho do you accuse?":
+		"现在我们手上有三条主要证据：\n\n1. 那摊红色污渍可能是布置出来的。\n2. 花粉把某个人和温室一带联系了起来。\n3. 停电很可能是人为短路造成的。\n\n你要指认谁？",
+	"The final lock accepts the chain of knowledge.\n\nMatter, life, energy, and the passage of time all point to one connected investigation.\n\nThe Final Room door is open.":
+		"最后一道锁，认下了这一整条知识链。\n\n物质、生命、能量，还有时间的流逝——它们指向的是同一桩案子。\n\n终局档案室的门开了。",
+	"The Service Corridor Key fits the hidden lock. The wall panel slides back, revealing a narrow passage behind the hall.\n\nThe chase has gone quiet, but the silence feels worse than the footsteps. Whatever happened in this castle passed through here.":
+		"服务通道钥匙对上了那把暗锁。墙板向后滑开，露出大厅背后一条狭窄的通道。\n\n追逐声安静下来了，但这份安静比脚步声更让人不安。这座城堡里发生过的事，都从这里经过。",
+	"A slim brass key stamped with the library's spiral archive seal, hidden among the jars of the storage rack in the hall's south-east corner. The archive is optional — but it may hold information others wanted buried.":
+		"一把细长的黄铜钥匙，压着图书馆的螺旋档案印，藏在大厅东南角储物架的罐子中间。那间档案室不是必去的——但里面可能存着某些人希望被埋掉的东西。",
+	"A violet thread is caught on the copper pipe.\n\nIt matches the distinctive insulating weave identified on the Circuit Room maintenance gloves and cable wraps. A short strand of copper-colored repair thread is caught in the same material. It may have come from previously repaired maintenance gear, but it does not identify one worker by itself. The person who used this passage carried equipment from the workshop.":
+		"铜管上挂着一根紫色细线。\n\n它和线路房维修手套、线缆包覆上那种很好认的绝缘编织物是同一种。同一处还缠着一小段铜色的修补线。它可能来自被修补过的维修装备，但仅凭这一点，还不足以指认具体某个人。",
+	"A violet thread caught on the pipe matches the Circuit Room maintenance weave. A short copper-colored repair thread is caught in the same material; it may come from repaired maintenance gear, but it is not enough to identify one worker by itself.":
+		"管道上挂着的紫色细线，与线路房的维修编织物一致。同一材料上还缠着一小段铜色修补线；它可能来自修补过的维修装备，但单凭它本身，不足以认定某一个人。",
+	"A dark trail begins at the passage door and ends beside the maintenance panel.\n\nIt is not a pool of blood: the edges contain violet grit and a sharp chemical smell. Something heavy was dragged through here after the blackout — equipment from the workshop.":
+		"一道暗痕从通道门口起，一直延伸到维修面板旁边。\n\n那不是血泊：边缘有紫色颗粒，还有一股刺鼻的化学气味。停电之后，有重物被从这里拖过去——是工坊里的器材。",
+	"Behind the panel is a hand-drawn route: Dining Hall → service passage → Final Room. One line is circled twice: the gate will not open without the reassembled key.\n\nA fourth machine fragment is wedged behind the panel — the physical Access / Route seal, the final piece of the Final Room Key.":
+		"面板后面是一条手绘路线：餐厅 → 服务通道 → 终局档案室。有一行被圈了两遍：钥匙不拼齐，那道门就不会开。\n\n面板后面还卡着第四块机件碎片——也就是「通路 / 路线」那枚实体封印。",
+	"The three fragments fit together:\n\n\"He uses the service corridor behind the west wall. The route ends at the Final Room door.\"\n\nThe last page adds: the Final Room Key was split into three pieces and hidden inside the machines scattered across the hall.":
+		"三张碎片拼上了：\n\n「他走的是西墙后面的服务通道。那条路的尽头，就是终局档案室的门。」\n\n最后一页补了一句：终局档案室钥匙被拆成三块，藏进了散落在大厅各处的机器里。",
+	"Mrs. Lin's torn pages: someone uses the service corridor behind the east wall, and the route ends at the Final Room door. The complete Final Room Key is split into four seals: three in the hall stations and one behind the Service Corridor maintenance panel.":
+		"林女士被撕下的那几页：有人在走东墙背后的服务通道，路线终点是终局档案室的门。完整的终局钥匙被拆成四枚封印——三枚在大厅的验证台里，一枚在服务通道的维修面板后面。",
+	"The three hall stations each held one Final Room Key seal. They are now empty, but the key is still incomplete. Matter, Life and Energy have been verified. Mrs. Lin's route points to the Service Corridor maintenance panel for the fourth Access / Route seal.":
+		"大厅这三处验证台，各自存着一枚终局钥匙封印。现在它们空了，可钥匙还不完整。物质、生命、能量都已验证。按林女士的路线，第四枚「通路 / 路线」封印在服务通道的维修面板后面。",
+	"Lord Ashford wired the main research wings to mechanical and electrical verification relays in the Castle Hall. Chemistry verifies Matter / Transformation, Greenhouse verifies Life / Nature, and Circuit verifies Energy / Engineering. The Service Area supplies the physical Access / Route fragment; no magic is involved. Each completed investigation sends a verification signal to its station.":
+		"阿什福德勋爵把几个主要研究区，都接到了城堡大厅的机械与电气验证中继上。化学室验证「物质 / 变化」，温室验证「生命 / 自然」，线路房验证「能量 / 工程」，而服务区提供的是「通路 / 路线」。",
+	"Dining Hall → service passage → Final Room. The gate will not open without the reassembled key. The fourth fragment is the physical Access / Route seal, completing the Matter, Life, Energy and Access set.":
+		"餐厅 → 服务通道 → 终局档案室。钥匙不拼齐，那道门就不会开。第四块碎片是「通路 / 路线」实体封印——补齐之后，物质、生命、能量、通路才算集全。",
 }
