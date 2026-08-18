@@ -330,4 +330,68 @@ const LINES: Dictionary = {
 		"阿什福德勋爵把几个主要研究区，都接到了城堡大厅的机械与电气验证中继上。化学室验证「物质 / 变化」，温室验证「生命 / 自然」，线路房验证「能量 / 工程」，而服务区提供的是「通路 / 路线」。",
 	"Dining Hall → service passage → Final Room. The gate will not open without the reassembled key. The fourth fragment is the physical Access / Route seal, completing the Matter, Life, Energy and Access set.":
 		"餐厅 → 服务通道 → 终局档案室。钥匙不拼齐，那道门就不会开。第四块碎片是「通路 / 路线」实体封印——补齐之后，物质、生命、能量、通路才算集全。",
+
+	# ---------- 化学室：短句与按钮 ----------
+	"Answer the test":
+		"回答他的考题",
+	"Back to Crafting":
+		"返回配药",
+	"Examine the stain":
+		"检查那摊污渍",
+	"Talk to the Butler":
+		"找管家谈",
+	"The Hidden Compartment":
+		"暗格",
+	"Chemistry Room Investigation Note":
+		"化学室调查笔记",
+	"Select a recipe before synthesizing.":
+		"先选一张配方，再开始合成。",
+	"Not enough %s. Gather more in the greenhouse.":
+		"%s不够。回温室再采一些。",
+	"Not enough %s. Find the missing material in another room or corridor.":
+		"%s不够。去别的房间或走廊里找找缺的那份材料。",
+	"You don't have a potion recipe yet. Find a recipe sheet before crafting.":
+		"你还没有任何配方。先找到配方纸，再来配药。",
+	"You need the matching recipe sheet before you can craft this potion.":
+		"配这瓶药之前，得先拿到对应的配方纸。",
+	"You filed %d trays before setting the samples down.":
+		"你在放下样本之前归档了 %d 盘。",
+	"I already examined this stain.\n\nIt is not blood — the colour comes from an indicator reacting with a basic cleaner.":
+		"这摊污渍我已经查过了。\n\n那不是血——红色来自指示剂与碱性清洁剂的反应。",
+	"I have what I need. The Butler asked me to look at this stain — time to tell him what it really is.":
+		"该拿到的我都拿到了。管家让我看这摊污渍——是时候告诉他，它到底是什么。",
+	"Lost your nerve? The stain is still there. Observe the powder, the bottle, and the controlled test — then tell me what it truly is.":
+		"怂了？污渍还在那儿。去看那些粉末、那只碎瓶，还有那次对照实验——然后回来告诉我它究竟是什么。",
+	"Still here? The stain is by the alchemy table. Look at it — smell it, even. Then come back and tell me what it is.":
+		"还在这儿？污渍就在炼金台旁边。去看它——闻也行。看完回来告诉我那是什么。",
+	"Every sample filed. The red stain belongs with the chemical changes — a new substance formed when the indicator met the cleaning powder. It was never blood.":
+		"每一份样本都归好了类。那摊红色污渍属于化学变化——指示剂遇上清洁粉末时生成了新物质。它从来就不是血。",
+
+	# ---------- 化学室：叙事与笔记 ----------
+	"A detective? You? I have served this castle for twenty years, and I have never seen you before in my life.\n\nVery well — prove it. There is a red stain by the alchemy table. Go and look at it. Tell me what it really is, and then we can talk.":
+		"侦探？你？我在这座城堡当了二十年差，可从没见过你这号人。\n\n行啊——那就证明给我看。炼金台旁边有一摊红渍。去看看它，回来告诉我那到底是什么，我们再谈。",
+	"...Hmph. You really are a detective.\n\nThat stain is cleaning powder and indicator mixed to bleed red for show. I have served this castle long enough to know its tricks.\n\nNow listen: the night the lights went out, I heard glass break in this room, and footsteps heading toward the greenhouse wing. I handle cleaning supplies and part of the Dining Hall service; the Service Passage should have been closed after service. That red service cloth is common uniform material, not a personal mark.\n\nReputation +10":
+		"……哼。你还真是个侦探。\n\n那摊东西是清洁粉末掺了指示剂，专门调出来做样子的红。这城堡的把戏，我伺候得够久了。\n\n那你听好：灯灭的那一夜，我听见这屋里有玻璃碎的声音，还有往温室那侧去的脚步。清洁用品归我管，餐厅一部分侍应事务也归我；服务通道在收工之后本该是关着的。那块红色的侍应布是通用制服料子，不是谁的私人记号。\n\n声望 +10",
+	"You were right. That stain is a mixture of cleaning powder and indicator — it bleeds red for show.\n\nThen I will tell you what I know. That night, the master's study was already dark when the power failed. I heard glass break in this room, and footsteps — quick, heavy ones — heading toward the greenhouse wing.\n\nWhoever staged this knew the castle's cleaning supplies. I handle those supplies and supervise part of the Dining Hall service. The Service Passage should have been closed after service ended. The red cloth you may find there is common service uniform material, not mine alone. That is all I can say.":
+		"你说对了。那摊污渍是清洁粉末和指示剂混出来的——红得只是为了做样子。\n\n那我把知道的告诉你。那一夜，电还没断，主人的书房就已经黑着了。我听见这屋里玻璃碎了，还有脚步声——很快，很重——朝温室那侧去了。\n\n布置这一切的人，熟悉城堡的清洁用品。那些东西归我管，餐厅的一部分侍应也归我照看。服务通道在收工之后本该关上。你在那边可能捡到的红布，是通用的侍应制服料子，不是只有我有。我能说的就这些。",
+	"I kneel beside the stain and inspect the edge with a clean swab.\n\nThe smell is rusty and metallic, but underneath it there is something sharp and chemical, like the cleaning solution used to scrub this room.\n\nI will compare the powder, broken bottle, and indicator under controlled conditions. Do not taste unknown residue.":
+		"我在污渍边蹲下，用干净的棉签蘸了蘸边缘。\n\n气味发锈、带金属感，但底下还压着一股刺鼻的化学味——像是擦洗这间屋子用的清洁液。\n\n我会把粉末、碎瓶和指示剂放在受控条件下比对。不要去尝任何来路不明的残留物。",
+	"Beside the stain lie white powder and a broken bottle — the cleaner's residue.\n\nPowder plus an indicator... the red colour is a reaction, not a wound. Someone staged this stain to look like blood.":
+		"污渍旁边散着白色粉末和一只碎瓶——清洁剂的残留。\n\n粉末，加上指示剂……这个红是一场反应，不是一道伤口。有人把这摊污渍布置成了血的样子。",
+	"The alchemy table is covered in broken glass, crystal residue, and spilled reagents.\n\nThe damage is concentrated around the central vessel. Something happened here before the blood-like spill reached the floor.":
+		"炼金台上满是碎玻璃、晶体残渣和泼洒的试剂。\n\n破坏集中在中央那只容器周围。在那摊像血的东西流到地上之前，这里先发生过别的事。",
+	"This potion cabinet holds dozens of bottles, vials, and reagent flasks. Most are sealed, but a few have fresh fingerprints on the glass.\n\nThe colourful liquids look like ordinary alchemy supplies. Nothing here matches the red stain by the table — the cabinet was probably not the source of that spill.":
+		"这只药柜里放着几十个瓶子、小管和试剂烧瓶。大多数封着口，少数几个玻璃上留有新鲜指纹。\n\n那些彩色液体看着就是寻常的炼金用品。没有一样能对上台边那摊红渍——这泼洒物的来源，多半不是这只柜子。",
+	"As you shift the reagent racks, a hidden compartment slides open inside the cabinet.\n\nA green-stained key marked with a leaf-shaped crest rests inside — the Greenhouse Room Key. It has been added to your Key Hub.\n\nSomeone hid the greenhouse key here, far from the greenhouse itself. Whoever did this did not want that room visited.":
+		"你挪开试剂架时，柜子内侧滑开了一个暗格。\n\n里面躺着一把染绿的钥匙，压着叶形纹章——温室钥匙。它已被收进你的钥匙栏。\n\n有人把温室的钥匙藏在这里，离温室远得很。做这件事的人，不想让那间屋子被人进去。",
+	"One sealed Swiftness Potion rests among the broken glass. It has been placed in your bag.\n\nIt increases movement speed. A second vial beside Mrs. Lin's notes is not stable enough to carry — examine the note to see what happens.":
+		"碎玻璃堆里躺着一瓶封好的迅捷药水。它已被放进你的背包。\n\n它能提升移动速度。林女士笔记旁边还有第二只小瓶，稳定性不足以携带——去看那张笔记，就知道会发生什么。",
+	"You reach for the small blue vial beside Mrs. Lin's notes.\n\nThe loose stopper slips free. The sample spills across the workbench, and a pale-blue vapor flashes through the room.\n\nFor a few seconds, faint markings that were invisible before appear along the glass and stone. Vision Potion. The unstable sample is completely consumed. A stable Swiftness Potion has been placed in your bag.":
+		"你伸手去拿林女士笔记旁边那只蓝色小瓶。\n\n松动的瓶塞滑脱了。样本泼洒在工作台上，一阵淡蓝色的蒸汽掠过整个房间。\n\n有那么几秒钟，玻璃和石面上浮出了原本看不见的淡淡刻痕。洞察药水。这份不稳定的样本被彻底消耗掉了。一瓶稳定的迅捷药水已放进你的背包。",
+	"[center][b]Chemistry Room Investigation Note[/b][/center]\n\nMrs. Lin's note, written mid-investigation:\n\nThe [color=#7a2e2e]red stain[/color] by the alchemy table is not blood. The colour matches an indicator reacting with a [color=#4a306d]basic cleaning substance[/color] — a staged stain.\n\nThe shattered glass and scattered reagents suggest someone [color=#7a2e2e]deliberately destroyed the experiment[/color] to make the room look like the scene of a violent crime.\n\nWho would want this room to look like a murder scene?":
+		"[center][b]化学室调查笔记[/b][/center]\n\n林女士在调查中途写下的笔记：\n\n炼金台旁那摊[color=#7a2e2e]红色污渍[/color]不是血。这个颜色对得上指示剂与[color=#4a306d]碱性清洁物质[/color]的反应——是被布置出来的。\n\n碎裂的玻璃和散落的试剂说明，有人[color=#7a2e2e]刻意毁掉了这场实验[/color]，好让这间屋子看起来像一桩暴力案件的现场。\n\n谁会希望这间屋子看起来像凶案现场？",
+	"[center][b]Mrs. Lin's Lab Notebook[/b][/center]\n\n\"Red liquid test — not blood. Smell: rusty, metallic, with a sharp chemical undertone — cleaning powder. Do not taste unknown residue. Use a controlled indicator comparison: the white powder and cleaning agent produce the same red response under this test.\n\nConclusion: the stain was [color=#7a2e2e]staged[/color] to look like a murder scene.\n\nI almost called it blood when I first saw it. You would have corrected me for jumping to conclusions. Perhaps I taught you something after all.\"":
+		"[center][b]林女士的实验笔记[/b][/center]\n\n「红色液体检验——不是血。气味：发锈、带金属感，底下压着一股刺鼻的化学味——清洁粉末。不要去尝来路不明的残留物。做一次受控的指示剂对照：在这个检验下，白色粉末与清洁剂会给出同样的红色反应。\n\n结论：这摊污渍是[color=#7a2e2e]被布置出来的[/color]，为了看起来像凶案现场。\n\n第一眼看见它时，我差点就说那是血。你会纠正我的——纠正我太早下结论。看来我总算还是教会了你一点东西。」",
+	"[center][b]The Hidden Compartment[/b][/center]\n\nBehind the reagent racks in the potion cabinet, a hidden compartment slides open.\n\nInside rests a [color=#4a306d]green-stained key[/color] marked with a leaf-shaped crest — the Greenhouse Room Key.\n\nSomeone hid the greenhouse key here, far away from the greenhouse itself. Whoever did this did not want the greenhouse visited.":
+		"[center][b]暗格[/b][/center]\n\n药柜里的试剂架后面，滑开了一个暗格。\n\n里面躺着一把[color=#4a306d]染绿的钥匙[/color]，压着叶形纹章——温室钥匙。\n\n有人把温室的钥匙藏在这里，离温室远得很。做这件事的人，不想让温室被人进去。",
 }
