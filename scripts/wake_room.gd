@@ -1521,6 +1521,20 @@ func update_interaction_prompt():
 			interact_label.visible = true
 			return
 
+	# 道具要排在蜡烛笔记之前。笔记的判定半径是 165px，道具只有 75px：
+	# 玩家必须凑得近得多才算站在道具前，那是明确得多的意图。原来的顺序让
+	# 那个大圈罩住了书桌——从出生点方向走过去时，人还在笔记的 165px 内，
+	# 于是每次按 E 都读到笔记，书桌（以及它后面的烛火实验）永远触发不了。
+	for id in props.keys():
+		var near_distance = player.global_position.distance_to(
+			props[id]["position"]
+		)
+		if near_distance < PROP_INTERACT_RADIUS:
+			current_interaction = "prop:" + id
+			interact_label.text = "Press E to inspect " + props[id]["prompt"]
+			interact_label.visible = true
+			return
+
 	if not first_lock_rule_learned:
 		var clue_distance = player.global_position.distance_to(clue_position)
 		if clue_distance < CLUE_INTERACT_RADIUS:
@@ -2847,28 +2861,12 @@ func _open_flame_minigame() -> void:
 		return
 
 
-func _on_flame_minigame_finished(cleared_all: bool, stages: int) -> void:
-	if cleared_all:
-		GameState.set_story_flag("wake_flame_drilled")
-		show_scroll_clue()
-		return
-	_show_flame_hint(stages)
-
-
-func _show_flame_hint(stages: int) -> void:
-	start_dialogue_pause()
-	inspect_texture.texture = null
-	inspect_label.text = _mg_text(
-		"You predicted %d rows correctly before stepping away. The door will"
-		% stages
-		+ " ask what a flame needs from the air — work the candles until you"
-		+ " can say why, not just what.",
-		"你在离开前答对了 %d 排。门上那道题问的是火焰需要从空气里得到什么——"
-		% stages
-		+ "把这些蜡烛想透，说得出「为什么」，而不只是「是什么」。"
-	)
-	inspect_confirm_button.visible = false
-	_show_dialogue(inspect_panel)
+func _on_flame_minigame_finished(_cleared_all: bool, _stages: int) -> void:
+	# 卷轴一定要给。它会置位 first_lock_rule_learned，也就是大门知识锁的钥匙；
+	# 把它锁在"八关全过"之后，等于让打不过练习的孩子卡在第一个房间。
+	# 练习是体验，卷轴是进度，两者不能绑在一起。
+	GameState.set_story_flag("wake_flame_drilled")
+	show_scroll_clue()
 
 
 func _mg_text(english: String, chinese: String) -> String:
