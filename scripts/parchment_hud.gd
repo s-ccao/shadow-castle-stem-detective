@@ -119,6 +119,7 @@ func _build_panel() -> void:
 
 ## 显示羊皮纸：暂停游戏；确认/关闭时收进笔记本并恢复。
 func show_parchment(title: String, content: String, note_id: String, note_data: Dictionary = {}) -> void:
+	GameAudio.play(&"ui_select")
 	_pending_note_id = note_id
 	_pending_note_data = note_data
 	_title_label.text = title

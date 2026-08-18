@@ -309,6 +309,67 @@ const TEXT: Dictionary = {
 	"ending.main_menu": {"en": "RETURN TO ARCHIVE", "zh": "返回档案室"},
 	"language.english": {"en": "English", "zh": "English"},
 	"language.chinese": {"en": "中文", "zh": "中文"},
+	# 知识锁：这是整个游戏的 STEM 教学核心，题干与选项跟着数据表走
+	# （game_world.gd 的 DOOR_QUESTIONS / FINAL_SYNTHESIS_QUESTIONS），
+	# 这里只放围绕它们的界面文字。
+	"knowledge.lock_title": {"en": "Knowledge Lock:", "zh": "知识锁："},
+	"knowledge.locked_title": {
+		"en": "The key fits, but the knowledge lock is still sealed.",
+		"zh": "钥匙对上了，但知识锁仍然紧闭。",
+	},
+	"knowledge.locked_body": {
+		"en": (
+			"Study the {room} exhibit in Castle Hall and save it to "
+			+ "NoteHub before answering this question."
+		),
+		"zh": "请先在城堡大厅研究「{room}」展品并存入侦探笔记，再来回答这道题。",
+	},
+	"knowledge.correct": {
+		"en": "Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened.",
+		"zh": "回答正确。\n\n知识锁接受了你的答案。\n\n门开了。",
+	},
+	"knowledge.wrong": {
+		"en": (
+			"Not quite.\n\nThe lock remains sealed. Think about the science "
+			+ "behind the question and try again."
+		),
+		"zh": "还差一点。\n\n锁仍然没开。想一想题目背后的科学原理，再试一次。",
+	},
+	"knowledge.retry": {"en": "Try Again", "zh": "再试一次"},
+	"knowledge.leave": {"en": "Leave the lock", "zh": "先离开这道锁"},
+	"knowledge.continue": {"en": "Continue", "zh": "继续"},
+	"knowledge.study_prompt": {
+		"en": "Press E to study {target}",
+		"zh": "按 E 研究{target}",
+	},
+	"knowledge.saved_to_notehub": {
+		"en": "This knowledge has been added to NoteHub.",
+		"zh": "这条知识已存入侦探笔记。",
+	},
+	"knowledge.synthesis_header": {
+		"en": "Final Synthesis Lock — Question {index}/{total}:",
+		"zh": "终局综合锁 —— 第 {index}/{total} 题：",
+	},
+	"knowledge.synthesis_wrong": {
+		"en": (
+			"That answer does not fit the evidence you have learned.\n\n"
+			+ "Review the corresponding room Knowledge note and try again."
+		),
+		"zh": "这个答案跟你掌握的证据对不上。\n\n回去复习对应房间的知识笔记，再试一次。",
+	},
+	# 药水状态角标空间很窄，用短名而不是 POTION_INFO 里的完整名字。
+	"potion.swift_short": {"en": "SWIFT", "zh": "迅捷"},
+	"potion.vision_short": {"en": "VISION", "zh": "洞察"},
+	# 药水状态角标空间很窄，用短名而不是 POTION_INFO 里的完整名字。
+	"potion.swift_short": {"en": "SWIFT", "zh": "迅捷"},
+	"potion.vision_short": {"en": "VISION", "zh": "洞察"},
+	"potion.green_short": {"en": "GREEN", "zh": "青藤"},
+	# 音量行空间很窄，用短标签。
+	"audio.music": {"en": "Music", "zh": "音乐"},
+	"audio.sfx": {"en": "Sound", "zh": "音效"},
+	"audio.ui": {"en": "Interface", "zh": "界面音"},
+	"audio.mute": {"en": "Mute", "zh": "静音"},
+	"audio.unmute": {"en": "Unmute", "zh": "取消静音"},
 }
 
 
@@ -352,17 +413,40 @@ func room_name(room_id: String) -> String:
 	return text("room." + room_id)
 
 
+## 房间正文的翻译入口。键就是英文原句本身（见 CaseScriptZh），所以房间脚本
+## 里的调用点不用改；查不到就原样返回英文，缺译只是没翻译，不会显示成键名。
+##
+## 这个函数由文本的出口函数调用（present_feedback / show_message /
+## set_dialogue_text / NoteHud.add_clue），而不是散在几百个调用点上——
+## 后者每漏一处就是一句永远翻不到的英文。
+func line(english: String) -> String:
+	if _language != CHINESE:
+		return english
+	var translated: Variant = CaseScriptZh.LINES.get(english)
+	if translated == null:
+		return english
+	return str(translated)
+
+
 func _load_preference() -> String:
 	var config := ConfigFile.new()
-	if config.load(PREFERENCE_PATH) == OK:
-		return _normalize(str(config.get_value("display", "language", "")))
-	return _system_language()
+	if config.load(PREFERENCE_PATH) != OK:
+		return _system_language()
+	# 文件存在不等于玩家选过语言：GameAudio 只写 [audio] 段就会把文件
+	# 创建出来。这时必须继续按系统语言判断，否则中文系统的玩家只要调过
+	# 一次音量，下次启动就被静默切回英文。
+	var stored: String = str(config.get_value("display", "language", ""))
+	if stored.is_empty():
+		return _system_language()
+	return _normalize(stored)
 
 
 func _save_preference() -> void:
+	# 音量设置也写在同一个文件里（GameAudio 的 [audio] 段），
+	# 不先读回来就写会把它整段抹掉——切一次语言，音量就全被重置。
 	var config := ConfigFile.new()
-	# PlayerPreferences shares this file for guidance options. Load before writing
-	# so changing language never clears a separate player-facing preference.
+	# PlayerPreferences and GameAudio share this file. Load before writing
+	# so changing language never clears another section's settings.
 	config.load(PREFERENCE_PATH)
 	config.set_value("display", "language", _language)
 	config.save(PREFERENCE_PATH)

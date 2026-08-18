@@ -773,7 +773,50 @@ func _pull_accusation_lever() -> void:
 		return
 	GameState.set_story_flag("final_deduction_solved")
 	GameState.set_story_flag("normal_ending")
+	_post_sealed_archive_directions()
 	ordinary_case_closed.emit()
+
+
+## 三份密封档案是真结局的前置，但它们在拿到普通结局之前一律不出现，而且
+## 之前没有任何东西告诉玩家它们存在、藏在哪。玩家只能盲目重刷餐厅、线路房
+## 和图书馆——这才是这段二周目真正难受的地方。结案时直接把清单写进侦探
+## 笔记，把"盲目重找"变成"照单核对"。
+func _post_sealed_archive_directions() -> void:
+	if NoteHud == null or NoteHud.has_clue("sealed_archive_directions"):
+		return
+	NoteHud.add_clue("sealed_archive_directions", {
+		"title": _archive_hint_title(),
+		"icon": "icon_note",
+		"content": _archive_hint_body(),
+		"category": "sealed_archive",
+	})
+
+
+func _archive_hint_title() -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return "密封档案 —— 三处存放点"
+	return "SEALED ARCHIVES — Three Locations"
+
+
+func _archive_hint_body() -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return (
+			"结案陈词成立了，但命令是谁写的仍然没有答案。"
+			+ "案卷边缘标着三处此前封存的存放点，现在可以打开：\n\n"
+			+ "· 餐厅 —— 服务台账下方的暗格\n"
+			+ "· 线路房 —— 带假底的柜子\n"
+			+ "· 图书馆 —— 上层的紫檀抽屉\n\n"
+			+ "三份都取回后，回到分析圆桌重新推演。"
+		)
+	return (
+		"The case closes, but the author of the order is still missing. "
+		+ "Three sealed holdings are marked in the margin of the file and "
+		+ "will now open:\n\n"
+		+ "- Dining Hall: the compartment beneath the service ledger\n"
+		+ "- Circuit Room: the cabinet with the false bottom\n"
+		+ "- Library: the violet archive drawer on the upper shelf\n\n"
+		+ "Bring all three back to the analysis table."
+	)
 
 
 func _levers_ready() -> void:

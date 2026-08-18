@@ -226,6 +226,11 @@ func try_interact() -> void:
 					"The Last Dinner Timeline",
 					"The plates were cleared at 11:40. The clock stopped at midnight, but the fireplace ash is fresh. Someone moved through the hall during the missing twenty minutes."
 				)
+			if item_name == "grandfather_clock" and not GameState.has_story_flag(
+				"dining_timeline_reconstructed"
+			):
+				_open_timeline_minigame()
+				return
 			if item_name == "grandfather_clock":
 				GameState.add_evidence("stopped_midnight_clock")
 				_show_dining_note(
@@ -311,3 +316,50 @@ func return_to_castle_hall() -> void:
 			"Failed to return to Castle Hall. Error: "
 			+ str(change_error)
 		)
+
+
+## 落地钟前的时间推演。餐厅知识展品讲的是"用变化稳定的量推算时间，而且
+## 一处观察远远不够"——这个小游戏里每关都混着一条坏线索（多半就是这台被
+## 人为停掉的钟），玩家必须靠多数互相独立的线索把它排除掉。
+func _open_timeline_minigame() -> void:
+	var launched: bool = MinigameLauncher.launch(
+		self,
+		ElapsedTimeMinigame.new(),
+		_mg_text("Reconstructing the Hour", "推演时刻"),
+		_mg_text(
+			"The clock says midnight. The ash, the wax and the ice say"
+			+ " something else. Work out which of them is lying.",
+			"钟面写着午夜。灰烬、蜡油和冰块却是另一种说法。找出在说谎的那一个。"
+		),
+		Color(0.86, 0.72, 0.98, 1.0),
+		_on_timeline_minigame_finished
+	)
+	if not launched:
+		interaction_runtime.present_feedback("You are already working this out.")
+
+
+func _on_timeline_minigame_finished(cleared_all: bool, stages: int) -> void:
+	if not cleared_all:
+		interaction_runtime.present_feedback(
+			(
+				"You reconstructed %d of the timings before stepping back"
+				+ " from the clock."
+			) % stages
+		)
+		return
+	GameState.set_story_flag("dining_timeline_reconstructed")
+	GameState.add_evidence("stopped_midnight_clock")
+	_show_dining_note(
+		"dining_clock_note",
+		"A Clock Stopped at Midnight",
+		"The pendulum was stopped by hand. The minute hand is bent toward"
+		+ " twelve, as if someone wanted the room to remember a false time."
+		+ " Every other indicator in this room disagrees with it, and they"
+		+ " all agree with each other."
+	)
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english

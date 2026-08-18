@@ -1458,3 +1458,9 @@ func return_to_castle_hall() -> void:
 			"Failed to return to Castle Hall. Error: "
 			+ str(change_error)
 		)
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english
