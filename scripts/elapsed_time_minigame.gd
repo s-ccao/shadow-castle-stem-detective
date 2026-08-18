@@ -34,7 +34,7 @@ const LEVELS: Array[Dictionary] = [
 		"clues": [
 			{"id": "ice", "rate": 3.0, "amount": 12.0, "reliable": true},
 			{"id": "ash", "rate": 1.5, "amount": 6.0, "reliable": true},
-			{"id": "candle", "rate": 2.0, "amount": 3.0, "reliable": false},
+			{"id": "candle", "rate": 2.0, "amount": 4.0, "reliable": false},
 		],
 	},
 	{
@@ -120,12 +120,27 @@ const CLUE_TEXT: Dictionary = {
 }
 
 
+## 揭晓演示。原来点一个答案就当场判分，几条线索始终只是几行文字——而这一关
+## 教的"多条独立线索互相印证"本来就是一件用眼睛比的事。现在答完之后所有证据
+## 条会一起重新标定到同一根小时轴上，落在同一格的挤成一簇，落单的那条露出来。
+const RESOLVE_HOLD: float = 1.2
+
+var _board: ClueTimelineView
+var _answer: int = 0
+var _picked: int = 0
+var _running: bool = false
+var _run_time: float = 0.0
+
+
 func level_count() -> int:
 	return LEVELS.size()
 
 
 func build_level(index: int) -> void:
 	var level: Dictionary = LEVELS[index]
+	_answer = int(level["answer"])
+	_picked = 0
+	_running = false
 	set_instruction(_text(
 		"Each indicator changes at a steady rate, so amount divided by rate "
 		+ "gives the hours. One of them is lying — trust the answer the "
@@ -136,11 +151,15 @@ func build_level(index: int) -> void:
 
 	var column := VBoxContainer.new()
 	column.set_anchors_preset(Control.PRESET_FULL_RECT)
-	column.add_theme_constant_override("separation", 5)
+	column.add_theme_constant_override("separation", 6)
 	content.add_child(column)
 
-	for clue: Dictionary in level["clues"]:
-		column.add_child(_build_clue_row(clue))
+	_board = ClueTimelineView.new()
+	_board.clues = _board_clues(level)
+	_board.hour_span = _hour_span(level)
+	_board.custom_minimum_size = Vector2(0.0, 150.0)
+	_board.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_board)
 
 	var prompt := _make_label(
 		_text("How long ago?", "距现在过了多久？"), 15, GOLD
@@ -156,40 +175,46 @@ func build_level(index: int) -> void:
 		var button := make_button(
 			_text("%d hours" % hours, "%d 小时" % hours)
 		)
-		button.custom_minimum_size = Vector2(120.0, 34.0)
-		button.pressed.connect(_on_answer.bind(hours, int(level["answer"])))
+		button.custom_minimum_size = Vector2(112.0, 32.0)
+		button.pressed.connect(_on_answer.bind(hours))
 		row.add_child(button)
 	column.add_child(row)
 
 
-func _build_clue_row(clue: Dictionary) -> Control:
-	var info: Dictionary = CLUE_TEXT[str(clue["id"])]
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+## 把关卡数据和文案合成证据板要的形状。名称、单位和速度都在这里查好，
+## 视图只管画。
+func _board_clues(level: Dictionary) -> Array[Dictionary]:
+	var built: Array[Dictionary] = []
+	for clue: Dictionary in level["clues"]:
+		var info: Dictionary = CLUE_TEXT[str(clue["id"])]
+		built.append({
+			"id": str(clue["id"]),
+			"rate": float(clue["rate"]),
+			"amount": float(clue["amount"]),
+			"reliable": bool(clue["reliable"]),
+			"name": _text(str(info["en"]), str(info["zh"])),
+			"unit_text": _text(
+				"%s %s" % [_trim(float(clue["amount"])), str(info["unit_en"])],
+				"%s %s" % [_trim(float(clue["amount"])), str(info["unit_zh"])]
+			),
+			"rate_text": _text(
+				"%s %s" % [_trim(float(clue["rate"])), str(info["rate_en"])],
+				"%s %s" % [_trim(float(clue["rate"])), str(info["rate_zh"])]
+			),
+		})
+	return built
 
-	var name_label := _make_label(
-		_text(str(info["en"]), str(info["zh"])), 14, PARCHMENT
-	)
-	name_label.custom_minimum_size = Vector2(180.0, 0.0)
-	row.add_child(name_label)
 
-	var detail := _make_label(
-		_text(
-			"%s %s, at %s %s" % [
-				_trim(float(clue["amount"])), str(info["unit_en"]),
-				_trim(float(clue["rate"])), str(info["rate_en"]),
-			],
-			"%s %s，速度 %s %s" % [
-				_trim(float(clue["amount"])), str(info["unit_zh"]),
-				_trim(float(clue["rate"])), str(info["rate_zh"]),
-			]
-		),
-		13,
-		Color(0.82, 0.76, 0.60, 1.0)
-	)
-	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(detail)
-	return row
+## 小时轴要装得下最大的那个读数，否则说谎的那条会顶到轴外，反而看不出它离
+## 群多远。
+func _hour_span(level: Dictionary) -> float:
+	var span: float = 1.0
+	for clue: Dictionary in level["clues"]:
+		var rate: float = float(clue["rate"])
+		if is_zero_approx(rate):
+			continue
+		span = maxf(span, float(clue["amount"]) / rate)
+	return ceilf(span)
 
 
 func _trim(value: float) -> String:
@@ -224,8 +249,35 @@ func _answer_options(level: Dictionary) -> Array[int]:
 	return options
 
 
-func _on_answer(picked: int, answer: int) -> void:
-	if picked == answer:
+func _on_answer(picked: int) -> void:
+	if _running or _board == null:
+		return
+	_picked = picked
+	_running = true
+	_run_time = 0.0
+	_set_buttons_disabled(content, true)
+	GameAudio.play(&"note_file")
+	_board.resolve()
+
+
+func _process(delta: float) -> void:
+	if not _running:
+		return
+	# 演示途中玩家可以直接关掉面板。_finish() 只清空内容并不释放面板本身，
+	# 不拦的话演示会继续跑到判分，在一个已经结束的小游戏上再判一次。
+	if not visible or not is_instance_valid(_board):
+		_running = false
+		return
+	_run_time += delta
+	if _run_time < ClueTimelineView.RESOLVE_TIME + RESOLVE_HOLD:
+		return
+	_running = false
+	_set_buttons_disabled(content, false)
+	_judge()
+
+
+func _judge() -> void:
+	if _picked == _answer:
 		report_level_cleared(_text(
 			"Three independent measures agree. The hour is fixed.",
 			"几条互相独立的线索彼此吻合，时刻定下来了。"
@@ -236,3 +288,8 @@ func _on_answer(picked: int, answer: int) -> void:
 		+ "one and take the value the majority share.",
 		"那只是某一条线索的说法。把每条都算一遍，取多数一致的那个值。"
 	))
+	# 板子必须收回证据状态。停在揭晓状态的话，每条线索算出来的小时数和那条
+	# 说谎线索的红色标记会一直留在屏幕上——下一次作答只要照着读就行了，
+	# 那道除法和那次比对就都不用做了。另外两个小游戏也是在输入作废时收回的。
+	if is_instance_valid(_board):
+		_board.reset_board()
