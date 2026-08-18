@@ -146,9 +146,36 @@ translation lives in the same record as `question_zh` / `options_zh`, resolved
 by `_localized_field()`. Splitting those into a separate table risks the
 options and the answer index drifting apart in one language only.
 
-Coverage is currently the menus, endings and the knowledge locks. Room
-investigation dialogue, the objective panel and the journal are still
-English-only.
+Room prose is translated **at the sinks**, not at the call sites.
+`present_feedback`, `show_message`, `set_dialogue_text` and `NoteHud.add_clue`
+each run their argument through `CaseLocale.line()`, which looks the English
+up in `CaseScriptZh.LINES` and returns it unchanged when there is no entry.
+The English literal in the room script is both the source text and the lookup
+key, so adding a translation touches no logic and a reworded line cannot
+silently point at a stale entry.
+
+All 274 player-facing lines are translated. Run
+`python3 tools/check_translations.py` after any text change; CI runs it too.
+It fails on a translation whose English no longer exists, and on one whose
+format specifiers, BBCode tags or line breaks drift from the original — the
+first is dead weight, the other two crash or misrender at runtime.
+
+Two traps that cost time here. Nearly all long prose is a parenthesised chain
+of concatenated string literals, so any tool reading this source has to fold
+`"a" + "b"` the way the engine does or it will measure strings that never
+exist at runtime and miss every one that does. And formatting half a sentence
+before concatenating the rest (`"... %s" % x + " rest."`) splits one sentence
+into two translation units at an arbitrary English clause boundary, which no
+other language's word order can follow.
+
+**Mrs. Lin's register is a teacher addressing a student they think highly
+of.** She explains rather than simplifies, names things properly, and when
+the player is wrong she says where the reasoning went sideways instead of
+softening it. The source already reaches for this — "Do not guess — read,
+observe, understand", "Obvious is not the same as proven. You know how often
+I say that", and her notebook conceding "Perhaps I taught you something after
+all." New lines should match that voice rather than talking down to the
+player.
 
 ## Minigames
 

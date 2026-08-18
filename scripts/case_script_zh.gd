@@ -422,4 +422,136 @@ const LINES: Dictionary = {
 		"花粉？一座带温室的城堡里当然有花粉。这证明不了我做过什么。\n\n林女士：\n单靠花粉不足以定案，这一点他说得没错。但如果花粉出现在一扇上锁的门把手上，那就可能说明：不久前有从温室来的人碰过它。",
 	"The lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nMrs. Lin:\nMaybe, but we should inspect the circuit panel before accepting that explanation.":
 		"这城堡的灯三天两头就灭。旧线路、旧墙、旧毛病。\n\n林女士：\n也许吧。但在接受这个说法之前，我们该先去看看那块电路板。",
+
+	# ---------- 终局档案室 ----------
+	"Final Archive Document — Lord Ashford Record":
+		"终局档案文件 —— 阿什福德勋爵记录",
+	"Final Deduction":
+		"最终推演",
+	"Final Deduction Connection":
+		"最终推演：证据串联",
+	"Knowledge Engine Route":
+		"知识引擎路线",
+	"Mrs. Lin Found in the Final Room":
+		"在终局档案室发现林女士",
+	"Mrs. Lin's Final Notebook":
+		"林女士最后的笔记本",
+	"Ordinary Case Closure — The Butler":
+		"普通结案 —— 管家",
+	"True Case Closure — The Mechanic":
+		"真相结案 —— 机械师",
+	"Mrs. Lin lies beside the analysis table. She is already dead. Her notebook is still held against her coat. A torn violet cuff fragment with a copper-thread cross-stitch remains in her hand.":
+		"林女士倒在分析台旁边，已经没有气息。笔记本仍被她按在外套上。她手里还攥着一块撕下的紫色袖口残片，上面有铜线十字缝补的痕迹。",
+	"Mrs. Lin is dead beside the Ashford analysis table. There is no sign that she reached the final archive. Her notebook is still closed against her coat. A torn violet insulating fiber and a fragment of glove cuff are caught in her hand; the cuff carries a distinctive copper-thread cross-stitch that matches the repair described in the Circuit Room maintenance record.":
+		"林女士死在阿什福德分析台旁。没有任何迹象表明她拿到了终局档案。笔记本仍旧合着，压在她的外套上。她手里攥着一段撕断的紫色绝缘纤维和一块手套袖口残片；那块袖口带着很好认的铜线十字缝补，与线路房维修记录里描述的那次修补完全吻合。",
+	"The circular Ashford analysis table has five radial evidence links: staged scene, maintenance route, deliberate blackout, Dining opportunity, and the personalized glove match. It is waiting for the final deduction.":
+		"阿什福德的圆形分析台有五条放射状的证据链：布置过的现场、维修路线、蓄意停电、餐厅时机，以及那处独一无二的手套匹配。它在等一次最终推演。",
+	"The final pages do not name a culprit. They ask you to connect the staged Chemistry scene, the Greenhouse maintenance route, the deliberate blackout, the Dining timeline, and the personalized glove match before choosing a suspect.":
+		"最后几页没有点出凶手的名字。它们要求你把这些串起来：被布置的化学室现场、温室通往服务通道的路线、蓄意的停电、餐厅的时间线，以及那处独一无二的手套匹配——串完之后，再去选人。",
+	"The final pages do not name a culprit. They organize five questions: was the Chemistry scene staged, what links the Greenhouse to the service route, what caused the blackout, what does the Dining timeline prove, and who had the knowledge, tools, access, and route to connect them? The violet fiber and torn cuff in Mrs. Lin's hand are the final bridge to her last struggle.\n\nIf you are reading this, then I did not make it back. Do not finish this investigation for me. Finish it properly. Check every assumption. Connect the evidence. And do not guess.":
+		"最后几页没有点出凶手的名字。它们把问题理成了五条：化学室的现场是不是被布置过；温室与服务通道之间是什么关系；停电由什么造成；餐厅的时间线证明了什么；以及——谁同时具备把这一切串起来所需的知识、工具、权限和路线？林女士手中的紫色纤维和撕下的袖口，是通向她最后那场挣扎的最后一座桥。\n\n如果你正在读这段话，那我就是没能回来。别为了我把这桩调查结掉——要把它做对。逐条检验你的每一个假设。把证据串起来。还有，不要猜。",
+	"The final table connects Evidence to Person, Person to Location, and Location to Timeline. The chain identifies the Mechanic's access, route and opportunity before the suspect comparison.":
+		"这张终局台把证据连到人、人连到地点、地点连到时间线。这条链会在比对嫌疑人之前，先确定机械师的权限、路线与时机。",
+	"The final deduction identifies the Mechanic through knowledge, tools, access, opportunity and route. The staged red stain, maintenance pollen, deliberate short circuit, missing right glove, copper repair thread and torn cuff fragment form one connected case.":
+		"最终推演从知识、工具、权限、时机和路线五个方面指向机械师。被布置的红色污渍、维修带来的花粉、蓄意的短路、失踪的右手手套、铜线修补痕和撕下的袖口残片，构成了同一桩案子。",
+	"The five conclusions identify the Butler as the executor: he had the service access, reached the analysis table, and operated the prepared apparatus. Yet the glove evidence only proves contact with the maintenance chain. The original instruction remains unaccounted for.":
+		"五条结论指认管家是执行者：他有服务通道的权限，他到过分析台，并且操作了那台已经准备好的装置。可是手套那条证据只能证明他接触过维修链条——那道最初的命令，仍旧没有着落。",
+	"The Butler operated the apparatus under a forged emergency order. The three sealed archives reveal the author: the Mechanic exploited the Butler's pressure, forged the Mechanical Office instruction, and silenced Dr. Lin after she refused him funding and access to the Knowledge Engine plans.":
+		"管家是在一道被伪造的紧急命令下操作装置的。三份密封档案揭出了写命令的人：机械师利用了管家的处境，伪造了机械办公室的指令，并在林博士拒绝给他经费与知识引擎图纸权限之后，让她永远沉默。",
+	"The sealed record describes Ashford's research wings as a verification network: Matter, Life, Energy and Access. It names the Knowledge Engine as the castle's central research system and records unauthorized copies of its engineering diagrams and irregular maintenance-level archive requests. The document identifies the target and the route, but it does not name the person responsible.":
+		"这份封存记录把阿什福德的几个研究区描述成一张验证网络：物质、生命、能量与通路。它指明知识引擎是城堡的中枢研究系统，并记录了其工程图纸的未授权复制件，以及若干不合规的维修级档案调阅申请。这份文件点明了目标和路线，却没有点明责任人。",
+	"The Knowledge Engine's brass orrery links the violet circuit to the Master Archive. Its central sphere remains sealed until the Vault symbols confirm the route.":
+		"知识引擎的黄铜星象仪，把那条紫色电路连向主档案库。在金库符号确认路线之前，它中央的球体一直是封着的。",
+	"The Vault Door's central violet core is connected to the Master Archive route. Under Vision, its frozen symbols record the maintenance circuit used to reach Mrs. Lin's final room.":
+		"金库门中央那枚紫色核心，接的正是通往主档案库的路线。在洞察之下，它凝固的符号记录着——那条通往林女士最后一间房的维修电路。",
+	"The violet symbol in the vault matches the Knowledge Engine's maintenance circuit. The archive was the target, and the service route was the method.":
+		"金库里那个紫色符号，与知识引擎的维修电路吻合。档案库才是目标，而服务通道是手段。",
+
+	# ---------- 图书馆 ----------
+	"Ashford Archive Record":
+		"阿什福德档案记录",
+	"RGB Archive Filter":
+		"RGB 档案滤镜",
+	"SEALED ARCHIVE III — Dr. Lin's Decision":
+		"密封档案 III —— 林博士的决定",
+	"Recipe learned: %s":
+		"已学会配方：%s",
+	"%s light is already active in the optical stand.":
+		"光学台上的%s光已经亮着了。",
+	"%s light is active. Activate the other two filters in any order; the archive will appear when all three colors overlap.":
+		"%s光已亮。另外两片滤镜的顺序随意；三色叠在一起时，档案就会显形。",
+	"Red, green and blue light are all active in the optical stand. Their additive combination becomes a pale neutral light, revealing the layered diagram and the route to the Ashford Archive Record.":
+		"红、绿、蓝三色光都亮着了。它们叠加成近乎中性的淡白光，把分层的图解和通往阿什福德档案记录的路线一并显了出来。",
+	"The archive text is split into three color layers. Use the red, green and blue filters before copying the record.":
+		"档案上的字被拆成了三层颜色。先把红、绿、蓝三片滤镜都用上，再来誊抄这份记录。",
+	"Archive record copied. It links the Knowledge Engine to the maintenance circuit and the hidden service route.":
+		"档案记录已誊抄。它把知识引擎、维修电路和那条隐蔽的服务通道连了起来。",
+	"You already copied the Ashford archive record into your notes.":
+		"阿什福德的这份档案记录，你已经抄进笔记了。",
+	"You already copied this recipe into your notes.":
+		"这张配方你已经抄进笔记了。",
+	"You worked through %d of the colour plates before stepping away.":
+		"你在离开前做完了 %d 张配色板。",
+	"The violet archive drawer is bare. Dr. Lin's private decision has already been copied.":
+		"那只紫色档案抽屉空了。林博士的私人决定已经被誊抄走了。",
+	"A red filter rests in the small optical stand. The Library Knowledge note says the three light colors must be applied in sequence.":
+		"小光学台上架着一片红色滤镜。图书馆知识笔记写着：三种色光必须依次施加。",
+	"A green filter rests in the small optical stand.":
+		"小光学台上架着一片绿色滤镜。",
+	"A blue filter rests in the small optical stand.":
+		"小光学台上架着一片蓝色滤镜。",
+	"A rolled scroll tucked between alchemical volumes. It holds the recipe for the Swiftness Potion.":
+		"夹在几本炼金典籍之间的一卷卷轴。上面写着迅捷药水的配方。",
+	"A scroll hidden inside an old atlas. It holds the recipe for the Vision Potion.":
+		"藏在一本旧地图册里的卷轴。上面写着洞察药水的配方。",
+	"A detective's work table covered in papers, candles and a magnifying glass. The notes point toward the lower hall.":
+		"一张侦探的工作台，铺满纸张、蜡烛和一只放大镜。那些笔记指向下层厅堂。",
+	"An open illuminated book lies on the desk beside a magnifying glass. The pages are dense with notes and diagrams.":
+		"书桌上摊着一本泥金彩绘的书，旁边放着放大镜。书页上密密麻麻是笔记和图解。",
+	"A desk with an antique globe, an oil lamp and an open book. The lamp is still warm.":
+		"一张书桌，上面有古董地球仪、一盏油灯和一本摊开的书。灯还是温的。",
+	"A writing desk. An open book, pinned parchment and an inkwell rest on its worn surface.":
+		"一张写字台。磨旧的桌面上放着摊开的书、别住的羊皮纸和一只墨水瓶。",
+	"A three-tier bookcase. The top surface still holds an open book and several small cases.":
+		"一座三层书架。顶层还摆着一本摊开的书和几只小盒。",
+	"A broad chest-cabinet packed with books and bundled scrolls. The bindings are worn with age.":
+		"一只宽大的箱柜，塞满书籍和成捆的卷轴。装帧都已年久磨损。",
+	"A divided storage chest filled with banded books, scrolls and small sealed bundles.":
+		"一只带隔层的储物箱，装着扎带的书册、卷轴和小捆封好的东西。",
+	"A chained chest-cabinet. The lock is intact, but the books inside have been disturbed recently.":
+		"一只上了链的箱柜。锁没被动过，可里面的书最近被人翻过。",
+	"A heavy cabinet bound by a chain and a gold padlock. Whatever it guards, it was meant to stay sealed.":
+		"一只用铁链和金色挂锁封住的重柜。不管它守着什么，那东西本就不打算见人。",
+	"A dark cabinet bearing a circular crossed emblem. The lower handle is polished from frequent use.":
+		"一只深色柜子，上面是圆形交叉纹章。下方把手被摩得发亮，显然常被人开合。",
+	"A narrow cabinet with two ring handles and a heavy lower clasp. The lock has been opened and closed many times.":
+		"一只窄柜，两只环形把手，下方是沉重的搭扣。这把锁被开过又合上过很多次。",
+	"A narrow cabinet. A circular lock with an hourglass mark guards whatever lies within.":
+		"一只窄柜。一把带沙漏标记的圆形锁，守着里面的东西。",
+	"A narrow two-part case with ring handles and reinforced straps. Something rattles behind the lower panel.":
+		"一只上下两截的窄柜，环形把手，加固皮带。下层面板后面有东西在响。",
+	"A tall cabinet of dark wood, marked with a compass-like emblem. Its door will not budge.":
+		"一只深色木质高柜，标着类似罗盘的纹章。柜门纹丝不动。",
+	"A tall ring-marked cabinet. Its lower emblem is scratched with a symbol that matches no library catalogue.":
+		"一只带环形标记的高柜。下方纹章上被刻了一个符号——图书馆的任何目录里都查不到它。",
+	"A tall bank of drawers with brass handles. One drawer is slightly open, papers peeking out.":
+		"一排高身抽屉，配黄铜把手。有一格微微开着，纸角探了出来。",
+	"A tall wooden panel with a wheel-like mechanism. Its symbols look designed to be turned in a precise order.":
+		"一面高大的木板，嵌着轮盘状的机构。上面的符号，看样子要按某个精确的顺序转动。",
+	"A reinforced archive cabinet with deep shelves and brass fasteners. Its contents are carefully sorted.":
+		"一只加固的档案柜，隔板很深，配黄铜扣件。里面的东西分类得很仔细。",
+	"A reinforced storage cabinet. Its shelves hold rolled scrolls and odd brass instruments.":
+		"一只加固的储物柜。隔板上放着卷好的卷轴和一些奇形怪状的黄铜器具。",
+	"A storage cabinet packed with dark violet volumes and sealed drawers. One compartment is empty.":
+		"一只储物柜，塞满深紫色的册子和封好的抽屉。其中一格是空的。",
+	"A cabinet of bottles, powders and sealed jars. The dust around one vial has been recently disturbed.":
+		"一只放着瓶子、粉末和封口罐的柜子。其中一支小瓶周围的灰尘，最近被人碰过。",
+	"An open shelf of dusty volumes and sealed containers. Several spines have been deliberately turned around.":
+		"一排敞开的书架，摆着积灰的册子和封口容器。有几本书脊被人刻意调转了方向。",
+	"Rows of archive drawers filled with brittle notes, labels and fragments of old casework.":
+		"一排排档案抽屉，装满脆化的笔记、标签，和旧案卷的残页。",
+	"A restricted archive card describes the Knowledge Engine and the castle's security network. Lord Ashford restricted the complete Knowledge Engine plans to the Master Archive. Several maintenance copies of Ashford engineering diagrams were produced without authorization, and the archive access records contain irregular maintenance-level requests. The archive route is hidden behind the final vault, and the security system can be redirected through the maintenance circuit. Whoever made those requests needed technical access, a route through the service systems, and a reason to create a blackout.":
+		"一张受限档案卡描述了知识引擎与城堡的安保网络。阿什福德勋爵把知识引擎的完整图纸限制在主档案库内。有若干份阿什福德工程图解的维修副本在未获授权的情况下被制作出来，而档案调阅记录里，还留着一些不合规的维修级申请。",
+	"[center][b]SEALED ARCHIVE III — DR. LIN'S PRIVATE DECISION[/b][/center]\n\nDr. Lin's unsigned memorandum confirms that she rejected the Mechanic's request for independent funding and access to the complete Knowledge Engine plans. She had discovered unauthorized maintenance copies, so she prepared a controlled verification at the analysis table to trace the person directing them.\n\nHer final margin note reads: [color=#4a306d]“The Butler is frightened, not secretive. If an emergency order reaches him, verify its routing mark before he acts.”[/color]\n\nDr. Lin expected a forged instruction; she did not expect its isolation field to become lethal. The person who needed her silent also needed her research recognized as his own.":
+		"[center][b]密封档案 III —— 林博士的私人决定[/b][/center]\n\n林博士一份未署名的备忘录确认：她驳回了机械师索取独立经费、以及查阅知识引擎完整图纸的请求。她发现了那些未经授权的维修副本，于是在分析台上准备了一次受控验证，想追出到底是谁在背后调度它们。\n\n她在页边的最后一句写着：[color=#4a306d]「管家是害怕，不是有意隐瞒。如果有紧急命令递到他手上，务必在他动手之前核实转递标记。」[/color]\n\n林博士预料到会有一份伪造的指令；她没有预料到，那道隔离力场会致命。那个需要她沉默的人，同时也需要她的研究成果被认成自己的。",
 }
