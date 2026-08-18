@@ -539,6 +539,11 @@ const FINAL_ROOM_POSITION: Vector2 = Vector2(955, 138)
 const ENEMY_START_POSITION: Vector2 = Vector2(1611, 1070)
 var hall_arrival_finished := false
 var enemy_chase_started := false
+## 大厅自己的守卫是否已经醒来。它和 GameState.chase_mode 是两回事：
+## chase_mode 要到餐厅通关才为真，还会一并切换手电筒视野和地图表现，
+## 而大厅这只守卫在开场白结束两秒后就该出现。少了这个标志，
+## update_enemy_chase_state() 会在下一帧就把它关掉。
+var hall_guard_awake := false
 var _damage_invincible_timer: float = 0.0
 const CASTLE_FLOOR_1_BACKGROUND := \
 	"res://assets/backgrounds/hall_floor_bg.png"
@@ -1254,28 +1259,40 @@ func setup_enemy():
 	enemy.position = ENEMY_START_POSITION
 	enemy.setup(self, player)
 
-	if LAYOUT_ALIGNMENT_MODE:
-		enemy.visible = false
-		enemy.set_physics_process(false)
-		return
+	_set_enemy_active(false)
 
-	enemy.visible = false
-	enemy.set_physics_process(false)
+
+## 守卫藏起来时必须连碰撞层一起关掉。
+## is_player_position_walkable() 走的是 has_authored_wall_collision()，那是一次
+## 对整个物理空间、collision_mask = 1 的形状查询——守卫是 CharacterBody2D，
+## 默认就在第 1 层。只把 visible 设为 false、停掉 physics_process，它 24x24 的
+## 碰撞体照样留在物理空间里：玩家从开局起就会在 (1611,1070) 撞上一堵看不见的墙，
+## 而按墙体多边形那里本来是可以站人的。
+func _set_enemy_active(active: bool) -> void:
+	if enemy == null:
+		return
+	enemy.visible = active
+	enemy.set_physics_process(active)
+	# 用 set_deferred：物理查询期间直接改碰撞层会被引擎拒绝。
+	enemy.set_deferred("collision_layer", 1 if active else 0)
 
 
 ## 追逐模式开启时让敌人出现并开始追击；结束后停止。
 func update_enemy_chase_state() -> void:
 	if enemy == null:
 		return
-	if GameState.chase_mode and not enemy_chase_started:
+	# 守卫该不该在场，由"追逐模式"和"大厅守卫已醒"两者之一决定。
+	# 之前这里只看 chase_mode：start_castle_hall_exploration() 刚把守卫放出来，
+	# 下一帧就会走进 else 分支被关掉，于是玩家在大厅等多久都等不到人。
+	var should_be_active: bool = GameState.chase_mode or hall_guard_awake
+	if should_be_active and not enemy_chase_started:
 		enemy_chase_started = true
-		enemy.position = ENEMY_START_POSITION
-		enemy.visible = true
-		enemy.set_physics_process(true)
-	elif not GameState.chase_mode and enemy_chase_started:
+		if GameState.chase_mode:
+			enemy.position = ENEMY_START_POSITION
+		_set_enemy_active(true)
+	elif not should_be_active and enemy_chase_started:
 		enemy_chase_started = false
-		enemy.visible = false
-		enemy.set_physics_process(false)
+		_set_enemy_active(false)
 
 
 func create_game_over_ui() -> void:
@@ -3935,10 +3952,11 @@ func start_castle_hall_exploration():
 	if game_over or dialogue_active:
 		return
 
-	if enemy != null:
-		enemy.visible = true
-		enemy_chase_started = true
-		enemy.set_physics_process(true)
+	# 交给 update_enemy_chase_state() 统一处理，别在这里直接开关守卫——
+	# 两处各管一半正是上面那个 bug 的来源。
+	hall_guard_awake = true
+	# 存进剧情标志，否则进一次房间再回来守卫就消失了。
+	GameState.set_story_flag("hall_guard_awake")
 
 func create_floor_one_layout_markers():
 	# Actual clues and NPCs already create their own visual
@@ -4426,6 +4444,8 @@ func get_floor_one_spawn_anchor() -> Vector2:
 
 func resume_castle_hall_after_return() -> void:
 	hall_arrival_finished = true
+	# 守卫醒过之后就一直在场；从房间回大厅时要把这个状态接回来。
+	hall_guard_awake = GameState.has_story_flag("hall_guard_awake")
 	dialogue_active = false
 	scene_transitioning = false
 
