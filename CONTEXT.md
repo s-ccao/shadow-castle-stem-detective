@@ -290,6 +290,17 @@ Three have actually bitten this project, all of them merge artifacts:
   merge without updating the scenes that reference it leaves scenes that cannot
   be instantiated.
 
-`python3 tools/check_static.py` covers all three and CI runs it. Run it after
+One more that fails at runtime rather than load, and belongs to the same family
+of things a parser waves through:
+
+- **`"a %s" + "b" % args`.** `%` binds tighter than `+`, so the format applies
+  to the last literal alone. With the placeholders in an earlier segment the
+  call fails and Godot hands back the string unformatted, so the player reads a
+  literal `%s`. Long prose here is nearly always a concatenation chain, which
+  makes this easy to write and easy to miss -- it shipped in two minigames'
+  wrong-answer explanations, the one line those screens exist to deliver. Wrap
+  the chain in parentheses before applying `%`.
+
+`python3 tools/check_static.py` covers all four and CI runs it. Run it after
 any merge, rebase or conflict resolution — that is when this class of damage
 appears, and it is the one class a parser cannot warn you about.

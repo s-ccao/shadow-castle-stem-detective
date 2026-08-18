@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Catch the load-time errors that gdparse does not.
+"""Catch the errors that gdparse does not.
 
-gdparse only checks that a file is syntactically well-formed. Godot itself
-rejects several things gdparse accepts, and those only surface when you press
-Play -- which is a slow and unpleasant way to find them, especially after a
-merge. Three classes have actually broken this project:
+gdparse only checks that a file is syntactically well-formed. Godot rejects
+more than that, and some things it accepts still misbehave at runtime. Those
+only surface when you press Play -- a slow and unpleasant way to find them,
+especially after a merge. Four classes have actually broken this project:
 
 1. Duplicate dictionary keys. A merge that brings the same block of entries in
    twice parses fine but makes Godot refuse to load the script. The whole game
@@ -14,6 +14,11 @@ merge. Three classes have actually broken this project:
 3. res:// paths pointing at files that no longer exist. Deleting a script
    during a merge without updating the scenes that reference it leaves scenes
    that cannot be instantiated.
+4. `"a %s" + "b" % args`. `%` binds tighter than `+`, so the format is applied
+   to the last literal only. When the placeholders live in an earlier segment
+   the call fails at runtime and Godot returns the string unformatted, so the
+   player reads a literal "%s". Long prose in this project is nearly always a
+   concatenation chain, which makes this easy to write and easy to miss.
 
 Exits non-zero when anything is found, so it can gate CI.
 """
@@ -130,6 +135,43 @@ def check_duplicate_definitions(path: str) -> list[str]:
     return problems
 
 
+def check_format_precedence(path: str) -> list[str]:
+    """Report `"a %s" + "b" % args`, where only the last literal is formatted.
+
+    A chain is recognised by a line that starts with `%` (the formatting is
+    written under the concatenation it was meant to apply to). If any earlier
+    line in that chain carries a placeholder and the last one does not, the
+    format call has no placeholder to fill and Godot leaves the string raw.
+    """
+    problems: list[str] = []
+    with open(path, encoding="utf-8") as handle:
+        lines = handle.read().split("\n")
+    placeholder = re.compile(r"%[sdfxXov]")
+    for number, line in enumerate(lines, start=1):
+        # The argument may be an array literal, a parenthesised expression or
+        # a plain identifier -- all three appear in this repository.
+        if re.match(r"^\s*%\s*[\[(\w\"]", line) is None:
+            continue
+        chain: list[str] = []
+        index = number - 2
+        while index >= 0 and len(chain) < 16:
+            above = lines[index]
+            if not (above.rstrip().endswith('"') or above.lstrip().startswith("+")):
+                break
+            chain.insert(0, above)
+            index -= 1
+        if not chain:
+            continue
+        earlier = "\n".join(chain[:-1])
+        if placeholder.search(earlier) and not placeholder.search(chain[-1]):
+            problems.append(
+                f"{path}:{number}: '%' applies only to the last literal of "
+                "this concatenation, but the placeholders are in an earlier "
+                "one -- wrap the chain in parentheses"
+            )
+    return problems
+
+
 def check_resource_paths(root: str) -> list[str]:
     """Report res:// references whose target file is absent."""
     problems: list[str] = []
@@ -161,6 +203,7 @@ def main() -> int:
     for path in scripts:
         problems.extend(check_duplicate_keys(path))
         problems.extend(check_duplicate_definitions(path))
+        problems.extend(check_format_precedence(path))
     problems.extend(check_resource_paths(root))
 
     for problem in problems:
@@ -171,7 +214,8 @@ def main() -> int:
     print(f"problems: {len(problems)}")
     if problems:
         print()
-        print("These stop Godot from loading the file. gdparse cannot see them.")
+        print("gdparse accepts all of these. Godot does not, or the player")
+        print("sees the damage at runtime.")
         return 1
     return 0
 

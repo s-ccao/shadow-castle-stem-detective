@@ -269,13 +269,22 @@ func _on_engage() -> void:
 		))
 		return
 	if not ratio_ok:
+		# 拼接必须先用括号收口再取 %：% 绑定得比 + 紧，不加括号的话格式化只
+		# 作用在最后一段字面量上，而占位符在第一段里，玩家读到的会是字面
+		# 的 "%s" 而不是真正的速比。
+		var numbers: Array = [
+			_ratio_text(_ratio()),
+			_ratio_text(float(_level["target_ratio"])),
+		]
 		report_level_failed(_text(
-			"Ratio is %s, not %s. Only the first and last gear set the speed "
-			+ "— the ones between them just pass it along."
-				% [_ratio_text(_ratio()), _ratio_text(float(_level["target_ratio"]))],
-			"速比是 %s，不是 %s。定速度的只有首末两个齿轮——"
-			+ "夹在中间的那些只是把转动传过去而已。"
-				% [_ratio_text(_ratio()), _ratio_text(float(_level["target_ratio"]))]
+			(
+				"Ratio is %s, not %s. Only the first and last gear set the "
+				+ "speed — the ones between them just pass it along."
+			) % numbers,
+			(
+				"速比是 %s，不是 %s。定速度的只有首末两个齿轮——"
+				+ "夹在中间的那些只是把转动传过去而已。"
+			) % numbers
 		))
 		return
 	report_level_failed(_text(
