@@ -337,7 +337,10 @@ func _spawn_clear_effect() -> void:
 
 
 func _on_close_pressed() -> void:
-	_finish(false)
+	# 全部通关后的庆祝期间关闭按钮仍然可以按。这时成绩必须照样算通关，
+	# 否则房间收到 cleared_all=false，完成标志不置位，玩家明明打通了却
+	# 要把整个小游戏重来一遍。
+	_finish(_cleared_count >= level_count())
 
 
 func _finish(cleared_all: bool) -> void:
