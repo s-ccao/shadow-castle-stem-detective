@@ -767,6 +767,8 @@ func show_inspect(id: String):
 
 	# 书桌 → 先做一遍烛火实验，做完才给卷轴。苏醒室那道门问的就是
 	# "火焰要从空气里得到什么"，这个练习把它从背答案变成想明白。
+	# 八关全过之前，书桌一直是练习入口；卷轴本身已经存进侦探笔记，
+	# 不必占着这个交互点。
 	if id == "desk":
 		if GameState.has_story_flag("wake_flame_drilled"):
 			show_scroll_clue()
@@ -3281,12 +3283,36 @@ func _open_flame_minigame() -> void:
 		return
 
 
-func _on_flame_minigame_finished(_cleared_all: bool, _stages: int) -> void:
-	# 卷轴一定要给。它会置位 first_lock_rule_learned，也就是大门知识锁的钥匙；
+func _on_flame_minigame_finished(cleared_all: bool, stages: int) -> void:
+	# 一关都没推出来就关掉面板，不算做过。原来这里无条件发放，于是打开面板
+	# 立刻关掉，也能拿到卷轴和林博士的工具包，而且书桌从此只剩一张卷轴——
+	# 练习再也打不开了。玩家的原话是"系统好像自动认为已经通关"。
+	if stages <= 0:
+		start_dialogue_pause()
+		clear_buttons()
+		show_dialogue(
+			"You",
+			_mg_text(
+				"You step back from the candles without working a single jar "
+				+ "out. The row is still waiting on the desk.",
+				"你从那排蜡烛前退开，一只罐子也没推出来。桌上那排还等在那里。"
+			)
+		)
+		reset_dialogue_scrolls()
+		add_dialogue_button(
+			_mg_text("Back to the desk", "回到书桌"), close_message_panel
+		)
+		return
+
+	# 卷轴一定要给，只要玩家真的推对过一关。它带着笔记工具和林博士的工具包，
 	# 把它锁在"八关全过"之后，等于让打不过练习的孩子卡在第一个房间。
 	# 练习是体验，卷轴是进度，两者不能绑在一起。
-	GameState.set_story_flag("wake_flame_drilled")
 	show_scroll_clue()
+
+	# 只有八关全过，书桌才换成直接给卷轴。原来推对一关就置位，剩下七关从此
+	# 再也见不到——而卷轴本来就已经进了侦探笔记，随时翻得到。
+	if cleared_all:
+		GameState.set_story_flag("wake_flame_drilled")
 
 
 func _mg_text(english: String, chinese: String) -> String:

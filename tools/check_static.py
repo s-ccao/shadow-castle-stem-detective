@@ -21,6 +21,9 @@ especially after a merge. Four classes have actually broken this project:
    concatenation chain, which makes this easy to write and easy to miss.
 5. `**bold**` in a string. Every label here is a plain Label, so the asterisks
    reach the player as asterisks. Rich text uses BBCode.
+6. A minigame completion handler that underscores both of its parameters. It is
+   saying it does not care whether the player played, so opening the panel and
+   closing it immediately collects the reward.
 
 Exits non-zero when anything is found, so it can gate CI.
 """
@@ -193,6 +196,39 @@ def check_markdown_emphasis(path: str) -> list[str]:
     return problems
 
 
+def check_minigame_rewards(path: str) -> list[str]:
+    """Report a minigame completion handler that ignores both its arguments.
+
+    `MinigameLauncher` hands the room `cleared_all` and the number of stages
+    actually beaten. A handler that underscores both is saying it does not care
+    whether the player played, so opening the panel and closing it immediately
+    collects the reward — and if the handler also sets a flag the room reads to
+    decide whether to offer the minigame, the minigame disappears for good.
+    That shipped in the wake room and is invisible from the code: the handler
+    looks complete, because underscoring a parameter is how you say you meant
+    to ignore it.
+    """
+    problems: list[str] = []
+    handler = re.compile(
+        r"^func\s+(_on_\w*(?:finished|completed))\s*\(([^)]*)\)"
+    )
+    with open(path, encoding="utf-8") as handle:
+        for number, line in enumerate(handle, start=1):
+            match = handler.match(line)
+            if match is None:
+                continue
+            params = [p.strip() for p in match.group(2).split(",") if p.strip()]
+            if len(params) < 2:
+                continue
+            if all(p.startswith("_") for p in params):
+                problems.append(
+                    f"{path}:{number}: {match.group(1)} ignores both "
+                    "cleared_all and the stage count, so closing the panel "
+                    "immediately collects the reward"
+                )
+    return problems
+
+
 def check_resource_paths(root: str) -> list[str]:
     """Report res:// references whose target file is absent."""
     problems: list[str] = []
@@ -226,6 +262,7 @@ def main() -> int:
         problems.extend(check_duplicate_definitions(path))
         problems.extend(check_format_precedence(path))
         problems.extend(check_markdown_emphasis(path))
+        problems.extend(check_minigame_rewards(path))
     problems.extend(check_resource_paths(root))
 
     for problem in problems:

@@ -342,3 +342,24 @@ rests on, not that the code runs:
 These fail silently in play — a wrong encoding teaches the opposite lesson
 without erroring — so they are worth more than any smoke test. Run with
 `godot --headless --script tests/minigame_science_contract_test.gd`.
+
+## Underscoring a completion handler's arguments gives the reward away
+
+`MinigameLauncher` hands the room two things: whether every stage was cleared,
+and how many actually were. The wake room's handler underscored both, so
+opening the candle drill and closing it immediately granted Dr. Lin's scroll,
+the notes tool and the field kit — and because the same handler set the flag
+the desk reads to decide what to offer, the drill then vanished for good. The
+player's words were "the system seems to think I finished it".
+
+The intent behind the unconditional grant was sound and is preserved: the
+scroll carries progression, so it must never be locked behind clearing all
+eight stages or a child who cannot beat the drill is stuck in the first room.
+The fix separates the two. Clearing one stage earns the scroll; clearing none
+earns nothing and the desk offers the drill again; only a full clear switches
+the desk over to the scroll, so the remaining stages stay reachable.
+
+The other four rooms already branch on `cleared_all`. `check_static.py` now
+fails a handler that underscores both parameters, because the omission is
+invisible on the page — underscoring a parameter is exactly how you say you
+meant to ignore it.
