@@ -697,9 +697,13 @@ func show_inspect(id: String):
 		show_wake_room_key_inspect()
 		return
 
-	# 书桌 → 居中大卷轴（线索剧情），不是底部对话框。
+	# 书桌 → 先做一遍烛火实验，做完才给卷轴。苏醒室那道门问的就是
+	# "火焰要从空气里得到什么"，这个练习把它从背答案变成想明白。
 	if id == "desk":
-		show_scroll_clue()
+		if GameState.has_story_flag("wake_flame_drilled"):
+			show_scroll_clue()
+		else:
+			_open_flame_minigame()
 		return
 
 	# 书架 → 居中大书（知识剧情），知识点收进笔记。
@@ -2822,3 +2826,52 @@ func smooth_room_path(
 		)
 
 	return smoothed_path
+
+
+## 桌上那排玻璃罩蜡烛。苏醒室是开场教学，所以这是全部小游戏里最短、
+## 最不惩罚的一个：只需要预测熄灭顺序，不需要操作，也没有时间压力。
+func _open_flame_minigame() -> void:
+	var launched: bool = MinigameLauncher.launch(
+		self,
+		FlameAirMinigame.new(),
+		_mg_text("Candle and Jar", "烛与罩"),
+		_mg_text(
+			"Mrs. Lin left a row of candles under glass. Work out which flame"
+			+ " goes out first.",
+			"林女士在桌上留了一排罩着玻璃的蜡烛。想清楚哪一支会最先熄灭。"
+		),
+		Color(1.0, 0.72, 0.35, 1.0),
+		_on_flame_minigame_finished
+	)
+	if not launched:
+		return
+
+
+func _on_flame_minigame_finished(cleared_all: bool, stages: int) -> void:
+	if cleared_all:
+		GameState.set_story_flag("wake_flame_drilled")
+		show_scroll_clue()
+		return
+	_show_flame_hint(stages)
+
+
+func _show_flame_hint(stages: int) -> void:
+	start_dialogue_pause()
+	inspect_texture.texture = null
+	inspect_label.text = _mg_text(
+		"You predicted %d rows correctly before stepping away. The door will"
+		% stages
+		+ " ask what a flame needs from the air — work the candles until you"
+		+ " can say why, not just what.",
+		"你在离开前答对了 %d 排。门上那道题问的是火焰需要从空气里得到什么——"
+		% stages
+		+ "把这些蜡烛想透，说得出「为什么」，而不只是「是什么」。"
+	)
+	inspect_confirm_button.visible = false
+	_show_dialogue(inspect_panel)
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english

@@ -1002,7 +1002,10 @@ func try_interact() -> void:
 				)
 				return
 			if item_name == "knowledge_engine":
-				_inspect_knowledge_engine()
+				if GameState.has_story_flag("final_orrery_aligned"):
+					_inspect_knowledge_engine()
+				else:
+					_open_gear_minigame()
 				return
 			# 真正制作并使用过 Vision Potion 后，即使定时效果在追逐中结束，
 			# 本章节仍保留增强观察能力；Chemistry 样品演示不会设置 vision_mastered。
@@ -1263,3 +1266,33 @@ func return_to_castle_hall() -> void:
 			"Failed to return to Castle Hall. Error: "
 			+ str(change_error)
 		)
+
+
+## 知识引擎的黄铜星象仪。剧情里写着金库门要等符号确认路线才会开，这里把
+## 那台机构做成可操作的传动链——齿轮传动比是全游戏唯一的机械主题。
+func _open_gear_minigame() -> void:
+	MinigameLauncher.launch(
+		self,
+		GearTrainMinigame.new(),
+		_mg_text("The Knowledge Engine", "知识引擎"),
+		_mg_text(
+			"The brass orrery will not turn until its gear train runs at the"
+			+ " speed and direction the vault symbols call for.",
+			"这台黄铜星象仪不会转动——除非传动链的转速和转向，"
+			+ "正好对上金库符号要求的那一组。"
+		),
+		Color(0.92, 0.78, 0.42, 1.0),
+		_on_gear_minigame_finished
+	)
+
+
+func _on_gear_minigame_finished(cleared_all: bool, _stages: int) -> void:
+	if cleared_all:
+		GameState.set_story_flag("final_orrery_aligned")
+	_inspect_knowledge_engine()
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english
