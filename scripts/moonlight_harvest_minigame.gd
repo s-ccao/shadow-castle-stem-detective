@@ -137,7 +137,9 @@ func _process(delta: float) -> void:
 
 func _restart_level() -> void:
 	if visible:
-		build_level(current_level())
+		# 必须走外壳的 restart_level()：直接调 build_level() 不会清空
+		# content，每次超时都会把一整排花苞叠加上去，旧花苞还挂着点击回调。
+		restart_level()
 
 
 func _harvested_count() -> int:

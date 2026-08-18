@@ -46,8 +46,10 @@ func reset_phase() -> void:
 
 ## 0 = 完全闭合，1 = 完全张开。用正弦让开合是平滑的呼吸而不是突变，
 ## 玩家可以预判到"快开了"。
+## 相位偏移只在 reset_phase() 里加一次；这里再加一遍的话实际起始相位会
+## 变成 2 倍偏移，关卡数据里精心错开的节奏会塌成两两同步。
 func openness() -> float:
-	return 0.5 - 0.5 * cos((_phase + phase_offset) * TAU)
+	return 0.5 - 0.5 * cos(_phase * TAU)
 
 
 func is_ripe() -> bool:

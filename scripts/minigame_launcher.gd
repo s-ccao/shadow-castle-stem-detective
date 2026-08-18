@@ -10,6 +10,8 @@ extends RefCounted
 
 ## 正在运行的小游戏，同一时间只允许一个。
 static var _active: MinigameShell = null
+## 进入小游戏前树是否已经处于暂停，退出时按原样恢复。
+static var _was_paused: bool = false
 
 
 static func is_busy() -> bool:
@@ -27,12 +29,21 @@ static func launch(
 ) -> bool:
 	if is_busy():
 		return false
-	_active = game
+	# 必须先 add_child 再 configure：MinigameShell 的控件是在 _ready() 里建的，
+	# 而 _ready() 只有进入场景树才会跑。顺序反了的话 configure() 会去写
+	# 一堆还是 null 的 Label，整个 launch 在 add_child 之前就抛错中断——
+	# 那时 _active 已经被赋值，于是 is_busy() 永远为真，之后每次开小游戏
+	# 都只会提示"已经打开了"。
+	host.add_child(game)
 	game.configure(title, subtitle, tint)
 	game.finished.connect(
 		_on_finished.bind(host, game, on_finished), CONNECT_ONE_SHOT
 	)
-	host.add_child(game)
+	_active = game
+	# 小游戏是模态的：不暂停的话玩家会在面板后面继续走动，按 E 还会触发
+	# 身后的交互，把对话框叠在小游戏上面。项目里其他模态都是这么做的。
+	_was_paused = host.get_tree().paused
+	host.get_tree().paused = true
 	game.start()
 	return true
 
@@ -45,6 +56,8 @@ static func _on_finished(
 ) -> void:
 	var stages: int = game.levels_cleared()
 	_active = null
+	if is_instance_valid(host) and host.get_tree() != null:
+		host.get_tree().paused = _was_paused
 	game.queue_free()
 	# 房间可能在小游戏结束前就被切走了，回调前先确认它还活着。
 	if is_instance_valid(host) and on_finished.is_valid():

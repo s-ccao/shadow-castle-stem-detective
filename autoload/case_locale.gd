@@ -169,9 +169,15 @@ func room_name(room_id: String) -> String:
 
 func _load_preference() -> String:
 	var config := ConfigFile.new()
-	if config.load(PREFERENCE_PATH) == OK:
-		return _normalize(str(config.get_value("display", "language", "")))
-	return _system_language()
+	if config.load(PREFERENCE_PATH) != OK:
+		return _system_language()
+	# 文件存在不等于玩家选过语言：AudioManager 只写 [audio] 段就会把文件
+	# 创建出来。这时必须继续按系统语言判断，否则中文系统的玩家只要调过
+	# 一次音量，下次启动就被静默切回英文。
+	var stored: String = str(config.get_value("display", "language", ""))
+	if stored.is_empty():
+		return _system_language()
+	return _normalize(stored)
 
 
 func _save_preference() -> void:

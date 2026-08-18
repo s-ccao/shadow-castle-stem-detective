@@ -699,60 +699,49 @@ func show_gardener_dialogue() -> void:
 
 var _inspected_items: Array[String] = []
 var _gathered_plants: Array[String] = []
-var _active_minigame: MinigameShell
 var _active_bed: String = ""
 
 
 ## 打开某条长花坛的采药小游戏。小游戏期间冻结房间输入，避免玩家一边
 ## 玩一边还在走路。
 func _open_herb_bed_minigame(bed_name: String) -> void:
-	if _active_minigame != null:
+	if MinigameLauncher.is_busy():
 		return
 	_active_bed = bed_name
 	var game: MinigameShell
+	var title: String
+	var subtitle: String
+	var tint: Color
 	if bed_name == "herb_bed_left":
-		var photosynthesis := PhotosynthesisMinigame.new()
-		photosynthesis.configure(
-			_bilingual("Photosynthesis Bench", "光合工作台"),
-			_bilingual(
-				"Blue blossom will not swell unless light, water and air are"
-				+ " balanced against one another.",
-				"蓝铃花只有在光照、水分与空气三者彼此配平时才会饱满。"
-			),
-			Color(0.62, 0.94, 0.58, 1.0)
+		game = PhotosynthesisMinigame.new()
+		title = _bilingual("Photosynthesis Bench", "光合工作台")
+		subtitle = _bilingual(
+			"Blue blossom will not swell unless light, water and air are"
+			+ " balanced against one another.",
+			"蓝铃花只有在光照、水分与空气三者彼此配平时才会饱满。"
 		)
-		game = photosynthesis
+		tint = Color(0.62, 0.94, 0.58, 1.0)
 	else:
-		var harvest := MoonlightHarvestMinigame.new()
-		harvest.configure(
-			_bilingual("Moonlight Harvest", "月光采收"),
-			_bilingual(
-				"Moonleaf opens and closes on its own cycle. Cut only at the"
-				+ " peak, and never cut the thorns.",
-				"月叶按自己的周期开合。只在最盛时下刀，带刺的绝对别碰。"
-			),
-			Color(0.78, 0.88, 1.00, 1.0)
+		game = MoonlightHarvestMinigame.new()
+		title = _bilingual("Moonlight Harvest", "月光采收")
+		subtitle = _bilingual(
+			"Moonleaf opens and closes on its own cycle. Cut only at the"
+			+ " peak, and never cut the thorns.",
+			"月叶按自己的周期开合。只在最盛时下刀，带刺的绝对别碰。"
 		)
-		game = harvest
-	_active_minigame = game
-	game.finished.connect(_on_herb_bed_minigame_finished)
-	add_child(game)
-	room_input_enabled = false
+		tint = Color(0.78, 0.88, 1.00, 1.0)
+	# 走统一的启动器：它负责 add_child 先于 configure、暂停房间、结束清理。
+	# 之前这里自己写了一份，configure 在 add_child 之前，一开就崩。
 	if interact_label != null:
 		interact_label.visible = false
-	game.start()
+	MinigameLauncher.launch(
+		self, game, title, subtitle, tint, _on_herb_bed_minigame_finished
+	)
 
 
-func _on_herb_bed_minigame_finished(cleared_all: bool) -> void:
-	var game: MinigameShell = _active_minigame
+func _on_herb_bed_minigame_finished(cleared_all: bool, stages_cleared: int) -> void:
 	var bed_name: String = _active_bed
-	_active_minigame = null
 	_active_bed = ""
-	room_input_enabled = true
-	var stages_cleared: int = 0
-	if game != null:
-		stages_cleared = game.levels_cleared()
-		game.queue_free()
 	var config: Dictionary = HERB_BED_GAMES.get(bed_name, {})
 	if config.is_empty():
 		return

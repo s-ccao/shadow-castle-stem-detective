@@ -3253,9 +3253,11 @@ var _final_synthesis_index: int = 0
 func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable) -> void:
 	var unlocked_flag: String = "door_%s_unlocked" % door_id
 	if GameState.has_story_flag(unlocked_flag):
+		AudioManager.play_sfx("door_open")
 		on_enter.call()
 		return
 	if not GameState.has_key(key_id):
+		AudioManager.play_sfx("door_locked")
 		start_dialogue_pause()
 		clear_buttons()
 		set_dialogue_speaker("Mrs. Lin")

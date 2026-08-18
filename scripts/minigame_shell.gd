@@ -40,6 +40,8 @@ var _footer: HBoxContainer
 var _close_button: Button
 var _level_index: int = 0
 var _cleared_count: int = 0
+## 过关特效播放期间为真，用来挡住重复过关。
+var _advancing: bool = false
 var _banner_tween: Tween
 
 
@@ -232,11 +234,36 @@ func start() -> void:
 
 func _enter_level() -> void:
 	_clear_content()
+	_advancing = false
+	_set_content_interactive(true)
 	_progress_label.text = _text(
 		"Stage %d / %d" % [_level_index + 1, level_count()],
 		"第 %d / %d 关" % [_level_index + 1, level_count()]
 	)
 	build_level(_level_index)
+
+
+## 过关动画期间把内容区整体设为不可点，避免重复触发。
+func _set_content_interactive(interactive: bool) -> void:
+	if content == null:
+		return
+	content.mouse_filter = (
+		Control.MOUSE_FILTER_PASS if interactive else Control.MOUSE_FILTER_IGNORE
+	)
+	_set_buttons_disabled(content, not interactive)
+
+
+func _set_buttons_disabled(node: Node, disabled: bool) -> void:
+	for child: Node in node.get_children():
+		if child is BaseButton:
+			(child as BaseButton).disabled = disabled
+		_set_buttons_disabled(child, disabled)
+
+
+## 供具体玩法重开当前关。必须走这里而不是直接调 build_level()，
+## 否则旧的一整套控件会留在 content 里越叠越多。
+func restart_level() -> void:
+	_enter_level()
 
 
 func _clear_content() -> void:
@@ -247,6 +274,13 @@ func _clear_content() -> void:
 
 ## 具体玩法在过关时调用；最后一关过掉会触发 finished(true)。
 func report_level_cleared(message: String) -> void:
+	# 过关到切下一关之间有 0.9 秒的特效时间，这期间控件仍然是活的，而且
+	# 胜利条件依然成立——不挡住的话，连点获胜按钮会把关卡数和通关计数
+	# 一起翻倍，一关能刷出满进度。
+	if _advancing:
+		return
+	_advancing = true
+	_set_content_interactive(false)
 	AudioManager.play_ui("stage_clear")
 	show_banner(message, true)
 	_spawn_clear_effect()

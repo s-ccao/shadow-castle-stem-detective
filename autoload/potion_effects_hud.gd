@@ -61,6 +61,10 @@ func _ready() -> void:
 			GameState.potion_applied.connect(_on_potion_applied)
 		if not GameState.potion_expired.is_connected(_on_potion_expired):
 			GameState.potion_expired.connect(_on_potion_expired)
+		# 拾取音挂在这个中心信号上：证物、钥匙、碎片、药水、配方都会经过
+		# 它，比在每个房间各写一次 play() 可靠得多，也不会漏。
+		if not GameState.item_acquired.is_connected(_on_item_acquired):
+			GameState.item_acquired.connect(_on_item_acquired)
 	# 读档进来时药水可能已经在生效中，补建角标。
 	call_deferred("_sync_with_state")
 
@@ -138,6 +142,10 @@ func _on_potion_applied(effect_id: String, duration: float) -> void:
 	_spawn_burst(style)
 	_ensure_chip(effect_id, style, duration)
 	_raise_aura(style["aura"] as Color)
+
+
+func _on_item_acquired(_item_id: String, _kind: String, _amount: int) -> void:
+	AudioManager.play_sfx("item_pickup")
 
 
 func _on_potion_expired(effect_id: String) -> void:
