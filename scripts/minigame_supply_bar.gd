@@ -25,6 +25,9 @@ var target: int = 1
 var value: int = 0
 var free_amount: int = 0
 var is_limiting: bool = false
+## 槽名画在槽内顶部。原来它是槽体上方的一个独立标签，三列各多占 20px，
+## 整个内容区就装不下了。
+var label: String = ""
 
 
 func _ready() -> void:
@@ -95,3 +98,17 @@ func _draw() -> void:
 		false,
 		3.0 if is_limiting else 2.0
 	)
+
+	if label.is_empty():
+		return
+	var font := ThemeDB.fallback_font
+	var font_size: int = 13
+	var width: float = font.get_string_size(
+		label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size
+	).x
+	var at := Vector2((size.x - width) * 0.5, 15.0)
+	# 描一层深色底，槽填满时字压在亮色条上也要看得清。
+	draw_string(font, at + Vector2(1.0, 1.0), label,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0.05, 0.04, 0.02, 0.9))
+	draw_string(font, at, label,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, tint)

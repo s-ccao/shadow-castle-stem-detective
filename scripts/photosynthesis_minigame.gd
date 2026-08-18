@@ -72,6 +72,11 @@ const LEVELS: Array[Dictionary] = [
 	},
 ]
 
+## 培育演示。原来按下"培育"是当场判分，而这一关的主角——那株苗——在画面上
+## 根本不存在，"幼苗猛地窜高"只是一句断言。现在苗真的往上长，并且恰好停在
+## 三项供给里最矮的那一格上，那里横一条短板颜色的线。
+const SETTLE_HOLD: float = 0.9
+
 var _bought: Dictionary = {}
 var _level: Dictionary = {}
 var _bars: Dictionary = {}
@@ -81,6 +86,9 @@ var _budget_label: Label
 var _growth_label: Label
 var _limiting_label: Label
 var _cultivate_button: Button
+var _bed: PlantBedView
+var _running: bool = false
+var _run_time: float = 0.0
 
 
 func level_count() -> int:
@@ -95,6 +103,7 @@ func build_level(index: int) -> void:
 	_bars = {}
 	_value_labels = {}
 	_plus_buttons = {}
+	_running = false
 
 	set_instruction(_text(
 		"Growth is limited by whichever supply is lowest, not by the total. "
@@ -128,9 +137,19 @@ func build_level(index: int) -> void:
 
 	var lanes := HBoxContainer.new()
 	lanes.alignment = BoxContainer.ALIGNMENT_CENTER
-	lanes.add_theme_constant_override("separation", 40)
+	lanes.add_theme_constant_override("separation", 16)
 	lanes.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(lanes)
+
+	# 苗和三根供给槽并排：左边是结果，右边是控制。原来只有右边，于是这一关
+	# 的主角完全不在画面上。
+	_bed = PlantBedView.new()
+	_bed.scale_max = _scale_max()
+	_bed.target = int(_level["target"])
+	_bed.custom_minimum_size = Vector2(280.0, 150.0)
+	_bed.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_bed.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	lanes.add_child(_bed)
 
 	for channel: String in CHANNELS:
 		lanes.add_child(_build_lane(channel))
@@ -148,23 +167,23 @@ func build_level(index: int) -> void:
 
 func _build_lane(channel: String) -> Control:
 	var lane := VBoxContainer.new()
-	lane.add_theme_constant_override("separation", 6)
-	lane.custom_minimum_size = Vector2(150.0, 0.0)
-
-	var title := _make_label(_channel_name(channel), 15, CHANNEL_TINT[channel])
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lane.add_child(title)
+	lane.add_theme_constant_override("separation", 4)
+	lane.custom_minimum_size = Vector2(126.0, 0.0)
 
 	var bar := MinigameSupplyBar.new()
 	bar.tint = CHANNEL_TINT[channel]
 	bar.cap = int(_level["cap"][channel])
 	bar.scale_max = _scale_max()
 	bar.target = int(_level["target"])
-	bar.custom_minimum_size = Vector2(140.0, 168.0)
+	# 槽名直接画在槽里。原来标题、数值、单价各占一行标签，加上 168px 的槽体，
+	# 整列高 274px，比面板给内容区的 312px 只差一点，三列一起就把按钮挤出去了。
+	bar.label = _channel_name(channel)
+	bar.custom_minimum_size = Vector2(118.0, 96.0)
+	bar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	lane.add_child(bar)
 	_bars[channel] = bar
 
-	var value := _make_label("", 14, PARCHMENT)
+	var value := _make_label("", 13, PARCHMENT)
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lane.add_child(value)
 	_value_labels[channel] = value
@@ -173,24 +192,15 @@ func _build_lane(channel: String) -> Control:
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 8)
 	var minus := make_button("−")
-	minus.custom_minimum_size = Vector2(52.0, 30.0)
+	minus.custom_minimum_size = Vector2(48.0, 28.0)
 	minus.pressed.connect(_on_adjust.bind(channel, -1))
 	buttons.add_child(minus)
 	var plus := make_button("+")
-	plus.custom_minimum_size = Vector2(52.0, 30.0)
+	plus.custom_minimum_size = Vector2(48.0, 28.0)
 	plus.pressed.connect(_on_adjust.bind(channel, 1))
 	buttons.add_child(plus)
 	_plus_buttons[channel] = plus
 	lane.add_child(buttons)
-
-	var cost: int = int(_level["cost"][channel])
-	var note := _make_label(
-		_text("%d per unit" % cost, "每点 %d 补给" % cost),
-		11,
-		Color(0.78, 0.72, 0.56, 1.0)
-	)
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lane.add_child(note)
 
 	return lane
 
@@ -242,6 +252,8 @@ func _limiting_channel() -> String:
 
 
 func _on_adjust(channel: String, delta: int) -> void:
+	if _running:
+		return
 	var next: int = int(_bought[channel]) + delta
 	if next < 0:
 		return
@@ -252,6 +264,9 @@ func _on_adjust(channel: String, delta: int) -> void:
 	if _spent() > int(_level["budget"]):
 		_bought[channel] = previous
 		return
+	# 改了供给，上一轮长出来的苗就不再作数，收回种子状态重新培育。
+	if _bed != null:
+		_bed.reset_plant()
 	_refresh()
 
 
@@ -278,19 +293,53 @@ func _refresh() -> void:
 		bar.is_limiting = channel == limiting
 		bar.queue_redraw()
 		var free_units: int = int(_level["free"][channel])
-		var suffix: String = ""
-		if free_units > 0:
-			suffix = _text(" (%d free)" % free_units, "（含 %d 白送）" % free_units)
-		_value_labels[channel].text = "%d%s" % [supply, suffix]
 		var cost: int = int(_level["cost"][channel])
+		var parts: String = _text("%d per unit" % cost, "每点 %d" % cost)
+		if free_units > 0:
+			parts += _text(" · %d free" % free_units, " · 白送 %d" % free_units)
+		_value_labels[channel].text = "%d   (%s)" % [supply, parts]
 		_plus_buttons[channel].disabled = (
 			remaining < cost
 			or supply >= int(_level["cap"][channel])
 		)
+	if _bed != null:
+		_bed.light = _supply("light")
+		_bed.water = _supply("water")
+		_bed.carbon = _supply("carbon")
+		_bed.limiting = limiting
+		_bed.queue_redraw()
 	_cultivate_button.disabled = false
 
 
 func _on_cultivate() -> void:
+	if _running or _bed == null:
+		return
+	_running = true
+	_run_time = 0.0
+	_set_buttons_disabled(content, true)
+	GameAudio.play(&"potion_extract")
+	_bed.cultivate()
+
+
+func _process(delta: float) -> void:
+	if not _running:
+		return
+	# 演示途中玩家可以直接关掉面板。_finish() 只清空内容并不释放面板本身，
+	# 不拦的话演示会继续跑到判分，在一个已经结束的小游戏上再判一次。
+	if not visible or not is_instance_valid(_bed):
+		_running = false
+		return
+	_run_time += delta
+	if _bed.is_running():
+		return
+	if _run_time < PlantBedView.GROW_TIME + SETTLE_HOLD:
+		return
+	_running = false
+	_set_buttons_disabled(content, false)
+	_judge()
+
+
+func _judge() -> void:
 	var growth: int = _growth()
 	var target: int = int(_level["target"])
 	if growth >= target:
@@ -301,8 +350,11 @@ func _on_cultivate() -> void:
 		return
 	var limiting: String = _limiting_channel()
 	report_level_failed(_text(
-		"Growth stalls at %d. %s is the limiting factor — raising the others will not help."
-			% [growth, _channel_name(limiting)],
-		"生长停在 %d。%s 才是限制因子——把别的调高没有用。"
-			% [growth, _channel_name(limiting)]
+		(
+			"Growth stalls at %d. %s is the limiting factor — raising the "
+			+ "others will not help."
+		) % [growth, _channel_name(limiting)],
+		(
+			"生长停在 %d。%s 才是限制因子——把别的调高没有用。"
+		) % [growth, _channel_name(limiting)]
 	))
