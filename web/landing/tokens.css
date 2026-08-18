@@ -1,0 +1,64 @@
+:root {
+  --color-paper: oklch(14% 0.018 284);
+  --color-paper-2: oklch(18% 0.02 284);
+  --color-paper-3: oklch(22% 0.022 284);
+  --color-ink: oklch(94% 0.018 80);
+  --color-ink-2: oklch(78% 0.022 78);
+  --color-muted: oklch(68% 0.018 282);
+  --color-rule: oklch(34% 0.035 68);
+  --color-rule-2: oklch(27% 0.027 68);
+  --color-accent: oklch(76% 0.15 75);
+  --color-accent-ink: oklch(18% 0.02 284);
+  --color-arcane: oklch(68% 0.13 300);
+  --color-focus: oklch(82% 0.18 78);
+  --color-error: oklch(68% 0.18 28);
+  --color-success: oklch(74% 0.13 145);
+  --color-hero-shade: oklch(12% 0.02 284 / 0.96);
+  --color-hero-mid: oklch(12% 0.02 284 / 0.38);
+  --color-transparent: oklch(12% 0.02 284 / 0);
+  --color-scrim: oklch(8% 0.016 284 / 0.56);
+
+  --font-display: "Fraunces", ui-serif, serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, sans-serif;
+
+  --text-micro: 0.65rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-3xl: 3.052rem;
+  --text-display: clamp(3rem, 7vw + 0.5rem, 5.25rem);
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  --page-gutter: clamp(1rem, 5vw, 5rem);
+  --content-max: 86rem;
+  --measure: 65ch;
+
+  --rule-hair: 1px;
+  --radius-sm: 0.2rem;
+  --radius-md: 0.5rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 200;
+}
