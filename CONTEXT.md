@@ -191,6 +191,16 @@ Drawing code has to be checked too, not just the numbers. The supply bars
 originally scaled to each channel's own cap, so the limiting supply could be
 drawn taller than a healthy one and the picture contradicted the lesson.
 
+**A shell must be added to the tree before it is configured.** `_ready()` is
+where `MinigameShell` builds its widgets, and `_ready()` only runs on tree
+entry, so `configure()` before `add_child()` writes into null labels and
+throws. `MinigameLauncher` gets this right; anything that hand-rolls the
+sequence has to as well. This is the general shape of the bugs that survive
+static checking — solvability, geometry and colour maths can all be proven
+offline, but Godot's node lifecycle, signal timing and modal input state
+cannot. Code written without being run needs a review pass aimed
+specifically at runtime semantics.
+
 ## Audio
 
 `AudioManager` (autoload) creates the Music, SFX and UI buses at runtime
