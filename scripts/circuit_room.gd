@@ -636,6 +636,12 @@ func _collect_sealed_instruction_archive() -> String:
 	return "A false bottom clicks loose beneath the glove record. A scraped emergency instruction has been filed where no ordinary inspection would look."
 
 
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english
+
+
 func _handle_switch_interaction(item_name: String, item: Dictionary) -> void:
 	# A located plate is not yet an operable one. Each plate is released by its
 	# own bench, so the sequence tests understanding rather than click order.

@@ -118,15 +118,20 @@ func _process(_delta: float) -> void:
 	# Route memory is withheld during the blackout. Once power is restored,
 	# only newly recorded cells are shaded incrementally for performance.
 	if power_restored:
+		# hall_explored_cells 只增不减（清空时 _sync_map_state() 会重建
+		# _drawn_explored），所以格数没变就一定没有新格子。先比一次整数，
+		# 免掉每帧最多 2400 次字典查询——地图没打开时同样省下。
+		# 注意不能在这里 return：下面的玩家标记和守卫追踪每帧都要跑。
 		var explored: Dictionary = GameState.hall_explored_cells
-		var has_new: bool = false
-		for cell_key: Variant in explored.keys():
-			if not _drawn_explored.has(cell_key):
-				_draw_explored_cell(cell_key)
-				_drawn_explored[cell_key] = true
-				has_new = true
-		if has_new:
-			fog_texture.update(fog_image)
+		if explored.size() != _known_explored_count:
+			var has_new: bool = false
+			for cell_key: Variant in explored.keys():
+				if not _drawn_explored.has(cell_key):
+					_draw_explored_cell(cell_key)
+					_drawn_explored[cell_key] = true
+					has_new = true
+			if has_new:
+				fog_texture.update(fog_image)
 			_known_explored_count = explored.size()
 	if overlay != null and overlay.visible:
 		_update_player_marker()

@@ -5,8 +5,6 @@ const DIALOG_INLAY := Color(0.085, 0.046, 0.028, 0.99)
 const DIALOG_BORDER := Color(0.76, 0.51, 0.18, 0.98)
 const DIALOG_RIVET := Color(0.21, 0.12, 0.060, 0.98)
 
-@onready var start_ui: Control = $StartUI
-
 var menu_dialog_layer: CanvasLayer
 var menu_dialog_overlay: ColorRect
 var menu_dialog_frame: Panel
@@ -21,6 +19,8 @@ var volume_controls: Array[Control] = []
 var active_dialog := ""
 var case_archive_button: Button
 var case_archive_ui: CaseArchiveUi
+
+@onready var start_ui: Control = $StartUI
 
 
 func _ready() -> void:
@@ -193,6 +193,9 @@ func create_menu_dialog() -> void:
 	_create_volume_sliders()
 
 
+
+## 三条总线各一行：名称 + 滑块 + 百分比 + 静音开关。
+## 位置排在正文与关闭按钮之间（y 382~462），关闭按钮在 468，不重叠。
 func _create_volume_sliders() -> void:
 	# Music and effects get separate faders because they fail the player in
 	# different ways: the score can outstay its welcome long before the feedback
@@ -303,6 +306,7 @@ func _show_settings_dialog() -> void:
 		CaseLocale.text("menu.settings_title"),
 		CaseLocale.text("menu.settings_body")
 	)
+	# 正文让出下半部分给音量行，否则会和滑块叠在一起。
 
 
 func _show_language_dialog() -> void:

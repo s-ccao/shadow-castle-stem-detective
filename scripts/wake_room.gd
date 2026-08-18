@@ -765,9 +765,13 @@ func show_inspect(id: String):
 		show_wake_room_key_inspect()
 		return
 
-	# 书桌 → 居中大卷轴（线索剧情），不是底部对话框。
+	# 书桌 → 先做一遍烛火实验，做完才给卷轴。苏醒室那道门问的就是
+	# "火焰要从空气里得到什么"，这个练习把它从背答案变成想明白。
 	if id == "desk":
-		show_scroll_clue()
+		if GameState.has_story_flag("wake_flame_drilled"):
+			show_scroll_clue()
+		else:
+			_open_flame_minigame()
 		return
 
 	# 书架 → 居中大书（知识剧情），知识点收进笔记。
@@ -3256,3 +3260,36 @@ func smooth_room_path(
 		)
 
 	return smoothed_path
+
+
+## 桌上那排玻璃罩蜡烛。苏醒室是开场教学，所以这是全部小游戏里最短、
+## 最不惩罚的一个：只需要预测熄灭顺序，不需要操作，也没有时间压力。
+func _open_flame_minigame() -> void:
+	var launched: bool = MinigameLauncher.launch(
+		self,
+		FlameAirMinigame.new(),
+		_mg_text("Candle and Jar", "烛与罩"),
+		_mg_text(
+			"Mrs. Lin left a row of candles under glass. Work out which flame"
+			+ " goes out first.",
+			"林女士在桌上留了一排罩着玻璃的蜡烛。想清楚哪一支会最先熄灭。"
+		),
+		Color(1.0, 0.72, 0.35, 1.0),
+		_on_flame_minigame_finished
+	)
+	if not launched:
+		return
+
+
+func _on_flame_minigame_finished(_cleared_all: bool, _stages: int) -> void:
+	# 卷轴一定要给。它会置位 first_lock_rule_learned，也就是大门知识锁的钥匙；
+	# 把它锁在"八关全过"之后，等于让打不过练习的孩子卡在第一个房间。
+	# 练习是体验，卷轴是进度，两者不能绑在一起。
+	GameState.set_story_flag("wake_flame_drilled")
+	show_scroll_clue()
+
+
+func _mg_text(english: String, chinese: String) -> String:
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return chinese
+	return english

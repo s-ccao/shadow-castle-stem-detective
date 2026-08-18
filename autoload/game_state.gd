@@ -4,8 +4,16 @@ signal state_changed
 # 获得物品通知：add_* 成功时发出，ItemRewardHud 据此在屏幕中心显示获得提示。
 signal item_acquired(item_id: String, kind: String, amount: int)
 signal guardian_tracking_changed(mode: int, hall_position: Vector2)
+## 药水生效/失效的专用信号。state_changed 每次任何状态变化都会发，
+## 分不出"药水刚喝下"和"药水刚失效"，而表现层两者都要单独响应。
+signal potion_applied(effect_id: String, duration: float)
+signal potion_expired(effect_id: String)
 
 const SAVE_PATH: String = "user://shadow_castle_save.json"
+# 自动存档写得很频繁（每次状态变化合并一次）。直接覆写 SAVE_PATH 的话，
+# 写到一半崩溃或强退就会留下截断的 JSON，玩家整局进度全丢。先写临时文件
+# 再改名，让替换过程对读取方来说是原子的。
+const SAVE_TEMP_PATH: String = "user://shadow_castle_save.json.tmp"
 const SAVE_VERSION: int = 1
 ## The first usable map is deliberately incomplete: it gives the player a
 ## reason to enter the hall, while the Map Hub still reveals the castle through
@@ -117,6 +125,8 @@ func has_saved_game() -> bool:
 
 
 func delete_saved_game() -> void:
+	if FileAccess.file_exists(SAVE_TEMP_PATH):
+		DirAccess.remove_absolute(SAVE_TEMP_PATH)
 	if has_saved_game():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
@@ -176,12 +186,18 @@ func save_to_disk() -> bool:
 	if NoteHud != null and NoteHud.has_method("get_saved_clues"):
 		payload["note_clues"] = NoteHud.get_saved_clues()
 		payload["note_unlocked"] = NoteHud.is_unlocked()
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(SAVE_TEMP_PATH, FileAccess.WRITE)
 	if file == null:
 		return false
 	file.store_string(JSON.stringify(payload))
 	file.close()
-	return true
+	var rename_result: Error = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
+	if rename_result != OK:
+		# 有的平台不允许直接改名覆盖已存在的文件。此时完整的新存档已经
+		# 落盘为 .tmp，最坏情况也只是残留一个临时文件，不会写坏正式存档。
+		DirAccess.remove_absolute(SAVE_PATH)
+		rename_result = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
+	return rename_result == OK
 
 
 func load_saved_game() -> bool:
@@ -215,6 +231,7 @@ func load_saved_game() -> bool:
 	final_key_fragments = _int_array(data.get("final_key_fragments", []))
 	map_hub_unlocked = bool(data.get("map_hub_unlocked", false))
 	hall_explored_cells = _dictionary(data.get("hall_explored_cells", {}))
+	_last_revealed_hall_cell = Vector2i(-9999, -9999)
 	story_flags = _dictionary(data.get("story_flags", {}))
 	learned_fire_oxygen_rule = bool(data.get("learned_fire_oxygen_rule", false))
 	wake_room_door_unlocked = bool(data.get("wake_room_door_unlocked", false))
@@ -354,6 +371,9 @@ var map_hub_unlocked: bool = false
 # 是否从主菜单正式开始游戏；false = 单独调试房间（解锁所有 Hub）。
 var game_started: bool = false
 var hall_explored_cells: Dictionary = {}
+# reveal_hall_position() 的跨格游标。任何清空/重载 hall_explored_cells 的
+# 地方都必须一并作废它，否则玩家原地不动时新的一局不会重新揭图。
+var _last_revealed_hall_cell := Vector2i(-9999, -9999)
 var story_flags: Dictionary = {}
 
 # ============================================================
@@ -701,6 +721,7 @@ func reset_new_game() -> void:
 	final_key_fragments.clear()
 	map_hub_unlocked = false
 	hall_explored_cells.clear()
+	_last_revealed_hall_cell = Vector2i(-9999, -9999)
 
 	learned_fire_oxygen_rule = false
 	wake_room_door_unlocked = false
@@ -1041,6 +1062,13 @@ func _add_debug_evidence(evidence_id: String) -> void:
 func reveal_hall_position(world_position: Vector2) -> void:
 	var center_x: int = clampi(int(world_position.x / 32.0), 0, 59)
 	var center_y: int = clampi(int(world_position.y / 32.0), 0, 39)
+	# 这个函数每帧都会被 game_world._process() 调用，但揭开的 3x3 区域只由
+	# 玩家所在的 32px 格决定。没跨格就没有新格子可揭，直接返回，省掉每帧
+	# 9 次字符串拼接与字典查询。hall_explored_cells.clear() 会一并重置游标。
+	var cell := Vector2i(center_x, center_y)
+	if cell == _last_revealed_hall_cell:
+		return
+	_last_revealed_hall_cell = cell
 	var changed: bool = false
 	for y: int in range(center_y - 1, center_y + 2):
 		for x: int in range(center_x - 1, center_x + 2):
@@ -1767,7 +1795,16 @@ func consume_dish(dish_id: String) -> bool:
 ## 使用药水：effect_id 为 "swift" / "vision"，duration 为秒。
 func apply_potion_effect(effect_id: String, duration: float) -> void:
 	potion_effects[effect_id] = duration
+	potion_applied.emit(effect_id, duration)
 	state_changed.emit()
+
+
+## 反查某个效果由哪瓶药水产生，表现层据此取图标与名字。
+func get_potion_id_for_effect(effect_id: String) -> String:
+	for potion_id: String in POTION_INFO:
+		if str(POTION_INFO[potion_id].get("effect", "")) == effect_id:
+			return potion_id
+	return ""
 
 
 func is_potion_active(effect_id: String) -> bool:
@@ -1799,6 +1836,7 @@ func _process(delta: float) -> void:
 		var remaining: float = float(potion_effects[effect_id]) - delta
 		if remaining <= 0.0:
 			potion_effects.erase(effect_id)
+			potion_expired.emit(effect_id)
 			changed = true
 		else:
 			potion_effects[effect_id] = remaining

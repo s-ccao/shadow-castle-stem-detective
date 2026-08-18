@@ -175,8 +175,15 @@ func open() -> void:
 
 
 func add_clue(id: String, data: Dictionary = {}) -> void:
+	# 线索的标题与正文同样在入口处翻译一次，日志、弹窗、案件板共用结果。
+	if data.has("title"):
+		data["title"] = CaseLocale.line(str(data["title"]))
+	if data.has("content"):
+		data["content"] = CaseLocale.line(str(data["content"]))
 	var is_new: bool = not get_journal().has_clue(id)
 	get_journal().add_clue(id, data)
+	if is_new:
+		GameAudio.play(&"note_file")
 	if is_new and not bool(data.get("silent", false)) and GameState.current_room_id != "final_deduction_room":
 		# 其他房间显示获得线索提示；Final Room 使用统一的自言自语对话框。
 		var reward: Node = get_node_or_null("/root/ItemRewardHud")
