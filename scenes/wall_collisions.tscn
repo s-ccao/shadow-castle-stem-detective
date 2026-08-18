@@ -441,3 +441,819 @@ position = Vector2(-1, 0)
 shape = SubResource("CircleShape2D_knowledge_chemistry")
 disabled = true
 
+
+[node name="WallFix_000" type="StaticBody2D" parent="." unique_id=2124623511]
+editor_description = "由 hall_walls.png 反推补齐的墙体碰撞，共 163 块。原有 Wall_* 只覆盖了画面墙的一部分：玩家能走进地图外围的边框墙，也能穿过若干整栋建筑（可站进画面墙里的比例占可行走区 24.9%）。补齐后降到 8.7%，其中约一半是墙顶让位的正常表现——伪3D俯视下玩家从墙后走过本就该被墙顶遮住。生成时对目标区域零溢出：不会挡住画面上没有画墙的任何一格。化学门、图书馆门、隐藏钥匙这三处门廊刻意不补——那里画面把门封死了，补上玩家就进不去，属于美术与关卡设计本身的冲突，要改得改图或挪物件。改动前后都验证过：19 个关键位置(7扇门+出生点+线索+NPC+守卫起点)交互半径内均有立足点，守卫(24x24)所在连通区与玩家可达区完全重叠。"
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_000" unique_id=2124623512]
+polygon = PackedVector2Array(0.0, 0.0, 40.0, 0.0, 40.0, 1280.0, 0.0, 1280.0)
+
+[node name="WallFix_001" type="StaticBody2D" parent="." unique_id=2124623513]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_001" unique_id=2124623514]
+polygon = PackedVector2Array(1811.0, 0.0, 1920.0, 0.0, 1920.0, 414.0, 1811.0, 414.0)
+
+[node name="WallFix_002" type="StaticBody2D" parent="." unique_id=2124623515]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_002" unique_id=2124623516]
+polygon = PackedVector2Array(1885.0, 414.0, 1920.0, 414.0, 1920.0, 1280.0, 1885.0, 1280.0)
+
+[node name="WallFix_003" type="StaticBody2D" parent="." unique_id=2124623517]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_003" unique_id=2124623518]
+polygon = PackedVector2Array(40.0, 0.0, 128.0, 0.0, 128.0, 323.0, 40.0, 323.0)
+
+[node name="WallFix_004" type="StaticBody2D" parent="." unique_id=2124623519]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_004" unique_id=2124623520]
+polygon = PackedVector2Array(598.0, 1196.0, 993.0, 1196.0, 993.0, 1265.0, 598.0, 1265.0)
+
+[node name="WallFix_005" type="StaticBody2D" parent="." unique_id=2124623521]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_005" unique_id=2124623522]
+polygon = PackedVector2Array(1131.0, 0.0, 1811.0, 0.0, 1811.0, 33.0, 1131.0, 33.0)
+
+[node name="WallFix_006" type="StaticBody2D" parent="." unique_id=2124623523]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_006" unique_id=2124623524]
+polygon = PackedVector2Array(993.0, 1256.0, 1885.0, 1256.0, 1885.0, 1280.0, 993.0, 1280.0)
+
+[node name="WallFix_007" type="StaticBody2D" parent="." unique_id=2124623525]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_007" unique_id=2124623526]
+polygon = PackedVector2Array(128.0, 36.0, 716.0, 36.0, 716.0, 66.0, 128.0, 66.0)
+
+[node name="WallFix_008" type="StaticBody2D" parent="." unique_id=2124623527]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_008" unique_id=2124623528]
+polygon = PackedVector2Array(40.0, 1022.0, 105.0, 1022.0, 105.0, 1280.0, 40.0, 1280.0)
+
+[node name="WallFix_009" type="StaticBody2D" parent="." unique_id=2124623529]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_009" unique_id=2124623530]
+polygon = PackedVector2Array(128.0, 0.0, 785.0, 0.0, 785.0, 25.0, 128.0, 25.0)
+
+[node name="WallFix_010" type="StaticBody2D" parent="." unique_id=2124623531]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_010" unique_id=2124623532]
+polygon = PackedVector2Array(105.0, 1247.0, 598.0, 1247.0, 598.0, 1277.0, 105.0, 1277.0)
+
+[node name="WallFix_011" type="StaticBody2D" parent="." unique_id=2124623533]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_011" unique_id=2124623534]
+polygon = PackedVector2Array(1844.0, 957.0, 1885.0, 957.0, 1885.0, 1256.0, 1844.0, 1256.0)
+
+[node name="WallFix_012" type="StaticBody2D" parent="." unique_id=2124623535]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_012" unique_id=2124623536]
+polygon = PackedVector2Array(1680.0, 33.0, 1811.0, 33.0, 1811.0, 126.0, 1680.0, 126.0)
+
+[node name="WallFix_013" type="StaticBody2D" parent="." unique_id=2124623537]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_013" unique_id=2124623538]
+polygon = PackedVector2Array(115.0, 1174.0, 387.0, 1174.0, 387.0, 1218.0, 115.0, 1218.0)
+
+[node name="WallFix_014" type="StaticBody2D" parent="." unique_id=2124623539]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_014" unique_id=2124623540]
+polygon = PackedVector2Array(1136.0, 38.0, 1560.0, 38.0, 1560.0, 60.0, 1136.0, 60.0)
+
+[node name="WallFix_015" type="StaticBody2D" parent="." unique_id=2124623541]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_015" unique_id=2124623542]
+polygon = PackedVector2Array(1681.0, 1189.0, 1800.0, 1189.0, 1800.0, 1256.0, 1681.0, 1256.0)
+
+[node name="WallFix_016" type="StaticBody2D" parent="." unique_id=2124623543]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_016" unique_id=2124623544]
+polygon = PackedVector2Array(1860.0, 414.0, 1885.0, 414.0, 1885.0, 687.0, 1860.0, 687.0)
+
+[node name="WallFix_017" type="StaticBody2D" parent="." unique_id=2124623545]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_017" unique_id=2124623546]
+polygon = PackedVector2Array(1137.0, 1230.0, 1359.0, 1230.0, 1359.0, 1256.0, 1137.0, 1256.0)
+
+[node name="WallFix_018" type="StaticBody2D" parent="." unique_id=2124623547]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_018" unique_id=2124623548]
+polygon = PackedVector2Array(105.0, 1223.0, 459.0, 1223.0, 459.0, 1239.0, 105.0, 1239.0)
+
+[node name="WallFix_019" type="StaticBody2D" parent="." unique_id=2124623549]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_019" unique_id=2124623550]
+polygon = PackedVector2Array(786.0, 12.0, 1112.0, 12.0, 1112.0, 29.0, 786.0, 29.0)
+
+[node name="WallFix_020" type="StaticBody2D" parent="." unique_id=2124623551]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_020" unique_id=2124623552]
+polygon = PackedVector2Array(128.0, 66.0, 350.0, 66.0, 350.0, 90.0, 128.0, 90.0)
+
+[node name="WallFix_021" type="StaticBody2D" parent="." unique_id=2124623553]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_021" unique_id=2124623554]
+polygon = PackedVector2Array(40.0, 330.0, 55.0, 330.0, 55.0, 653.0, 40.0, 653.0)
+
+[node name="WallFix_022" type="StaticBody2D" parent="." unique_id=2124623555]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_022" unique_id=2124623556]
+polygon = PackedVector2Array(735.0, 1080.0, 883.0, 1080.0, 883.0, 1110.0, 735.0, 1110.0)
+
+[node name="WallFix_023" type="StaticBody2D" parent="." unique_id=2124623557]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_023" unique_id=2124623558]
+polygon = PackedVector2Array(1612.0, 1168.0, 1660.0, 1168.0, 1660.0, 1256.0, 1612.0, 1256.0)
+
+[node name="WallFix_024" type="StaticBody2D" parent="." unique_id=2124623559]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_024" unique_id=2124623560]
+polygon = PackedVector2Array(1569.0, 62.0, 1680.0, 62.0, 1680.0, 99.0, 1569.0, 99.0)
+
+[node name="WallFix_025" type="StaticBody2D" parent="." unique_id=2124623561]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_025" unique_id=2124623562]
+polygon = PackedVector2Array(598.0, 1265.0, 867.0, 1265.0, 867.0, 1280.0, 598.0, 1280.0)
+
+[node name="WallFix_026" type="StaticBody2D" parent="." unique_id=2124623563]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_026" unique_id=2124623564]
+polygon = PackedVector2Array(1257.0, 1131.0, 1350.0, 1131.0, 1350.0, 1174.0, 1257.0, 1174.0)
+
+[node name="WallFix_027" type="StaticBody2D" parent="." unique_id=2124623565]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_027" unique_id=2124623566]
+polygon = PackedVector2Array(493.0, 157.0, 615.0, 157.0, 615.0, 188.0, 493.0, 188.0)
+
+[node name="WallFix_028" type="StaticBody2D" parent="." unique_id=2124623567]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_028" unique_id=2124623568]
+polygon = PackedVector2Array(1686.0, 127.0, 1811.0, 127.0, 1811.0, 157.0, 1686.0, 157.0)
+
+[node name="WallFix_029" type="StaticBody2D" parent="." unique_id=2124623569]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_029" unique_id=2124623570]
+polygon = PackedVector2Array(1551.0, 1192.0, 1608.0, 1192.0, 1608.0, 1256.0, 1551.0, 1256.0)
+
+[node name="WallFix_030" type="StaticBody2D" parent="." unique_id=2124623571]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_030" unique_id=2124623572]
+polygon = PackedVector2Array(917.0, 195.0, 1050.0, 195.0, 1050.0, 221.0, 917.0, 221.0)
+
+[node name="WallFix_031" type="StaticBody2D" parent="." unique_id=2124623573]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_031" unique_id=2124623574]
+polygon = PackedVector2Array(362.0, 777.0, 436.0, 777.0, 436.0, 823.0, 362.0, 823.0)
+
+[node name="WallFix_032" type="StaticBody2D" parent="." unique_id=2124623575]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_032" unique_id=2124623576]
+polygon = PackedVector2Array(1352.0, 159.0, 1449.0, 159.0, 1449.0, 194.0, 1352.0, 194.0)
+
+[node name="WallFix_033" type="StaticBody2D" parent="." unique_id=2124623577]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_033" unique_id=2124623578]
+polygon = PackedVector2Array(573.0, 953.0, 658.0, 953.0, 658.0, 992.0, 573.0, 992.0)
+
+[node name="WallFix_034" type="StaticBody2D" parent="." unique_id=2124623579]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_034" unique_id=2124623580]
+polygon = PackedVector2Array(879.0, 599.0, 973.0, 599.0, 973.0, 634.0, 879.0, 634.0)
+
+[node name="WallFix_035" type="StaticBody2D" parent="." unique_id=2124623581]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_035" unique_id=2124623582]
+polygon = PackedVector2Array(1563.0, 33.0, 1680.0, 33.0, 1680.0, 61.0, 1563.0, 61.0)
+
+[node name="WallFix_036" type="StaticBody2D" parent="." unique_id=2124623583]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_036" unique_id=2124623584]
+polygon = PackedVector2Array(790.0, 1178.0, 970.0, 1178.0, 970.0, 1196.0, 790.0, 1196.0)
+
+[node name="WallFix_037" type="StaticBody2D" parent="." unique_id=2124623585]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_037" unique_id=2124623586]
+polygon = PackedVector2Array(1806.0, 1166.0, 1840.0, 1166.0, 1840.0, 1256.0, 1806.0, 1256.0)
+
+[node name="WallFix_038" type="StaticBody2D" parent="." unique_id=2124623587]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_038" unique_id=2124623588]
+polygon = PackedVector2Array(285.0, 310.0, 387.0, 310.0, 387.0, 337.0, 285.0, 337.0)
+
+[node name="WallFix_039" type="StaticBody2D" parent="." unique_id=2124623589]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_039" unique_id=2124623590]
+polygon = PackedVector2Array(1075.0, 1134.0, 1131.0, 1134.0, 1131.0, 1182.0, 1075.0, 1182.0)
+
+[node name="WallFix_040" type="StaticBody2D" parent="." unique_id=2124623591]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_040" unique_id=2124623592]
+polygon = PackedVector2Array(981.0, 969.0, 1035.0, 969.0, 1035.0, 1015.0, 981.0, 1015.0)
+
+[node name="WallFix_041" type="StaticBody2D" parent="." unique_id=2124623593]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_041" unique_id=2124623594]
+polygon = PackedVector2Array(716.0, 39.0, 780.0, 39.0, 780.0, 77.0, 716.0, 77.0)
+
+[node name="WallFix_042" type="StaticBody2D" parent="." unique_id=2124623595]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_042" unique_id=2124623596]
+polygon = PackedVector2Array(785.0, 0.0, 1131.0, 0.0, 1131.0, 7.0, 785.0, 7.0)
+
+[node name="WallFix_043" type="StaticBody2D" parent="." unique_id=2124623597]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_043" unique_id=2124623598]
+polygon = PackedVector2Array(475.0, 1125.0, 515.0, 1125.0, 515.0, 1185.0, 475.0, 1185.0)
+
+[node name="WallFix_044" type="StaticBody2D" parent="." unique_id=2124623599]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_044" unique_id=2124623600]
+polygon = PackedVector2Array(929.0, 713.0, 983.0, 713.0, 983.0, 754.0, 929.0, 754.0)
+
+[node name="WallFix_045" type="StaticBody2D" parent="." unique_id=2124623601]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_045" unique_id=2124623602]
+polygon = PackedVector2Array(1797.0, 157.0, 1811.0, 157.0, 1811.0, 310.0, 1797.0, 310.0)
+
+[node name="WallFix_046" type="StaticBody2D" parent="." unique_id=2124623603]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_046" unique_id=2124623604]
+polygon = PackedVector2Array(321.0, 1018.0, 374.0, 1018.0, 374.0, 1058.0, 321.0, 1058.0)
+
+[node name="WallFix_047" type="StaticBody2D" parent="." unique_id=2124623605]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_047" unique_id=2124623606]
+polygon = PackedVector2Array(687.0, 982.0, 734.0, 982.0, 734.0, 1027.0, 687.0, 1027.0)
+
+[node name="WallFix_048" type="StaticBody2D" parent="." unique_id=2124623607]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_048" unique_id=2124623608]
+polygon = PackedVector2Array(1135.0, 60.0, 1369.0, 60.0, 1369.0, 69.0, 1135.0, 69.0)
+
+[node name="WallFix_049" type="StaticBody2D" parent="." unique_id=2124623609]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_049" unique_id=2124623610]
+polygon = PackedVector2Array(40.0, 924.0, 61.0, 924.0, 61.0, 1022.0, 40.0, 1022.0)
+
+[node name="WallFix_050" type="StaticBody2D" parent="." unique_id=2124623611]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_050" unique_id=2124623612]
+polygon = PackedVector2Array(446.0, 823.0, 527.0, 823.0, 527.0, 848.0, 446.0, 848.0)
+
+[node name="WallFix_051" type="StaticBody2D" parent="." unique_id=2124623613]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_051" unique_id=2124623614]
+polygon = PackedVector2Array(668.0, 858.0, 705.0, 858.0, 705.0, 912.0, 668.0, 912.0)
+
+[node name="WallFix_052" type="StaticBody2D" parent="." unique_id=2124623615]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_052" unique_id=2124623616]
+polygon = PackedVector2Array(128.0, 29.0, 458.0, 29.0, 458.0, 35.0, 128.0, 35.0)
+
+[node name="WallFix_053" type="StaticBody2D" parent="." unique_id=2124623617]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_053" unique_id=2124623618]
+polygon = PackedVector2Array(55.0, 595.0, 88.0, 595.0, 88.0, 653.0, 55.0, 653.0)
+
+[node name="WallFix_054" type="StaticBody2D" parent="." unique_id=2124623619]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_054" unique_id=2124623620]
+polygon = PackedVector2Array(611.0, 25.0, 783.0, 25.0, 783.0, 36.0, 611.0, 36.0)
+
+[node name="WallFix_055" type="StaticBody2D" parent="." unique_id=2124623621]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_055" unique_id=2124623622]
+polygon = PackedVector2Array(1061.0, 315.0, 1145.0, 315.0, 1145.0, 337.0, 1061.0, 337.0)
+
+[node name="WallFix_056" type="StaticBody2D" parent="." unique_id=2124623623]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_056" unique_id=2124623624]
+polygon = PackedVector2Array(1440.0, 1240.0, 1551.0, 1240.0, 1551.0, 1256.0, 1440.0, 1256.0)
+
+[node name="WallFix_057" type="StaticBody2D" parent="." unique_id=2124623625]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_057" unique_id=2124623626]
+polygon = PackedVector2Array(1166.0, 1175.0, 1198.0, 1175.0, 1198.0, 1230.0, 1166.0, 1230.0)
+
+[node name="WallFix_058" type="StaticBody2D" parent="." unique_id=2124623627]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_058" unique_id=2124623628]
+polygon = PackedVector2Array(490.0, 260.0, 550.0, 260.0, 550.0, 289.0, 490.0, 289.0)
+
+[node name="WallFix_059" type="StaticBody2D" parent="." unique_id=2124623629]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_059" unique_id=2124623630]
+polygon = PackedVector2Array(927.0, 553.0, 964.0, 553.0, 964.0, 599.0, 927.0, 599.0)
+
+[node name="WallFix_060" type="StaticBody2D" parent="." unique_id=2124623631]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_060" unique_id=2124623632]
+polygon = PackedVector2Array(1432.0, 662.0, 1464.0, 662.0, 1464.0, 714.0, 1432.0, 714.0)
+
+[node name="WallFix_061" type="StaticBody2D" parent="." unique_id=2124623633]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_061" unique_id=2124623634]
+polygon = PackedVector2Array(1833.0, 627.0, 1860.0, 627.0, 1860.0, 686.0, 1833.0, 686.0)
+
+[node name="WallFix_062" type="StaticBody2D" parent="." unique_id=2124623635]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_062" unique_id=2124623636]
+polygon = PackedVector2Array(1352.0, 1015.0, 1399.0, 1015.0, 1399.0, 1048.0, 1352.0, 1048.0)
+
+[node name="WallFix_063" type="StaticBody2D" parent="." unique_id=2124623637]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_063" unique_id=2124623638]
+polygon = PackedVector2Array(515.0, 1110.0, 549.0, 1110.0, 549.0, 1155.0, 515.0, 1155.0)
+
+[node name="WallFix_064" type="StaticBody2D" parent="." unique_id=2124623639]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_064" unique_id=2124623640]
+polygon = PackedVector2Array(105.0, 1241.0, 359.0, 1241.0, 359.0, 1247.0, 105.0, 1247.0)
+
+[node name="WallFix_065" type="StaticBody2D" parent="." unique_id=2124623641]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_065" unique_id=2124623642]
+polygon = PackedVector2Array(565.0, 304.0, 623.0, 304.0, 623.0, 329.0, 565.0, 329.0)
+
+[node name="WallFix_066" type="StaticBody2D" parent="." unique_id=2124623643]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_066" unique_id=2124623644]
+polygon = PackedVector2Array(363.0, 1241.0, 598.0, 1241.0, 598.0, 1247.0, 363.0, 1247.0)
+
+[node name="WallFix_067" type="StaticBody2D" parent="." unique_id=2124623645]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_067" unique_id=2124623646]
+polygon = PackedVector2Array(778.0, 245.0, 837.0, 245.0, 837.0, 268.0, 778.0, 268.0)
+
+[node name="WallFix_068" type="StaticBody2D" parent="." unique_id=2124623647]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_068" unique_id=2124623648]
+polygon = PackedVector2Array(455.0, 309.0, 488.0, 309.0, 488.0, 350.0, 455.0, 350.0)
+
+[node name="WallFix_069" type="StaticBody2D" parent="." unique_id=2124623649]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_069" unique_id=2124623650]
+polygon = PackedVector2Array(92.0, 852.0, 156.0, 852.0, 156.0, 873.0, 92.0, 873.0)
+
+[node name="WallFix_070" type="StaticBody2D" parent="." unique_id=2124623651]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_070" unique_id=2124623652]
+polygon = PackedVector2Array(1235.0, 1083.0, 1254.0, 1083.0, 1254.0, 1149.0, 1235.0, 1149.0)
+
+[node name="WallFix_071" type="StaticBody2D" parent="." unique_id=2124623653]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_071" unique_id=2124623654]
+polygon = PackedVector2Array(55.0, 323.0, 128.0, 323.0, 128.0, 340.0, 55.0, 340.0)
+
+[node name="WallFix_072" type="StaticBody2D" parent="." unique_id=2124623655]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_072" unique_id=2124623656]
+polygon = PackedVector2Array(1152.0, 1046.0, 1208.0, 1046.0, 1208.0, 1068.0, 1152.0, 1068.0)
+
+[node name="WallFix_073" type="StaticBody2D" parent="." unique_id=2124623657]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_073" unique_id=2124623658]
+polygon = PackedVector2Array(105.0, 1072.0, 113.0, 1072.0, 113.0, 1223.0, 105.0, 1223.0)
+
+[node name="WallFix_074" type="StaticBody2D" parent="." unique_id=2124623659]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_074" unique_id=2124623660]
+polygon = PackedVector2Array(1422.0, 1135.0, 1482.0, 1135.0, 1482.0, 1155.0, 1422.0, 1155.0)
+
+[node name="WallFix_075" type="StaticBody2D" parent="." unique_id=2124623661]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_075" unique_id=2124623662]
+polygon = PackedVector2Array(559.0, 1079.0, 594.0, 1079.0, 594.0, 1112.0, 559.0, 1112.0)
+
+[node name="WallFix_076" type="StaticBody2D" parent="." unique_id=2124623663]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_076" unique_id=2124623664]
+polygon = PackedVector2Array(735.0, 876.0, 817.0, 876.0, 817.0, 890.0, 735.0, 890.0)
+
+[node name="WallFix_077" type="StaticBody2D" parent="." unique_id=2124623665]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_077" unique_id=2124623666]
+polygon = PackedVector2Array(993.0, 1239.0, 1060.0, 1239.0, 1060.0, 1256.0, 993.0, 1256.0)
+
+[node name="WallFix_078" type="StaticBody2D" parent="." unique_id=2124623667]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_078" unique_id=2124623668]
+polygon = PackedVector2Array(891.0, 385.0, 952.0, 385.0, 952.0, 403.0, 891.0, 403.0)
+
+[node name="WallFix_079" type="StaticBody2D" parent="." unique_id=2124623669]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_079" unique_id=2124623670]
+polygon = PackedVector2Array(1331.0, 366.0, 1359.0, 366.0, 1359.0, 405.0, 1331.0, 405.0)
+
+[node name="WallFix_080" type="StaticBody2D" parent="." unique_id=2124623671]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_080" unique_id=2124623672]
+polygon = PackedVector2Array(1200.0, 35.0, 1563.0, 35.0, 1563.0, 38.0, 1200.0, 38.0)
+
+[node name="WallFix_081" type="StaticBody2D" parent="." unique_id=2124623673]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_081" unique_id=2124623674]
+polygon = PackedVector2Array(998.0, 746.0, 1063.0, 746.0, 1063.0, 762.0, 998.0, 762.0)
+
+[node name="WallFix_082" type="StaticBody2D" parent="." unique_id=2124623675]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_082" unique_id=2124623676]
+polygon = PackedVector2Array(597.0, 1189.0, 743.0, 1189.0, 743.0, 1196.0, 597.0, 1196.0)
+
+[node name="WallFix_083" type="StaticBody2D" parent="." unique_id=2124623677]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_083" unique_id=2124623678]
+polygon = PackedVector2Array(1255.0, 908.0, 1301.0, 908.0, 1301.0, 930.0, 1255.0, 930.0)
+
+[node name="WallFix_084" type="StaticBody2D" parent="." unique_id=2124623679]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_084" unique_id=2124623680]
+polygon = PackedVector2Array(387.0, 1199.0, 429.0, 1199.0, 429.0, 1223.0, 387.0, 1223.0)
+
+[node name="WallFix_085" type="StaticBody2D" parent="." unique_id=2124623681]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_085" unique_id=2124623682]
+polygon = PackedVector2Array(290.0, 953.0, 319.0, 953.0, 319.0, 987.0, 290.0, 987.0)
+
+[node name="WallFix_086" type="StaticBody2D" parent="." unique_id=2124623683]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_086" unique_id=2124623684]
+polygon = PackedVector2Array(256.0, 840.0, 321.0, 840.0, 321.0, 855.0, 256.0, 855.0)
+
+[node name="WallFix_087" type="StaticBody2D" parent="." unique_id=2124623685]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_087" unique_id=2124623686]
+polygon = PackedVector2Array(1040.0, 859.0, 1078.0, 859.0, 1078.0, 884.0, 1040.0, 884.0)
+
+[node name="WallFix_088" type="StaticBody2D" parent="." unique_id=2124623687]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_088" unique_id=2124623688]
+polygon = PackedVector2Array(879.0, 182.0, 910.0, 182.0, 910.0, 212.0, 879.0, 212.0)
+
+[node name="WallFix_089" type="StaticBody2D" parent="." unique_id=2124623689]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_089" unique_id=2124623690]
+polygon = PackedVector2Array(1853.0, 924.0, 1884.0, 924.0, 1884.0, 954.0, 1853.0, 954.0)
+
+[node name="WallFix_090" type="StaticBody2D" parent="." unique_id=2124623691]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_090" unique_id=2124623692]
+polygon = PackedVector2Array(1429.0, 779.0, 1468.0, 779.0, 1468.0, 802.0, 1429.0, 802.0)
+
+[node name="WallFix_091" type="StaticBody2D" parent="." unique_id=2124623693]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_091" unique_id=2124623694]
+polygon = PackedVector2Array(1768.0, 1166.0, 1806.0, 1166.0, 1806.0, 1189.0, 1768.0, 1189.0)
+
+[node name="WallFix_092" type="StaticBody2D" parent="." unique_id=2124623695]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_092" unique_id=2124623696]
+polygon = PackedVector2Array(523.0, 859.0, 566.0, 859.0, 566.0, 879.0, 523.0, 879.0)
+
+[node name="WallFix_093" type="StaticBody2D" parent="." unique_id=2124623697]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_093" unique_id=2124623698]
+polygon = PackedVector2Array(960.0, 7.0, 1131.0, 7.0, 1131.0, 12.0, 960.0, 12.0)
+
+[node name="WallFix_094" type="StaticBody2D" parent="." unique_id=2124623699]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_094" unique_id=2124623700]
+polygon = PackedVector2Array(1660.0, 1181.0, 1680.0, 1181.0, 1680.0, 1223.0, 1660.0, 1223.0)
+
+[node name="WallFix_095" type="StaticBody2D" parent="." unique_id=2124623701]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_095" unique_id=2124623702]
+polygon = PackedVector2Array(1150.0, 827.0, 1193.0, 827.0, 1193.0, 846.0, 1150.0, 846.0)
+
+[node name="WallFix_096" type="StaticBody2D" parent="." unique_id=2124623703]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_096" unique_id=2124623704]
+polygon = PackedVector2Array(1196.0, 665.0, 1234.0, 665.0, 1234.0, 686.0, 1196.0, 686.0)
+
+[node name="WallFix_097" type="StaticBody2D" parent="." unique_id=2124623705]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_097" unique_id=2124623706]
+polygon = PackedVector2Array(40.0, 867.0, 54.0, 867.0, 54.0, 923.0, 40.0, 923.0)
+
+[node name="WallFix_098" type="StaticBody2D" parent="." unique_id=2124623707]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_098" unique_id=2124623708]
+polygon = PackedVector2Array(1817.0, 414.0, 1856.0, 414.0, 1856.0, 434.0, 1817.0, 434.0)
+
+[node name="WallFix_099" type="StaticBody2D" parent="." unique_id=2124623709]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_099" unique_id=2124623710]
+polygon = PackedVector2Array(417.0, 25.0, 611.0, 25.0, 611.0, 29.0, 417.0, 29.0)
+
+[node name="WallFix_100" type="StaticBody2D" parent="." unique_id=2124623711]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_100" unique_id=2124623712]
+polygon = PackedVector2Array(115.0, 1169.0, 266.0, 1169.0, 266.0, 1174.0, 115.0, 1174.0)
+
+[node name="WallFix_101" type="StaticBody2D" parent="." unique_id=2124623713]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_101" unique_id=2124623714]
+polygon = PackedVector2Array(105.0, 1277.0, 356.0, 1277.0, 356.0, 1280.0, 105.0, 1280.0)
+
+[node name="WallFix_102" type="StaticBody2D" parent="." unique_id=2124623715]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_102" unique_id=2124623716]
+polygon = PackedVector2Array(113.0, 1218.0, 263.0, 1218.0, 263.0, 1223.0, 113.0, 1223.0)
+
+[node name="WallFix_103" type="StaticBody2D" parent="." unique_id=2124623717]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_103" unique_id=2124623718]
+polygon = PackedVector2Array(953.0, 187.0, 1044.0, 187.0, 1044.0, 195.0, 953.0, 195.0)
+
+[node name="WallFix_104" type="StaticBody2D" parent="." unique_id=2124623719]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_104" unique_id=2124623720]
+polygon = PackedVector2Array(358.0, 1277.0, 598.0, 1277.0, 598.0, 1280.0, 358.0, 1280.0)
+
+[node name="WallFix_105" type="StaticBody2D" parent="." unique_id=2124623721]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_105" unique_id=2124623722]
+polygon = PackedVector2Array(350.0, 66.0, 392.0, 66.0, 392.0, 82.0, 350.0, 82.0)
+
+[node name="WallFix_106" type="StaticBody2D" parent="." unique_id=2124623723]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_106" unique_id=2124623724]
+polygon = PackedVector2Array(958.0, 1097.0, 971.0, 1097.0, 971.0, 1148.0, 958.0, 1148.0)
+
+[node name="WallFix_107" type="StaticBody2D" parent="." unique_id=2124623725]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_107" unique_id=2124623726]
+polygon = PackedVector2Array(1213.0, 1080.0, 1235.0, 1080.0, 1235.0, 1110.0, 1213.0, 1110.0)
+
+[node name="WallFix_108" type="StaticBody2D" parent="." unique_id=2124623727]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_108" unique_id=2124623728]
+polygon = PackedVector2Array(1135.0, 69.0, 1207.0, 69.0, 1207.0, 78.0, 1135.0, 78.0)
+
+[node name="WallFix_109" type="StaticBody2D" parent="." unique_id=2124623729]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_109" unique_id=2124623730]
+polygon = PackedVector2Array(671.0, 361.0, 707.0, 361.0, 707.0, 379.0, 671.0, 379.0)
+
+[node name="WallFix_110" type="StaticBody2D" parent="." unique_id=2124623731]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_110" unique_id=2124623732]
+polygon = PackedVector2Array(1102.0, 459.0, 1150.0, 459.0, 1150.0, 472.0, 1102.0, 472.0)
+
+[node name="WallFix_111" type="StaticBody2D" parent="." unique_id=2124623733]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_111" unique_id=2124623734]
+polygon = PackedVector2Array(1150.0, 1068.0, 1178.0, 1068.0, 1178.0, 1090.0, 1150.0, 1090.0)
+
+[node name="WallFix_112" type="StaticBody2D" parent="." unique_id=2124623735]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_112" unique_id=2124623736]
+polygon = PackedVector2Array(1660.0, 1226.0, 1680.0, 1226.0, 1680.0, 1256.0, 1660.0, 1256.0)
+
+[node name="WallFix_113" type="StaticBody2D" parent="." unique_id=2124623737]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_113" unique_id=2124623738]
+polygon = PackedVector2Array(642.0, 434.0, 677.0, 434.0, 677.0, 451.0, 642.0, 451.0)
+
+[node name="WallFix_114" type="StaticBody2D" parent="." unique_id=2124623739]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_114" unique_id=2124623740]
+polygon = PackedVector2Array(375.0, 996.0, 392.0, 996.0, 392.0, 1031.0, 375.0, 1031.0)
+
+[node name="WallFix_115" type="StaticBody2D" parent="." unique_id=2124623741]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_115" unique_id=2124623742]
+polygon = PackedVector2Array(1269.0, 241.0, 1291.0, 241.0, 1291.0, 268.0, 1269.0, 268.0)
+
+[node name="WallFix_116" type="StaticBody2D" parent="." unique_id=2124623743]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_116" unique_id=2124623744]
+polygon = PackedVector2Array(1260.0, 1174.0, 1303.0, 1174.0, 1303.0, 1187.0, 1260.0, 1187.0)
+
+[node name="WallFix_117" type="StaticBody2D" parent="." unique_id=2124623745]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_117" unique_id=2124623746]
+polygon = PackedVector2Array(781.0, 228.0, 813.0, 228.0, 813.0, 245.0, 781.0, 245.0)
+
+[node name="WallFix_118" type="StaticBody2D" parent="." unique_id=2124623747]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_118" unique_id=2124623748]
+polygon = PackedVector2Array(502.0, 31.0, 610.0, 31.0, 610.0, 36.0, 502.0, 36.0)
+
+[node name="WallFix_119" type="StaticBody2D" parent="." unique_id=2124623749]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_119" unique_id=2124623750]
+polygon = PackedVector2Array(785.0, 7.0, 918.0, 7.0, 918.0, 11.0, 785.0, 11.0)
+
+[node name="WallFix_120" type="StaticBody2D" parent="." unique_id=2124623751]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_120" unique_id=2124623752]
+polygon = PackedVector2Array(720.0, 1070.0, 773.0, 1070.0, 773.0, 1080.0, 720.0, 1080.0)
+
+[node name="WallFix_121" type="StaticBody2D" parent="." unique_id=2124623753]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_121" unique_id=2124623754]
+polygon = PackedVector2Array(128.0, 267.0, 140.0, 267.0, 140.0, 311.0, 128.0, 311.0)
+
+[node name="WallFix_122" type="StaticBody2D" parent="." unique_id=2124623755]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_122" unique_id=2124623756]
+polygon = PackedVector2Array(430.0, 222.0, 447.0, 222.0, 447.0, 253.0, 430.0, 253.0)
+
+[node name="WallFix_123" type="StaticBody2D" parent="." unique_id=2124623757]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_123" unique_id=2124623758]
+polygon = PackedVector2Array(1398.0, 337.0, 1433.0, 337.0, 1433.0, 352.0, 1398.0, 352.0)
+
+[node name="WallFix_124" type="StaticBody2D" parent="." unique_id=2124623759]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_124" unique_id=2124623760]
+polygon = PackedVector2Array(128.0, 25.0, 258.0, 25.0, 258.0, 29.0, 128.0, 29.0)
+
+[node name="WallFix_125" type="StaticBody2D" parent="." unique_id=2124623761]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_125" unique_id=2124623762]
+polygon = PackedVector2Array(871.0, 834.0, 897.0, 834.0, 897.0, 854.0, 871.0, 854.0)
+
+[node name="WallFix_126" type="StaticBody2D" parent="." unique_id=2124623763]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_126" unique_id=2124623764]
+polygon = PackedVector2Array(1841.0, 956.0, 1844.0, 956.0, 1844.0, 1129.0, 1841.0, 1129.0)
+
+[node name="WallFix_127" type="StaticBody2D" parent="." unique_id=2124623765]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_127" unique_id=2124623766]
+polygon = PackedVector2Array(845.0, 1067.0, 884.0, 1067.0, 884.0, 1080.0, 845.0, 1080.0)
+
+[node name="WallFix_128" type="StaticBody2D" parent="." unique_id=2124623767]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_128" unique_id=2124623768]
+polygon = PackedVector2Array(1216.0, 354.0, 1236.0, 354.0, 1236.0, 379.0, 1216.0, 379.0)
+
+[node name="WallFix_129" type="StaticBody2D" parent="." unique_id=2124623769]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_129" unique_id=2124623770]
+polygon = PackedVector2Array(577.0, 1112.0, 602.0, 1112.0, 602.0, 1132.0, 577.0, 1132.0)
+
+[node name="WallFix_130" type="StaticBody2D" parent="." unique_id=2124623771]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_130" unique_id=2124623772]
+polygon = PackedVector2Array(709.0, 1169.0, 734.0, 1169.0, 734.0, 1189.0, 709.0, 1189.0)
+
+[node name="WallFix_131" type="StaticBody2D" parent="." unique_id=2124623773]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_131" unique_id=2124623774]
+polygon = PackedVector2Array(728.0, 862.0, 763.0, 862.0, 763.0, 876.0, 728.0, 876.0)
+
+[node name="WallFix_132" type="StaticBody2D" parent="." unique_id=2124623775]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_132" unique_id=2124623776]
+polygon = PackedVector2Array(362.0, 823.0, 389.0, 823.0, 389.0, 841.0, 362.0, 841.0)
+
+[node name="WallFix_133" type="StaticBody2D" parent="." unique_id=2124623777]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_133" unique_id=2124623778]
+polygon = PackedVector2Array(423.0, 406.0, 455.0, 406.0, 455.0, 421.0, 423.0, 421.0)
+
+[node name="WallFix_134" type="StaticBody2D" parent="." unique_id=2124623779]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_134" unique_id=2124623780]
+polygon = PackedVector2Array(1117.0, 1114.0, 1141.0, 1114.0, 1141.0, 1134.0, 1117.0, 1134.0)
+
+[node name="WallFix_135" type="StaticBody2D" parent="." unique_id=2124623781]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_135" unique_id=2124623782]
+polygon = PackedVector2Array(452.0, 1120.0, 472.0, 1120.0, 472.0, 1144.0, 452.0, 1144.0)
+
+[node name="WallFix_136" type="StaticBody2D" parent="." unique_id=2124623783]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_136" unique_id=2124623784]
+polygon = PackedVector2Array(690.0, 797.0, 724.0, 797.0, 724.0, 811.0, 690.0, 811.0)
+
+[node name="WallFix_137" type="StaticBody2D" parent="." unique_id=2124623785]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_137" unique_id=2124623786]
+polygon = PackedVector2Array(962.0, 1265.0, 993.0, 1265.0, 993.0, 1280.0, 962.0, 1280.0)
+
+[node name="WallFix_138" type="StaticBody2D" parent="." unique_id=2124623787]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_138" unique_id=2124623788]
+polygon = PackedVector2Array(616.0, 806.0, 628.0, 806.0, 628.0, 844.0, 616.0, 844.0)
+
+[node name="WallFix_139" type="StaticBody2D" parent="." unique_id=2124623789]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_139" unique_id=2124623790]
+polygon = PackedVector2Array(745.0, 1110.0, 783.0, 1110.0, 783.0, 1122.0, 745.0, 1122.0)
+
+[node name="WallFix_140" type="StaticBody2D" parent="." unique_id=2124623791]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_140" unique_id=2124623792]
+polygon = PackedVector2Array(659.0, 967.0, 674.0, 967.0, 674.0, 996.0, 659.0, 996.0)
+
+[node name="WallFix_141" type="StaticBody2D" parent="." unique_id=2124623793]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_141" unique_id=2124623794]
+polygon = PackedVector2Array(1321.0, 1116.0, 1350.0, 1116.0, 1350.0, 1131.0, 1321.0, 1131.0)
+
+[node name="WallFix_142" type="StaticBody2D" parent="." unique_id=2124623795]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_142" unique_id=2124623796]
+polygon = PackedVector2Array(254.0, 475.0, 279.0, 475.0, 279.0, 492.0, 254.0, 492.0)
+
+[node name="WallFix_143" type="StaticBody2D" parent="." unique_id=2124623797]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_143" unique_id=2124623798]
+polygon = PackedVector2Array(448.0, 973.0, 462.0, 973.0, 462.0, 1003.0, 448.0, 1003.0)
+
+[node name="WallFix_144" type="StaticBody2D" parent="." unique_id=2124623799]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_144" unique_id=2124623800]
+polygon = PackedVector2Array(894.0, 1018.0, 922.0, 1018.0, 922.0, 1033.0, 894.0, 1033.0)
+
+[node name="WallFix_145" type="StaticBody2D" parent="." unique_id=2124623801]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_145" unique_id=2124623802]
+polygon = PackedVector2Array(1857.0, 414.0, 1860.0, 414.0, 1860.0, 551.0, 1857.0, 551.0)
+
+[node name="WallFix_146" type="StaticBody2D" parent="." unique_id=2124623803]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_146" unique_id=2124623804]
+polygon = PackedVector2Array(1198.0, 1225.0, 1279.0, 1225.0, 1279.0, 1230.0, 1198.0, 1230.0)
+
+[node name="WallFix_147" type="StaticBody2D" parent="." unique_id=2124623805]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_147" unique_id=2124623806]
+polygon = PackedVector2Array(969.0, 401.0, 988.0, 401.0, 988.0, 422.0, 969.0, 422.0)
+
+[node name="WallFix_148" type="StaticBody2D" parent="." unique_id=2124623807]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_148" unique_id=2124623808]
+polygon = PackedVector2Array(1338.0, 1008.0, 1352.0, 1008.0, 1352.0, 1035.0, 1338.0, 1035.0)
+
+[node name="WallFix_149" type="StaticBody2D" parent="." unique_id=2124623809]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_149" unique_id=2124623810]
+polygon = PackedVector2Array(270.0, 25.0, 363.0, 25.0, 363.0, 29.0, 270.0, 29.0)
+
+[node name="WallFix_150" type="StaticBody2D" parent="." unique_id=2124623811]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_150" unique_id=2124623812]
+polygon = PackedVector2Array(1035.0, 981.0, 1047.0, 981.0, 1047.0, 1012.0, 1035.0, 1012.0)
+
+[node name="WallFix_151" type="StaticBody2D" parent="." unique_id=2124623813]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_151" unique_id=2124623814]
+polygon = PackedVector2Array(1883.0, 717.0, 1885.0, 717.0, 1885.0, 900.0, 1883.0, 900.0)
+
+[node name="WallFix_152" type="StaticBody2D" parent="." unique_id=2124623815]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_152" unique_id=2124623816]
+polygon = PackedVector2Array(128.0, 90.0, 131.0, 90.0, 131.0, 209.0, 128.0, 209.0)
+
+[node name="WallFix_153" type="StaticBody2D" parent="." unique_id=2124623817]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_153" unique_id=2124623818]
+polygon = PackedVector2Array(1333.0, 212.0, 1347.0, 212.0, 1347.0, 237.0, 1333.0, 237.0)
+
+[node name="WallFix_154" type="StaticBody2D" parent="." unique_id=2124623819]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_154" unique_id=2124623820]
+polygon = PackedVector2Array(1300.0, 358.0, 1318.0, 358.0, 1318.0, 377.0, 1300.0, 377.0)
+
+[node name="WallFix_155" type="StaticBody2D" parent="." unique_id=2124623821]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_155" unique_id=2124623822]
+polygon = PackedVector2Array(1733.0, 732.0, 1752.0, 732.0, 1752.0, 750.0, 1733.0, 750.0)
+
+[node name="WallFix_156" type="StaticBody2D" parent="." unique_id=2124623823]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_156" unique_id=2124623824]
+polygon = PackedVector2Array(126.0, 721.0, 140.0, 721.0, 140.0, 745.0, 126.0, 745.0)
+
+[node name="WallFix_157" type="StaticBody2D" parent="." unique_id=2124623825]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_157" unique_id=2124623826]
+polygon = PackedVector2Array(1408.0, 1099.0, 1420.0, 1099.0, 1420.0, 1127.0, 1408.0, 1127.0)
+
+[node name="WallFix_158" type="StaticBody2D" parent="." unique_id=2124623827]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_158" unique_id=2124623828]
+polygon = PackedVector2Array(1686.0, 157.0, 1796.0, 157.0, 1796.0, 160.0, 1686.0, 160.0)
+
+[node name="WallFix_159" type="StaticBody2D" parent="." unique_id=2124623829]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_159" unique_id=2124623830]
+polygon = PackedVector2Array(321.0, 1218.0, 387.0, 1218.0, 387.0, 1223.0, 321.0, 1223.0)
+
+[node name="WallFix_160" type="StaticBody2D" parent="." unique_id=2124623831]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_160" unique_id=2124623832]
+polygon = PackedVector2Array(40.0, 653.0, 42.0, 653.0, 42.0, 814.0, 40.0, 814.0)
+
+[node name="WallFix_161" type="StaticBody2D" parent="." unique_id=2124623833]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_161" unique_id=2124623834]
+polygon = PackedVector2Array(1458.0, 249.0, 1474.0, 249.0, 1474.0, 269.0, 1458.0, 269.0)
+
+[node name="WallFix_162" type="StaticBody2D" parent="." unique_id=2124623835]
+
+[node name="Shape" type="CollisionPolygon2D" parent="WallFix_162" unique_id=2124623836]
+polygon = PackedVector2Array(408.0, 66.0, 716.0, 66.0, 716.0, 67.0, 408.0, 67.0)

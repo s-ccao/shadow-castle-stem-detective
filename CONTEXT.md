@@ -385,3 +385,30 @@ distorted.
 **Keep it that way.** A floor image with structure in it puts walls on screen
 that the player can walk through, and no scale or offset can repair that —
 there is no alignment to find, only two maps.
+
+## Hall collision is derived from the wall art, with three deliberate holes
+
+The 34 hand-drawn `Wall_*` polygons covered only part of what
+`hall_walls.png` paints. Measured with the real 14x8 player box, a quarter of
+everywhere the player could stand was inside a painted wall, and the entire
+out-of-bounds ring outside the dungeon was open — you could walk into the
+border masonry and around the edge of the map.
+
+`WallFix_000..162` close that. They are axis-aligned rectangles from a greedy
+decomposition of (art ∪ outside) minus the existing polygons, which is exact:
+zero overflow, so they never block a pixel the art leaves open. Standing
+inside a wall drops from 24.9% of the walkable area to 8.7%, and roughly half
+of what remains is the pseudo-3D cap band, where walking behind a wall top is
+the intended look.
+
+**Three alcoves are deliberately left open** — the Chemistry door, the Library
+door, and the building holding the hidden Library key. The art seals all three;
+filling them makes the doors unapproachable and the key uncollectable. That is
+a disagreement between the artwork and the level design, and it can only be
+settled by redrawing an opening or moving the object, not by editing collision.
+
+Any change here must re-check two things, because both are easy to break and
+neither shows up until play: that all nineteen key positions still have
+standing room within 60px, and that the Guardian's 24x24 body still shares a
+connected region with the player's. Tightening collision to match the art
+exactly fails both.
