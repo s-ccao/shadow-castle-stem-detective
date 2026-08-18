@@ -13,23 +13,22 @@ const FOG_COLS := MAP_PIXEL_WIDTH / FOG_CELL_SIZE
 const FOG_ROWS := MAP_PIXEL_HEIGHT / FOG_CELL_SIZE
 
 # ============================================================
-# Castle Hall visual assets (user-provided GPT art):
-#   hall_floor_bg.png - 1448x1086, stretched to 1920x1280
+# Castle Hall visual assets:
+#   hall_floor_bg.png - 1152x768, uniform x1.666667 to 1920x1280
 #   hall_walls.png    - 1536x1024, uniform x1.25 to 1920x1280
 #
-# These are NOT two layers of one map. Each is a complete dungeon with its
-# own walls, rooms and doors, and they do not correspond: phase correlation
-# between them peaks at 6.1x the mean, where a genuine match measures
-# 614339x, and an exhaustive search over scale 0.9-1.2 and offset +-160
-# never rises above 2.1% overlap. The floor art is also 4:3 forced into 3:2,
-# so it is stretched 12.5% wider than tall on top of that.
+# Both are 3:2 like the map, so neither is distorted, and the floor image
+# carries only ground: tile, grates, pipe runs and coloured light. That
+# constraint is the whole point. The previous floor art was a complete
+# dungeon in its own right, walls and archways included, and it did not
+# correspond to the wall image at all -- phase correlation between them
+# peaked at 6.1x the mean where a genuine match measures 614339x. The
+# player saw two sets of walls, one of which could be walked through.
 #
-# The wall image is the one that matters: the collision polygons in
-# scenes/wall_collisions.tscn and every door position were derived from it,
-# and it alone shares the map's aspect ratio. The floor layer is dimmed to
-# 0.5 there so its own painted walls recede into texture instead of reading
-# as walls the player cannot touch. That is a mitigation, not a fix -- the
-# hall needs one map, not two.
+# The wall image remains the authority: the collision polygons in
+# scenes/wall_collisions.tscn and every door position were derived from it.
+# When replacing the floor art, keep it free of anything that reads as a
+# wall.
 # ============================================================
 const HALL_FLOOR_BG: String = \
 	"res://assets/backgrounds/hall_floor_bg.png"

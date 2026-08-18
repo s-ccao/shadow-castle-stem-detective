@@ -364,28 +364,24 @@ fails a handler that underscores both parameters, because the omission is
 invisible on the page — underscoring a parameter is exactly how you say you
 meant to ignore it.
 
-## The hall is two different maps stacked on each other
+## The hall's floor image must contain no walls
 
-`hall_floor_bg.png` and `hall_walls.png` were committed together and the code
-described them as one map's floor and walls, scaled to agree. They do not
-agree, and no adjustment will make them:
+`hall_floor_bg.png` and `hall_walls.png` are separate images and only the wall
+one is authoritative: the 44 collision polygons and all seven door positions
+were derived from it.
 
-- The floor art is 1448x1086 (4:3) forced into a 1920x1280 (3:2) map, so it is
-  stretched 12.5% wider than tall. The wall art is 1536x1024, already 3:2, and
-  scales uniformly by 1.25 with no distortion.
-- Phase correlation between the two peaks at 6.1x the mean. The same test
-  against a shifted copy of one image measures 614339x. An exhaustive search
-  over scale 0.9-1.2 and offset ±160 never exceeds 2.1% overlap.
-- Looking at either alone settles it: the floor art is a complete dungeon with
-  its own walls, rooms and coloured doorways. It is not a floor.
+The floor image shipped for months as a complete dungeon in its own right —
+its own walls, rooms and coloured archways — while the code described the pair
+as one map's floor and walls "aligned" at an exact scale. They never
+corresponded. Phase correlation between them peaked at 6.1x the mean, where
+the same test against a shifted copy of one image measures 614339x, and a
+search across scale 0.9-1.2 and offset ±160 never cleared 2.1% overlap. The
+player saw two sets of walls at once, and could walk through one of them.
 
-**The wall image is the authority.** The 44 collision polygons and all seven
-door positions were derived from it, and it is the one whose aspect ratio
-matches the map. The floor layer is dimmed to 0.5 in `wall_collisions.tscn` so
-its painted walls recede into texture rather than reading as walls the player
-walks straight through.
+It is now ground only: tile, grates, pipe runs and coloured light, 1152x768
+scaled uniformly by 1.666667. Both images are 3:2 like the map, so neither is
+distorted.
 
-That is a mitigation. The hall wants one map: either a floor image with no
-walls in it, or a decision to make the floor art authoritative and re-export
-every collision polygon and door position against it. Do not "fix the
-alignment" — there is no alignment to find.
+**Keep it that way.** A floor image with structure in it puts walls on screen
+that the player can walk through, and no scale or offset can repair that —
+there is no alignment to find, only two maps.
