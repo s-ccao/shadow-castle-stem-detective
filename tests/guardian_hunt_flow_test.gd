@@ -108,15 +108,39 @@ func _run() -> void:
 				)
 				player.set_physics_process(true)
 		var countdown := hall.get("guardian_countdown_panel") as Panel
-		_expect(countdown != null and countdown.visible, "Live Guardian contact estimate appears after the reveal")
-		if countdown != null:
+		_expect(countdown != null, "Guardian contact estimate panel exists")
+		if countdown != null and guardian != null and player != null:
+			# The readout is a warning, so it has to be on screen exactly while
+			# there is something to warn about. It used to sit there for the whole
+			# game, which carries no information about when to run.
+			var resting_position := guardian.global_position
+			guardian.set_physics_process(false)
+			guardian.global_position = hall.call(
+				"_nearest_guardian_walkable_position",
+				player.global_position + Vector2(112.0, 0.0)
+			) as Vector2
+			hall.call("_update_guardian_countdown", 1.0)
+			_expect(countdown.visible, "Contact estimate appears once the Guardian is closing")
 			# A hub pauses the tree, so `_process` cannot retract this readout. It has
 			# to withdraw on the pause notification itself, or it ghosts through the
 			# hub backdrop and keeps showing a frozen time that is no longer true.
 			hall.propagate_notification(Node.NOTIFICATION_PAUSED)
 			_expect(not countdown.visible, "Contact estimate withdraws while a hub holds the world paused")
 			hall.propagate_notification(Node.NOTIFICATION_UNPAUSED)
-			_expect(countdown.visible, "Contact estimate returns when the hub closes and the chase resumes")		# The hall's real walls are collision polygons, not solid grid cells, so the
+			_expect(countdown.visible, "Contact estimate returns when the hub closes and the chase resumes")
+			guardian.global_position = resting_position
+			game_state.call("update_guardian_hall_position", resting_position)
+			# Recovery is rate-limited on purpose, so give it time to climb. It has
+			# to climb at all: relief used to be priced below the countdown's own
+			# tick, so the estimate sank to 00.0 and stayed there forever.
+			for _settle: int in range(40):
+				hall.call("_update_guardian_countdown", 0.5)
+			_expect(
+				not countdown.visible,
+				"Contact estimate withdraws once the Guardian is no longer a live threat"
+			)
+			guardian.set_physics_process(true)
+		# The hall's real walls are collision polygons, not solid grid cells, so the
 		# grid happily reports the outermost border as walkable. A corner pinned
 		# there stands the Guardian in the dead strip behind the painted room.
 		var guardian_start: Vector2 = hall.get("ENEMY_START_POSITION")

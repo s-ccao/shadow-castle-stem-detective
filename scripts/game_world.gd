@@ -560,11 +560,27 @@ const GUARDIAN_REVEAL_HOLD_DURATION: float = 0.70
 const GUARDIAN_REVEAL_MARCH_DURATION: float = 0.55
 const GUARDIAN_REVEAL_RETURN_DURATION: float = 0.50
 const GUARDIAN_REVEAL_ZOOM: Vector2 = Vector2(3.05, 3.05)
+## The capture beat. Short enough not to punish a retry, long enough that the
+## player sees the Guardian standing over them before the report opens.
+const CAPTURE_PUSH_DURATION: float = 0.42
+const CAPTURE_HOLD_DURATION: float = 0.85
+const CAPTURE_ESCORT_DURATION: float = 0.95
+const CAPTURE_ZOOM: Vector2 = Vector2(2.60, 2.60)
 const GUARDIAN_ETA_REFRESH_INTERVAL: float = 0.12
-# Seconds of estimate the readout may recover per second while the player gains
-# ground. Below 1.0 the clock can slow but never run backwards faster than time.
-const GUARDIAN_ETA_RELIEF_RATE: float = 0.85
+# Seconds of estimate the readout may recover per second of real time. This has
+# to beat the 1.0s/s the display itself counts down at. At 0.85 the clock could
+# not even hold still: a Guardian that was standing still still drained the
+# readout by 0.15s/s, so after a couple of minutes it pinned at 00.0 and stayed
+# there, telling the player they were about to be caught while the Guardian was
+# on the far side of the hall. Recovery is still rate-limited, so gaining ground
+# reads as the clock easing back rather than snapping.
+const GUARDIAN_ETA_RELIEF_RATE: float = 3.0
 const GUARDIAN_ETA_DISPLAY_HORIZON: float = 18.0
+# A Guardian further away than the horizon fills none of the bar, so the panel
+# was showing a large number above an empty gauge for most of the game and read
+# as permanent pursuit. It now withdraws entirely at that range and comes back
+# with a little hysteresis so a Guardian pacing the boundary cannot strobe it.
+const GUARDIAN_ETA_WITHDRAW_HORIZON: float = 21.0
 const GUARDIAN_CATCH_DISTANCE: float = 24.0
 ## Sight is sampled every third of a Hall tile so no wall is stepped over.
 const GUARDIAN_SIGHT_SAMPLE_STEP: float = 24.0
@@ -2074,14 +2090,111 @@ func on_player_caught():
 	if enemy != null:
 		enemy.set_physics_process(false)
 
-	if game_over_screen_root != null:
-		if game_over_screen_root.has_method("configure_recovery"):
-			game_over_screen_root.call(
-				"configure_recovery",
-				GameState.has_room_checkpoint(),
-				GameState.checkpoint_room_id
-			)
-		game_over_screen_root.visible = true
+	_play_capture_sequence()
+
+
+## Hold on the capture before handing over to the game over screen.
+##
+## The catch used to raise the death UI on the same frame it happened. The
+## Guardian is usually behind or beside the player when it lands, so the last
+## thing on screen was ordinary floor: the run ended without the player ever
+## seeing what ended it, which reads as the game closing rather than as
+## something the Guardian did. This pans onto the Guardian, names the capture,
+## and only then opens the report.
+func _play_capture_sequence() -> void:
+	if enemy == null or follow_camera == null or guardian_reveal_overlay == null:
+		_show_game_over_screen()
+		return
+
+	GameAudio.play(&"guardian_alert")
+	GameAudio.duck_music(1.6)
+	hide_interaction_feedback()
+	if hall_route_panel != null:
+		hall_route_panel.visible = false
+	if fog_sprite != null:
+		fog_sprite.visible = false
+	# Opening a hub pauses the tree, which would stall the tweens below and leave
+	# the player frozen under the overlay. The reveal locks the hubs out for the
+	# same reason; _show_game_over_screen() gives them back.
+	ArchiveUi.set_hub_entries_suppressed(true)
+	var capture_map_hud := get_node_or_null("/root/MapHud")
+	if capture_map_hud != null and capture_map_hud.has_method("set_guardian_tracking_suppressed"):
+		capture_map_hud.call("set_guardian_tracking_suppressed", true)
+	if enemy.has_method("set_cinematic_hold"):
+		enemy.call("set_cinematic_hold", true)
+	if enemy.has_method("face_toward"):
+		enemy.call("face_toward", player.global_position)
+
+	guardian_reveal_overlay.visible = true
+	guardian_reveal_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	guardian_reveal_title.text = CaseLocale.text("capture.title")
+	guardian_reveal_body.text = CaseLocale.text("capture.seized")
+	var overlay_in := create_tween()
+	overlay_in.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	overlay_in.tween_property(guardian_reveal_overlay, "modulate:a", 1.0, 0.18)
+
+	var capture_camera := Camera2D.new()
+	capture_camera.name = "GuardianCaptureCamera"
+	capture_camera.global_position = follow_camera.get_screen_center_position()
+	capture_camera.zoom = follow_camera.zoom
+	capture_camera.position_smoothing_enabled = false
+	capture_camera.limit_left = 0
+	capture_camera.limit_top = 0
+	capture_camera.limit_right = MAP_PIXEL_WIDTH
+	capture_camera.limit_bottom = MAP_PIXEL_HEIGHT
+	add_child(capture_camera)
+	capture_camera.make_current()
+
+	# Frame both bodies rather than the Guardian alone, so the picture shows the
+	# two of them together and the player can read what just happened to them.
+	var midpoint: Vector2 = (enemy.global_position + player.global_position) * 0.5
+	var close_in := create_tween()
+	close_in.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	close_in.tween_property(capture_camera, "global_position", midpoint, CAPTURE_PUSH_DURATION)
+	close_in.parallel().tween_property(capture_camera, "zoom", CAPTURE_ZOOM, CAPTURE_PUSH_DURATION)
+	await close_in.finished
+	if not is_inside_tree():
+		return
+
+	await get_tree().create_timer(CAPTURE_HOLD_DURATION).timeout
+	if not is_inside_tree():
+		return
+	guardian_reveal_body.text = CaseLocale.text("capture.escorted")
+	await get_tree().create_timer(CAPTURE_ESCORT_DURATION).timeout
+	if not is_inside_tree():
+		return
+
+	var overlay_out := create_tween()
+	overlay_out.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	overlay_out.tween_property(guardian_reveal_overlay, "modulate:a", 0.0, 0.22)
+	await overlay_out.finished
+	if not is_inside_tree():
+		return
+	guardian_reveal_overlay.visible = false
+	if is_instance_valid(capture_camera):
+		capture_camera.queue_free()
+	if follow_camera != null:
+		follow_camera.make_current()
+	_show_game_over_screen()
+
+
+func _show_game_over_screen() -> void:
+	# The capture beat locks the hubs out so a pause cannot strand its tweens.
+	# These live on autoloads, so failing to give them back would follow the
+	# player into the next run.
+	ArchiveUi.set_hub_entries_suppressed(false)
+	var recovered_map_hud := get_node_or_null("/root/MapHud")
+	if recovered_map_hud != null and recovered_map_hud.has_method("set_guardian_tracking_suppressed"):
+		recovered_map_hud.call("set_guardian_tracking_suppressed", false)
+	if game_over_screen_root == null:
+		return
+	if game_over_screen_root.has_method("configure_recovery"):
+		game_over_screen_root.call(
+			"configure_recovery",
+			GameState.has_room_checkpoint(),
+			GameState.checkpoint_room_id
+		)
+	game_over_screen_root.visible = true
 
 
 ## 受击反馈：显示剩余生命。
@@ -4154,7 +4267,7 @@ func _notification(what: int) -> void:
 func _update_guardian_countdown(delta: float) -> void:
 	if guardian_countdown_panel == null:
 		return
-	var should_show := (
+	var hunting := (
 		GameState.is_guardian_hunt_active()
 		and GameState.get_guardian_mode() == GameState.GuardianMode.CHASE
 		and enemy != null
@@ -4163,16 +4276,24 @@ func _update_guardian_countdown(delta: float) -> void:
 		and (power_restoration_panel == null or not power_restoration_panel.visible)
 		and not game_over
 	)
-	guardian_countdown_panel.visible = should_show
-	if not should_show:
+	if not hunting:
+		guardian_countdown_panel.visible = false
+		guardian_eta_seconds = INF
+		guardian_eta_refresh_remaining = 0.0
 		return
 	guardian_eta_refresh_remaining -= delta
 	# The estimate is re-measured on an interval, but between measurements it has
 	# to keep running down. Snapping to each new sample made the readout look like
 	# a value that only refreshes while the pursuit itself never advances.
-	guardian_eta_seconds = maxf(0.0, guardian_eta_seconds - delta)
+	if is_finite(guardian_eta_seconds):
+		guardian_eta_seconds = maxf(0.0, guardian_eta_seconds - delta)
 	if guardian_eta_refresh_remaining <= 0.0:
 		var measured := get_guardian_catch_eta()
+		# Recovery has to be measured against the time that actually passed, not
+		# against the nominal interval. Pricing it per interval while the
+		# countdown above ticks by delta means any frame longer than the interval
+		# loses ground, which is the same one-way drift in a different disguise.
+		var elapsed := GUARDIAN_ETA_REFRESH_INTERVAL - guardian_eta_refresh_remaining
 		# Danger is reported immediately; relief is rate-limited, so gaining ground
 		# reads as the clock slowing rather than as the clock resetting.
 		guardian_eta_seconds = (
@@ -4180,10 +4301,22 @@ func _update_guardian_countdown(delta: float) -> void:
 			if measured <= guardian_eta_seconds
 			else minf(
 				measured,
-				guardian_eta_seconds + GUARDIAN_ETA_RELIEF_RATE * GUARDIAN_ETA_REFRESH_INTERVAL
+				guardian_eta_seconds + GUARDIAN_ETA_RELIEF_RATE * elapsed
 			)
 		)
 		guardian_eta_refresh_remaining = GUARDIAN_ETA_REFRESH_INTERVAL
+
+	# Withdraw while the Guardian is too far to be a live threat. Leaving the
+	# panel up for the whole game is what made the pursuit unreadable: a warning
+	# that is always on screen carries no information about when to run.
+	var threshold := (
+		GUARDIAN_ETA_WITHDRAW_HORIZON
+		if guardian_countdown_panel.visible
+		else GUARDIAN_ETA_DISPLAY_HORIZON
+	)
+	guardian_countdown_panel.visible = guardian_eta_seconds <= threshold
+	if not guardian_countdown_panel.visible:
+		return
 
 	var display_seconds := clampf(guardian_eta_seconds, 0.0, 99.9)
 	guardian_countdown_value.text = "%04.1f s" % display_seconds

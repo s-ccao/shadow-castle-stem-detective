@@ -48,9 +48,16 @@ func _run() -> void:
 		return
 	player.set_physics_process(false)
 	guardian.set_physics_process(false)
+	# The countdown only exists while the Guardian is a live threat, so stage one.
+	# Photographing it from across the hall would capture an empty gauge.
+	guardian.global_position = hall.call(
+		"_nearest_guardian_walkable_position",
+		player.global_position + Vector2(150.0, 0.0)
+	) as Vector2
+	game_state.call("update_guardian_hall_position", guardian.global_position)
 	hall.call("_update_guardian_countdown", 1.0)
 	var countdown := hall.get("guardian_countdown_panel") as Panel
-	_expect(countdown != null and countdown.visible, "Contact countdown is visible after the reveal")
+	_expect(countdown != null and countdown.visible, "Contact countdown is visible while the Guardian closes")
 	var mini_guardian := root.get_node("MapHud").find_child("MiniGuardianMarker", true, false) as Control
 	root.get_node("MapHud").call("refresh_guardian_tracking")
 	_expect(mini_guardian != null and mini_guardian.visible, "Live red Guardian marker is visible on the minimap")

@@ -313,6 +313,54 @@ The serum branch now reports every frame it is active, so anything that demotes
 the mode is corrected on the next tick. `tests/guardian_awareness_flow_test.gd`
 states the contract: "The serum keeps the Guardian in CHASE".
 
+## A readout that decays on its own is not a readout
+
+The Guardian contact estimate counts down by `delta` every frame so the clock
+looks live between the 0.12s re-measurements, and rate-limits recovery so that
+gaining ground eases the number back instead of snapping it. Both halves are
+right; the rate was not. `GUARDIAN_ETA_RELIEF_RATE` was 0.85, which is less
+than the 1.0s/s the display takes away, so the estimate could not even hold
+still. A Guardian standing motionless 25 seconds away drained the readout by
+0.15s/s until it reached 00.0 in about two minutes, and once there it could
+never climb back: the panel showed "IMMINENT — REACH A ROOM" for the rest of
+the session while the Guardian was across the hall. Any relief rate at or below
+1.0 has this failure; 3.0 leaves a net +2s/s recovery.
+
+Relief is also priced against the time that actually elapsed since the last
+sample, not against the nominal interval, so a long frame cannot quietly lose
+ground the same way.
+
+The panel withdraws beyond `GUARDIAN_ETA_DISPLAY_HORIZON` and returns with
+hysteresis. Past the horizon the urgency bar fills to zero anyway, so leaving
+the panel up drew a large number over an empty gauge for the whole game. A
+warning that is always on screen tells the player nothing about when to run.
+
+## Being caught has to be shown, not just recorded
+
+The Guardian usually lands its catch from behind or beside the player, so the
+last frame of gameplay is ordinary floor. Raising the death UI on that same
+frame ended the run without ever showing what ended it, and it read as the game
+closing rather than as something the Guardian did. `_play_capture_sequence()`
+pushes a camera onto the midpoint of the two bodies, names the capture, and
+holds for about two seconds before `_show_game_over_screen()`.
+
+It borrows the reveal's overlay, and it borrows the reveal's hub lockout for a
+specific reason: opening a hub pauses the tree, which would strand the
+sequence's tweens and leave the player frozen under the title card. That lockout
+lives on autoloads, so `_show_game_over_screen()` has to give it back or the
+suppression follows the player into the next run.
+
+## Walk cycles are driven by distance, not by time
+
+Both bodies play an eight-frame cycle authored at 5 fps, and both used to play
+it at a flat `speed_scale` whenever they moved. That is a fixed number of steps
+per second against a speed that varies by a factor of five: a Swiftness Potion
+moved the detective 40% faster without moving their legs at all, and the same
+leg speed served the Guardian's 44px/s stakeout shuffle and its 232px/s
+tier-five charge. Playback is now `speed * WALK_CYCLE_SECONDS /
+WALK_CYCLE_DISTANCE`, so one stride always covers one stretch of floor. The
+Guardian is the larger body and gets the longer stride.
+
 ## The Guardian's cinematic freeze is a leak waiting to happen
 
 `setup_enemy()` arms `cinematic_hold` and two separate sequences are trusted to

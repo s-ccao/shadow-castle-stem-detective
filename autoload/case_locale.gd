@@ -267,6 +267,15 @@ const TEXT: Dictionary = {
 		"en": "The Guardian forced you from the trail. Your notes and evidence are safe.",
 		"zh": "守卫迫使你离开现场。你的笔记与证物已被保留。",
 	},
+	"capture.title": {"en": "CAUGHT", "zh": "你被抓住了"},
+	"capture.seized": {
+		"en": "The Guardian closes its hand around your arm.",
+		"zh": "守卫的手扣住了你的手臂。",
+	},
+	"capture.escorted": {
+		"en": "It marches you back out of the wing. The trail goes cold.",
+		"zh": "它押着你退出这片区域。线索就此中断。",
+	},
 	"death.kicker": {"en": "CASE FILE  /  INTERRUPTION REPORT", "zh": "案件档案  /  中断记录"},
 	"death.retention": {"en": "EVIDENCE RETAINED  ·  CHECKPOINT READY", "zh": "证物已保留  ·  检查点已就绪"},
 	"death.retention_ready": {
