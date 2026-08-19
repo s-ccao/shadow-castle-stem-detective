@@ -172,9 +172,15 @@ func _update_awareness() -> void:
 		return
 
 	if GameState.is_guardian_tracking_serum_active():
+		# Omniscient is not the same as reported. Setting can_see_player and
+		# returning left the hunt in PATROL for the entire game, because
+		# report_player_seen() is the only thing that escalates the mode. PATROL
+		# then refuses to catch (check_player_collision() requires CHASE) and,
+		# with the serum on, aimed at the Guardian's own position — so it stood
+		# still and could not touch the player even when they walked into it.
 		can_see_player = true
-		if behavior == Behavior.STUNNED:
-			set_behavior(GameState.get_guardian_mode())
+		GameState.report_player_seen(player.global_position)
+		set_behavior(GameState.get_guardian_mode())
 		return
 
 	var sighted := _has_line_of_sight_to_player()
@@ -237,7 +243,10 @@ func _current_target_position() -> Vector2:
 			return GameState.get_guardian_last_known_player_position()
 		_:
 			if GameState.is_guardian_tracking_serum_active():
-				return GameState.get_guardian_hall_position()
+				# NOT get_guardian_hall_position(): that is this body's own live
+				# position, written back every frame by move_along_path(), so
+				# using it as a target is an order to stand still.
+				return GameState.get_guardian_last_known_player_position()
 			return GameState.get_guardian_stakeout_anchor()
 
 
