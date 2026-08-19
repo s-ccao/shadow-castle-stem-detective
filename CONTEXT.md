@@ -829,3 +829,27 @@ nothing anywhere. It is the Toxic Mire now. New potion art was derived rather
 than drawn — `tools/derive_counterplay_item_art.gd` already hue-shifts
 `recipe_vision.png` into the counterplay recipes, and two more entries there give
 the mire and the draught their own pages.
+
+### An effect gated behind a condition is an effect that does not exist
+
+The Vision Potion read as doing nothing, and it very nearly was. Its flashlight
+widening sat *inside* `if not power_restored or GameState.chase_mode:`, so the
+moment the player restored power — a mid-game milestone they keep — drinking it
+changed the beam not at all, and the only thing left was a 15% camera zoom that
+nobody can see. The potion had been quietly dying for most of the game. The
+widening is a multiplier on whatever beam is in force now, so the tight pursuit
+beam still reaches the 430/160 it always did and the restored-power beam grows
+with it.
+
+The Daze Potion had the opposite problem: the mechanic worked perfectly and
+nothing said so. It calls `stun_guardian()` directly and never
+`apply_potion_effect()`, so it emitted no `potion_applied`, so PotionHud gave it
+no burst, no chip and no aura — and a stunned Guardian looks exactly like a
+patrolling one between waypoints, from behind, possibly off screen. It now
+registers a display-only timed effect alongside the stun, and wears an orbiting
+mark while it lasts. **Nothing reads `is_potion_active("daze")` for gameplay;
+that entry exists to be looked at.**
+
+The lesson both share: the potion tables are the wrong place to check whether a
+potion works. `is_potion_active` returning true proves the countdown is running,
+not that a single pixel changed.

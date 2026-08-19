@@ -105,6 +105,12 @@ const CIRCUIT_DOOR_INTERACT_RADIUS: float = 110.0
 const VISION_RADIUS_PIXELS := 320.0
 const CLEAR_RADIUS_PIXELS := 130.0
 const EDGE_DARKNESS := 0.62
+## What the Vision Potion multiplies the flashlight by. The tight pursuit beam
+## reaches the 430/160 it always did; the restored-power beam now grows too,
+## which it never used to.
+const VISION_POTION_RADIUS_GAIN: float = 1.87
+const VISION_POTION_CLEAR_GAIN: float = 2.0
+const VISION_POTION_EDGE_DARKNESS: float = 0.42
 const DISCOVERED_DARKNESS := 0.68
 const POWER_ROUTE_SCAN_DURATION: float = 1.20
 const POWER_RESTORATION_PROMPT_HOLD: float = 1.15
@@ -1286,10 +1292,14 @@ func update_fog_of_war():
 		vision_radius = 230.0
 		clear_radius = 80.0
 		edge_darkness = 0.85
-		if GameState.is_potion_active("vision"):
-			vision_radius = 430.0
-			clear_radius = 160.0
-			edge_darkness = 0.55
+	# The potion widens whatever beam is in force. It used to widen only the
+	# tight one, because the check sat inside the branch above -- so after power
+	# restoration, which is most of the game, drinking it changed nothing the
+	# player could see and the potion read as broken.
+	if GameState.is_potion_active("vision"):
+		vision_radius *= VISION_POTION_RADIUS_GAIN
+		clear_radius *= VISION_POTION_CLEAR_GAIN
+		edge_darkness = minf(edge_darkness, VISION_POTION_EDGE_DARKNESS)
 
 	var min_x = int(max(0, (player_world.x - vision_radius) / FOG_CELL_SIZE))
 	var max_x = int(min(FOG_COLS - 1, (player_world.x + vision_radius) / FOG_CELL_SIZE))

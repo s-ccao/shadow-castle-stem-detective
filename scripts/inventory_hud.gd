@@ -1240,8 +1240,15 @@ func _use_selected_item() -> void:
 			GameState.purify_tracking_serum()
 		"daze":
 			# Thrown at the Guardian, not drunk. The duration belongs to the
-			# Guardian's stun timer.
-			GameState.stun_guardian(float(potion_info.get("duration", 7.0)))
+			# Guardian's stun timer -- but registering it as a timed effect too
+			# is what gives the throw a burst, a chip and a countdown. Without
+			# it the bottle produced no feedback whatsoever, and a Guardian that
+			# was off screen when it landed made the potion look like it did
+			# nothing at all. Nothing reads is_potion_active("daze") for
+			# gameplay, so this is display only.
+			var daze_seconds: float = float(potion_info.get("duration", 7.0))
+			GameState.stun_guardian(daze_seconds)
+			GameState.apply_potion_effect("daze", daze_seconds)
 		_:
 			GameState.apply_potion_effect(
 				effect_id,

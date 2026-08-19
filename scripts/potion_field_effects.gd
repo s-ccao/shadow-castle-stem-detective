@@ -34,6 +34,24 @@ const FOOTPRINT_RADIUS: float = 3.6
 const FOOTPRINT_SPREAD: float = 5.0
 const FOOTPRINT_Z: int = -2
 
+## 眩晕：守卫身上要有一个"它现在动不了"的标记，否则玩家扔完瓶子只看到守卫
+## 站住了，和它自己停下来巡逻没有任何区别。
+const DAZE_RING_RADIUS: float = 15.0
+const DAZE_ORBIT_RADIUS: float = 13.0
+const DAZE_MARK_HEIGHT: float = -92.0
+const DAZE_SPIN_SPEED: float = 3.1
+const DAZE_TINT: Color = Color(1.00, 0.62, 0.86)
+const DAZE_SPARK_COUNT: int = 3
+const DAZE_Z: int = 14
+
+## 洞察：光照半径变大这件事本身是渐进的，玩家不一定注意到。每隔几秒推出一圈
+## 淡去的光环，把"我现在看得更远"画成一个动作。
+const INSIGHT_TINT: Color = Color(0.55, 0.80, 1.00)
+const INSIGHT_INTERVAL: float = 3.4
+const INSIGHT_RADIUS: float = 300.0
+const INSIGHT_DURATION: float = 1.15
+const INSIGHT_Z: int = -1
+
 const MIRE_RADIUS: float = 62.0
 const MIRE_TINT: Color = Color(0.42, 0.95, 0.34)
 const MIRE_RING_TINT: Color = Color(0.72, 1.00, 0.48)
@@ -43,6 +61,7 @@ const MIRE_Z: int = -3
 ## 守卫每帧都在沼里，就没必要每帧都重设计时器；这个间隔够密到踩一下就中，
 ## 又不会把 state_changed 每秒发六十次。
 const MIRE_REAPPLY_INTERVAL: float = 0.4
+const MIRE_BUBBLE_COUNT: int = 7
 
 var _player: Node2D = null
 var _guardian: Node2D = null
@@ -58,6 +77,10 @@ var _mire: Node2D = null
 var _mire_position: Vector2 = Vector2.ZERO
 var _mire_time: float = 0.0
 var _mire_reapply: float = 0.0
+var _mire_bubbles: Array[Node2D] = []
+var _daze_mark: Node2D = null
+var _daze_time: float = 0.0
+var _insight_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -95,6 +118,8 @@ func _process(delta: float) -> void:
 	_update_trail()
 	_update_footprints()
 	_update_mire(delta)
+	_update_daze(delta)
+	_update_insight(delta)
 
 
 func _on_potion_applied(effect_id: String, duration: float) -> void:
@@ -107,6 +132,9 @@ func _on_potion_applied(effect_id: String, duration: float) -> void:
 			_footprint_started = false
 		"mire":
 			_spawn_mire(duration)
+		"vision":
+			_insight_timer = 0.0
+			_pulse_insight()
 
 
 func _on_potion_expired(effect_id: String) -> void:
@@ -261,6 +289,11 @@ func _drop_footprint(at_position: Vector2) -> void:
 # Mire — a slowing patch left where the bottle was thrown down
 # ============================================================
 
+## Two flat ovals and a scale pulse read as a green sticker on the floor. A bog
+## needs three things the sticker has not got: an edge that is not a shape, more
+## than one depth of colour, and something moving inside it. The outline is
+## therefore noised per vertex, the pool is stacked dark-to-bright so the middle
+## reads as deeper, and bubbles rise and pop on their own timers.
 func _spawn_mire(duration: float) -> void:
 	_clear_mire()
 	if _player == null:
@@ -268,17 +301,42 @@ func _spawn_mire(duration: float) -> void:
 	_mire_position = _player.global_position
 	_mire_time = 0.0
 	_mire_reapply = 0.0
+	_mire_bubbles.clear()
 	var mire := Node2D.new()
 	mire.name = "PotionMire"
 	mire.z_index = MIRE_Z
-	var pool := Polygon2D.new()
-	pool.polygon = _oval(MIRE_RADIUS, MIRE_RADIUS * 0.62, 22)
-	pool.color = Color(MIRE_TINT.r, MIRE_TINT.g, MIRE_TINT.b, 0.34)
-	mire.add_child(pool)
-	var ring := Polygon2D.new()
-	ring.polygon = _oval(MIRE_RADIUS * 0.66, MIRE_RADIUS * 0.41, 18)
-	ring.color = Color(MIRE_RING_TINT.r, MIRE_RING_TINT.g, MIRE_RING_TINT.b, 0.30)
-	mire.add_child(ring)
+
+	var seed_source := RandomNumberGenerator.new()
+	seed_source.randomize()
+	var layers: Array[Dictionary] = [
+		{"scale": 1.00, "shade": Color(0.10, 0.32, 0.10), "alpha": 0.46},
+		{"scale": 0.74, "shade": MIRE_TINT, "alpha": 0.40},
+		{"scale": 0.44, "shade": MIRE_RING_TINT, "alpha": 0.34},
+	]
+	for layer: Dictionary in layers:
+		var factor: float = float(layer["scale"])
+		var pool := Polygon2D.new()
+		pool.polygon = _ragged_oval(
+			MIRE_RADIUS * factor,
+			MIRE_RADIUS * factor * 0.62,
+			26,
+			0.16,
+			seed_source
+		)
+		var shade: Color = layer["shade"] as Color
+		pool.color = Color(shade.r, shade.g, shade.b, float(layer["alpha"]))
+		mire.add_child(pool)
+
+	for _index: int in range(MIRE_BUBBLE_COUNT):
+		var bubble := Polygon2D.new()
+		bubble.polygon = _oval(1.0, 1.0, 9)
+		bubble.color = Color(
+			MIRE_RING_TINT.r, MIRE_RING_TINT.g, MIRE_RING_TINT.b, 0.55
+		)
+		mire.add_child(bubble)
+		_mire_bubbles.append(bubble)
+		_restart_bubble(bubble, seed_source)
+
 	mire.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	add_child(mire)
 	mire.global_position = _mire_position
@@ -291,6 +349,34 @@ func _spawn_mire(duration: float) -> void:
 	if duration > MIRE_FADE * 2.0:
 		tween.tween_interval(duration - MIRE_FADE * 2.0)
 		tween.tween_property(mire, "modulate:a", 0.0, MIRE_FADE)
+
+
+## A bubble swells from nothing, drifts up a little and pops, then waits a
+## random beat before doing it again, so the surface never falls into step.
+func _restart_bubble(bubble: Polygon2D, source: RandomNumberGenerator) -> void:
+	if bubble == null or not is_instance_valid(bubble):
+		return
+	var spread: float = MIRE_RADIUS * 0.78
+	var offset := Vector2(
+		source.randf_range(-spread, spread),
+		source.randf_range(-spread * 0.55, spread * 0.55)
+	)
+	bubble.position = offset
+	var size: float = source.randf_range(2.2, 5.4)
+	bubble.scale = Vector2.ZERO
+	bubble.modulate.a = 0.0
+	var rise: float = source.randf_range(5.0, 11.0)
+	var grow: float = source.randf_range(0.5, 1.1)
+	var tween := create_tween()
+	tween.tween_interval(source.randf_range(0.0, 1.4))
+	tween.tween_property(bubble, "scale", Vector2(size, size), grow)
+	tween.parallel().tween_property(bubble, "modulate:a", 0.7, grow * 0.6)
+	tween.parallel().tween_property(
+		bubble, "position", offset - Vector2(0.0, rise), grow
+	)
+	tween.tween_property(bubble, "scale", Vector2(size * 1.5, size * 0.2), 0.16)
+	tween.parallel().tween_property(bubble, "modulate:a", 0.0, 0.16)
+	tween.tween_callback(_restart_bubble.bind(bubble, source))
 
 
 func _update_mire(delta: float) -> void:
@@ -311,9 +397,129 @@ func _update_mire(delta: float) -> void:
 
 
 func _clear_mire() -> void:
+	_mire_bubbles.clear()
 	if _mire != null and is_instance_valid(_mire):
 		_mire.queue_free()
 	_mire = null
+
+
+# ============================================================
+# Daze — the Guardian has to look stopped, not merely be stopped
+# ============================================================
+
+## A stunned Guardian just stands there, which is exactly what a patrolling one
+## does between waypoints. Without a mark on it the bottle reads as a dud, and
+## if it landed off screen it reads as nothing at all.
+func _update_daze(delta: float) -> void:
+	if _guardian == null or GameState == null:
+		return
+	if not GameState.is_guardian_stunned():
+		if _daze_mark != null and is_instance_valid(_daze_mark):
+			_daze_mark.queue_free()
+		_daze_mark = null
+		return
+	if _daze_mark == null or not is_instance_valid(_daze_mark):
+		_daze_mark = _build_daze_mark()
+		add_child(_daze_mark)
+	_daze_time += delta
+	_daze_mark.global_position = _guardian.global_position + Vector2(
+		0.0, DAZE_MARK_HEIGHT
+	)
+	_daze_mark.rotation = _daze_time * DAZE_SPIN_SPEED
+	var breath: float = 0.82 + 0.18 * sin(_daze_time * DAZE_SPIN_SPEED * 1.7)
+	_daze_mark.scale = Vector2(breath, breath)
+
+
+func _build_daze_mark() -> Node2D:
+	var mark := Node2D.new()
+	mark.name = "GuardianDazeMark"
+	mark.z_index = DAZE_Z
+	var halo := Polygon2D.new()
+	halo.polygon = _oval(DAZE_RING_RADIUS, DAZE_RING_RADIUS * 0.42, 20)
+	halo.color = Color(DAZE_TINT.r, DAZE_TINT.g, DAZE_TINT.b, 0.28)
+	mark.add_child(halo)
+	# Sparks on a ring rather than a solid shape: the orbit is what says
+	# "reeling", and it survives being small on a 1920x1280 map.
+	for index: int in range(DAZE_SPARK_COUNT):
+		var angle: float = TAU * float(index) / float(DAZE_SPARK_COUNT)
+		var spark := Polygon2D.new()
+		spark.polygon = _star(3.6, 1.5, 4)
+		spark.color = DAZE_TINT
+		spark.position = Vector2(
+			cos(angle) * DAZE_ORBIT_RADIUS,
+			sin(angle) * DAZE_ORBIT_RADIUS * 0.45
+		)
+		mark.add_child(spark)
+	return mark
+
+
+func _star(outer: float, inner: float, points: int) -> PackedVector2Array:
+	var shape := PackedVector2Array()
+	for step: int in range(points * 2):
+		var radius: float = outer if step % 2 == 0 else inner
+		var angle: float = TAU * float(step) / float(points * 2)
+		shape.append(Vector2(cos(angle) * radius, sin(angle) * radius))
+	return shape
+
+
+# ============================================================
+# Vision — draw the extra reach, do not just grant it
+# ============================================================
+
+## The flashlight growing is a change to a gradient, and a gradient changing
+## slowly is the easiest thing in the game to miss. A ring pushed out from the
+## detective every few seconds turns it into an event.
+func _update_insight(delta: float) -> void:
+	if _player == null or GameState == null:
+		return
+	if not GameState.is_potion_active("vision"):
+		return
+	_insight_timer -= delta
+	if _insight_timer > 0.0:
+		return
+	_insight_timer = INSIGHT_INTERVAL
+	_pulse_insight()
+
+
+func _pulse_insight() -> void:
+	if _player == null:
+		return
+	var ring := Polygon2D.new()
+	ring.polygon = _oval(1.0, 0.62, 30)
+	ring.color = Color(INSIGHT_TINT.r, INSIGHT_TINT.g, INSIGHT_TINT.b, 0.34)
+	ring.z_index = INSIGHT_Z
+	add_child(ring)
+	ring.global_position = _player.global_position
+	ring.scale = Vector2(12.0, 12.0)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(
+		ring,
+		"scale",
+		Vector2(INSIGHT_RADIUS, INSIGHT_RADIUS),
+		INSIGHT_DURATION
+	)
+	tween.parallel().tween_property(ring, "modulate:a", 0.0, INSIGHT_DURATION)
+	tween.tween_callback(ring.queue_free)
+
+
+## An outline whose radius wobbles per vertex. A clean ellipse is what makes a
+## puddle look like a decal; the wobble is most of the difference.
+func _ragged_oval(
+	radius_x: float,
+	radius_y: float,
+	segments: int,
+	jitter: float,
+	source: RandomNumberGenerator
+) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for step: int in range(segments):
+		var angle: float = TAU * float(step) / float(segments)
+		var wobble: float = 1.0 + source.randf_range(-jitter, jitter)
+		points.append(
+			Vector2(cos(angle) * radius_x * wobble, sin(angle) * radius_y * wobble)
+		)
+	return points
 
 
 func _oval(radius_x: float, radius_y: float, segments: int) -> PackedVector2Array:
