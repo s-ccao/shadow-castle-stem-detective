@@ -681,6 +681,7 @@ var guardian_mode: int = GuardianMode.DORMANT
 var guardian_hall_position: Vector2 = GUARDIAN_HALL_START_POSITION
 var guardian_patrol_route: Array[Vector2] = []
 var guardian_patrol_index: int = 0
+var guardian_patrol_objective: String = ""
 ## True until the player brews and drinks the Purification Potion. While true
 ## the Guardian always knows the player's position, which is the in-fiction
 ## reason it can hunt through walls.
@@ -770,6 +771,7 @@ func reset_new_game() -> void:
 	guardian_hall_position = GUARDIAN_HALL_START_POSITION
 	guardian_patrol_route.clear()
 	guardian_patrol_index = 0
+	guardian_patrol_objective = ""
 	guardian_tracking_serum = true
 	guardian_stun_remaining = 0.0
 	guardian_search_remaining = 0.0
@@ -1411,6 +1413,38 @@ func get_guardian_stakeout_anchor() -> Vector2:
 	if not guardian_patrol_route.is_empty():
 		return guardian_patrol_route[guardian_patrol_index]
 	return GUARDIAN_HALL_START_POSITION
+
+
+## Where a patrolling Guardian in the hall is walking to next.
+##
+## This used to be the stakeout anchor and nothing else, which is why the
+## Guardian appeared to give up: the anchor is one fixed doorway, so it walked
+## there once and then stood on it for the rest of the run. The patrol route was
+## built, published, and never walked — nothing advanced the index while the
+## player was in the hall, only the offscreen simulation ever moved it.
+##
+## The route is walked now, and the stakeout survives as the thing the route is
+## aimed at: when the room the player still needs changes, the patrol re-enters
+## the loop beside that doorway. The Guardian keeps moving, and it keeps moving
+## near wherever the player has to go next.
+func get_guardian_patrol_target() -> Vector2:
+	if guardian_patrol_route.size() < 2:
+		return get_guardian_stakeout_anchor()
+	var objective_room_id: String = get_guardian_objective_room_id()
+	if objective_room_id != guardian_patrol_objective:
+		guardian_patrol_objective = objective_room_id
+		guardian_patrol_index = _nearest_guardian_patrol_index(
+			get_guardian_stakeout_anchor()
+		)
+	return guardian_patrol_route[guardian_patrol_index]
+
+
+func advance_guardian_patrol_target() -> void:
+	if guardian_patrol_route.size() < 2:
+		return
+	guardian_patrol_index = (
+		guardian_patrol_index + 1
+	) % guardian_patrol_route.size()
 
 
 ## Called by the Guardian body the moment it acquires the player by sight.

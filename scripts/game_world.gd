@@ -132,6 +132,17 @@ const NAV_PROBE_ROWS: int = 8
 ## How far find_path() may slide an endpoint to reach open floor, in cells.
 ## 96px covers every standable pixel measured against the authored polygons.
 const NAV_ENDPOINT_SEARCH_RADIUS: int = 3
+## Spacing of the Guardian's navigation lattice, in world pixels, and how far
+## find_route() may look for a node when the body is standing off it.
+##
+## 16px is chosen against the body: it is 14 wide, so a step to a neighbour
+## overlaps itself, and a step is walkable whenever both ends and the midpoint
+## are. Measured against the authored polygons that rule agrees with a full
+## sweep on every one of the 8431 orthogonal edges in the hall.
+const NAV_LATTICE_SPACING: int = 16
+const NAV_LATTICE_SEARCH_RADIUS: int = 6
+const NAV_LATTICE_COLUMNS: int = MAP_WIDTH * CELL_SIZE / NAV_LATTICE_SPACING
+const NAV_LATTICE_ROWS: int = MAP_HEIGHT * CELL_SIZE / NAV_LATTICE_SPACING
 ## How long the Guardian may sit frozen with no cinematic running before the
 ## freeze is treated as a leak. Longer than the reveal (about 2.3s of awaits)
 ## so a slow frame cannot cut a sequence short.
@@ -181,6 +192,7 @@ var power_restoration_scan_fill: ColorRect
 var follow_camera: Camera2D
 
 var astar_grid := AStarGrid2D.new()
+var nav_graph := AStar2D.new()
 var use_authored_wall_collision_probe: bool = false
 var game_over := false
 var game_over_canvas: CanvasLayer
@@ -276,18 +288,18 @@ const GREENHOUSE_ROOM_SCENE_PATH: String = \
 # 到达出生点连通，否则提示永远不会出现。tools/check_static.py 两条都会验，
 # 当前最紧的是 wake 门，仍有 5391 个可达立足像素。
 const CHEMISTRY_ROOM_DOOR_POSITION: Vector2 = Vector2(283, 162)
-const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(287, 103)
+const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(302, 87)
 ## Door art and wall collision overlap at the old marker (283, 162). Spawn below
 ## the threshold, where the player has room to leave in every direction.
 const CHEMISTRY_ROOM_RETURN_POSITION: Vector2 = Vector2(267, 210)
 const CHEMISTRY_ROOM_DOOR_RADIUS: float = 100.0
 const GREENHOUSE_ROOM_DOOR_POSITION: Vector2 = Vector2(219, 409)
-const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(217, 353)
+const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(185, 340)
 const GREENHOUSE_ROOM_DOOR_RADIUS: float = 100.0
 const LIBRARY_DOOR_POSITION: Vector2 = Vector2(1673, 301)
-const LIBRARY_DOOR_FOCUS_POSITION: Vector2 = Vector2(1673, 234)
+const LIBRARY_DOOR_FOCUS_POSITION: Vector2 = Vector2(1667, 235)
 const DINING_HALL_DOOR_POSITION: Vector2 = Vector2(1785, 726)
-const DINING_HALL_DOOR_FOCUS_POSITION: Vector2 = Vector2(1771, 702)
+const DINING_HALL_DOOR_FOCUS_POSITION: Vector2 = Vector2(1787, 668)
 const HALL_ENEMY_START_POSITION := Vector2(1744, 1072)
 
 # 新房间场景（用户 2026-08-05 提供的四张 1448×1086 房间图）。
@@ -305,7 +317,7 @@ const FINAL_ROOM_SCENE_PATH: String = (
 )
 const FINAL_ROOM_DOOR_POSITION: Vector2 = Vector2(955, 138)
 ## 大厅顶端的穹顶拱门，画面上 y 22~97，框顶顶到地图上边缘。
-const FINAL_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(958, 72)
+const FINAL_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(933, 71)
 const FINAL_ROOM_DOOR_RADIUS: float = 100.0
 
 # Mrs. Lin 撕落的走廊笔记碎片（在大厅拼凑，指引 Final Room）。
@@ -503,7 +515,7 @@ const WAKE_ROOM_SCENE_PATH: String = \
 const WAKE_ROOM_DOOR_POSITION: Vector2 = Vector2(258, 1050)
 ## 拱门贴着地图下边缘（石框 x 243~340 / y 1122~1210），落地点在它上方约
 ## 120px 的空地上，所以回到大厅时不会立刻又弹出"按 E 返回"。
-const WAKE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(292, 1166)
+const WAKE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(258, 1160)
 const WAKE_ROOM_DOOR_INTERACT_RADIUS: float = 75.0
 # ============================================================
 # Floor 1 world positions
@@ -526,7 +538,7 @@ const GARDENER_POSITION: Vector2 = Vector2(1676, 496)
 # open floor north of the arch; the focus stays on the arch itself, which is
 # inside the wall as every door marker is.
 const CIRCUIT_DOOR_POSITION: Vector2 = Vector2(188, 643)
-const CIRCUIT_DOOR_FOCUS_POSITION: Vector2 = Vector2(168, 691)
+const CIRCUIT_DOOR_FOCUS_POSITION: Vector2 = Vector2(133, 686)
 
 # Maintenance note in the service corridor outside the locked door.
 const CIRCUIT_NOTE_POSITION: Vector2 = Vector2(564, 627)
@@ -691,26 +703,26 @@ func get_interaction_rect(interaction_id: String) -> Rect2:
 			return spatial.get_visual_rect(exhibit)
 	match interaction_id:
 		"chemistry_room_door", "arrival_chemistry_door":
-			return Rect2(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION - Vector2(82.0, 61.0), Vector2(164.0, 122.0))
+			return Rect2(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION - Vector2(80.0, 57.0), Vector2(160.0, 114.0))
 		"arrival_chemistry_core":
 			return get_interaction_rect("hall_knowledge:ChemistryRoomKnowledge")
 		"greenhouse_room_door":
-			return Rect2(GREENHOUSE_ROOM_DOOR_FOCUS_POSITION - Vector2(76.0, 64.0), Vector2(152.0, 128.0))
+			return Rect2(GREENHOUSE_ROOM_DOOR_FOCUS_POSITION - Vector2(61.0, 63.0), Vector2(122.0, 126.0))
 		"library_door":
 			return Rect2(
-				LIBRARY_DOOR_FOCUS_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0)
+				LIBRARY_DOOR_FOCUS_POSITION - Vector2(64.0, 66.0), Vector2(128.0, 132.0)
 			)
 		"dining_hall_door":
 			return Rect2(
-				DINING_HALL_DOOR_FOCUS_POSITION - Vector2(78.0, 64.0),
-				Vector2(156.0, 128.0)
+				DINING_HALL_DOOR_FOCUS_POSITION - Vector2(56.0, 57.0),
+				Vector2(112.0, 114.0)
 			)
 		"final_room_door":
-			return Rect2(FINAL_ROOM_DOOR_FOCUS_POSITION - Vector2(86.0, 66.0), Vector2(172.0, 132.0))
+			return Rect2(FINAL_ROOM_DOOR_FOCUS_POSITION - Vector2(74.0, 60.0), Vector2(148.0, 120.0))
 		"wake_room_door":
-			return Rect2(WAKE_ROOM_DOOR_FOCUS_POSITION - Vector2(70.0, 58.0), Vector2(140.0, 116.0))
+			return Rect2(WAKE_ROOM_DOOR_FOCUS_POSITION - Vector2(62.0, 63.0), Vector2(124.0, 126.0))
 		"circuit_door":
-			return Rect2(CIRCUIT_DOOR_FOCUS_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0))
+			return Rect2(CIRCUIT_DOOR_FOCUS_POSITION - Vector2(69.0, 62.0), Vector2(138.0, 124.0))
 		"service_wall_door":
 			return Rect2(SERVICE_WALL_DOOR_POSITION - Vector2(64.0, 70.0), Vector2(128.0, 140.0))
 		"service_dark_trail":
@@ -773,6 +785,7 @@ func _ready():
 	# CASTLE_LAYOUT 当成大厅的真实墙体，重新制造空气墙。
 	if not LAYOUT_ALIGNMENT_MODE:
 		build_navigation_grid()
+		build_navigation_lattice()
 	# 正常游玩不显示碰撞调试层；F3 开发者模式仍可手动开启。
 	get_tree().debug_collisions_hint = GameState.developer_mode
 	# 大厅墙体由 wall_collisions.tscn 提供；玩家移动使用其真实
@@ -1782,6 +1795,188 @@ func cell_nav_point(cell: Vector2i) -> Vector2:
 	return cell_to_world(cell)
 
 
+## The Guardian's navigation graph: a node every NAV_LATTICE_SPACING pixels of
+## standable floor, joined only where the body can walk the step in a straight
+## line.
+##
+## The 32px A* grid could not express this hall, and the way it failed is the
+## "Guardian walks into a wall and never comes" report. A cell counts as open
+## when the body fits *anywhere* inside it, but a mover steers to *one* point per
+## cell, and nothing ever asked whether the straight line between two
+## neighbouring points was walkable. Measured against the authored polygons,
+## 12.5% of them were not. The Guardian pressed into the stone, the stall timer
+## wrote the waypoint off four tenths of a second later, the repath returned the
+## same step, and it did that until the player walked away.
+##
+## Picking better points inside the cell does not fix it — the best rule tried
+## still left 3.5% blocked and cut the hall into nine pieces — because one point
+## cannot represent a cell with a wall through it. A finer lattice can. At 16px
+## every walkable pixel of the hall is within reach of a node, and the graph is
+## one piece.
+func build_navigation_lattice() -> void:
+	nav_graph.clear()
+	for row: int in range(NAV_LATTICE_ROWS):
+		for column: int in range(NAV_LATTICE_COLUMNS):
+			var index := Vector2i(column, row)
+			var point := lattice_point(index)
+			if is_door(world_to_cell(point)):
+				continue
+			if not _lattice_position_is_open(point):
+				continue
+			nav_graph.add_point(_lattice_id(index), point)
+	# Orthogonal first: the diagonal rule is written in terms of these.
+	for row: int in range(NAV_LATTICE_ROWS):
+		for column: int in range(NAV_LATTICE_COLUMNS):
+			var index := Vector2i(column, row)
+			if not _lattice_has(index):
+				continue
+			_connect_lattice_step(index, index + Vector2i(1, 0))
+			_connect_lattice_step(index, index + Vector2i(0, 1))
+	for row: int in range(NAV_LATTICE_ROWS):
+		for column: int in range(NAV_LATTICE_COLUMNS):
+			var index := Vector2i(column, row)
+			if not _lattice_has(index):
+				continue
+			_connect_lattice_diagonal(index, index + Vector2i(1, 1))
+			_connect_lattice_diagonal(index, index + Vector2i(1, -1))
+
+
+func lattice_point(index: Vector2i) -> Vector2:
+	return Vector2(index) * float(NAV_LATTICE_SPACING)
+
+
+## Node ids are the lattice index folded to one number rather than a dictionary,
+## so the graph is the only place this state lives. Out-of-range indices must
+## report -1: folding them would alias onto a legitimate node somewhere else.
+func _lattice_id(index: Vector2i) -> int:
+	if index.x < 0 or index.y < 0:
+		return -1
+	if index.x >= NAV_LATTICE_COLUMNS or index.y >= NAV_LATTICE_ROWS:
+		return -1
+	return index.y * NAV_LATTICE_COLUMNS + index.x
+
+
+func _lattice_has(index: Vector2i) -> bool:
+	var id := _lattice_id(index)
+	return id >= 0 and nav_graph.has_point(id)
+
+
+func _lattice_position_is_open(point: Vector2) -> bool:
+	if use_authored_wall_collision_probe:
+		return not has_authored_wall_collision(point)
+	return not is_wall(world_to_cell(point))
+
+
+## One step between lattice neighbours, kept only if the body clears the
+## midpoint too. The ends alone are not enough: two nodes can both hold the
+## body while the stone between them does not.
+func _connect_lattice_step(from_index: Vector2i, to_index: Vector2i) -> void:
+	if not _lattice_has(to_index):
+		return
+	var midpoint: Vector2 = (lattice_point(from_index) + lattice_point(to_index)) * 0.5
+	if not _lattice_position_is_open(midpoint):
+		return
+	nav_graph.connect_points(_lattice_id(from_index), _lattice_id(to_index))
+
+
+## A diagonal is allowed only when both ways round the corner are already open,
+## which is what stops a path clipping the corner of a wall. It costs no extra
+## collision query, and erring towards refusing a legal diagonal only makes the
+## Guardian take the long way round a corner it could have cut.
+func _connect_lattice_diagonal(from_index: Vector2i, to_index: Vector2i) -> void:
+	if not _lattice_has(to_index):
+		return
+	var corner_a := Vector2i(to_index.x, from_index.y)
+	var corner_b := Vector2i(from_index.x, to_index.y)
+	if not _lattice_step_exists(from_index, corner_a):
+		return
+	if not _lattice_step_exists(corner_a, to_index):
+		return
+	if not _lattice_step_exists(from_index, corner_b):
+		return
+	if not _lattice_step_exists(corner_b, to_index):
+		return
+	nav_graph.connect_points(_lattice_id(from_index), _lattice_id(to_index))
+
+
+func _lattice_step_exists(from_index: Vector2i, to_index: Vector2i) -> bool:
+	if not _lattice_has(from_index) or not _lattice_has(to_index):
+		return false
+	return nav_graph.are_points_connected(
+		_lattice_id(from_index),
+		_lattice_id(to_index)
+	)
+
+
+func nearest_lattice_id(position: Vector2) -> int:
+	var centre := Vector2i(
+		int(roundf(position.x / float(NAV_LATTICE_SPACING))),
+		int(roundf(position.y / float(NAV_LATTICE_SPACING)))
+	)
+	if _lattice_has(centre):
+		return _lattice_id(centre)
+	for radius: int in range(1, NAV_LATTICE_SEARCH_RADIUS + 1):
+		var best_id: int = -1
+		var best_distance: float = INF
+		for offset_y: int in range(-radius, radius + 1):
+			for offset_x: int in range(-radius, radius + 1):
+				if maxi(absi(offset_x), absi(offset_y)) != radius:
+					continue
+				var candidate := centre + Vector2i(offset_x, offset_y)
+				if not _lattice_has(candidate):
+					continue
+				var distance := lattice_point(candidate).distance_squared_to(position)
+				if distance < best_distance:
+					best_distance = distance
+					best_id = _lattice_id(candidate)
+		if best_id >= 0:
+			return best_id
+	return -1
+
+
+## Waypoints from one world position to another, every step of which the body
+## can walk in a straight line. Empty when the two are not connected, which is
+## a real answer and not a failure: the caller should fall back rather than
+## pretend a route exists.
+func find_route(from_position: Vector2, to_position: Vector2) -> PackedVector2Array:
+	var start_id := nearest_lattice_id(from_position)
+	var end_id := nearest_lattice_id(to_position)
+	if start_id < 0 or end_id < 0:
+		return PackedVector2Array()
+	if start_id == end_id:
+		return PackedVector2Array([nav_graph.get_point_position(start_id)])
+	return nav_graph.get_point_path(start_id, end_id)
+
+
+## A standable point roughly `radius` away from `origin`, for sweeping a room
+## the Guardian has lost the player in. Returns `origin` when nothing is free,
+## so the caller always has somewhere to walk.
+func wander_point_near(origin: Vector2, radius: float) -> Vector2:
+	var origin_id := nearest_lattice_id(origin)
+	if origin_id < 0:
+		return origin
+	var steps: int = maxi(int(radius / float(NAV_LATTICE_SPACING)), 1)
+	var centre := Vector2i(
+		int(roundf(origin.x / float(NAV_LATTICE_SPACING))),
+		int(roundf(origin.y / float(NAV_LATTICE_SPACING)))
+	)
+	var candidates: Array[Vector2] = []
+	for offset_y: int in range(-steps, steps + 1):
+		for offset_x: int in range(-steps, steps + 1):
+			if maxi(absi(offset_x), absi(offset_y)) < steps - 1:
+				continue
+			var candidate := centre + Vector2i(offset_x, offset_y)
+			if not _lattice_has(candidate):
+				continue
+			var point := lattice_point(candidate)
+			if find_route(origin, point).is_empty():
+				continue
+			candidates.append(point)
+	if candidates.is_empty():
+		return origin
+	return candidates[randi() % candidates.size()]
+
+
 ## Nearest cell the Guardian may occupy, searching outward from `cell`.
 ## Returns the sentinel (-1, -1) when nothing open is within reach.
 func _nearest_open_cell(cell: Vector2i) -> Vector2i:
@@ -1888,16 +2083,10 @@ func _build_guardian_patrol_route() -> Array[Vector2]:
 		var target_position := _nearest_guardian_walkable_position(
 			GUARDIAN_PATROL_ANCHORS[anchor_index]
 		)
-		var segment_cells := find_path(
-			world_to_cell(from_position),
-			world_to_cell(target_position)
-		)
-		if segment_cells.size() < 2:
+		var segment := find_route(from_position, target_position)
+		if segment.size() < 2:
 			continue
-		for cell: Variant in segment_cells:
-			var point := cell_nav_point(cell as Vector2i)
-			if not is_player_position_walkable(point):
-				continue
+		for point: Vector2 in segment:
 			if not route.is_empty() and route[route.size() - 1].is_equal_approx(point):
 				continue
 			route.append(point)
@@ -4493,16 +4682,15 @@ func get_guardian_catch_eta() -> float:
 
 
 func _guardian_path_distance() -> float:
-	var route: Array = find_path(
-		world_to_cell(enemy.global_position),
-		world_to_cell(player.global_position)
+	var route: PackedVector2Array = find_route(
+		enemy.global_position,
+		player.global_position
 	)
 	if route.is_empty():
 		return enemy.global_position.distance_to(player.global_position)
 	var distance := 0.0
 	var previous: Vector2 = enemy.global_position
-	for cell_variant: Variant in route:
-		var route_point := cell_nav_point(cell_variant as Vector2i)
+	for route_point: Vector2 in route:
 		distance += previous.distance_to(route_point)
 		previous = route_point
 	distance += previous.distance_to(player.global_position)

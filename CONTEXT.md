@@ -91,9 +91,20 @@ north-west corner as a dead end and reported the room as unreachable. It never
 was — a flood fill from the arrival spawn found 8171 walkable pixels inside its
 interaction margin, all in the spawn's own connected region. `442c317` patched
 that by grafting the Greenhouse arch into the recess. The 2026-08-19 wall layer
-makes the graft unnecessary: it draws an arch at all seven room doors natively,
-and all eight focus values were re-checked against it without one needing to
-move.
+makes the graft unnecessary: it draws an arch at all seven room doors natively.
+
+Reachability survived that swap untouched, which made it easy to believe the
+constants had. They had not: every bracket was 20 to 40px off its new arch and
+half of them were half again too big, because the sizes were measured against
+art that no longer existed. `check_static.py` cannot see this — a bracket
+floating beside the door is as reachable as one on it. **After any wall change,
+re-measure the focus rects by eye against the new art**, and be careful how:
+reading extents off a zoomed crop is unreliable, and the automated attempts
+here — darkest blob, wall-top profile, magenta keying — all found something
+other than the door. What worked was scoring each candidate centre by the
+mirror symmetry of the silhouette and shading around it, then confirming the
+winner against the current value on a 5x crop, one line each. Symmetry alone is
+not enough either; it put the Library door 70px onto a neighbouring structure.
 
 The Service Wall door is the one focus rect with no arch under it, and that is
 deliberate. It is a sealed door in the hall's east wall that only opens once the
@@ -130,6 +141,18 @@ Its wall data must match what the engine treats as solid, which is
 **only bodies on the wall layer**: each exhibit also carries an `InteractionArea`
 whose shape is an Area2D on layer 2 and disabled besides, and counting those
 walls the exhibits in and produces confident false alarms.
+
+Reachable is the floor, not the ceiling. The exhibits passed every check while
+being scattered across the middle of the maze at wildly different sizes — the
+Dining Hall clock was drawn 79x217, three times the player's height and nearly
+three times the smallest exhibit, and two of the five carried a non-uniform
+scale that stretched the art. Each exhibit now stands against the stone beside
+the door it teaches, 76 to 103px away, and all five are drawn to one height
+(104px) at a uniform scale. Two rules for touching them again: **the exhibit
+belongs beside its own door**, because that is what makes "study this, then
+answer the door" legible without a word of text; and **scale uniformly**, since
+the non-uniform pair are the same mistake the floor image section below is
+about.
 
 Where an interaction rect comes from, in order of preference:
 
@@ -261,10 +284,68 @@ never got within the 4px arrival threshold, so they pressed into the wall until
 It reads in play as a Guardian that has given up the hunt.
 
 `build_navigation_grid()` therefore caches the probe nearest each centre that
-the body actually fits on, and **every path waypoint must be resolved through
-`cell_nav_point()`, never `cell_to_world()`.** `cell_to_world()` is for fog,
-door placement and rendering — anything that describes a cell rather than
-walking to it.
+the body actually fits on. `cell_to_world()` is for fog, door placement and
+rendering — anything that describes a cell rather than walking to it.
+
+### One point per cell cannot describe a maze finer than the cell
+
+Caching a reachable point per cell fixed the endpoints and left the *steps*
+unchecked, and that turned out to be the whole problem. A* said two neighbouring
+cells were both open; the mover walked the straight line between their two
+points; nothing had ever asked whether that line was walkable. Measured against
+the 2026-08-19 walls with the real 14x8 body, **356 of 2850 adjacent transitions
+— 12.5% — crossed stone.** One step in eight was a step into a wall, the stall
+timer wrote it off, the repath returned the same step, and it did that forever.
+That is the "Guardian gets caught on a short wall and keeps walking into it"
+report, and no amount of picking a better point inside the cell fixes it:
+choosing the roomiest point instead of the most central still left 3.5% blocked
+and broke the graph into nine pieces, because a cell with a wall through it
+needs two points and has one.
+
+So movement no longer uses the cell grid at all. `build_navigation_lattice()`
+puts a node every `NAV_LATTICE_SPACING` (16px) of standable floor and joins
+neighbours only where the body can walk the step:
+
+- **16px is chosen against the body, not the tile.** The body is 14 wide, so it
+  overlaps itself between neighbours and a step is walkable whenever both ends
+  and the midpoint are. That rule agrees with a full sweep on all 8431
+  orthogonal edges — no false opens, no false closes.
+- **Diagonals need no extra collision query.** One is allowed only when both
+  ways round the corner are already open, which cannot cut a corner through
+  stone. It refuses 324 legal diagonals to do it, and the cost of refusing one
+  is the Guardian taking the long way round a corner.
+- It is **cheaper** than what it replaces: 18k shape queries against about 37k,
+  because there is no 32-probe sweep per cell.
+- Measured over 400 random reachable player positions, every route exists and
+  **all 31261 waypoint steps are clear.** Verify it that way after any wall
+  change; "the doors are reachable" does not imply "the steps between them are".
+
+The 32px grid stays for what it is good at — `is_sight_line_clear()` samples its
+solidity, and `cell_nav_point()` still serves the route trail and click-to-move.
+
+### A Guardian with nowhere to go must still go somewhere
+
+Three separate ways the hunt stalled, all of which read as "it gave up":
+
+- **PATROL walked to one fixed doorway and stood on it.** The patrol route was
+  built, published to `GameState` and never walked: nothing advanced
+  `guardian_patrol_index` while the player was in the hall, only the offscreen
+  simulation ever moved it. `get_guardian_patrol_target()` now hands out the
+  route, `advance_guardian_patrol_target()` steps it on arrival, and the
+  stakeout survives as the thing the loop is aimed at — when the room the player
+  needs changes, the patrol re-enters beside that doorway.
+- **SEARCH stared at the last sighting.** Standing on the spot the player used
+  to be is not searching; stepping out of the room was enough to be safe. The
+  Guardian now walks a fresh point around the sighting each time it arrives at
+  one.
+- **CHASE without sight ended at the last sighting and stopped.** Arriving there
+  and finding nobody is what losing someone *is*, so it reports the loss and
+  drops into SEARCH.
+
+`_choose_next_target()` is the one place that answers "and now what". It must be
+fired **once per planning cycle, not once per frame** — the guard for that is
+`awaiting_new_target`, cleared in `update_path()`. Without it a Guardian
+standing still walks twenty patrol waypoints between two repaths.
 
 ### The Guardian's footprint is the player's footprint
 

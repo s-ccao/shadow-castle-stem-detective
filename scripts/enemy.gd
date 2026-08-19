@@ -44,6 +44,19 @@ const WALK_SCALE_MAX: float = 5.0
 ## Standing still still breathes, just slowly.
 const IDLE_ANIMATION_SCALE: float = 0.35
 
+## How far from the last sighting the Guardian sweeps before giving up, and how
+## long it will keep pushing at one unreachable target before picking another.
+##
+## Standing on the last known position and waiting is not searching: the player
+## only has to step out of the room to be safe. The Guardian now walks a fresh
+## point around the sighting every time it arrives at one, so the area is
+## covered rather than stared at.
+const SEARCH_SWEEP_RADIUS: float = 190.0
+const ROAM_RADIUS: float = 260.0
+## Seconds a roam target survives before being replaced, so a Guardian whose
+## target became unreachable does not stand in a doorway for the rest of the run.
+const ROAM_TARGET_LIFETIME: float = 4.0
+
 @export var display_name: String = "Castle Guardian"
 @export var repath_interval: float = 0.35
 @export var catch_radius: float = 22.0
@@ -51,7 +64,7 @@ const IDLE_ANIMATION_SCALE: float = 0.35
 var game_world: Node = null
 var player: Node2D = null
 
-var path: Array = []
+var path: PackedVector2Array = PackedVector2Array()
 var path_index: int = 0
 var repath_timer: float = 0.0
 var facing_direction: Vector2 = Vector2.DOWN
@@ -61,6 +74,13 @@ var catch_enabled: bool = true
 var can_see_player: bool = false
 var stakeout_target: Vector2 = Vector2.ZERO
 var stall_timer: float = 0.0
+var roam_target: Vector2 = Vector2.ZERO
+var roam_target_active: bool = false
+var roam_target_age: float = 0.0
+## Set the frame the Guardian runs out of route, cleared the next time one is
+## planned. Without it _choose_next_target() fires every frame it stands still,
+## which walks the patrol index through twenty waypoints between two repaths.
+var awaiting_new_target: bool = false
 @onready var guardian_sprite: AnimatedSprite2D = $GuardianCore
 
 
@@ -115,6 +135,11 @@ func set_behavior(new_behavior: int) -> void:
 	path_index = 0
 	repath_timer = 0.0
 	stall_timer = 0.0
+	# A target chosen for the old behaviour means nothing to the new one: a
+	# sweep point around a lost sighting is not somewhere to patrol to.
+	roam_target_active = false
+	roam_target_age = 0.0
+	awaiting_new_target = false
 
 
 func set_cinematic_hold(held: bool) -> void:
@@ -169,6 +194,13 @@ func _physics_process(delta):
 	if repath_timer <= 0.0:
 		update_path()
 		repath_timer = repath_interval
+
+	if roam_target_active:
+		roam_target_age += delta
+		if roam_target_age >= ROAM_TARGET_LIFETIME:
+			roam_target_active = false
+			roam_target_age = 0.0
+			repath_timer = 0.0
 
 	move_along_path(delta)
 	check_player_collision()
@@ -234,10 +266,10 @@ func _segment_is_clear(from_position: Vector2, to_position: Vector2) -> bool:
 
 
 func update_path():
-	var start_cell = game_world.world_to_cell(global_position)
-	var end_cell = game_world.world_to_cell(_current_target_position())
-
-	path = game_world.find_path(start_cell, end_cell)
+	path = game_world.find_route(global_position, _current_target_position())
+	# One planning attempt earns one more chance to pick somewhere else, so a
+	# target that turned out to be unreachable cannot pin the Guardian forever.
+	awaiting_new_target = false
 
 	if path.size() > 1:
 		path_index = 1
@@ -246,39 +278,81 @@ func update_path():
 
 
 func _current_target_position() -> Vector2:
+	var last_known: Vector2 = GameState.get_guardian_last_known_player_position()
 	match behavior:
 		Behavior.CHASE:
 			# Only a Guardian that can actually perceive the player may walk
 			# straight at them. Otherwise it commits to the last sighting.
-			if can_see_player:
-				return player.global_position
-			return GameState.get_guardian_last_known_player_position()
+			return player.global_position if can_see_player else last_known
 		Behavior.SEARCH:
-			return GameState.get_guardian_last_known_player_position()
+			# The sighting is where the search starts, not where it ends.
+			return roam_target if roam_target_active else last_known
+	# NOT get_guardian_hall_position(): that is this body's own live position,
+	# written back every frame by move_along_path(), so using it as a target is
+	# an order to stand still.
+	if GameState.is_guardian_tracking_serum_active():
+		return last_known
+	if roam_target_active:
+		return roam_target
+	return GameState.get_guardian_patrol_target()
+
+
+## Called when the Guardian has walked the whole route it was given, whether it
+## arrived or the route was never there. Standing still afterwards is what made
+## the Guardian look broken; every mode now has somewhere else to be.
+func _choose_next_target() -> void:
+	match behavior:
+		Behavior.CHASE:
+			# Walking to the last sighting and finding nobody there is what
+			# losing someone *is*. Without saying so the Guardian stands on the
+			# spot the player used to be until it happens to see them again,
+			# which is the "it just gives up" report.
+			if not can_see_player:
+				GameState.report_player_lost(
+					GameState.get_guardian_last_known_player_position()
+				)
+			roam_target_active = false
+		Behavior.SEARCH:
+			roam_target = game_world.wander_point_near(
+				GameState.get_guardian_last_known_player_position(),
+				SEARCH_SWEEP_RADIUS
+			)
+			roam_target_active = true
+		Behavior.PATROL:
+			GameState.advance_guardian_patrol_target()
+			# No usable patrol route means no waypoints to advance through, so
+			# wander rather than press at whatever single anchor was returned.
+			if GameState.get_guardian_patrol_route().size() < 2:
+				roam_target = game_world.wander_point_near(
+					global_position,
+					ROAM_RADIUS
+				)
+				roam_target_active = true
+			else:
+				roam_target_active = false
 		_:
-			if GameState.is_guardian_tracking_serum_active():
-				# NOT get_guardian_hall_position(): that is this body's own live
-				# position, written back every frame by move_along_path(), so
-				# using it as a target is an order to stand still.
-				return GameState.get_guardian_last_known_player_position()
-			return GameState.get_guardian_stakeout_anchor()
+			roam_target_active = false
+	roam_target_age = 0.0
+	path.clear()
+	path_index = 0
+	# Re-plan on the next tick rather than this frame, so arriving reads as a
+	# beat at the waypoint instead of a body that never stops moving.
+	repath_timer = repath_interval
 
 
 func move_along_path(delta: float) -> void:
-	if path.size() == 0:
+	if path.size() == 0 or path_index >= path.size():
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
 		move_and_slide()
+		if not awaiting_new_target:
+			awaiting_new_target = true
+			_choose_next_target()
 		return
 
-	if path_index >= path.size():
-		velocity = Vector2.ZERO
-		_update_animation(Vector2.ZERO)
-		move_and_slide()
-		return
-
-	var target_position = game_world.cell_nav_point(path[path_index])
-	var direction = target_position - global_position
+	awaiting_new_target = false
+	var target_position: Vector2 = path[path_index]
+	var direction := target_position - global_position
 
 	if direction.length() < 4.0:
 		path_index += 1
@@ -298,13 +372,13 @@ func move_along_path(delta: float) -> void:
 
 ## Give up on a waypoint the body cannot actually reach.
 ##
-## The grid now hands out waypoints this body can occupy, so this is no longer
-## the difference between hunting and standing still. It stays as the net for
-## the obstacles the grid cannot know about: the player's own body, and the
-## authored geometry the grid samples at 32px resolution. Without it the
-## Guardian presses into a corner forever, because it never gets within 4px of
-## the waypoint, so path_index never advances and the hunt stops without ever
-## looking stopped.
+## The lattice hands out steps the body can walk in a straight line, so this is
+## no longer the difference between hunting and standing still — it used to be,
+## because the 32px grid handed out steps that crossed stone. It stays as the
+## net for the obstacles no static graph can know about: the player's own body,
+## and props that move. Without it the Guardian presses into whatever arrived,
+## because it never gets within 4px of the waypoint, so path_index never
+## advances and the hunt stops without ever looking stopped.
 func _note_progress(position_before: Vector2, move_speed: float, delta: float) -> void:
 	var expected := move_speed * delta
 	if expected <= 0.0:

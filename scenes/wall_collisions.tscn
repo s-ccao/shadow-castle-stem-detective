@@ -139,12 +139,12 @@ z_index = -2
 
 [node name="LibraryRoomKnowledge" type="Node2D" parent="KnowledgeExhibits" unique_id=1121747153]
 editor_description = "Library Knowledge。手动调整这个父节点的 Position 可改变 Library 知识展品的位置。不要把 InteractionArea 改成 StaticBody2D，否则玩家可能无法靠近。"
-position = Vector2(1795, 487)
+position = Vector2(1756.3732, 240.1467)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=1788309197]
 texture_filter = 1
 position = Vector2(-4.999998, 42.999996)
-scale = Vector2(0.13, 0.1)
+scale = Vector2(0.0829, 0.0829)
 texture = ExtResource("6_library_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=551733701]
@@ -161,11 +161,11 @@ disabled = true
 
 [node name="DiningHallKnowledge" type="Node2D" parent="KnowledgeExhibits" unique_id=227171233]
 editor_description = "Dining Hall Knowledge。手动调整这个父节点的 Position 可改变 Dining Hall 知识展品的位置。"
-position = Vector2(1830, 802)
+position = Vector2(1710.7662, 666.5716)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=1405027501]
 texture_filter = 1
-scale = Vector2(0.14, 0.14)
+scale = Vector2(0.0668, 0.0668)
 texture = ExtResource("7_dining_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=20417855]
@@ -180,12 +180,12 @@ disabled = true
 
 [node name="CircuitRoomKnowledge" type="Node2D" parent="KnowledgeExhibits" unique_id=1138265540]
 editor_description = "Circuit Room Knowledge。手动调整这个父节点的 Position 可改变 Circuit Room 知识展品的位置。"
-position = Vector2(654, 1066)
+position = Vector2(230.4257, 688.5828)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=164785416]
 texture_filter = 1
 position = Vector2(-5.9999995, 7.9999995)
-scale = Vector2(0.1, 0.1)
+scale = Vector2(0.0884, 0.0884)
 texture = ExtResource("8_circuit_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=1433245640]
@@ -200,12 +200,12 @@ disabled = true
 
 [node name="GreenhouseRoomKnowledge" type="Node2D" parent="KnowledgeExhibits" unique_id=1128479012]
 editor_description = "Greenhouse Room Knowledge。手动调整这个父节点的 Position 可改变 Greenhouse 知识展品的位置。"
-position = Vector2(130, 407)
+position = Vector2(113.2157, 355.6667)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=198594813]
 texture_filter = 1
 position = Vector2(-10.999999, 26.999998)
-scale = Vector2(0.1, 0.1)
+scale = Vector2(0.0784, 0.0784)
 texture = ExtResource("9_greenhouse_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=731269012]
@@ -221,12 +221,12 @@ disabled = true
 
 [node name="ChemistryRoomKnowledge" type="Node2D" parent="KnowledgeExhibits" unique_id=856820754]
 editor_description = "Chemistry Room Knowledge。手动调整这个父节点的 Position 可改变 Chemistry 知识展品的位置。"
-position = Vector2(668, 552)
+position = Vector2(199.3434, 161.1965)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=1283029770]
 texture_filter = 1
 position = Vector2(0.99999994, -48.999996)
-scale = Vector2(0.1, 0.07)
+scale = Vector2(0.0920, 0.0920)
 texture = ExtResource("10_chemistry_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=686372712]
