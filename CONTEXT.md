@@ -117,8 +117,15 @@ exhibit sits happily on top of the masonry, looking exactly as intended, and is
 simply uncollectable — and since each exhibit teaches the answer to one door's
 knowledge lock, an unreachable exhibit locks the run.
 
-`tools/check_static.py` asserts reachability for both the doors and the
-exhibits, and that what it finds is on the same island as the arrival spawn.
+`tools/check_static.py` asserts reachability for the doors, the exhibits and the
+four hall props, and that what it finds is on the same island as the arrival
+spawn. The props matter most and were checked last: `FinalKeyMachine1..3` hold a
+third of the Final Room Key each, so one sealed into the masonry does not cost a
+collectable, it ends the run. Their `*_POSITION` constants prove nothing either
+way, because `get_interaction_rect` measures them off the scene node and only
+falls back to the constant when the node is missing — which is why the check
+reads the node names out of `game_world.gd` and the rects out of the scene.
+
 Its wall data must match what the engine treats as solid, which is
 **only bodies on the wall layer**: each exhibit also carries an `InteractionArea`
 whose shape is an Area2D on layer 2 and disabled besides, and counting those

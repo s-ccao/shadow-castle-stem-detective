@@ -32,6 +32,9 @@ especially after a merge. Every class below has actually broken this project:
    interaction margin. The sprite draws over the masonry perfectly happily, so
    nothing looks wrong, but the knowledge behind it can never be collected and
    the door it teaches stays locked.
+9. The same failure for the hall props, which is worse: three of them hold a
+   third of the Final Room Key each, so one sealed into the wall ends the run
+   rather than costing a collectable.
 
 Exits non-zero when anything is found, so it can gate CI.
 """
@@ -43,6 +46,7 @@ import os
 import re
 import sys
 import zlib
+from collections.abc import Callable
 
 SKIP_DIRS = {".git", ".godot", "__pycache__", ".import"}
 
@@ -929,8 +933,17 @@ def _png_opaque_box(path: str) -> tuple[int, int, int, int, int, int] | None:
     return (left, top, right + 1, bottom + 1, width, height)
 
 
-def _exhibit_rects(root: str) -> list[tuple[str, tuple[float, float, float, float]]]:
-    """The interaction rect of every hall exhibit, as the game computes it."""
+def _sprite_rects(
+    root: str, wanted: Callable[[str], bool]
+) -> list[tuple[str, tuple[float, float, float, float]]]:
+    """Interaction rects for hall nodes, the way `get_visual_rect` computes them.
+
+    `_sprite_visual_rect` measures the sprite's *opaque* box rather than its
+    texture, so a prop padded with transparency has a much smaller prompt zone
+    than its file size suggests. Reproducing that here is the whole point: a
+    check against the padded rect would pass while the game refuses to offer
+    the prompt.
+    """
     scene = os.path.join(root, "scenes", "wall_collisions.tscn")
     if not os.path.exists(scene):
         return []
@@ -950,7 +963,7 @@ def _exhibit_rects(root: str) -> list[tuple[str, tuple[float, float, float, floa
         if node["texture"] is None or node["type"] != "Sprite2D":
             continue
         parent = node["parent"] or ""
-        if not parent.startswith("KnowledgeExhibits/"):
+        if not wanted(parent):
             continue
         relative = textures.get(node["texture"])
         if relative is None:
@@ -974,6 +987,54 @@ def _exhibit_rects(root: str) -> list[tuple[str, tuple[float, float, float, floa
             )
         )
     return rects
+
+
+def _exhibit_rects(root: str) -> list[tuple[str, tuple[float, float, float, float]]]:
+    """The interaction rect of every hall exhibit, as the game computes it."""
+    return _sprite_rects(root, lambda parent: parent.startswith("KnowledgeExhibits/"))
+
+
+def _hall_prop_paths(source: str) -> list[str]:
+    """Hall props whose interaction rect is read off a scene node, not a constant.
+
+    Their `*_POSITION` constants are only the fallback for a missing node, so
+    checking the constants proves nothing about the prompt the player is
+    actually offered. The node names are taken from the source so that adding
+    a prop puts it under this check without anyone remembering to.
+    """
+    if not os.path.exists(source):
+        return []
+    text = open(source, encoding="utf-8").read()
+    names: list[str] = []
+    # `Array[NodePath]` puts a bracket before the one that opens the literal,
+    # so anchor on the assignment rather than on the first `[`.
+    machines = re.search(
+        r"^const FINAL_KEY_MACHINE_PATHS[^=\n]*=\s*\[(.*?)^\]",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if machines is not None:
+        names += re.findall(r'NodePath\("WallCollisions/(\w+)"\)', machines.group(1))
+    body = re.search(
+        r"^func get_interaction_rect.*?(?=^func )", text, re.MULTILINE | re.DOTALL
+    )
+    if body is not None:
+        names += re.findall(
+            r'get_node_or_null\("WallCollisions/(\w+)"\)', body.group(0)
+        )
+    unique: list[str] = []
+    for name in names:
+        if name not in unique:
+            unique.append(name)
+    return unique
+
+
+def _prop_rects(root: str) -> list[tuple[str, tuple[float, float, float, float]]]:
+    """The interaction rect of every hall prop the player must walk up to."""
+    names = set(_hall_prop_paths(os.path.join(root, "scripts", "game_world.gd")))
+    if not names:
+        return []
+    return _sprite_rects(root, lambda parent: parent in names)
 
 
 def _pair(text: str) -> tuple[float, float]:
@@ -1013,6 +1074,43 @@ def check_exhibit_reachable(root: str) -> list[str]:
     return problems
 
 
+def check_prop_reachable(root: str) -> list[str]:
+    """Report a hall prop the player can never walk up to.
+
+    Three of these hide a third of the Final Room Key each, so a machine sealed
+    behind the masonry does not cost the player a collectable — it ends the
+    run, with no way to tell that anything is wrong. The storage rack is the
+    optional Library key, which fails more quietly and is therefore easier to
+    ship broken.
+
+    These are checked separately from the exhibits because they are positioned
+    differently: `get_interaction_rect` measures them off the scene node, so
+    their `*_POSITION` constants can look perfectly sane while the node they
+    fall back from sits in stone.
+    """
+    polygons = _hall_wall_polygons(root)
+    if not polygons:
+        return []
+    source = os.path.join(root, "scripts", "game_world.gd")
+    spawn = _hall_arrival_spawn(source) if os.path.exists(source) else None
+    reachable = _connected_spans(polygons, spawn) if spawn else {}
+    problems: list[str] = []
+    for name, rect in _prop_rects(root):
+        if not _reachable(rect, polygons):
+            problems.append(
+                f"scenes/wall_collisions.tscn: {name} sits where no walkable "
+                "tile comes within the interaction margin, so what it holds "
+                "can never be collected"
+            )
+        elif reachable and not _connected(rect, reachable):
+            problems.append(
+                f"scenes/wall_collisions.tscn: {name} has standable floor "
+                "beside it, but none of it connects to the hall arrival spawn, "
+                "so what it holds can never be collected"
+            )
+    return problems
+
+
 def main() -> int:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     problems: list[str] = []
@@ -1027,6 +1125,7 @@ def main() -> int:
     problems.extend(check_resource_paths(root))
     problems.extend(check_door_focus_reachable(root))
     problems.extend(check_exhibit_reachable(root))
+    problems.extend(check_prop_reachable(root))
 
     for problem in problems:
         print(problem.replace(root + os.sep, ""))
