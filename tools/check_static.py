@@ -576,6 +576,11 @@ def check_door_focus_reachable(root: str) -> list[str]:
     and pushing it too far into the wall makes the room unreachable. Two merges
     have already reset these constants; the damage is invisible in a diff and
     only shows up as a door that stops responding.
+
+    Standable floor beside the door is necessary but not sufficient: the hall is
+    a maze, and an edit to the walls can fence that floor off into a pocket the
+    player cannot walk into. So the second half of this check asks whether the
+    pocket is on the same island as the arrival spawn.
     """
     source = os.path.join(root, "scripts", "game_world.gd")
     if not os.path.exists(source):
@@ -584,12 +589,29 @@ def check_door_focus_reachable(root: str) -> list[str]:
     if not polygons:
         return []
     problems: list[str] = []
-    for name, rect in _door_focus_rects(source):
+    rects = _door_focus_rects(source)
+    stranded: list[tuple[str, tuple[float, ...]]] = []
+    for name, rect in rects:
         if not _reachable(rect, polygons):
             problems.append(
                 f"scripts/game_world.gd: {name} puts the focus rect where no "
                 "walkable tile comes within the interaction margin, so the "
                 "prompt can never appear"
+            )
+        else:
+            stranded.append((name, rect))
+    spawn = _hall_arrival_spawn(source)
+    if spawn is None or not stranded:
+        return problems
+    reachable = _connected_spans(polygons, spawn)
+    if not reachable:
+        return problems
+    for name, rect in stranded:
+        if not _connected(rect, reachable):
+            problems.append(
+                f"scripts/game_world.gd: {name} has standable floor beside it, "
+                "but none of it connects to the hall arrival spawn, so the "
+                "player can never walk to the prompt"
             )
     return problems
 
@@ -624,6 +646,185 @@ def _reachable(rect: tuple[float, float, float, float], polygons: list) -> bool:
                 return True
             x += 2.0
         y += 2.0
+    return False
+
+
+def _fill_rows(polygons: list) -> list[int]:
+    """The hall's walls as one bitmask per scanline; bit x means pixel x is wall.
+
+    Scan-converted rather than sampled, so a slab one pixel wide still lands in
+    the mask. Coverage is decided at the pixel centre, which makes this very
+    slightly more permissive than `_player_fits` -- it is used to decide whether
+    a route exists, and erring towards "open" means this never invents a wall
+    that would fail the build for a corridor that is really there.
+    """
+    width, height = int(HALL_SIZE[0]), int(HALL_SIZE[1])
+    rows = [0] * height
+    for _bounds, points in polygons:
+        ys = [point[1] for point in points]
+        first = max(0, int(math.floor(min(ys))))
+        last = min(height - 1, int(math.ceil(max(ys))))
+        count = len(points)
+        for row in range(first, last + 1):
+            sample = row + 0.5
+            crossings = []
+            for index in range(count):
+                ax, ay = points[index]
+                bx, by = points[(index + 1) % count]
+                if (ay > sample) != (by > sample):
+                    crossings.append(ax + (sample - ay) * (bx - ax) / (by - ay))
+            crossings.sort()
+            for pair in range(0, len(crossings) - 1, 2):
+                low = max(0, int(math.floor(crossings[pair] - 0.5)) + 1)
+                high = min(width - 1, int(math.ceil(crossings[pair + 1] - 0.5)) - 1)
+                if high >= low:
+                    rows[row] |= ((1 << (high - low + 1)) - 1) << low
+    return rows
+
+
+def _walkable_rows(polygons: list) -> list[int]:
+    """One bitmask per scanline; bit x means the player's body fits at (x, y).
+
+    The body is the 14x8 box `_player_fits` uses, so a standing position is
+    clear only when all 14x8 pixels behind it are. Both sweeps are done with
+    whole-row integer shifts instead of per-pixel tests, which is what keeps a
+    1920x1280 dilation affordable in a check that runs on every push.
+    """
+    width, height = int(HALL_SIZE[0]), int(HALL_SIZE[1])
+    solid = _fill_rows(polygons)
+    full = (1 << width) - 1
+    spread = [0] * height
+    for row in range(height):
+        mask = solid[row]
+        if mask == 0:
+            continue
+        merged = 0
+        for shift in range(-PLAYER_HALF_WIDTH, PLAYER_HALF_WIDTH):
+            merged |= (mask >> shift) if shift >= 0 else (mask << -shift)
+        spread[row] = merged & full
+    # Bits 0..6 and the last 7 columns can never hold a body: the box would
+    # leave the map, which `_player_fits` rejects on the same bounds.
+    inside = ((1 << (width - 2 * PLAYER_HALF_WIDTH + 1)) - 1) << PLAYER_HALF_WIDTH
+    walkable = [0] * height
+    for row in range(PLAYER_HEIGHT, height):
+        blocked = 0
+        for above in range(row - PLAYER_HEIGHT, row):
+            blocked |= spread[above]
+        walkable[row] = ~blocked & inside
+    return walkable
+
+
+def _row_spans(mask: int) -> list[tuple[int, int]]:
+    """A row bitmask as half-open runs of set bits."""
+    spans: list[tuple[int, int]] = []
+    offset = 0
+    while mask:
+        low = (mask & -mask).bit_length() - 1
+        mask >>= low
+        offset += low
+        run = (mask ^ (mask + 1)).bit_length() - 1
+        spans.append((offset, offset + run))
+        mask >>= run
+        offset += run
+    return spans
+
+
+def _connected_spans(polygons: list, seed: tuple[float, float]) -> dict[int, list]:
+    """The runs of standable floor the player can reach on foot from `seed`.
+
+    Connectivity is resolved between whole runs rather than pixels: a hall row
+    is a handful of runs, so labelling them and unioning vertical overlaps costs
+    thousands of operations where a pixel flood fill costs hundreds of
+    thousands.
+    """
+    walkable = _walkable_rows(polygons)
+    rows = {y: _row_spans(mask) for y, mask in enumerate(walkable) if mask}
+    parent: list[int] = []
+
+    def find(node: int) -> int:
+        while parent[node] != node:
+            parent[node] = parent[parent[node]]
+            node = parent[node]
+        return node
+
+    def union(left: int, right: int) -> None:
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    labels: dict[int, list[int]] = {}
+    previous_y = None
+    for y in sorted(rows):
+        spans = rows[y]
+        ids = []
+        for _span in spans:
+            ids.append(len(parent))
+            parent.append(len(parent))
+        labels[y] = ids
+        if previous_y == y - 1:
+            above = rows[previous_y]
+            above_ids = labels[previous_y]
+            i = j = 0
+            while i < len(spans) and j < len(above):
+                if spans[i][0] < above[j][1] and above[j][0] < spans[i][1]:
+                    union(ids[i], above_ids[j])
+                if spans[i][1] < above[j][1]:
+                    i += 1
+                else:
+                    j += 1
+        previous_y = y
+
+    seed_label = None
+    best = None
+    for y in sorted(rows):
+        for index, (start, end) in enumerate(rows[y]):
+            column = min(max(int(seed[0]), start), end - 1)
+            distance = (column - seed[0]) ** 2 + (y - seed[1]) ** 2
+            if best is None or distance < best:
+                best = distance
+                seed_label = find(labels[y][index])
+    if seed_label is None:
+        return {}
+
+    reachable: dict[int, list] = {}
+    for y in sorted(rows):
+        kept = [
+            span
+            for index, span in enumerate(rows[y])
+            if find(labels[y][index]) == seed_label
+        ]
+        if kept:
+            reachable[y] = kept
+    return reachable
+
+
+def _hall_arrival_spawn(source: str) -> tuple[float, float] | None:
+    """Where the player's feet land the first time they walk into the hall."""
+    text = open(source, encoding="utf-8").read()
+    found = re.search(
+        r"^const\s+HALL_FIRST_ARRIVAL_POSITION\s*:?[^=]*=\s*Vector2\(\s*"
+        r"(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)",
+        text,
+        re.MULTILINE,
+    )
+    return (float(found.group(1)), float(found.group(2))) if found else None
+
+
+def _connected(
+    rect: tuple[float, float, float, float], reachable: dict[int, list]
+) -> bool:
+    """Is any position that offers this rect's prompt on the player's own island?"""
+    rect_x, rect_y, width, height = rect
+    reach = INTERACTION_MARGIN + PLAYER_HEIGHT + 1.0
+    first = int(rect_y - reach)
+    last = int(rect_y + height + reach) + 1
+    for y in range(max(0, first), min(int(HALL_SIZE[1]), last)):
+        for start, end in reachable.get(y, ()):
+            low = max(start, int(rect_x - reach - PLAYER_HALF_WIDTH))
+            high = min(end, int(rect_x + width + reach + PLAYER_HALF_WIDTH) + 1)
+            for x in range(low, high):
+                if _rect_gap(x, y, rect_x, rect_y, width, height) <= INTERACTION_MARGIN:
+                    return True
     return False
 
 
@@ -792,6 +993,9 @@ def check_exhibit_reachable(root: str) -> list[str]:
     polygons = _hall_wall_polygons(root)
     if not polygons:
         return []
+    source = os.path.join(root, "scripts", "game_world.gd")
+    spawn = _hall_arrival_spawn(source) if os.path.exists(source) else None
+    reachable = _connected_spans(polygons, spawn) if spawn else {}
     problems: list[str] = []
     for name, rect in _exhibit_rects(root):
         if not _reachable(rect, polygons):
@@ -799,6 +1003,12 @@ def check_exhibit_reachable(root: str) -> list[str]:
                 f"scenes/wall_collisions.tscn: {name} sits where no walkable "
                 "tile comes within the interaction margin, so its knowledge "
                 "can never be collected and the door it teaches stays locked"
+            )
+        elif reachable and not _connected(rect, reachable):
+            problems.append(
+                f"scenes/wall_collisions.tscn: {name} has standable floor "
+                "beside it, but none of it connects to the hall arrival spawn, "
+                "so its knowledge can never be collected"
             )
     return problems
 

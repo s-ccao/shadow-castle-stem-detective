@@ -72,7 +72,16 @@ the wall art (1536x1024 scaled x1.25 onto the 1920x1280 map, so image
 coordinates x1.25 are world coordinates); each constant carries the stone-frame
 bounds it was taken from. Two merges have already reset them, and the damage
 does not look like a bug in a diff, so `tools/check_static.py` now asserts that
-every door's rect still has walkable floor within the 14px interaction margin.
+every door's rect still has walkable floor within the 14px interaction margin,
+**and** that the floor connects to `HALL_FIRST_ARRIVAL_POSITION`. Floor beside
+the door is not enough on its own: the hall is a maze, so a wall edit can fence
+a doorway's approach into a pocket that passes the margin test and is still
+impossible to walk into. The connectivity pass scan-converts the wall polygons
+into one bitmask per scanline, dilates by the 14x8 body with whole-row integer
+shifts, and unions runs between adjacent rows, which keeps the whole check
+around six seconds. Its raster decides coverage at the pixel centre, making it
+marginally more permissive than `_player_fits` — deliberately, so it can never
+invent a wall and fail the build for a corridor that is really open.
 
 Every hall entrance is drawn as a stone arch on `hall_walls.png`, and the focus
 constant is measured off that arch. The chemistry doorway was the exception for
@@ -102,7 +111,8 @@ simply uncollectable — and since each exhibit teaches the answer to one door's
 knowledge lock, an unreachable exhibit locks the run.
 
 `tools/check_static.py` asserts reachability for both the doors and the
-exhibits. Its wall data must match what the engine treats as solid, which is
+exhibits, and that what it finds is on the same island as the arrival spawn.
+Its wall data must match what the engine treats as solid, which is
 **only bodies on the wall layer**: each exhibit also carries an `InteractionArea`
 whose shape is an Area2D on layer 2 and disabled besides, and counting those
 walls the exhibits in and produces confident false alarms.
