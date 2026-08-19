@@ -120,6 +120,24 @@ const DEVELOPER_CAMERA_ZOOM: Vector2 = Vector2(
 
 const CAMERA_ZOOM_CHANGE_SPEED: float = 7.0
 
+# How the capture is posed, so that it can be read as a capture.
+#
+# The Guardian catches inside 22px, its figure is 80px tall against the
+# detective's 66px, and game_world.tscn has no Y-sort — so draw order is tree
+# order and the Guardian, declared second, sits squarely on top of the
+# detective. Zooming into that shows one figure and no capture at all. The
+# sequence therefore poses the pair before framing them: the Guardian steps to
+# the side it came from, and the detective is drawn in front of it.
+const CAPTURE_STAGE_GAP: float = 30.0
+const CAPTURE_STAGE_LIFT: float = 9.0
+const CAPTURE_STAGE_PLAYER_Z: int = 12
+const CAPTURE_STAGE_GUARDIAN_Z: int = 11
+## The struggle: how far the detective is wrenched back toward the Guardian and
+## how long the grab flash lasts. Played under the camera push, so the picture
+## arrives on a body that is reacting rather than one already standing still.
+const CAPTURE_SEIZE_RECOIL: float = 7.0
+const CAPTURE_SEIZE_DURATION: float = 0.16
+
 # A navigation cell is 32px but the player's body is 14x8, so one probe at the
 # cell centre throws away everything the cell knows about its own corners. A
 # cell whose centre clips a wall can still hold floor the player walks on, and
@@ -2332,8 +2350,8 @@ func _play_capture_sequence() -> void:
 		capture_map_hud.call("set_guardian_tracking_suppressed", true)
 	if enemy.has_method("set_cinematic_hold"):
 		enemy.call("set_cinematic_hold", true)
-	if enemy.has_method("face_toward"):
-		enemy.call("face_toward", player.global_position)
+	var framing := _stage_capture_pose()
+	_play_capture_struggle()
 
 	guardian_reveal_overlay.visible = true
 	guardian_reveal_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
@@ -2357,10 +2375,9 @@ func _play_capture_sequence() -> void:
 
 	# Frame both bodies rather than the Guardian alone, so the picture shows the
 	# two of them together and the player can read what just happened to them.
-	var midpoint: Vector2 = (enemy.global_position + player.global_position) * 0.5
 	var close_in := create_tween()
 	close_in.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
-	close_in.tween_property(capture_camera, "global_position", midpoint, CAPTURE_PUSH_DURATION)
+	close_in.tween_property(capture_camera, "global_position", framing, CAPTURE_PUSH_DURATION)
 	close_in.parallel().tween_property(capture_camera, "zoom", CAPTURE_ZOOM, CAPTURE_PUSH_DURATION)
 	await close_in.finished
 	if not is_inside_tree():
@@ -2388,7 +2405,89 @@ func _play_capture_sequence() -> void:
 	_show_game_over_screen()
 
 
+## Pull the two bodies apart and decide who is in front, then say where to look.
+##
+## Left alone they finish the chase inside 22px of each other with no Y-sort to
+## separate them, so the Guardian is simply painted over the detective and the
+## capture has no picture. Standing the Guardian off to one side and lifting the
+## detective in front of it is the whole difference between "the screen went
+## dark" and "it caught me".
+func _stage_capture_pose() -> Vector2:
+	var player_position: Vector2 = player.global_position
+	# Keep the Guardian on the side it actually arrived from. Falling back to
+	# the far side, and then to standing still, means stone can never push the
+	# pose somewhere the bodies do not fit.
+	var approach: float = signf(enemy.global_position.x - player_position.x)
+	if is_zero_approx(approach):
+		approach = 1.0
+	for side: float in [approach, -approach]:
+		var pose := player_position + Vector2(
+			CAPTURE_STAGE_GAP * side,
+			-CAPTURE_STAGE_LIFT
+		)
+		if not has_authored_wall_collision(pose):
+			enemy.global_position = pose
+			break
+	if enemy.has_method("face_toward"):
+		enemy.call("face_toward", player_position)
+	if player.has_method("update_facing_direction"):
+		player.call("update_facing_direction", enemy.global_position - player_position)
+		if player.has_method("show_idle_frame"):
+			player.call("show_idle_frame")
+	enemy.z_index = CAPTURE_STAGE_GUARDIAN_Z
+	player.z_index = CAPTURE_STAGE_PLAYER_Z
+	return (enemy.global_position + player_position) * 0.5
+
+
+## The moment of the grab: the detective is wrenched toward the Guardian and
+## flashes, the Guardian's frame swells. It runs under the camera push so the
+## close-up lands on a body still reacting, not one already posed.
+func _play_capture_struggle() -> void:
+	var player_visual := player.get_node_or_null("VisualRoot") as Node2D
+	if player_visual != null:
+		var toward: Vector2 = (
+			enemy.global_position - player.global_position
+		).normalized() * CAPTURE_SEIZE_RECOIL
+		var rest: Vector2 = player_visual.position
+		var wrench := create_tween()
+		wrench.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		wrench.tween_property(
+			player_visual, "position", rest + toward, CAPTURE_SEIZE_DURATION
+		)
+		wrench.tween_property(
+			player_visual, "position", rest, CAPTURE_SEIZE_DURATION * 1.6
+		)
+		var flash := create_tween()
+		flash.tween_property(
+			player_visual, "modulate", Color(1.9, 1.35, 1.35), CAPTURE_SEIZE_DURATION * 0.5
+		)
+		flash.tween_property(
+			player_visual, "modulate", Color.WHITE, CAPTURE_SEIZE_DURATION * 2.0
+		)
+	var guardian_visual := enemy.get_node_or_null("GuardianCore") as Node2D
+	if guardian_visual == null:
+		return
+	var settled: Vector2 = guardian_visual.scale
+	var loom := create_tween()
+	loom.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	loom.tween_property(guardian_visual, "scale", settled * 1.12, CAPTURE_SEIZE_DURATION)
+	loom.tween_property(guardian_visual, "scale", settled, CAPTURE_SEIZE_DURATION * 2.0)
+
+
+## Hand the pose back. z_index and the visual offsets are rendering state that
+## would otherwise follow the player into the next run.
+func _clear_capture_pose() -> void:
+	if player != null and is_instance_valid(player):
+		player.z_index = 0
+		var player_visual := player.get_node_or_null("VisualRoot") as Node2D
+		if player_visual != null:
+			player_visual.modulate = Color.WHITE
+	if enemy != null and is_instance_valid(enemy):
+		enemy.z_index = 0
+
+
 func _show_game_over_screen() -> void:
+	_clear_capture_pose()
 	# The capture beat locks the hubs out so a pause cannot strand its tweens.
 	# These live on autoloads, so failing to give them back would follow the
 	# player into the next run.
