@@ -59,8 +59,15 @@ var notes_tutorial_seen := false
 # These are invisible interaction hotspots.
 # Scene coords = room art pixels x 0.7072 (1024/1448 scale).
 var door_position := Vector2(884, 438)
-var clue_position := Vector2(509, 131)
-var clue_approach_position := Vector2(509, 237)
+# The candle note is the one interaction with no sprite of its own: the two lit
+# candles, the open note and the sill they stand on are painted into the
+# background. This rect is measured from that art and is the single source for
+# the highlight, the mouse hotspot and the contact test, so all three describe
+# the thing the player can actually see.
+var clue_interaction_rect := Rect2(452.0, 160.0, 100.0, 52.0)
+# The sill is recessed into the wall; the top wall's collision reaches y=233, so
+# y=248 is the closest the player can stand anywhere in front of the window.
+var clue_approach_position := Vector2(502, 248)
 
 # New room art (scholar chamber): interactable props
 var bed_position := Vector2(503, 354)
@@ -1143,18 +1150,19 @@ func _on_book_close_pressed():
 
 
 func create_first_room_clue():
+	var clue_center := clue_interaction_rect.get_center()
 	if SHOW_DEBUG_OBJECTS:
 		clue_node = ColorRect.new()
 		clue_node.name = "CandleNoteClue"
 		clue_node.color = Color(0.95, 0.85, 0.35, 1.0)
 		clue_node.size = Vector2(28, 22)
-		clue_node.position = clue_position - clue_node.size / 2
+		clue_node.position = clue_center - clue_node.size / 2
 		clue_node.z_index = 8
 		add_child(clue_node)
 
 		var label = Label.new()
 		label.text = "Note"
-		label.position = clue_position + Vector2(-16, -34)
+		label.position = clue_center + Vector2(-16, -34)
 		label.add_theme_font_size_override("font_size", 14)
 		add_child(label)
 
@@ -1163,7 +1171,7 @@ func create_first_room_clue():
 		clue_node.name = "ClueInteractionMarker"
 		clue_node.color = Color(0.95, 0.82, 0.25, 0.85)
 		clue_node.size = Vector2(16, 16)
-		clue_node.position = clue_position - clue_node.size / 2
+		clue_node.position = clue_center - clue_node.size / 2
 		clue_node.z_index = 20
 		add_child(clue_node)
 
@@ -1171,7 +1179,7 @@ func create_first_room_clue():
 func create_candle_note_click_area():
 	clue_click_area = Area2D.new()
 	clue_click_area.name = "CandleNoteClickArea"
-	clue_click_area.position = clue_position
+	clue_click_area.position = clue_interaction_rect.get_center()
 	clue_click_area.input_pickable = true
 	clue_click_area.z_index = 30
 	add_child(clue_click_area)
@@ -1179,7 +1187,9 @@ func create_candle_note_click_area():
 	var collision_shape = CollisionShape2D.new()
 
 	var rectangle = RectangleShape2D.new()
-	rectangle.size = Vector2(90, 70)
+	# The hover region has to be the highlighted region, or the player ends up
+	# clicking bare glass to pick up a note painted on the sill below it.
+	rectangle.size = clue_interaction_rect.size
 
 	collision_shape.shape = rectangle
 	clue_click_area.add_child(collision_shape)
@@ -1202,18 +1212,19 @@ func on_candle_note_input_event(
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			get_viewport().set_input_as_handled()
 
+			var clue_center := clue_interaction_rect.get_center()
 			var distance_to_clue = player.global_position.distance_to(
-				clue_position
+				clue_center
 			)
 
 			if distance_to_clue <= CLUE_INTERACT_RADIUS:
 				cancel_pending_mouse_interaction()
-				show_click_marker(clue_position)
+				show_click_marker(clue_center)
 				show_first_room_clue()
 			else:
 				begin_mouse_interaction_at_point(
 					"room_clue",
-					clue_position,
+					clue_center,
 					clue_approach_position
 	)
 func on_candle_note_mouse_entered():
@@ -1242,19 +1253,9 @@ func update_interaction_focus() -> void:
 	if _is_first_lead_locked():
 		match first_lead_step:
 			FirstLeadStep.CANDLE_NOTE:
-				interaction_focus.set_focus(
-					clue_position,
-					"Candle note",
-					true,
-					Vector2(142, 96)
-				)
+				_set_rect_focus("room_clue", "Candle note")
 			FirstLeadStep.BRASS_MARK, FirstLeadStep.CASTLE_DOOR:
-				interaction_focus.set_focus(
-					door_position,
-					"Brass-marked door",
-					true,
-					Vector2(156, 116)
-				)
+				_set_rect_focus("door", "Brass-marked door")
 			_:
 				interaction_focus.clear_focus()
 		return
@@ -1267,7 +1268,7 @@ func update_interaction_focus() -> void:
 	var is_primary: bool = false
 
 	if current_interaction == "room_clue":
-		target_position = clue_position
+		target_position = clue_interaction_rect.get_center()
 		focus_title = "Candle note"
 		is_primary = true
 	elif current_interaction == "door":
@@ -1303,6 +1304,22 @@ func update_interaction_focus() -> void:
 	)
 
 
+func _set_rect_focus(interaction_id: String, title: String) -> void:
+	# The bracket is the interaction rect, always. Sizing it separately is how the
+	# door prompt drifted onto bare floor: door_position is a standing point beside
+	# the door, not the door's centre.
+	var focus_rect := spatial.grow_rect(
+		get_interaction_rect(interaction_id),
+		Vector2(10.0, 10.0)
+	)
+	interaction_focus.set_focus(
+		focus_rect.get_center(),
+		title,
+		true,
+		focus_rect.size
+	)
+
+
 func get_interaction_rect(interaction_id: String) -> Rect2:
 	if interaction_id == "door":
 		if door_interaction_rect.size.x > 0.0 and door_interaction_rect.size.y > 0.0:
@@ -1317,16 +1334,29 @@ func get_interaction_rect(interaction_id: String) -> Rect2:
 			var center := prop.get("focus_position", prop.get("position", Vector2.ZERO)) as Vector2
 			return Rect2(center - Vector2(48.0, 48.0), Vector2(96.0, 96.0))
 	if interaction_id == "room_clue":
-		return Rect2(clue_position - Vector2(24.0, 18.0), Vector2(48.0, 36.0))
+		return clue_interaction_rect
 	return Rect2()
 
 
-func _is_near_interaction(interaction_id: String) -> bool:
+func _is_near_interaction(interaction_id: String, margin: float = 14.0) -> bool:
 	return spatial.is_actor_near_rect(
 		player,
 		get_interaction_rect(interaction_id),
-		14.0
+		margin
 	)
+
+
+func _is_clue_active() -> bool:
+	return first_lead_step == FirstLeadStep.CANDLE_NOTE
+
+
+func _is_near_clue() -> bool:
+	# Props sit in the open, so 14px of contact band is enough. The candle note
+	# sits in a window alcove whose wall stops the player 28px short of the sill,
+	# so the standard band can never be satisfied - no tile in this room would
+	# ever count as "near the note". 32px is the shallowest band that any
+	# walkable tile in front of the window reaches.
+	return _is_near_interaction("room_clue", 32.0)
 
 
 func hide_interaction_feedback() -> void:
@@ -1579,7 +1609,7 @@ func show_wake_dialogue():
 		"Mrs. Lin's Letter",
 		"To the investigator who wakes in this room,\n\n"
 		+ "If you found this, the castle has already separated us. Do not follow voices. Follow evidence.\n\n"
-		+ "Begin with the candle note beside the bed. It contains the first answer you will need.\n\n"
+		+ "Begin with the candle note on the window sill. It contains the first answer you will need.\n\n"
 		+ "— Dr. Lin"
 	)
 	add_dialogue_button("Find the candle note", finish_wake_letter)
@@ -1844,6 +1874,23 @@ func update_interaction_prompt():
 			interact_label.visible = true
 			return
 
+	# Walking up to the note has to work on its own. Until now the note was
+	# mouse-only: current_interaction was never set to "room_clue", so the E-key
+	# branch and the focus bracket were both unreachable code. This sits after the
+	# hover branches so hovering a prop still wins over merely standing here.
+	if _is_clue_active() and (mouse_over_clue or _is_near_clue()):
+		if not _is_near_clue():
+			interact_label.text = "Move closer to read the candle note"
+		else:
+			current_interaction = "room_clue"
+			interact_label.text = (
+				"Click or press E to read the candle note"
+				if mouse_over_clue
+				else "Press E to read the candle note"
+			)
+		interact_label.visible = true
+		return
+
 	if _is_near_interaction("door"):
 		current_interaction = "door"
 
@@ -1862,7 +1909,7 @@ func update_interaction_prompt():
 			current_interaction = "prop:" + id
 			interact_label.text = "Press E to inspect " + props[id]["prompt"]
 			interact_label.visible = true
-			return
+			break
 
 
 func handle_exit_door():
@@ -2634,7 +2681,7 @@ func on_player_click_target_reached():
 				return
 
 			if player.global_position.distance_to(
-				clue_position
+				clue_interaction_rect.get_center()
 			) <= CLUE_INTERACT_RADIUS:
 				show_first_room_clue()
 			else:

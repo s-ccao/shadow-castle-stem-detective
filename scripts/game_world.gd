@@ -585,6 +585,9 @@ var _damage_invincible_timer: float = 0.0
 var guardian_entry_sequence_active: bool = false
 var guardian_entry_sequence_played: bool = false
 var guardian_hold_watchdog: float = 0.0
+## Cell -> the point inside it a mover must steer to, for the cells whose
+## geometric centre is buried in a wall. See cell_nav_point().
+var nav_cell_points: Dictionary = {}
 var guardian_reveal_camera: Camera2D
 var guardian_reveal_overlay: Control
 var guardian_reveal_title: Label
@@ -992,7 +995,7 @@ func on_player_ground_move_started(
 
 	for cell in path:
 		path_points.append(
-			cell_to_world(cell)
+			cell_nav_point(cell)
 		)
 
 	if player.has_method("move_along_path"):
@@ -1693,22 +1696,26 @@ func build_navigation_grid():
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
 
+	nav_cell_points.clear()
 	for y: int in range(MAP_HEIGHT):
 		for x: int in range(MAP_WIDTH):
 			var cell := Vector2i(x, y)
 			var point_is_solid: bool = false
 			if use_authored_wall_collision_probe:
-				point_is_solid = (
-					not _cell_admits_player(cell)
-					or is_door(cell)
-				)
+				var open_point := _cell_open_point(cell)
+				point_is_solid = is_inf(open_point.x) or is_door(cell)
+				if not point_is_solid and not open_point.is_equal_approx(
+					cell_to_world(cell)
+				):
+					nav_cell_points[cell] = open_point
 			else:
 				point_is_solid = is_wall(cell) or is_door(cell)
 			if point_is_solid:
 				astar_grid.set_point_solid(cell, true)
 
 
-## True when the player's body fits anywhere inside this navigation cell.
+## Where inside this navigation cell the player's body fits, or an infinite
+## sentinel when nothing does.
 ##
 ## The grid decides where the Guardian may walk, but it also decides where the
 ## Guardian may walk *to*: find_path() refuses any request whose endpoint is
@@ -1716,25 +1723,48 @@ func build_navigation_grid():
 ## cell the player can occupy but the grid calls solid is not a cosmetic
 ## mismatch — it is a tile the Guardian cannot be sent to, and standing on one
 ## stops the hunt dead. Testing only the cell centre left 12.7% of the standable
-## hall in that state, spread over 246 separate patches.
-func _cell_admits_player(cell: Vector2i) -> bool:
+## hall in that state, spread over 246 separate patches. Returning the point
+## rather than a bool is what keeps the looser rule honest: see cell_nav_point().
+func _cell_open_point(cell: Vector2i) -> Vector2:
 	# The centre is open on most floor cells, so try it before the full sweep.
-	if not has_authored_wall_collision(cell_to_world(cell)):
-		return true
+	var centre := cell_to_world(cell)
+	if not has_authored_wall_collision(centre):
+		return centre
 	var origin := Vector2(cell) * float(CELL_SIZE)
 	var step := Vector2(
 		float(CELL_SIZE) / float(NAV_PROBE_COLUMNS),
 		float(CELL_SIZE) / float(NAV_PROBE_ROWS)
 	)
+	var best := Vector2(INF, INF)
+	var best_distance := INF
 	for row: int in range(NAV_PROBE_ROWS):
 		for column: int in range(NAV_PROBE_COLUMNS):
 			var probe := origin + Vector2(
 				(float(column) + 0.5) * step.x,
 				(float(row) + 0.5) * step.y
 			)
-			if not has_authored_wall_collision(probe):
-				return true
-	return false
+			if has_authored_wall_collision(probe):
+				continue
+			# Staying as close to the centre as the stone allows keeps routes
+			# looking like straight corridors rather than a drunk walk.
+			var distance := probe.distance_squared_to(centre)
+			if distance < best_distance:
+				best_distance = distance
+				best = probe
+	return best
+
+
+## The point a mover should steer to in order to occupy `cell`.
+##
+## A cell counts as open when the body fits anywhere inside it, but steering aims
+## at one point per cell. Aiming at the geometric centre put a third of the
+## hall's waypoints (428 of 1292) inside a wall: the mover pressed into the stone
+## until the stall timer wrote the step off, four tenths of a second at a time,
+## which reads in play as a Guardian that has given up the hunt.
+func cell_nav_point(cell: Vector2i) -> Vector2:
+	if nav_cell_points.has(cell):
+		return nav_cell_points[cell] as Vector2
+	return cell_to_world(cell)
 
 
 ## Nearest cell the Guardian may occupy, searching outward from `cell`.
@@ -1850,7 +1880,7 @@ func _build_guardian_patrol_route() -> Array[Vector2]:
 		if segment_cells.size() < 2:
 			continue
 		for cell: Variant in segment_cells:
-			var point := cell_to_world(cell as Vector2i)
+			var point := cell_nav_point(cell as Vector2i)
 			if not is_player_position_walkable(point):
 				continue
 			if not route.is_empty() and route[route.size() - 1].is_equal_approx(point):
@@ -1872,7 +1902,7 @@ func _nearest_guardian_walkable_position(target: Vector2) -> Vector2:
 				var cell := target_cell + Vector2i(offset_x, offset_y)
 				if not is_inside_map(cell) or astar_grid.is_point_solid(cell):
 					continue
-				var candidate := cell_to_world(cell)
+				var candidate := cell_nav_point(cell)
 				var distance := candidate.distance_squared_to(target)
 				if distance < best_distance:
 					best_distance = distance
@@ -1929,17 +1959,21 @@ func update_enemy_chase_state(delta: float) -> void:
 ##
 ## Two separate sequences freeze the Guardian and then thaw it after a chain of
 ## awaits — the reveal and the power restoration scan. Each of those chains
-## returns early if the scene is mid-teardown, and either one leaving the flag
-## set produces a Guardian that is present, tracked on the map, allowed to
-## catch the player, and physically incapable of moving, which reads in play as
-## no hunt at all. The grace period is what separates a broken chain from the
-## few frames between setup_enemy() arming the hold and the reveal claiming it.
+## returns early if the scene is mid-teardown, and either one leaving the freeze
+## set produces a Guardian that is present, tracked on the map, allowed to catch
+## the player, and physically incapable of moving, which reads in play as no hunt
+## at all.
+##
+## Deliberately not excused by guardian_entry_sequence_active: the reveal holds
+## the Guardian from the moment it starts until the march begins, and the two
+## early returns inside that window leave *both* the freeze and the flag set. A
+## watchdog that stands down whenever a cinematic claims to be running is blind
+## to the only case it exists for. Neither cinematic keeps the Guardian frozen
+## for more than ~1.5s, so the timeout leaves a wide margin.
 func _release_stale_guardian_hold(delta: float) -> void:
 	if (
 		not enemy_chase_started
 		or game_over
-		or guardian_entry_sequence_active
-		or power_route_scan_active
 		or not enemy.has_method("is_cinematic_held")
 		or not bool(enemy.call("is_cinematic_held"))
 	):
@@ -1949,11 +1983,43 @@ func _release_stale_guardian_hold(delta: float) -> void:
 	if guardian_hold_watchdog < GUARDIAN_HOLD_WATCHDOG_TIMEOUT:
 		return
 	guardian_hold_watchdog = 0.0
+	_force_end_guardian_cinematic()
+
+
+## Put the world back the way the end of a cinematic would have.
+##
+## Neither freeze is the Guardian's alone: both also stop the player and suppress
+## HUD surfaces, and the reveal swaps in its own camera and overlay. Thawing only
+## the Guardian would leave the player rooted under a black title card, so the
+## recovery has to undo the whole freeze rather than the part that was measured.
+func _force_end_guardian_cinematic() -> void:
 	if enemy.has_method("set_cinematic_hold"):
 		enemy.call("set_cinematic_hold", false)
 	if enemy.has_method("set_catch_enabled"):
 		enemy.call("set_catch_enabled", true)
 	enemy.set_physics_process(true)
+	if not guardian_entry_sequence_active and not power_route_scan_active:
+		return
+	if guardian_entry_sequence_active:
+		if guardian_reveal_overlay != null:
+			guardian_reveal_overlay.visible = false
+		if guardian_reveal_camera != null and is_instance_valid(guardian_reveal_camera):
+			guardian_reveal_camera.queue_free()
+		guardian_reveal_camera = null
+		if follow_camera != null:
+			follow_camera.zoom = camera_target_zoom
+			follow_camera.make_current()
+			follow_camera.reset_smoothing()
+		if fog_sprite != null:
+			fog_sprite.visible = guardian_reveal_fog_was_visible
+	guardian_entry_sequence_active = false
+	power_route_scan_active = false
+	if player != null:
+		player.set_physics_process(true)
+	ArchiveUi.set_hub_entries_suppressed(false)
+	var map_hud := get_node_or_null("/root/MapHud")
+	if map_hud != null and map_hud.has_method("set_guardian_tracking_suppressed"):
+		map_hud.call("set_guardian_tracking_suppressed", false)
 
 
 func create_game_over_ui() -> void:
@@ -4296,7 +4362,7 @@ func _guardian_path_distance() -> float:
 	var distance := 0.0
 	var previous: Vector2 = enemy.global_position
 	for cell_variant: Variant in route:
-		var route_point := cell_to_world(cell_variant as Vector2i)
+		var route_point := cell_nav_point(cell_variant as Vector2i)
 		distance += previous.distance_to(route_point)
 		previous = route_point
 	distance += previous.distance_to(player.global_position)
@@ -5600,7 +5666,7 @@ func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vect
 				if candidate_path.is_empty():
 					continue
 				var candidate_score: float = (
-					cell_to_world(candidate).distance_squared_to(target)
+					cell_nav_point(candidate).distance_squared_to(target)
 					+ float(candidate_path.size()) * 0.01
 				)
 				if candidate_score < best_score:
@@ -5613,7 +5679,7 @@ func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vect
 	var smoothed_cells := _smooth_hall_route_cells(best_path)
 	var first_forward_index := 1 if smoothed_cells.size() > 1 else 0
 	for cell_index: int in range(first_forward_index, smoothed_cells.size()):
-		route_points.append(cell_to_world(smoothed_cells[cell_index]))
+		route_points.append(cell_nav_point(smoothed_cells[cell_index]))
 	if route_points.size() >= 2:
 		var first_grid_point := route_points[1]
 		if (

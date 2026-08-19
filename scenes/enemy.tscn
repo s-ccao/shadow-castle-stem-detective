@@ -3,12 +3,13 @@
 [ext_resource type="Script" uid="uid://c625jdhuvojgm" path="res://scripts/enemy.gd" id="1_7p1mj"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_56y1i"]
-size = Vector2(24, 24)
+size = Vector2(14, 8)
 
 [node name="CastleGuardian" type="CharacterBody2D" unique_id=134981474]
 script = ExtResource("1_7p1mj")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1292275737]
+position = Vector2(0, -4)
 shape = SubResource("RectangleShape2D_56y1i")
 
 [node name="GuardianCore" type="AnimatedSprite2D" parent="." unique_id=353394682]

@@ -254,7 +254,7 @@ func move_along_path(delta: float) -> void:
 		move_and_slide()
 		return
 
-	var target_position = game_world.cell_to_world(path[path_index])
+	var target_position = game_world.cell_nav_point(path[path_index])
 	var direction = target_position - global_position
 
 	if direction.length() < 4.0:
@@ -275,11 +275,13 @@ func move_along_path(delta: float) -> void:
 
 ## Give up on a waypoint the body cannot actually reach.
 ##
-## The navigation grid is built from the player's 14x8 body, because that is
-## what decides where a chase can be aimed. This body is 24x24, so a cell the
-## grid calls open can still be too tight to enter. Without this the Guardian
-## presses into the corner forever: it never gets within 4px of the waypoint,
-## so path_index never advances and the hunt stops without ever looking stopped.
+## The grid now hands out waypoints this body can occupy, so this is no longer
+## the difference between hunting and standing still. It stays as the net for
+## the obstacles the grid cannot know about: the player's own body, and the
+## authored geometry the grid samples at 32px resolution. Without it the
+## Guardian presses into a corner forever, because it never gets within 4px of
+## the waypoint, so path_index never advances and the hunt stops without ever
+## looking stopped.
 func _note_progress(position_before: Vector2, move_speed: float, delta: float) -> void:
 	var expected := move_speed * delta
 	if expected <= 0.0:

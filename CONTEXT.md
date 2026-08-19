@@ -110,6 +110,30 @@ the thing rather than on it. The greenhouse's two herb beds were the last
 items reaching it — they are 125x655 and were being framed by an 88x68 square
 over their lower third.
 
+### The Wake Room candle note: no sprite, three different boxes
+
+The first interaction in the game had no node at all. Its geometry lived in
+three places that had drifted apart: a 90x70 mouse hotspot, a 48x36 focus rect,
+and a proximity test using the second. All three were centred 57px above the
+candles and the open note painted on the window sill, so clicking the note did
+nothing and clicking the empty stained glass above it worked.
+
+Its `clue_approach_position` was worse than misplaced — it was inside the top
+wall's collision, and the focus rect was 80px from the nearest tile the player
+could occupy, so `is_actor_near_rect()` could not return true anywhere in the
+room. The E-key branch and the focus bracket were written but unreachable.
+
+`clue_interaction_rect` is now the single source for all three. Two rules came
+out of it:
+
+- **A recessed interaction needs a deeper contact band than 14px.** The sill sits
+  in a wall alcove that stops the player 28px short of it, so `_is_near_clue()`
+  passes 32px. Widening the rect to close the gap instead was tried and looks
+  wrong: the bracket spills onto the floor and the neighbouring chest.
+- **An interaction with no sprite still has to be measured against the art.**
+  There is nothing to derive a rect from and nothing in the editor that shows it
+  is wrong, so the numbers have to come from reading the background pixels.
+
 ## Walking into a wall freezes the player permanently
 
 `player.collision_mask = 0`. Movement is resolved per axis in
@@ -185,13 +209,41 @@ floor; `find_path()` additionally slides either endpoint to the nearest open
 cell within three cells. Both are needed: the probe grid fixes connectivity,
 the endpoint slide covers what is left.
 
-The consequence to remember: **the navigation grid is built from the player's
-body, not the Guardian's.** The Guardian is 24x24 and cannot enter about 15% of
-the cells the grid calls open, so it can walk into a gap it does not fit
-through. `enemy.gd` handles that by writing off a waypoint it has failed to
-approach for 0.4s rather than pressing into the corner forever. Rebuilding the
-grid from the Guardian's body instead is not the fix — it was measured, and it
-disconnects the map far worse.
+### A cell that is open somewhere is not open at its centre
+
+Opening a cell because the body fits *somewhere* inside it and then steering to
+its geometric *centre* is a contradiction, and it cost the hall 428 of its 1292
+navigation cells: a third of every path ran at a point buried in stone. Movers
+never got within the 4px arrival threshold, so they pressed into the wall until
+`enemy.gd`'s stall timer wrote the step off, four tenths of a second at a time.
+It reads in play as a Guardian that has given up the hunt.
+
+`build_navigation_grid()` therefore caches the probe nearest each centre that
+the body actually fits on, and **every path waypoint must be resolved through
+`cell_nav_point()`, never `cell_to_world()`.** `cell_to_world()` is for fog,
+door placement and rendering — anything that describes a cell rather than
+walking to it.
+
+### The Guardian's footprint is the player's footprint
+
+The Guardian used to carry a 24x24 box centred on its origin while the player
+carries 14x8 at its feet — three times the vertical footprint, extending 12px
+*below* the ground point its sprite is anchored to. Sharing one navigation grid
+between two different bodies means the grid is lying to one of them: the
+Guardian could occupy 616 of 1297 cells and reach only 472 of them from its
+spawn, so 63% of every route it was handed was impassable. Rebuilding the grid
+from the Guardian's body instead was measured and is worse — it disconnects the
+hall.
+
+Both bodies are now 14x8 at `(0, -4)`, which takes the hunt from 36.4% of the
+hall to 99.6%. The Guardian's size on screen is unaffected: `GuardianCore` is a
+child sprite at `(0, -44.8)` scaled 0.8, fully decoupled from the body. Keep it
+that way — growing the collision shape to "match the art" re-breaks the hunt.
+
+`enemy.gd` still writes off a waypoint it has failed to approach for 0.4s. That
+is now a net for the obstacles the grid cannot know about (the player's own
+body, geometry finer than the 32px sampling), not the difference between
+hunting and standing still.
 
 ## `scenes/wall_collisions.tscn` is the authority for the hall
 
@@ -230,9 +282,23 @@ tracked on the map, allowed to catch the player, and physically unable to move,
 which reads in play as no hunt at all rather than as a bug.
 
 `_release_stale_guardian_hold()` clears it after six seconds of "hunt running,
-nothing playing, still frozen". The grace period is what separates a broken
-chain from the few frames between `setup_enemy()` arming the hold and the
-reveal claiming it — releasing immediately cancels the reveal.
+still frozen". The grace period is what separates a broken chain from the few
+frames between `setup_enemy()` arming the hold and the reveal claiming it —
+releasing immediately cancels the reveal.
+
+**The watchdog deliberately does not stand down while a cinematic flag is set.**
+The first version excused itself whenever `guardian_entry_sequence_active` or
+`power_route_scan_active` was true, which is precisely the state a broken chain
+leaves behind: the reveal's two early returns sit between the freeze and the
+thaw, so a leak sets *both* the hold and the flag. A watchdog that trusts the
+flag is blind to the only case it exists for. Neither cinematic keeps the
+Guardian frozen for more than ~1.5s, so six seconds is a wide margin.
+
+Recovery has to undo the whole freeze, not the measured part of it. Both
+sequences also stop the player and suppress HUD surfaces, and the reveal swaps
+in its own camera and a full-screen title card, so
+`_force_end_guardian_cinematic()` restores those too. Thawing only the Guardian
+would leave the player rooted under a black overlay.
 
 ## Localization
 
