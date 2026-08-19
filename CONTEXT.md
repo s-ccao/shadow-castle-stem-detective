@@ -74,9 +74,19 @@ bounds it was taken from. Two merges have already reset them, and the damage
 does not look like a bug in a diff, so `tools/check_static.py` now asserts that
 every door's rect still has walkable floor within the 14px interaction margin.
 
-The chemistry doorway is the exception: that stretch of wall has no door drawn
-on it at all, only a row of golden cabinets, so its focus sits on the recessed
-alcove the player faces.
+Every hall entrance is drawn as a stone arch on `hall_walls.png`, and the focus
+constant is measured off that arch. The chemistry doorway was the exception for
+a while: that stretch of wall had nothing on it but a row of golden cabinets, so
+the bracket framed a blank alcove and players read the whole north-west corner
+as a dead end and reported the room as unreachable. It never was — a flood fill
+from the arrival spawn found 8171 walkable pixels inside its interaction margin,
+all in the spawn's own connected region. The arch there now is the Greenhouse
+arch, grafted out of this same image so the palette, light direction and
+brushwork match, fitted to the recess at 92%.
+
+The lesson generalises: `check_static.py` can prove a door is *reachable*, but
+nothing can prove it is *findable*. A focus constant that lands on blank wall is
+as good as a locked door, so a new entrance needs art before it needs geometry.
 
 Doors are embedded in walls, so `*_DOOR_POSITION` sitting inside a collision
 polygon is normal and expected. What matters is that standable floor remains
@@ -271,6 +281,27 @@ change to the payload shape needs the version bumped.
 frame, including while a dialogue panel is open. Anything added there runs
 60 times a second for the whole session. Before adding work, check whether
 the result can only change when the player crosses a cell — most of it can.
+
+## Awareness is not the same as reporting it
+
+`enemy.gd` keeps a local `can_see_player`, and `GameState` keeps the shared
+`guardian_mode`. Only `report_player_seen()` moves the second one. Under the
+tracking serum `_update_awareness()` used to set the local flag and return, on
+the reasoning that an omniscient Guardian does not need the line-of-sight path
+— but the line-of-sight path is the only caller of `report_player_seen()`, so
+the hunt sat in PATROL for the whole game.
+
+PATROL neither catches nor moves. `check_player_collision()` opens with a guard
+requiring `Behavior.CHASE`, so the player could walk into the Guardian and
+nothing happened; and `_current_target_position()` answered the serum case with
+`get_guardian_hall_position()`, which is the Guardian's *own* live position —
+`move_along_path()` writes it back every frame — so the body was ordered to walk
+to where it already stood. One missing call, three symptoms, all of which look
+like a pathfinding or collision bug and none of which are.
+
+The serum branch now reports every frame it is active, so anything that demotes
+the mode is corrected on the next tick. `tests/guardian_awareness_flow_test.gd`
+states the contract: "The serum keeps the Guardian in CHASE".
 
 ## The Guardian's cinematic freeze is a leak waiting to happen
 
