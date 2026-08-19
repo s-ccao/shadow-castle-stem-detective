@@ -82,6 +82,34 @@ Doors are embedded in walls, so `*_DOOR_POSITION` sitting inside a collision
 polygon is normal and expected. What matters is that standable floor remains
 within the interaction margin of the focus rect.
 
+## An interaction the player cannot reach is a dead run, not a cosmetic bug
+
+Everything the player interacts with in the hall and the rooms is offered by
+the same test: is the player's body within `INTERACTION_MARGIN` (14px) of the
+interaction rect. Nothing in the editor shows when that fails. A knowledge
+exhibit sits happily on top of the masonry, looking exactly as intended, and is
+simply uncollectable — and since each exhibit teaches the answer to one door's
+knowledge lock, an unreachable exhibit locks the run.
+
+`tools/check_static.py` asserts reachability for both the doors and the
+exhibits. Its wall data must match what the engine treats as solid, which is
+**only bodies on the wall layer**: each exhibit also carries an `InteractionArea`
+whose shape is an Area2D on layer 2 and disabled besides, and counting those
+walls the exhibits in and produces confident false alarms.
+
+Where an interaction rect comes from, in order of preference:
+
+1. the sprite's opaque box via `RoomSpatialRuntime.get_visual_rect()` — used
+   whenever the prop exists as a scene node, and always correct by construction
+2. an explicit `interaction_rect` in the item's dictionary — needed when the
+   prop is painted into the background and has no node
+3. a fixed `Rect2(position - (44, 34), (88, 68))` fallback
+
+The fallback is the same defect the doors had: a small fixed box floating near
+the thing rather than on it. The greenhouse's two herb beds were the last
+items reaching it — they are 125x655 and were being framed by an 88x68 square
+over their lower third.
+
 ## Walking into a wall freezes the player permanently
 
 `player.collision_mask = 0`. Movement is resolved per axis in
@@ -119,10 +147,51 @@ sub-cell position invalidates that cache and must remove it.
 The player's own cell is deliberately skipped while walking the Bresenham
 line. The 14x8 collision box is smaller than a 16px fog cell, so standing
 against a wall puts the cell centre inside the wall; treating it as a blocker
-makes every direction opaque and blacks out the whole screen.
+makes every direction opaque and blacks out the whole screen. The loop steps
+before it tests so this cannot regress, and a ray that starts inside a wall is
+allowed to leave it before the next wall stops it — without that, a player
+standing on a pseudo-3D wall cap sees nothing but the wall they are on. This
+was a real bug across 190 patches of standable floor.
 
 Sight blockers are rasterised from `scenes/wall_collisions.tscn`, so
 decorative art without a collision polygon does not block vision.
+
+## Three grids disagree about what a wall is, and the player lives in the gap
+
+The hall answers "is this a wall?" three times, at three resolutions:
+
+| System | Resolution | Test |
+|---|---|---|
+| Physics | exact | the authored polygons |
+| A* grid | 32px cells | can the player's body fit *anywhere* in the cell |
+| Fog | 16px cells | is the cell centre inside a polygon |
+
+Both grids are coarser than the 14x8 player body, so the player can stand
+somewhere a grid calls solid. Every system that assumes otherwise breaks in a
+way that looks like something else entirely:
+
+- `find_path()` refuses any request whose endpoint is solid, and the endpoint
+  is wherever the player is standing. A Guardian that cannot be sent to the
+  player simply stops, which reads as "the Guardian does not chase".
+- `is_sight_line_clear()` sampling the player's own cell makes the Guardian
+  blind to someone standing right in front of it.
+- `has_world_line_of_sight()` starting inside a blocker blacks out the torch.
+
+The A* grid used to probe only the cell centre, which stranded 12.7% of the
+standable hall across 246 patches and cut the open region into pieces that left
+half the door anchors unreachable. It now probes a 4x8 grid inside each cell
+and opens the cell if the body fits anywhere, which covers 99.7% of standable
+floor; `find_path()` additionally slides either endpoint to the nearest open
+cell within three cells. Both are needed: the probe grid fixes connectivity,
+the endpoint slide covers what is left.
+
+The consequence to remember: **the navigation grid is built from the player's
+body, not the Guardian's.** The Guardian is 24x24 and cannot enter about 15% of
+the cells the grid calls open, so it can walk into a gap it does not fit
+through. `enemy.gd` handles that by writing off a waypoint it has failed to
+approach for 0.4s rather than pressing into the corner forever. Rebuilding the
+grid from the Guardian's body instead is not the fix — it was measured, and it
+disconnects the map far worse.
 
 ## `scenes/wall_collisions.tscn` is the authority for the hall
 
@@ -150,6 +219,20 @@ change to the payload shape needs the version bumped.
 frame, including while a dialogue panel is open. Anything added there runs
 60 times a second for the whole session. Before adding work, check whether
 the result can only change when the player crosses a cell — most of it can.
+
+## The Guardian's cinematic freeze is a leak waiting to happen
+
+`setup_enemy()` arms `cinematic_hold` and two separate sequences are trusted to
+release it — the reveal and the power-restoration scan. Both release it only
+after a chain of `await`s, and both chains return early if the scene is being
+torn down. Either one leaving the flag set produces a Guardian that is visible,
+tracked on the map, allowed to catch the player, and physically unable to move,
+which reads in play as no hunt at all rather than as a bug.
+
+`_release_stale_guardian_hold()` clears it after six seconds of "hunt running,
+nothing playing, still frozen". The grace period is what separates a broken
+chain from the few frames between `setup_enemy()` arming the hold and the
+reveal claiming it — releasing immediately cancels the reveal.
 
 ## Localization
 
@@ -321,10 +404,13 @@ of things a parser waves through:
 any merge, rebase or conflict resolution — that is when this class of damage
 appears, and it is the one class a parser cannot warn you about.
 
-It also carries two checks that are about geometry and reward flow rather than
-syntax, added because both failures shipped: a completion handler that
-underscores both of its arguments, and a hall door whose focus rect no longer
-has walkable floor within the interaction margin.
+It also carries three checks that are about geometry and reward flow rather
+than syntax, added because each failure shipped: a completion handler that
+underscores both of its arguments, a hall door whose focus rect no longer has
+walkable floor within the interaction margin, and a knowledge exhibit placed
+where the player can never stand close enough to collect it. The last two need
+the sprite's opaque box, so the file carries a small standard-library PNG
+reader; it handles 8-bit RGBA only and skips anything else rather than guessing.
 
 ## A minigame that unlocks nothing is a worksheet
 

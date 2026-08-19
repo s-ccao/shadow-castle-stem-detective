@@ -1,5 +1,13 @@
 extends CharacterBody2D
 
+enum Behavior {
+	DORMANT,
+	CHASE,
+	PATROL,
+	SEARCH,
+	STUNNED,
+}
+
 const GUARDIAN_SPRITE_SHEET: Texture2D = preload(
 	"res://assets/characters/animated_pixel_v5/castle_guardian_walk_8dir.png"
 )
@@ -15,18 +23,16 @@ const GUARDIAN_ROW_BY_ANIMATION: Dictionary = {
 	&"walk_right": 2,
 	&"walk_up": 0,
 }
+## Fraction of the intended step the body must actually cover to count as
+## moving. Sliding along a wall keeps most of it; pressing into a corner
+## keeps almost none.
+const STALL_PROGRESS_RATIO: float = 0.25
+## How long to keep pushing before writing the waypoint off, in seconds.
+const STALL_TIMEOUT: float = 0.4
 
 @export var display_name: String = "Castle Guardian"
 @export var repath_interval: float = 0.35
 @export var catch_radius: float = 22.0
-
-enum Behavior {
-	DORMANT,
-	CHASE,
-	PATROL,
-	SEARCH,
-	STUNNED,
-}
 
 var game_world: Node = null
 var player: Node2D = null
@@ -40,6 +46,7 @@ var cinematic_hold: bool = false
 var catch_enabled: bool = true
 var can_see_player: bool = false
 var stakeout_target: Vector2 = Vector2.ZERO
+var stall_timer: float = 0.0
 @onready var guardian_sprite: AnimatedSprite2D = $GuardianCore
 
 
@@ -93,6 +100,7 @@ func set_behavior(new_behavior: int) -> void:
 	path.clear()
 	path_index = 0
 	repath_timer = 0.0
+	stall_timer = 0.0
 
 
 func set_cinematic_hold(held: bool) -> void:
@@ -100,6 +108,10 @@ func set_cinematic_hold(held: bool) -> void:
 	if held:
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
+
+
+func is_cinematic_held() -> bool:
+	return cinematic_hold
 
 
 func set_catch_enabled(enabled: bool) -> void:
@@ -144,7 +156,7 @@ func _physics_process(delta):
 		update_path()
 		repath_timer = repath_interval
 
-	move_along_path()
+	move_along_path(delta)
 	check_player_collision()
 
 
@@ -229,7 +241,7 @@ func _current_target_position() -> Vector2:
 			return GameState.get_guardian_stakeout_anchor()
 
 
-func move_along_path():
+func move_along_path(delta: float) -> void:
 	if path.size() == 0:
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
@@ -247,6 +259,7 @@ func move_along_path():
 
 	if direction.length() < 4.0:
 		path_index += 1
+		stall_timer = 0.0
 		_update_animation(Vector2.ZERO)
 		return
 
@@ -254,8 +267,34 @@ func move_along_path():
 
 	velocity = direction.normalized() * move_speed
 	_update_animation(velocity)
+	var position_before := global_position
 	move_and_slide()
+	_note_progress(position_before, move_speed, delta)
 	GameState.update_guardian_hall_position(global_position)
+
+
+## Give up on a waypoint the body cannot actually reach.
+##
+## The navigation grid is built from the player's 14x8 body, because that is
+## what decides where a chase can be aimed. This body is 24x24, so a cell the
+## grid calls open can still be too tight to enter. Without this the Guardian
+## presses into the corner forever: it never gets within 4px of the waypoint,
+## so path_index never advances and the hunt stops without ever looking stopped.
+func _note_progress(position_before: Vector2, move_speed: float, delta: float) -> void:
+	var expected := move_speed * delta
+	if expected <= 0.0:
+		return
+	if global_position.distance_to(position_before) >= expected * STALL_PROGRESS_RATIO:
+		stall_timer = 0.0
+		return
+	stall_timer += delta
+	if stall_timer < STALL_TIMEOUT:
+		return
+	stall_timer = 0.0
+	path_index += 1
+	# Re-plan on the next frame too: whatever is in the way is not on the grid,
+	# so the rest of this path is suspect.
+	repath_timer = 0.0
 
 
 ## Chase speed is the escalated, stacked value; loitering is deliberately slow

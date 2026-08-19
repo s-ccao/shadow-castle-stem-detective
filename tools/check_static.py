@@ -28,15 +28,21 @@ especially after a merge. Every class below has actually broken this project:
    walkable tile comes within the interaction margin. The same rect positions
    the focus bracket and gates the prompt, so tidying the bracket can silently
    make a room unenterable.
+8. A hall knowledge exhibit placed where no walkable tile comes within the
+   interaction margin. The sprite draws over the masonry perfectly happily, so
+   nothing looks wrong, but the knowledge behind it can never be collected and
+   the door it teaches stays locked.
 
 Exits non-zero when anything is found, so it can gate CI.
 """
 
 from __future__ import annotations
 
+import math
 import os
 import re
 import sys
+import zlib
 
 SKIP_DIRS = {".git", ".godot", "__pycache__", ".import"}
 
@@ -263,24 +269,172 @@ PLAYER_HEIGHT = 8
 # RoomSpatialRuntime.is_actor_near_rect's default margin for hall interactions.
 INTERACTION_MARGIN = 14.0
 HALL_SIZE = (1920.0, 1280.0)
+# RoomSpatialRuntime.VISIBLE_ALPHA_THRESHOLD, as a byte.
+OPAQUE_ALPHA_THRESHOLD = 12
+
+
+def _scene_nodes(scene: str) -> dict[str, dict]:
+    """Parse a .tscn into a node table keyed by scene path."""
+    text = open(scene, encoding="utf-8").read()
+    shapes: dict[str, dict] = {}
+    for block in re.finditer(
+        r'\[sub_resource type="(\w+)" id="([^"]+)"\]\n(.*?)(?=\n\[|\Z)',
+        text,
+        re.DOTALL,
+    ):
+        entry: dict = {"type": block.group(1)}
+        size = re.search(r"^size = Vector2\(([^)]*)\)", block.group(3), re.M)
+        if size:
+            entry["size"] = _pair(size.group(1))
+        radius = re.search(r"^radius = ([\d.e+-]+)", block.group(3), re.M)
+        if radius:
+            entry["radius"] = float(radius.group(1))
+        shapes[block.group(2)] = entry
+
+    nodes: dict[str, dict] = {}
+    for block in re.finditer(
+        r"\[node ([^\]]*)\]\n(.*?)(?=\n\[node |\n\[connection|\Z)", text, re.DOTALL
+    ):
+        header, body = block.group(1), block.group(2)
+        name = re.search(r'name="([^"]+)"', header)
+        if name is None:
+            continue
+        node_type = re.search(r'type="([^"]+)"', header)
+        parent = re.search(r'parent="([^"]+)"', header)
+        parent_path = parent.group(1) if parent else None
+        position = re.search(r"^position = Vector2\(([^)]*)\)", body, re.M)
+        scale = re.search(r"^scale = Vector2\(([^)]*)\)", body, re.M)
+        rotation = re.search(r"^rotation = ([\d.e+-]+)", body, re.M)
+        polygon = re.search(r"^polygon = PackedVector2Array\(([^)]*)\)", body, re.M)
+        shape_ref = re.search(r'^shape = SubResource\("([^"]+)"\)', body, re.M)
+        texture = re.search(r'^texture = ExtResource\("([^"]+)"\)', body, re.M)
+        points = None
+        if polygon:
+            numbers = [float(n) for n in polygon.group(1).split(",") if n.strip()]
+            points = list(zip(numbers[0::2], numbers[1::2]))
+        key = (
+            "."
+            if parent_path is None
+            else (
+                name.group(1)
+                if parent_path == "."
+                else parent_path + "/" + name.group(1)
+            )
+        )
+        nodes[key] = {
+            "name": name.group(1),
+            "type": node_type.group(1) if node_type else "",
+            "parent": parent_path,
+            "position": _pair(position.group(1)) if position else (0.0, 0.0),
+            "scale": _pair(scale.group(1)) if scale else (1.0, 1.0),
+            "rotation": float(rotation.group(1)) if rotation else 0.0,
+            "polygon": points,
+            "shape": shapes.get(shape_ref.group(1)) if shape_ref else None,
+            "texture": texture.group(1) if texture else None,
+            "centered": "centered = false" not in body,
+        }
+    return nodes
+
+
+def _global_transform(
+    nodes: dict[str, dict], path: str
+) -> tuple[tuple[float, float], tuple[float, float], float]:
+    chain = []
+    current = path
+    while current and current != ".":
+        chain.append(current)
+        node = nodes.get(current)
+        if node is None or node["parent"] in (None, "."):
+            break
+        current = node["parent"]
+    chain.reverse()
+    ox = oy = 0.0
+    sx = sy = 1.0
+    rot = 0.0
+    for key in chain:
+        node = nodes.get(key)
+        if node is None:
+            continue
+        px, py = node["position"][0] * sx, node["position"][1] * sy
+        cos_r, sin_r = math.cos(rot), math.sin(rot)
+        ox += px * cos_r - py * sin_r
+        oy += px * sin_r + py * cos_r
+        sx *= node["scale"][0]
+        sy *= node["scale"][1]
+        rot += node["rotation"]
+    return (ox, oy), (sx, sy), rot
+
+
+def _on_wall_layer(nodes: dict[str, dict], path: str) -> bool:
+    """True when the shape's nearest physics-body ancestor is a StaticBody2D.
+
+    The knowledge exhibits each carry an InteractionArea: an Area2D on layer 2,
+    disabled besides. game_world queries walls with collision_mask 1 and
+    collide_with_areas off, so those shapes stop nothing. Counting them walls
+    the exhibits in and hides the very floor the player interacts from.
+    """
+    current = nodes.get(path)
+    while current is not None:
+        parent_path = current["parent"]
+        if parent_path in (None, "."):
+            return False
+        parent = nodes.get(parent_path)
+        if parent is None:
+            return False
+        if parent["type"] == "StaticBody2D":
+            return True
+        if parent["type"] in ("Area2D", "CharacterBody2D", "RigidBody2D"):
+            return False
+        current = parent
+    return False
 
 
 def _hall_wall_polygons(root: str) -> list[tuple[tuple[float, ...], list]]:
-    """Every authored wall polygon, paired with its bounding box."""
+    """Everything on the hall's wall layer, as world-space polygons."""
     scene = os.path.join(root, "scenes", "wall_collisions.tscn")
     if not os.path.exists(scene):
         return []
+    nodes = _scene_nodes(scene)
     polygons = []
-    text = open(scene, encoding="utf-8").read()
-    for match in re.finditer(r"polygon = PackedVector2Array\(([^)]*)\)", text):
-        numbers = [float(n) for n in match.group(1).split(",") if n.strip()]
-        points = list(zip(numbers[0::2], numbers[1::2]))
-        if len(points) < 3:
+    for key, node in nodes.items():
+        if not _on_wall_layer(nodes, key):
             continue
-        xs = [p[0] for p in points]
-        ys = [p[1] for p in points]
-        polygons.append(((min(xs), min(ys), max(xs), max(ys)), points))
+        offset, scale, rot = _global_transform(nodes, key)
+        points = None
+        if node["type"] == "CollisionPolygon2D" and node["polygon"]:
+            points = node["polygon"]
+        elif node["type"] == "CollisionShape2D" and node["shape"]:
+            shape = node["shape"]
+            if shape["type"] == "RectangleShape2D" and "size" in shape:
+                hw, hh = shape["size"][0] / 2.0, shape["size"][1] / 2.0
+                points = [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
+            elif shape["type"] == "CircleShape2D" and "radius" in shape:
+                r = shape["radius"]
+                points = [
+                    (
+                        r * math.cos(step * math.pi / 8),
+                        r * math.sin(step * math.pi / 8),
+                    )
+                    for step in range(16)
+                ]
+        if not points or len(points) < 3:
+            continue
+        world = [_apply_transform(p, offset, scale, rot) for p in points]
+        xs = [p[0] for p in world]
+        ys = [p[1] for p in world]
+        polygons.append(((min(xs), min(ys), max(xs), max(ys)), world))
     return polygons
+
+
+def _apply_transform(
+    point: tuple[float, float],
+    offset: tuple[float, float],
+    scale: tuple[float, float],
+    rot: float,
+) -> tuple[float, float]:
+    x, y = point[0] * scale[0], point[1] * scale[1]
+    cos_r, sin_r = math.cos(rot), math.sin(rot)
+    return (offset[0] + x * cos_r - y * sin_r, offset[1] + x * sin_r + y * cos_r)
 
 
 def _point_in_polygon(x: float, y: float, points: list) -> bool:
@@ -295,25 +449,80 @@ def _point_in_polygon(x: float, y: float, points: list) -> bool:
     return inside
 
 
+def _segments_cross(
+    ax: float,
+    ay: float,
+    bx: float,
+    by: float,
+    cx: float,
+    cy: float,
+    dx: float,
+    dy: float,
+) -> bool:
+    """Do segments AB and CD intersect?"""
+
+    def orientation(px, py, qx, qy, rx, ry):
+        value = (qy - py) * (rx - qx) - (qx - px) * (ry - qy)
+        if value > 1e-9:
+            return 1
+        if value < -1e-9:
+            return -1
+        return 0
+
+    o1 = orientation(ax, ay, bx, by, cx, cy)
+    o2 = orientation(ax, ay, bx, by, dx, dy)
+    o3 = orientation(cx, cy, dx, dy, ax, ay)
+    o4 = orientation(cx, cy, dx, dy, bx, by)
+    if o1 != o2 and o3 != o4:
+        return True
+    # Collinear overlap counts as touching, which is what a wall does.
+    if o1 == 0 and min(ax, bx) <= cx <= max(ax, bx) and min(ay, by) <= cy <= max(ay, by):
+        return True
+    if o2 == 0 and min(ax, bx) <= dx <= max(ax, bx) and min(ay, by) <= dy <= max(ay, by):
+        return True
+    if o3 == 0 and min(cx, dx) <= ax <= max(cx, dx) and min(cy, dy) <= ay <= max(cy, dy):
+        return True
+    if o4 == 0 and min(cx, dx) <= bx <= max(cx, dx) and min(cy, dy) <= by <= max(cy, dy):
+        return True
+    return False
+
+
 def _player_fits(x: float, y: float, polygons: list) -> bool:
+    """Is the player's body clear of every wall with its ground point at (x, y)?
+
+    This is a real rectangle-polygon overlap test rather than a handful of
+    sample points. Sampling was close enough while the walls were a few dozen
+    hand-drawn slabs, but the hall now has 163 generated patches, some only a
+    few pixels wide, and a 14x8 body straddles those with every sample landing
+    on open floor. That reports walkable floor inside a wall, which is exactly
+    the mistake these checks exist to catch.
+    """
     left, right = x - PLAYER_HALF_WIDTH, x + PLAYER_HALF_WIDTH
     top, bottom = y - PLAYER_HEIGHT, y
     if left < 0.0 or top < 0.0 or right > HALL_SIZE[0] or bottom > HALL_SIZE[1]:
         return False
-    # Walls are never thinner than a tile, so sampling the body's corners,
-    # edge midpoints and centre cannot step over one.
-    samples = [
-        (sx, sy)
-        for sx in (left, x, right)
-        for sy in (top, y - PLAYER_HEIGHT / 2.0, bottom)
-    ]
+    corners = ((left, top), (right, top), (right, bottom), (left, bottom))
     for bounds, points in polygons:
         min_x, min_y, max_x, max_y = bounds
         if right < min_x or left > max_x or bottom < min_y or top > max_y:
             continue
-        for sx, sy in samples:
-            if _point_in_polygon(sx, sy, points):
+        # A polygon vertex inside the body, or the body's corner inside the
+        # polygon, or any pair of edges crossing: all three mean overlap.
+        for px, py in points:
+            if left <= px <= right and top <= py <= bottom:
                 return False
+        for cx, cy in corners:
+            if _point_in_polygon(cx, cy, points):
+                return False
+        count = len(points)
+        for index in range(count):
+            x0, y0 = points[index]
+            x1, y1 = points[(index + 1) % count]
+            for corner_index in range(4):
+                rx0, ry0 = corners[corner_index]
+                rx1, ry1 = corners[(corner_index + 1) % 4]
+                if _segments_cross(x0, y0, x1, y1, rx0, ry0, rx1, ry1):
+                    return False
     return True
 
 
@@ -375,21 +584,8 @@ def check_door_focus_reachable(root: str) -> list[str]:
     if not polygons:
         return []
     problems: list[str] = []
-    for name, (rect_x, rect_y, width, height) in _door_focus_rects(source):
-        margin = INTERACTION_MARGIN + PLAYER_HEIGHT + 1.0
-        found = False
-        y = rect_y - margin
-        while y <= rect_y + height + margin and not found:
-            x = rect_x - margin
-            while x <= rect_x + width + margin:
-                if _player_fits(x, y, polygons) and _rect_gap(
-                    x, y, rect_x, rect_y, width, height
-                ) <= INTERACTION_MARGIN:
-                    found = True
-                    break
-                x += 4.0
-            y += 4.0
-        if not found:
+    for name, rect in _door_focus_rects(source):
+        if not _reachable(rect, polygons):
             problems.append(
                 f"scripts/game_world.gd: {name} puts the focus rect where no "
                 "walkable tile comes within the interaction margin, so the "
@@ -414,6 +610,199 @@ def _rect_gap(
     return (horizontal * horizontal + vertical * vertical) ** 0.5
 
 
+def _reachable(rect: tuple[float, float, float, float], polygons: list) -> bool:
+    """Can the player's body get within the interaction margin of this rect?"""
+    rect_x, rect_y, width, height = rect
+    margin = INTERACTION_MARGIN + PLAYER_HEIGHT + 1.0
+    y = rect_y - margin
+    while y <= rect_y + height + margin:
+        x = rect_x - margin
+        while x <= rect_x + width + margin:
+            if _player_fits(x, y, polygons) and _rect_gap(
+                x, y, rect_x, rect_y, width, height
+            ) <= INTERACTION_MARGIN:
+                return True
+            x += 2.0
+        y += 2.0
+    return False
+
+
+def _png_opaque_box(path: str) -> tuple[int, int, int, int, int, int] | None:
+    """(left, top, right, bottom, width, height) of a PNG's non-transparent pixels.
+
+    RoomSpatialRuntime crops every sprite to this box before it builds an
+    interaction rect, so a checker that skips it measures a box far larger than
+    the one the game uses. Only 8-bit RGBA, non-interlaced files are handled;
+    anything else returns None and the caller skips the check rather than
+    guessing.
+    """
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError:
+        return None
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        return None
+    width = height = 0
+    idat = bytearray()
+    offset = 8
+    while offset + 8 <= len(data):
+        length = int.from_bytes(data[offset : offset + 4], "big")
+        kind = data[offset + 4 : offset + 8]
+        body = data[offset + 8 : offset + 8 + length]
+        if kind == b"IHDR":
+            width = int.from_bytes(body[0:4], "big")
+            height = int.from_bytes(body[4:8], "big")
+            if body[8] != 8 or body[9] != 6 or body[12] != 0:
+                return None
+        elif kind == b"IDAT":
+            idat += body
+        elif kind == b"IEND":
+            break
+        offset += 12 + length
+    if width == 0 or height == 0 or not idat:
+        return None
+    try:
+        raw = zlib.decompress(bytes(idat))
+    except zlib.error:
+        return None
+
+    stride = width * 4
+    if len(raw) < height * (stride + 1):
+        return None
+    # Undo the per-scanline filters, but only on the alpha channel. Every PNG
+    # filter references the byte one pixel to the left, which at 4 bytes per
+    # pixel is the previous alpha byte, so alpha reconstructs entirely from
+    # itself and three quarters of the work can be skipped.
+    previous = bytes(width)
+    left = width
+    top = height
+    right = -1
+    bottom = -1
+    position = 0
+    for row in range(height):
+        filter_type = raw[position]
+        line = bytearray(raw[position + 4 : position + 1 + stride : 4])
+        position += 1 + stride
+        if filter_type == 1:
+            for i in range(1, width):
+                line[i] = (line[i] + line[i - 1]) & 0xFF
+        elif filter_type == 2:
+            for i in range(width):
+                line[i] = (line[i] + previous[i]) & 0xFF
+        elif filter_type == 3:
+            for i in range(width):
+                a = line[i - 1] if i else 0
+                line[i] = (line[i] + ((a + previous[i]) >> 1)) & 0xFF
+        elif filter_type == 4:
+            for i in range(width):
+                a = line[i - 1] if i else 0
+                b = previous[i]
+                c = previous[i - 1] if i else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                if pa <= pb and pa <= pc:
+                    predictor = a
+                elif pb <= pc:
+                    predictor = b
+                else:
+                    predictor = c
+                line[i] = (line[i] + predictor) & 0xFF
+        elif filter_type != 0:
+            return None
+        row_left = -1
+        row_right = -1
+        for column, value in enumerate(line):
+            if value > OPAQUE_ALPHA_THRESHOLD:
+                if row_left < 0:
+                    row_left = column
+                row_right = column
+        if row_left >= 0:
+            left = min(left, row_left)
+            right = max(right, row_right)
+            top = min(top, row)
+            bottom = max(bottom, row)
+        previous = line
+    if right < left or bottom < top:
+        return (0, 0, width, height, width, height)
+    return (left, top, right + 1, bottom + 1, width, height)
+
+
+def _exhibit_rects(root: str) -> list[tuple[str, tuple[float, float, float, float]]]:
+    """The interaction rect of every hall exhibit, as the game computes it."""
+    scene = os.path.join(root, "scenes", "wall_collisions.tscn")
+    if not os.path.exists(scene):
+        return []
+    text = open(scene, encoding="utf-8").read()
+    textures = {
+        match.group(2): match.group(1)
+        for match in re.finditer(
+            r'\[ext_resource type="Texture2D"[^\]]*path="res://([^"]+)"'
+            r'\s+id="([^"]+)"\]',
+            text,
+        )
+    }
+    nodes = _scene_nodes(scene)
+
+    rects = []
+    for key, node in nodes.items():
+        if node["texture"] is None or node["type"] != "Sprite2D":
+            continue
+        parent = node["parent"] or ""
+        if not parent.startswith("KnowledgeExhibits/"):
+            continue
+        relative = textures.get(node["texture"])
+        if relative is None:
+            continue
+        box = _png_opaque_box(os.path.join(root, relative))
+        if box is None:
+            continue
+        offset, scale, _rot = _global_transform(nodes, key)
+        left, top, right, bottom, image_w, image_h = box
+        origin_x = offset[0] - (image_w * scale[0] / 2.0 if node["centered"] else 0.0)
+        origin_y = offset[1] - (image_h * scale[1] / 2.0 if node["centered"] else 0.0)
+        rects.append(
+            (
+                parent.split("/")[-1],
+                (
+                    origin_x + left * scale[0],
+                    origin_y + top * scale[1],
+                    (right - left) * scale[0],
+                    (bottom - top) * scale[1],
+                ),
+            )
+        )
+    return rects
+
+
+def _pair(text: str) -> tuple[float, float]:
+    parts = [float(p) for p in text.split(",")]
+    return (parts[0], parts[1])
+
+
+def check_exhibit_reachable(root: str) -> list[str]:
+    """Report a hall knowledge exhibit the player can never walk up to.
+
+    Each exhibit teaches the answer to one door's knowledge lock, so an exhibit
+    parked inside the masonry is not a cosmetic problem: the question it
+    prepares becomes unanswerable and the run cannot continue. Two of the five
+    shipped that way, and nothing about their placement looks wrong in the
+    editor, because the sprite draws over the wall perfectly happily.
+    """
+    polygons = _hall_wall_polygons(root)
+    if not polygons:
+        return []
+    problems: list[str] = []
+    for name, rect in _exhibit_rects(root):
+        if not _reachable(rect, polygons):
+            problems.append(
+                f"scenes/wall_collisions.tscn: {name} sits where no walkable "
+                "tile comes within the interaction margin, so its knowledge "
+                "can never be collected and the door it teaches stays locked"
+            )
+    return problems
+
+
 def main() -> int:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     problems: list[str] = []
@@ -427,6 +816,7 @@ def main() -> int:
         problems.extend(check_minigame_rewards(path))
     problems.extend(check_resource_paths(root))
     problems.extend(check_door_focus_reachable(root))
+    problems.extend(check_exhibit_reachable(root))
 
     for problem in problems:
         print(problem.replace(root + os.sep, ""))

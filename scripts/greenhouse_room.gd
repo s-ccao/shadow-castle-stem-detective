@@ -116,6 +116,13 @@ var INTERACT_ITEMS: Array[Dictionary] = [
 		"name": "herb_bed_left",
 		"label": "the long herb bed",
 		"position": Vector2(214, 858),
+		# The beds are painted into the background rather than placed as props,
+		# so _sync_interaction_footprints has no node to measure and the item
+		# would fall back to a fixed 88x68 box centred on "position" — a small
+		# square floating over the lower third of a bed that is 125x655. These
+		# bounds are read off greenhouse_room_bg.png: the planter kerb, mirrored
+		# about the room's centre line at x=512.
+		"interaction_rect": Rect2(105, 305, 125, 655),
 		"message": (
 			"A long raised bed of blue blossom. The supply valves for light, "
 			+ "water and air all feed into it."
@@ -125,6 +132,7 @@ var INTERACT_ITEMS: Array[Dictionary] = [
 		"name": "herb_bed_right",
 		"label": "the moonleaf bed",
 		"position": Vector2(806, 858),
+		"interaction_rect": Rect2(794, 305, 125, 655),
 		"message": (
 			"A long raised bed of moonleaf. The silver pods open and close, "
 			+ "each on its own slow rhythm."
