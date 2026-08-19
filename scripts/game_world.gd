@@ -2102,7 +2102,15 @@ func on_player_caught():
 ## something the Guardian did. This pans onto the Guardian, names the capture,
 ## and only then opens the report.
 func _play_capture_sequence() -> void:
-	if enemy == null or follow_camera == null or guardian_reveal_overlay == null:
+	# Any missing piece means the beat cannot be staged. This is the death path,
+	# so it falls through to the report rather than risking a crash on the frame
+	# the player already lost.
+	if (
+		enemy == null
+		or player == null
+		or follow_camera == null
+		or guardian_reveal_overlay == null
+	):
 		_show_game_over_screen()
 		return
 
