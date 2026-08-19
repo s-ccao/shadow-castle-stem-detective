@@ -46,8 +46,6 @@ const NPC_DIALOGUE_PORTRAITS: Dictionary = {
 	"Castle Guardian": "res://assets/characters/portraits_pixel_v2/castle_guardian.png",
 }
 
-var wall_visual: Sprite2D
-
 # ============================================================
 # Castle Hall layout (60x40 string map, one char per 32px cell)
 # '#' = wall, 'K' = knowledge-lock door cells, '.' = floor.
@@ -130,6 +128,7 @@ var camera_target_zoom: Vector2 = (
 	DEVELOPER_CAMERA_ZOOM
 )
 
+var wall_visual: Sprite2D
 var developer_mode_label: Label
 var intro_seen := false
 var intro_reviewing_objectives := false
@@ -239,19 +238,39 @@ const CHEMISTRY_ROOM_SCENE_PATH: String = \
 const GREENHOUSE_ROOM_SCENE_PATH: String = \
 	"res://scenes/floor_1/greenhouse_room.tscn"
 
-# 用户手动确认的大厅房间入口坐标。交互点和视觉焦点使用同一坐标，
-# 不再用旧底图推算值覆盖用户调整。
+# 每扇门有两个坐标，职责不同，不要再合并成一个：
+#
+# *_DOOR_POSITION       玩家侧的位置。离开房间时在这里落地，守卫把它当作
+#                       蹲守锚点，寻路也拿它当目标。用户手工调过，别动。
+# *_DOOR_FOCUS_POSITION 门在 hall_walls.png 上画出来的位置。交互角标框和
+#                       "靠近才提示"的判定框都以它为中心（见
+#                       get_interaction_rect）。
+#
+# 两者曾经填同一个值，于是角标框画在门前面的空地上——门明明在墙里，框却
+# 套着一块地砖。焦点值是逐扇门在墙体图上量出来的（1536x1024 按 x1.25 铺满
+# 1920x1280，所以图上坐标乘 1.25 就是世界坐标）：拱门取石框中心，化学门那
+# 面墙没画门，取玩家正对的那段墙面。
+#
+# 改焦点值前先确认：焦点框外扩 14px 后仍要有可站立的地砖，否则提示永远不
+# 会出现。八扇门当前都留有 2000 个以上的可达立足像素。
 const CHEMISTRY_ROOM_DOOR_POSITION: Vector2 = Vector2(283, 162)
-const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(283, 162)
+## 这面墙上没有画门，只有一排金色壁柜。取正中那格带白色拱顶的凹龛
+## （墙面 y 32~120），框底压在门槛地砖上，玩家站在 (283,162) 仍能触发。
+const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(287, 103)
 ## Door art and wall collision overlap at the old marker (283, 162). Spawn below
 ## the threshold, where the player has room to leave in every direction.
 const CHEMISTRY_ROOM_RETURN_POSITION: Vector2 = Vector2(267, 210)
 const CHEMISTRY_ROOM_DOOR_RADIUS: float = 100.0
 const GREENHOUSE_ROOM_DOOR_POSITION: Vector2 = Vector2(219, 409)
-const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(219, 409)
+## 拱门石框 x 188~246 / y 318~388。
+const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(217, 353)
 const GREENHOUSE_ROOM_DOOR_RADIUS: float = 100.0
 const LIBRARY_DOOR_POSITION: Vector2 = Vector2(1676, 285)
+## 拱门石框 x 1632~1713 / y 203~265。
+const LIBRARY_DOOR_FOCUS_POSITION: Vector2 = Vector2(1673, 234)
 const DINING_HALL_DOOR_POSITION: Vector2 = Vector2(1774, 715)
+## 拱门石框 x 1742~1800 / y 667~738。
+const DINING_HALL_DOOR_FOCUS_POSITION: Vector2 = Vector2(1771, 702)
 const HALL_ENEMY_START_POSITION := Vector2(1744, 1072)
 
 # 新房间场景（用户 2026-08-05 提供的四张 1448×1086 房间图）。
@@ -268,7 +287,8 @@ const FINAL_ROOM_SCENE_PATH: String = (
 	"res://scenes/floor_1/final_room.tscn"
 )
 const FINAL_ROOM_DOOR_POSITION: Vector2 = Vector2(955, 138)
-const FINAL_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(955, 138)
+## 大厅顶端的穹顶拱门，画面上 y 22~97，框顶顶到地图上边缘。
+const FINAL_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(958, 72)
 const FINAL_ROOM_DOOR_RADIUS: float = 100.0
 
 # Mrs. Lin 撕落的走廊笔记碎片（在大厅拼凑，指引 Final Room）。
@@ -464,7 +484,9 @@ const FINAL_SYNTHESIS_QUESTIONS: Array[Dictionary] = [
 const WAKE_ROOM_SCENE_PATH: String = \
 	"res://scenes/wake_room.tscn"
 const WAKE_ROOM_DOOR_POSITION: Vector2 = Vector2(258, 1050)
-const WAKE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(258, 1050)
+## 拱门贴着地图下边缘（石框 x 243~340 / y 1122~1210），落地点在它上方约
+## 120px 的空地上，所以回到大厅时不会立刻又弹出"按 E 返回"。
+const WAKE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(292, 1166)
 const WAKE_ROOM_DOOR_INTERACT_RADIUS: float = 75.0
 # ============================================================
 # Floor 1 world positions
@@ -487,6 +509,7 @@ const GARDENER_POSITION: Vector2 = Vector2(1648, 496)
 # The old point (332,899) was inside a wall cell. Use the walkable
 # threshold for interaction and keep the visual focus on the doorway.
 const CIRCUIT_DOOR_POSITION: Vector2 = Vector2(168, 691)
+## 这扇门的触发点正好落在拱门中心（石框 x 141~198 / y 664~718），焦点不必挪。
 const CIRCUIT_DOOR_FOCUS_POSITION: Vector2 = Vector2(168, 691)
 
 # Maintenance note in the service corridor outside the locked door.
@@ -638,9 +661,14 @@ func get_interaction_rect(interaction_id: String) -> Rect2:
 		"greenhouse_room_door":
 			return Rect2(GREENHOUSE_ROOM_DOOR_FOCUS_POSITION - Vector2(76.0, 64.0), Vector2(152.0, 128.0))
 		"library_door":
-			return Rect2(LIBRARY_DOOR_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0))
+			return Rect2(
+				LIBRARY_DOOR_FOCUS_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0)
+			)
 		"dining_hall_door":
-			return Rect2(DINING_HALL_DOOR_POSITION - Vector2(78.0, 64.0), Vector2(156.0, 128.0))
+			return Rect2(
+				DINING_HALL_DOOR_FOCUS_POSITION - Vector2(78.0, 64.0),
+				Vector2(156.0, 128.0)
+			)
 		"final_room_door":
 			return Rect2(FINAL_ROOM_DOOR_FOCUS_POSITION - Vector2(86.0, 66.0), Vector2(172.0, 132.0))
 		"wake_room_door":
@@ -1948,11 +1976,11 @@ func update_interaction_focus() -> void:
 			focus_title = "Greenhouse Room"
 			is_primary = true
 		"library_door":
-			target_position = LIBRARY_DOOR_POSITION
+			target_position = LIBRARY_DOOR_FOCUS_POSITION
 			focus_title = "Library"
 			is_primary = true
 		"dining_hall_door":
-			target_position = DINING_HALL_DOOR_POSITION
+			target_position = DINING_HALL_DOOR_FOCUS_POSITION
 			focus_title = "Dining Hall"
 			is_primary = true
 		"final_room_door":
@@ -5829,12 +5857,12 @@ func create_floor_one_layout_markers():
 	)
 	create_layout_marker(
 		"Library Door",
-		LIBRARY_DOOR_POSITION,
+		LIBRARY_DOOR_FOCUS_POSITION,
 		Color(0.60, 0.30, 0.95, 0.95)
 	)
 	create_layout_marker(
 		"Dining Hall Door",
-		DINING_HALL_DOOR_POSITION,
+		DINING_HALL_DOOR_FOCUS_POSITION,
 		Color(0.95, 0.65, 0.25, 0.95)
 	)
 func create_layout_marker(

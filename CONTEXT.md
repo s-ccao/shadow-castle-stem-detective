@@ -56,15 +56,31 @@ composite = Image.alpha_composite(floor, walls)
 
 Every hall door has two coordinates and they are not interchangeable:
 
-- `*_DOOR_POSITION` — centre of the interaction trigger circle, **and** the
-  return-spawn anchor used by `get_floor_one_spawn_anchor()`. Moving it
-  changes where the player can interact and where they land coming back.
-- `*_DOOR_FOCUS_POSITION` — where the interaction bracket is drawn. Purely
-  cosmetic; safe to nudge.
+- `*_DOOR_POSITION` — the player-side anchor: the return spawn used by
+  `get_floor_one_spawn_position()`, the guardian's stakeout anchor, and the
+  pathfinding target. Users have hand-placed these; moving one changes where
+  the player lands coming back out of the room.
+- `*_DOOR_FOCUS_POSITION` — where the door is *drawn* on `hall_walls.png`.
+  `get_interaction_rect()` builds its rect around this one, and that rect does
+  double duty: it positions the corner bracket **and** it decides whether the
+  player is near enough to be offered the prompt. It is not cosmetic. Push it
+  far enough into the wall and the room stops being enterable.
+
+The two were once filled with the same value, which drew every bracket on a
+patch of empty floor in front of the door. The focus values are measured off
+the wall art (1536x1024 scaled x1.25 onto the 1920x1280 map, so image
+coordinates x1.25 are world coordinates); each constant carries the stone-frame
+bounds it was taken from. Two merges have already reset them, and the damage
+does not look like a bug in a diff, so `tools/check_static.py` now asserts that
+every door's rect still has walkable floor within the 14px interaction margin.
+
+The chemistry doorway is the exception: that stretch of wall has no door drawn
+on it at all, only a row of golden cabinets, so its focus sits on the recessed
+alcove the player faces.
 
 Doors are embedded in walls, so `*_DOOR_POSITION` sitting inside a collision
-polygon is normal and expected. What matters is that the trigger radius
-covers standable floor in front of the door.
+polygon is normal and expected. What matters is that standable floor remains
+within the interaction margin of the focus rect.
 
 ## Walking into a wall freezes the player permanently
 
@@ -304,6 +320,11 @@ of things a parser waves through:
 `python3 tools/check_static.py` covers all four and CI runs it. Run it after
 any merge, rebase or conflict resolution — that is when this class of damage
 appears, and it is the one class a parser cannot warn you about.
+
+It also carries two checks that are about geometry and reward flow rather than
+syntax, added because both failures shipped: a completion handler that
+underscores both of its arguments, and a hall door whose focus rect no longer
+has walkable floor within the interaction margin.
 
 ## A minigame that unlocks nothing is a worksheet
 

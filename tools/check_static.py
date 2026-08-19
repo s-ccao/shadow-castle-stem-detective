@@ -4,7 +4,7 @@
 gdparse only checks that a file is syntactically well-formed. Godot rejects
 more than that, and some things it accepts still misbehave at runtime. Those
 only surface when you press Play -- a slow and unpleasant way to find them,
-especially after a merge. Four classes have actually broken this project:
+especially after a merge. Every class below has actually broken this project:
 
 1. Duplicate dictionary keys. A merge that brings the same block of entries in
    twice parses fine but makes Godot refuse to load the script. The whole game
@@ -24,6 +24,10 @@ especially after a merge. Four classes have actually broken this project:
 6. A minigame completion handler that underscores both of its parameters. It is
    saying it does not care whether the player played, so opening the panel and
    closing it immediately collects the reward.
+7. A hall door whose interaction rect sits so far inside the wall art that no
+   walkable tile comes within the interaction margin. The same rect positions
+   the focus bracket and gates the prompt, so tidying the bracket can silently
+   make a room unenterable.
 
 Exits non-zero when anything is found, so it can gate CI.
 """
@@ -252,6 +256,164 @@ def check_resource_paths(root: str) -> list[str]:
     return problems
 
 
+# The hall's player body: a 14x8 box whose centre sits 4px above the node
+# position, so its top-left corner is (x - 7, y - 8).
+PLAYER_HALF_WIDTH = 7
+PLAYER_HEIGHT = 8
+# RoomSpatialRuntime.is_actor_near_rect's default margin for hall interactions.
+INTERACTION_MARGIN = 14.0
+HALL_SIZE = (1920.0, 1280.0)
+
+
+def _hall_wall_polygons(root: str) -> list[tuple[tuple[float, ...], list]]:
+    """Every authored wall polygon, paired with its bounding box."""
+    scene = os.path.join(root, "scenes", "wall_collisions.tscn")
+    if not os.path.exists(scene):
+        return []
+    polygons = []
+    text = open(scene, encoding="utf-8").read()
+    for match in re.finditer(r"polygon = PackedVector2Array\(([^)]*)\)", text):
+        numbers = [float(n) for n in match.group(1).split(",") if n.strip()]
+        points = list(zip(numbers[0::2], numbers[1::2]))
+        if len(points) < 3:
+            continue
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        polygons.append(((min(xs), min(ys), max(xs), max(ys)), points))
+    return polygons
+
+
+def _point_in_polygon(x: float, y: float, points: list) -> bool:
+    inside = False
+    count = len(points)
+    for index in range(count):
+        x0, y0 = points[index]
+        x1, y1 = points[(index + 1) % count]
+        if (y0 > y) != (y1 > y):
+            if x < (x1 - x0) * (y - y0) / (y1 - y0) + x0:
+                inside = not inside
+    return inside
+
+
+def _player_fits(x: float, y: float, polygons: list) -> bool:
+    left, right = x - PLAYER_HALF_WIDTH, x + PLAYER_HALF_WIDTH
+    top, bottom = y - PLAYER_HEIGHT, y
+    if left < 0.0 or top < 0.0 or right > HALL_SIZE[0] or bottom > HALL_SIZE[1]:
+        return False
+    # Walls are never thinner than a tile, so sampling the body's corners,
+    # edge midpoints and centre cannot step over one.
+    samples = [
+        (sx, sy)
+        for sx in (left, x, right)
+        for sy in (top, y - PLAYER_HEIGHT / 2.0, bottom)
+    ]
+    for bounds, points in polygons:
+        min_x, min_y, max_x, max_y = bounds
+        if right < min_x or left > max_x or bottom < min_y or top > max_y:
+            continue
+        for sx, sy in samples:
+            if _point_in_polygon(sx, sy, points):
+                return False
+    return True
+
+
+def _door_focus_rects(path: str) -> list[tuple[str, tuple[float, ...]]]:
+    """The rect each hall door draws its focus bracket on, from the source."""
+    text = open(path, encoding="utf-8").read()
+    constants = {
+        name: (float(x), float(y))
+        for name, x, y in re.findall(
+            r"^const\s+(\w+):\s*Vector2\s*=\s*Vector2\(\s*"
+            r"(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)",
+            text,
+            re.MULTILINE,
+        )
+    }
+    body = re.search(
+        r"^func get_interaction_rect.*?(?=^func )", text, re.MULTILINE | re.DOTALL
+    )
+    if body is None:
+        return []
+    flat = re.sub(r"\s+", " ", body.group(0))
+    rects = []
+    pattern = (
+        r"Rect2\(\s*(\w*DOOR\w*)\s*-\s*Vector2\(\s*([\d.]+)\s*,\s*([\d.]+)\s*\)\s*,"
+        r"\s*Vector2\(\s*([\d.]+)\s*,\s*([\d.]+)\s*\)\s*\)"
+    )
+    for name, off_x, off_y, width, height in re.findall(pattern, flat):
+        if name not in constants:
+            continue
+        centre = constants[name]
+        rects.append(
+            (
+                name,
+                (
+                    centre[0] - float(off_x),
+                    centre[1] - float(off_y),
+                    float(width),
+                    float(height),
+                ),
+            )
+        )
+    return rects
+
+
+def check_door_focus_reachable(root: str) -> list[str]:
+    """Report a hall door whose prompt no player can ever stand close enough to.
+
+    `get_interaction_rect` does double duty: it positions the focus bracket and
+    it decides whether the player is near enough to interact. Aligning a door's
+    bracket with the art therefore also moves the zone that offers the prompt,
+    and pushing it too far into the wall makes the room unreachable. Two merges
+    have already reset these constants; the damage is invisible in a diff and
+    only shows up as a door that stops responding.
+    """
+    source = os.path.join(root, "scripts", "game_world.gd")
+    if not os.path.exists(source):
+        return []
+    polygons = _hall_wall_polygons(root)
+    if not polygons:
+        return []
+    problems: list[str] = []
+    for name, (rect_x, rect_y, width, height) in _door_focus_rects(source):
+        margin = INTERACTION_MARGIN + PLAYER_HEIGHT + 1.0
+        found = False
+        y = rect_y - margin
+        while y <= rect_y + height + margin and not found:
+            x = rect_x - margin
+            while x <= rect_x + width + margin:
+                if _player_fits(x, y, polygons) and _rect_gap(
+                    x, y, rect_x, rect_y, width, height
+                ) <= INTERACTION_MARGIN:
+                    found = True
+                    break
+                x += 4.0
+            y += 4.0
+        if not found:
+            problems.append(
+                f"scripts/game_world.gd: {name} puts the focus rect where no "
+                "walkable tile comes within the interaction margin, so the "
+                "prompt can never appear"
+            )
+    return problems
+
+
+def _rect_gap(
+    x: float, y: float, rect_x: float, rect_y: float, width: float, height: float
+) -> float:
+    horizontal = max(
+        rect_x - (x + PLAYER_HALF_WIDTH), (x - PLAYER_HALF_WIDTH) - (rect_x + width)
+    )
+    vertical = max(rect_y - y, (y - PLAYER_HEIGHT) - (rect_y + height))
+    if horizontal <= 0.0 and vertical <= 0.0:
+        return 0.0
+    if horizontal <= 0.0:
+        return vertical
+    if vertical <= 0.0:
+        return horizontal
+    return (horizontal * horizontal + vertical * vertical) ** 0.5
+
+
 def main() -> int:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     problems: list[str] = []
@@ -264,6 +426,7 @@ def main() -> int:
         problems.extend(check_markdown_emphasis(path))
         problems.extend(check_minigame_rewards(path))
     problems.extend(check_resource_paths(root))
+    problems.extend(check_door_focus_reachable(root))
 
     for problem in problems:
         print(problem.replace(root + os.sep, ""))
