@@ -821,6 +821,7 @@ func _ready():
 	create_fog_cells()
 	create_game_ui()
 	create_interaction_focus()
+	create_potion_field_effects()
 	create_developer_mode_label()
 	create_game_over_ui()
 	apply_persistent_visual_state()
@@ -2310,6 +2311,10 @@ func on_player_caught():
 	if enemy != null:
 		enemy.set_physics_process(false)
 
+	var field_effects := get_node_or_null("PotionFieldEffects")
+	if field_effects != null and field_effects.has_method("suspend"):
+		field_effects.call("suspend")
+
 	_play_capture_sequence()
 
 
@@ -2537,6 +2542,15 @@ func create_interaction_focus() -> void:
 	interaction_focus = WorldInteractionFocus.new()
 	interaction_focus.name = "WorldInteractionFocus"
 	add_child(interaction_focus)
+
+
+## The world-space half of every potion. Added after both bodies exist, because
+## it draws off the player's own sprite frames and tracks the Guardian's feet.
+func create_potion_field_effects() -> void:
+	var effects := PotionFieldEffects.new()
+	effects.name = "PotionFieldEffects"
+	add_child(effects)
+	effects.setup(player, enemy)
 
 
 func update_interaction_focus() -> void:

@@ -46,6 +46,11 @@ const GUARDIAN_SIGHT_HALF_ANGLE_DEGREES: float = 46.0
 ## could stand inside the Guardian without consequence.
 const GUARDIAN_PROXIMITY_ALERT_RADIUS: float = 78.0
 const GUARDIAN_STUN_DURATION: float = 7.0
+## How hard, and for how long, wading through a Toxic Mire drags the Guardian.
+## A stun stops it dead and reads as a scripted pause; this leaves it hunting
+## and merely losing the race, which is the more useful kind of pressure.
+const GUARDIAN_MIRE_SLOW_MULTIPLIER: float = 0.42
+const GUARDIAN_MIRE_SLOW_DURATION: float = 3.2
 
 ## Room keys are the canonical "this room is cleared" signal already used by
 ## progression, so escalation reads from them instead of a parallel counter.
@@ -182,6 +187,7 @@ func save_to_disk() -> bool:
 		"guardian_patrol_route": _vector2_array_payload(guardian_patrol_route),
 		"guardian_tracking_serum": guardian_tracking_serum,
 		"guardian_stun_remaining": guardian_stun_remaining,
+		"guardian_mire_remaining": guardian_mire_remaining,
 		"guardian_search_remaining": guardian_search_remaining,
 		"guardian_last_known_player_position": _vector2_payload(
 			guardian_last_known_player_position
@@ -284,6 +290,10 @@ func load_saved_game() -> bool:
 	guardian_tracking_serum = bool(data.get("guardian_tracking_serum", true))
 	guardian_stun_remaining = maxf(
 		float(data.get("guardian_stun_remaining", 0.0)),
+		0.0
+	)
+	guardian_mire_remaining = maxf(
+		float(data.get("guardian_mire_remaining", 0.0)),
 		0.0
 	)
 	guardian_search_remaining = maxf(
@@ -403,10 +413,10 @@ const POTION_INFO: Dictionary = {
 		"duration": 20.0,
 	},
 	"green_potion": {
-		"name": "Green Potion",
-		"description": "A later-added green potion. It is separate from Vision Potion.",
-		"effect": "",
-		"duration": 0.0,
+		"name": "Toxic Mire Potion",
+		"description": "Smash it underfoot. The floor bogs for 18 seconds and drags the Guardian.",
+		"effect": "mire",
+		"duration": 18.0,
 	},
 	"purification_potion": {
 		"name": "Purification Potion",
@@ -425,6 +435,12 @@ const POTION_INFO: Dictionary = {
 		"description": "Bends light around you for 12 seconds. The Guardian cannot see you at all.",
 		"effect": "shroud",
 		"duration": 12.0,
+	},
+	"reveal_potion": {
+		"name": "Revealing Draught",
+		"description": "Drains all colour for 16 seconds and prints every step the Guardian takes.",
+		"effect": "reveal",
+		"duration": 16.0,
 	},
 }
 
@@ -463,6 +479,20 @@ const RECIPE_INFO: Dictionary = {
 		"produces": "shroud_potion",
 		"herb_cost": {"moonleaf": 2},
 		"material_cost": {"prism_dust": 2},
+	},
+	"recipe_mire": {
+		"name": "Toxic Mire Recipe",
+		"description": "Blue Blossom x1 + Moonleaf x1 + Iron Salt x2 -> Toxic Mire Potion.",
+		"produces": "green_potion",
+		"herb_cost": {"blue_blossom": 1, "moonleaf": 1},
+		"material_cost": {"iron_salt": 2},
+	},
+	"recipe_reveal": {
+		"name": "Revealing Draught Recipe",
+		"description": "Moonleaf x2 + Prism Dust x1 + Distilled Water x1 -> Revealing Draught.",
+		"produces": "reveal_potion",
+		"herb_cost": {"moonleaf": 2},
+		"material_cost": {"prism_dust": 1, "distilled_water": 1},
 	},
 }
 
@@ -518,6 +548,16 @@ const ITEM_VISUAL_INFO: Dictionary = {
 		"accent": Color(0.34, 0.36, 0.72, 1.0),
 		"model_class": "formula",
 	},
+	"recipe_mire": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_mire.png",
+		"accent": Color(0.36, 0.82, 0.40, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_reveal": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_reveal.png",
+		"accent": Color(0.80, 0.84, 0.90, 1.0),
+		"model_class": "formula",
+	},
 	"blue_blossom": {
 		"texture": "res://assets/ui/item_models/pixel_art_v1/blue_blossom.png",
 		"accent": Color(0.24, 0.58, 1.0, 1.0),
@@ -571,6 +611,13 @@ const ITEM_VISUAL_INFO: Dictionary = {
 	"shroud_potion": {
 		"texture": "res://assets/ui/item_models/pixel_art_v1/shroud_potion.png",
 		"accent": Color(0.30, 0.34, 0.70, 1.0),
+		"model_class": "potion",
+	},
+	## The one alchemy render in the project with eyes on the label, drawn for
+	## the Vision Potion and never used by it. It belongs to this potion.
+	"reveal_potion": {
+		"texture": "res://assets/ui/alchemy/vision_potion_eyes.png",
+		"accent": Color(0.82, 0.86, 0.92, 1.0),
 		"model_class": "potion",
 	},
 	"castle_ration": {
@@ -695,6 +742,7 @@ var guardian_patrol_objective: String = ""
 ## reason it can hunt through walls.
 var guardian_tracking_serum: bool = true
 var guardian_stun_remaining: float = 0.0
+var guardian_mire_remaining: float = 0.0
 var guardian_search_remaining: float = 0.0
 var guardian_last_known_player_position: Vector2 = GUARDIAN_HALL_START_POSITION
 ## Hall-space entrance of each room, registered by Castle Hall so the Guardian
@@ -782,6 +830,7 @@ func reset_new_game() -> void:
 	guardian_patrol_objective = ""
 	guardian_tracking_serum = true
 	guardian_stun_remaining = 0.0
+	guardian_mire_remaining = 0.0
 	guardian_search_remaining = 0.0
 	guardian_last_known_player_position = GUARDIAN_HALL_START_POSITION
 	room_door_anchors.clear()
@@ -1335,21 +1384,52 @@ func get_guardian_escalation_multiplier() -> float:
 ## Speed once the Guardian has actually locked onto the player. This is the
 ## stacked value the user asked for: it never decays, only rises per room.
 func get_guardian_chase_speed() -> float:
-	return GUARDIAN_BASE_CHASE_SPEED * get_guardian_escalation_multiplier()
+	return (
+		GUARDIAN_BASE_CHASE_SPEED
+		* get_guardian_escalation_multiplier()
+		* get_guardian_mire_multiplier()
+	)
 
 
 ## Speed while the Guardian has lost the player and is sweeping the last known
 ## position. Escalation still applies, but it is well below a full chase.
 func get_guardian_search_speed() -> float:
-	return GUARDIAN_SEARCH_SPEED * get_guardian_escalation_multiplier()
+	return (
+		GUARDIAN_SEARCH_SPEED
+		* get_guardian_escalation_multiplier()
+		* get_guardian_mire_multiplier()
+	)
 
 
 ## Speed while the Guardian is merely loitering. Deliberately slow so an unseen
 ## player can reposition; escalation does not apply here.
 func get_guardian_unaware_speed() -> float:
-	if guardian_tracking_serum:
-		return GUARDIAN_PATROL_SPEED
-	return GUARDIAN_STAKEOUT_SPEED
+	var base: float = (
+		GUARDIAN_PATROL_SPEED if guardian_tracking_serum else GUARDIAN_STAKEOUT_SPEED
+	)
+	return base * get_guardian_mire_multiplier()
+
+
+## The mire is applied here rather than in the body so that everything reading a
+## Guardian speed agrees: the contact estimate on the HUD prices the slow at the
+## same rate the legs do, and the walk cycle slows with it for free.
+func get_guardian_mire_multiplier() -> float:
+	return GUARDIAN_MIRE_SLOW_MULTIPLIER if guardian_mire_remaining > 0.0 else 1.0
+
+
+func is_guardian_mired() -> bool:
+	return guardian_mire_remaining > 0.0
+
+
+## Called while the Guardian stands in a Toxic Mire. Refreshing rather than
+## accumulating means a wide patch cannot bank minutes of slow.
+func mire_guardian(duration: float = GUARDIAN_MIRE_SLOW_DURATION) -> void:
+	if not guardian_hunt_active:
+		return
+	var was_mired: bool = guardian_mire_remaining > 0.0
+	guardian_mire_remaining = maxf(guardian_mire_remaining, duration)
+	if not was_mired:
+		state_changed.emit()
 
 
 func is_guardian_tracking_serum_active() -> bool:
@@ -1503,6 +1583,12 @@ func get_guardian_last_known_player_position() -> Vector2:
 
 
 func _update_guardian_timers(delta: float) -> void:
+	# The mire runs down on its own clock: a stunned Guardian is still standing
+	# in the bog, and an early return here would let it wait the slow out.
+	if guardian_mire_remaining > 0.0:
+		guardian_mire_remaining = maxf(guardian_mire_remaining - delta, 0.0)
+		if guardian_mire_remaining <= 0.0:
+			state_changed.emit()
 	if guardian_stun_remaining > 0.0:
 		guardian_stun_remaining = maxf(guardian_stun_remaining - delta, 0.0)
 		if guardian_stun_remaining <= 0.0:
@@ -1597,6 +1683,7 @@ func _update_guardian_patrol(delta: float) -> void:
 func recover_from_interruption() -> void:
 	player_health = 3
 	guardian_stun_remaining = 0.0
+	guardian_mire_remaining = 0.0
 	guardian_search_remaining = 0.0
 	if guardian_hunt_active:
 		guardian_mode = (

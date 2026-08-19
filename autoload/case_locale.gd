@@ -369,7 +369,10 @@ const TEXT: Dictionary = {
 	# 药水状态角标空间很窄，用短名而不是 POTION_INFO 里的完整名字。
 	"potion.swift_short": {"en": "SWIFT", "zh": "迅捷"},
 	"potion.vision_short": {"en": "VISION", "zh": "洞察"},
-	"potion.green_short": {"en": "GREEN", "zh": "青藤"},
+	"potion.mire_short": {"en": "MIRE", "zh": "毒沼"},
+	"potion.shroud_short": {"en": "SHROUD", "zh": "隐身"},
+	"potion.daze_short": {"en": "DAZE", "zh": "眩晕"},
+	"potion.reveal_short": {"en": "REVEAL", "zh": "现形"},
 	# 音量行空间很窄，用短标签。
 	"audio.music": {"en": "Music", "zh": "音乐"},
 	"audio.sfx": {"en": "Sound", "zh": "音效"},

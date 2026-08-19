@@ -16,6 +16,12 @@ extends Node
 
 const AURA_LAYER: int = 25
 const CHIP_LAYER: int = 43
+## 褪色压在光晕之下、房间 UI 之上都不合适：它要洗掉的是世界，不是界面。
+const WASH_LAYER: int = 24
+const WASH_SHADER_PATH: String = "res://assets/ui/reveal_desaturate.gdshader"
+const WASH_STRENGTH: float = 0.86
+const WASH_FADE_IN: float = 0.45
+const WASH_FADE_OUT: float = 0.65
 
 const CHIP_MARGIN := Vector2(18.0, 18.0)
 const CHIP_SPACING: float = 8.0
@@ -37,16 +43,39 @@ const EFFECT_STYLE: Dictionary = {
 		"aura": Color(0.45, 0.70, 1.00),
 		"accent": Color(0.25, 0.59, 1.00),
 	},
-	"green": {
-		"name_key": "potion.green_short",
+	"mire": {
+		"name_key": "potion.mire_short",
 		"icon": "res://assets/ui/alchemy/green_potion.png",
 		"aura": Color(0.74, 1.00, 0.42),
 		"accent": Color(0.66, 1.00, 0.25),
+	},
+	# 下面三个此前完全没有条目，于是 _on_potion_applied 直接 return：喝下隐身
+	# 药水既没有入口闪光，也没有角标，玩家只能靠数秒猜它还在不在。
+	"shroud": {
+		"name_key": "potion.shroud_short",
+		"icon": "res://assets/ui/item_models/pixel_art_v1/shroud_potion.png",
+		"aura": Color(0.52, 0.58, 0.96),
+		"accent": Color(0.34, 0.40, 0.92),
+	},
+	"daze": {
+		"name_key": "potion.daze_short",
+		"icon": "res://assets/ui/item_models/pixel_art_v1/daze_potion.png",
+		"aura": Color(0.98, 0.46, 0.74),
+		"accent": Color(0.95, 0.30, 0.60),
+	},
+	"reveal": {
+		"name_key": "potion.reveal_short",
+		"icon": "res://assets/ui/alchemy/vision_potion_eyes.png",
+		"aura": Color(0.86, 0.89, 0.94),
+		"accent": Color(0.72, 0.77, 0.85),
 	},
 }
 
 var _aura_layer: CanvasLayer
 var _chip_layer: CanvasLayer
+var _wash_layer: CanvasLayer
+var _wash_rect: ColorRect
+var _wash_tween: Tween
 var _aura: PotionAuraOverlay
 var _chip_box: VBoxContainer
 var _chips: Dictionary = {}
@@ -78,6 +107,8 @@ func _build_layers() -> void:
 
 	_aura = PotionAuraOverlay.new()
 	_aura_layer.add_child(_aura)
+
+	_build_wash_layer()
 
 	_chip_layer = CanvasLayer.new()
 	_chip_layer.name = "PotionChipLayer"
@@ -134,7 +165,59 @@ func _apply_warning_pulse(remaining: float) -> void:
 	_aura.strength = lerpf(1.0, 0.25, blink * urgency)
 
 
+## The Revealing Draught drains the world instead of tinting the edges, so it
+## needs a pass that reads what is already on screen. Everything else about the
+## potion HUD sits on top of the picture; this one is the picture.
+func _build_wash_layer() -> void:
+	_wash_layer = CanvasLayer.new()
+	_wash_layer.name = "PotionWashLayer"
+	_wash_layer.layer = WASH_LAYER
+	add_child(_wash_layer)
+
+	_wash_rect = ColorRect.new()
+	_wash_rect.name = "PotionWash"
+	_wash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_wash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wash_rect.visible = false
+	var shader: Shader = load(WASH_SHADER_PATH) as Shader
+	if shader == null:
+		return
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("strength", 0.0)
+	_wash_rect.material = material
+	_wash_layer.add_child(_wash_rect)
+
+
+func _set_wash(active: bool) -> void:
+	if _wash_rect == null or _wash_rect.material == null:
+		return
+	if _wash_tween != null and _wash_tween.is_valid():
+		_wash_tween.kill()
+	if active:
+		_wash_rect.visible = true
+	_wash_tween = create_tween()
+	_wash_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_wash_tween.tween_property(
+		_wash_rect.material,
+		"shader_parameter/strength",
+		WASH_STRENGTH if active else 0.0,
+		WASH_FADE_IN if active else WASH_FADE_OUT
+	)
+	if not active:
+		# Hiding it matters: a full-screen shader that samples the screen every
+		# frame is not free, and it would keep running at zero strength.
+		_wash_tween.tween_callback(_hide_wash)
+
+
+func _hide_wash() -> void:
+	if _wash_rect != null:
+		_wash_rect.visible = false
+
+
 func _on_potion_applied(effect_id: String, duration: float) -> void:
+	if effect_id == "reveal":
+		_set_wash(true)
 	var style: Dictionary = EFFECT_STYLE.get(effect_id, {})
 	if style.is_empty():
 		return
@@ -149,6 +232,8 @@ func _on_item_acquired(_item_id: String, _kind: String, _amount: int) -> void:
 
 
 func _on_potion_expired(effect_id: String) -> void:
+	if effect_id == "reveal":
+		_set_wash(false)
 	GameAudio.play(&"ui_back")
 	var chip: PotionStatusChip = _chips.get(effect_id) as PotionStatusChip
 	if chip != null:

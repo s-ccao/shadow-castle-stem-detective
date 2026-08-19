@@ -71,6 +71,26 @@ const DERIVATIONS: Array[Dictionary] = [
 		"saturation_scale": 1.0,
 		"value_scale": 1.0,
 	},
+	{
+		"source": "recipe_vision.png",
+		"output": "recipe_mire.png",
+		"hue_min": 0.58,
+		"hue_max": 0.88,
+		"target_hue": 0.30,
+		"saturation_scale": 1.05,
+		"value_scale": 0.94,
+	},
+	## Nearly colourless on purpose: the draught it describes is the one that
+	## drains the castle, so the page should look bleached rather than tinted.
+	{
+		"source": "recipe_vision.png",
+		"output": "recipe_reveal.png",
+		"hue_min": 0.58,
+		"hue_max": 0.88,
+		"target_hue": 0.55,
+		"saturation_scale": 0.16,
+		"value_scale": 1.10,
+	},
 ]
 
 ## Pixels below this saturation are neutral ink and must never be recoloured.

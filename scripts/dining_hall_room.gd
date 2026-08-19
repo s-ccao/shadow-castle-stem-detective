@@ -178,6 +178,11 @@ func _grant_counter_serum_blueprints() -> void:
 	GameState.add_recipe("recipe_purification")
 	GameState.add_recipe("recipe_daze")
 	GameState.add_recipe("recipe_shroud")
+	# The two potions that work on the floor rather than on the Guardian belong
+	# with the rest of the counterplay: this is the beat where the detective
+	# stops running from it and starts preparing for it.
+	GameState.add_recipe("recipe_mire")
+	GameState.add_recipe("recipe_reveal")
 	_show_dining_note(
 		"dining_counter_serum_note",
 		"Mrs. Lin's Counter-Formulas",

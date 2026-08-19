@@ -787,3 +787,45 @@ exhibits, including whether their footing connects to the arrival spawn. It does
 not cover the NPC and clue markers, and the 2026-08-19 swap put seven of those
 inside stone. They were moved to the nearest standable floor **with room around
 it**, not to the nearest standable pixel, which wedges a body against a wall.
+
+## A potion the player cannot see is a potion they will not use
+
+Every potion runs on the same two lines of `GameState`: a countdown in
+`potion_effects` and a pair of signals. That is enough to *be* an effect and not
+nearly enough to *read* as one. Three of the six shipped with no presentation at
+all — `EFFECT_STYLE` in `potion_effects_hud.gd` covered `swift`, `vision` and
+`green`, and `_on_potion_applied()` returns early on an unknown effect, so
+drinking a Shroud Potion produced no burst, no chip and no aura. The Guardian
+went blind and nothing on screen said so.
+
+Presentation is split by the question it answers, and the split is worth
+keeping:
+
+- **`PotionHud` (autoload) answers "how long".** Entry burst, corner chip with a
+  ring countdown, edge aura. It is screen space and it outlives the room.
+- **`PotionFieldEffects` (`scripts/potion_field_effects.gd`) answers "what is it
+  doing".** The detective fading under Shroud, the afterimage trail under
+  Swiftness, the Guardian's footprints under the Revealing Draught, the mire
+  itself. It is world space and it belongs to the hall.
+
+Neither may set `process_mode`. Opening the backpack, keys, notes or map calls
+`get_tree().paused = true`, and because `enemy.gd`, `enemy.tscn` and
+`game_state.gd` all leave `process_mode` at its default, that one line freezes
+the Guardian body, the Guardian timers, the offscreen patrol and every potion
+countdown together. Marking any of them `PROCESS_MODE_ALWAYS` would let the
+Guardian walk while the player reads a map. **Check that before adding one.**
+
+Two details that are easy to get wrong and invisible until played:
+
+- The afterimage drops **per distance travelled, not per second**. Time-based
+  spacing makes the trail thin out exactly when the potion speeds the player up,
+  which is backwards — the same mistake the walk cycle used to make.
+- The mire slow is applied inside `get_guardian_*_speed()` rather than in
+  `enemy.gd`, so the contact estimate on the HUD prices the slow at the rate the
+  legs actually move at, and the walk cycle slows with it for free.
+
+`green_potion` had `"effect": ""` and no recipe: it existed in the tables and did
+nothing anywhere. It is the Toxic Mire now. New potion art was derived rather
+than drawn — `tools/derive_counterplay_item_art.gd` already hue-shifts
+`recipe_vision.png` into the counterplay recipes, and two more entries there give
+the mire and the draught their own pages.
