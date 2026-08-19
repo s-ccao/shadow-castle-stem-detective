@@ -5,6 +5,22 @@ signal ground_move_started(target_position: Vector2)
 signal click_movement_cancelled
 signal click_movement_blocked(target_position: Vector2)
 
+## World pixels one full eight-frame walk cycle carries the body.
+##
+## Driving playback from distance instead of from time is what stops the feet
+## sliding. The cycle was pinned at the SpriteFrames' 5 fps, so the detective
+## crossed 288px per stride at walking speed and skated everywhere; worse, a
+## Swiftness Potion moved the body 40% faster without moving the legs at all.
+## Scaling playback by the real speed keeps one stride on one patch of ground
+## whatever the body is doing.
+const WALK_CYCLE_DISTANCE: float = 84.0
+## Seconds one cycle takes at speed_scale 1.0: eight frames at 5 fps.
+const WALK_CYCLE_SECONDS: float = 1.6
+## Slowest and fastest playback allowed. The floor keeps a crawl from freezing
+## mid-stride; the ceiling keeps a speed potion from strobing.
+const WALK_SCALE_MIN: float = 0.65
+const WALK_SCALE_MAX: float = 5.0
+
 @export var speed: float = 180.0
 @export var click_stop_distance: float = 6.0
 @export var stuck_check_interval: float = 0.35
@@ -416,6 +432,14 @@ func update_character_animation(
 			character_sprite.play(
 				animation_name
 			)
+
+		character_sprite.speed_scale = clampf(
+			movement_velocity.length()
+			* WALK_CYCLE_SECONDS
+			/ WALK_CYCLE_DISTANCE,
+			WALK_SCALE_MIN,
+			WALK_SCALE_MAX
+		)
 	else:
 		show_idle_frame()
 func update_facing_direction(

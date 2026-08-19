@@ -29,6 +29,20 @@ const GUARDIAN_ROW_BY_ANIMATION: Dictionary = {
 const STALL_PROGRESS_RATIO: float = 0.25
 ## How long to keep pushing before writing the waypoint off, in seconds.
 const STALL_TIMEOUT: float = 0.4
+## World pixels one full eight-frame walk cycle carries the Guardian, and the
+## seconds that cycle takes at speed_scale 1.0 (eight frames at 5 fps).
+##
+## Playback was a flat 1.0 whenever the body moved, so the same leg speed served
+## a 44px/s stakeout shuffle, an 82px/s patrol and a 232px/s tier-five charge.
+## The Guardian is the larger body, so its stride carries further than the
+## detective's; both are now driven from distance rather than time, which is
+## what keeps a foot planted on one spot of floor at any speed.
+const WALK_CYCLE_DISTANCE: float = 102.0
+const WALK_CYCLE_SECONDS: float = 1.6
+const WALK_SCALE_MIN: float = 0.65
+const WALK_SCALE_MAX: float = 5.0
+## Standing still still breathes, just slowly.
+const IDLE_ANIMATION_SCALE: float = 0.35
 
 @export var display_name: String = "Castle Guardian"
 @export var repath_interval: float = 0.35
@@ -330,7 +344,15 @@ func _update_animation(movement_velocity: Vector2) -> void:
 		guardian_sprite.play(animation)
 	elif not guardian_sprite.is_playing():
 		guardian_sprite.play()
-	guardian_sprite.speed_scale = 1.0 if movement_velocity.length_squared() > 1.0 else 0.35
+	guardian_sprite.speed_scale = (
+		clampf(
+			movement_velocity.length() * WALK_CYCLE_SECONDS / WALK_CYCLE_DISTANCE,
+			WALK_SCALE_MIN,
+			WALK_SCALE_MAX
+		)
+		if movement_velocity.length_squared() > 1.0
+		else IDLE_ANIMATION_SCALE
+	)
 
 
 func _walk_animation_name() -> StringName:
