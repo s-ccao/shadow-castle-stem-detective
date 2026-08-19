@@ -319,7 +319,7 @@ func _choose_next_target() -> void:
 			)
 			roam_target_active = true
 		Behavior.PATROL:
-			GameState.advance_guardian_patrol_target()
+			GameState.advance_guardian_patrol_stride(global_position)
 			# No usable patrol route means no waypoints to advance through, so
 			# wander rather than press at whatever single anchor was returned.
 			if GameState.get_guardian_patrol_route().size() < 2:

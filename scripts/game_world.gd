@@ -143,6 +143,8 @@ const NAV_LATTICE_SPACING: int = 16
 const NAV_LATTICE_SEARCH_RADIUS: int = 6
 const NAV_LATTICE_COLUMNS: int = MAP_WIDTH * CELL_SIZE / NAV_LATTICE_SPACING
 const NAV_LATTICE_ROWS: int = MAP_HEIGHT * CELL_SIZE / NAV_LATTICE_SPACING
+## How many wander candidates wander_point_near() will pay an A* search to check.
+const WANDER_ROUTE_ATTEMPTS: int = 4
 ## How long the Guardian may sit frozen with no cinematic running before the
 ## freeze is treated as a leak. Longer than the reveal (about 2.3s of awaits)
 ## so a slow frame cannot cut a sequence short.
@@ -1810,9 +1812,14 @@ func cell_nav_point(cell: Vector2i) -> Vector2:
 ##
 ## Picking better points inside the cell does not fix it — the best rule tried
 ## still left 3.5% blocked and cut the hall into nine pieces — because one point
-## cannot represent a cell with a wall through it. A finer lattice can. At 16px
-## every walkable pixel of the hall is within reach of a node, and the graph is
-## one piece.
+## cannot represent a cell with a wall through it. A finer lattice can.
+##
+## At 16px every walkable pixel of the hall is within reach of a node. The graph
+## is not one piece — it has six components, 3564 / 998 / 138 / 28 / 12 / 4 —
+## but everything outside the largest is the dead border beyond the art and the
+## chambers the maze seals, which is what the pixel-level flood fill finds too.
+## No position the player can reach snaps to anything but the main component, so
+## a route between two bodies in the hall is never refused for want of one.
 func build_navigation_lattice() -> void:
 	nav_graph.clear()
 	for row: int in range(NAV_LATTICE_ROWS):
@@ -1951,9 +1958,15 @@ func find_route(from_position: Vector2, to_position: Vector2) -> PackedVector2Ar
 ## A standable point roughly `radius` away from `origin`, for sweeping a room
 ## the Guardian has lost the player in. Returns `origin` when nothing is free,
 ## so the caller always has somewhere to walk.
+##
+## Only a few candidates are routed. Checking them all is the obvious version
+## and it costs a full A* search per candidate — about 170 of them across the
+## ring at the search radius, in one frame, every time the Guardian finishes a
+## leg. Shuffling and taking the first that routes gets the same answer for the
+## price of one or two, and being wrong is cheap anyway: an unroutable target
+## wastes one planning cycle and is replaced.
 func wander_point_near(origin: Vector2, radius: float) -> Vector2:
-	var origin_id := nearest_lattice_id(origin)
-	if origin_id < 0:
+	if nearest_lattice_id(origin) < 0:
 		return origin
 	var steps: int = maxi(int(radius / float(NAV_LATTICE_SPACING)), 1)
 	var centre := Vector2i(
@@ -1968,13 +1981,14 @@ func wander_point_near(origin: Vector2, radius: float) -> Vector2:
 			var candidate := centre + Vector2i(offset_x, offset_y)
 			if not _lattice_has(candidate):
 				continue
-			var point := lattice_point(candidate)
-			if find_route(origin, point).is_empty():
-				continue
-			candidates.append(point)
+			candidates.append(lattice_point(candidate))
 	if candidates.is_empty():
 		return origin
-	return candidates[randi() % candidates.size()]
+	candidates.shuffle()
+	for index: int in range(mini(candidates.size(), WANDER_ROUTE_ATTEMPTS)):
+		if not find_route(origin, candidates[index]).is_empty():
+			return candidates[index]
+	return origin
 
 
 ## Nearest cell the Guardian may occupy, searching outward from `cell`.

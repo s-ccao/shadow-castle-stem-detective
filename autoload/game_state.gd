@@ -21,6 +21,10 @@ const SAVE_VERSION: int = 1
 const DR_LIN_PARTIAL_HALL_MAP_ID: String = "dr_lin_partial_hall_map"
 const GUARDIAN_HALL_START_POSITION: Vector2 = Vector2(1832.0, 1208.0)
 const GUARDIAN_PATROL_SPEED: float = 82.0
+## How far apart consecutive patrol destinations must be. The published route is
+## one point per navigation node; this is what turns it back into somewhere to
+## walk to rather than a step to take.
+const GUARDIAN_PATROL_STRIDE: float = 150.0
 
 # ============================================================
 # Guardian escalation and the tracking serum
@@ -271,6 +275,10 @@ func load_saved_game() -> bool:
 		0,
 		maxi(guardian_patrol_route.size() - 1, 0)
 	)
+	# Not saved: it only exists to notice the objective changing. Clearing it
+	# makes the first patrol target after a load re-aim at the room this save
+	# actually still needs, rather than trusting an index from another session.
+	guardian_patrol_objective = ""
 	# Saves written before the tracking-serum rework have no purification record,
 	# so they correctly resume with the Guardian still able to track the player.
 	guardian_tracking_serum = bool(data.get("guardian_tracking_serum", true))
@@ -1445,6 +1453,28 @@ func advance_guardian_patrol_target() -> void:
 	guardian_patrol_index = (
 		guardian_patrol_index + 1
 	) % guardian_patrol_route.size()
+
+
+## Step the patrol on to the next waypoint that is actually somewhere else.
+##
+## The published route is dense — one point per navigation node, about 18px
+## apart — because the offscreen simulation walks it with move_toward() and
+## needs every corner to avoid cutting through stone. A body in the hall does
+## not. Advancing one node at a time made it arrive, clear its path and wait a
+## full repath interval every 18px: at the stakeout speed that is 0.35s frozen
+## for every 0.41s walked, so half the patrol was spent standing still — the
+## very thing a patrol was meant to stop looking like.
+##
+## The scan is bounded by the route length, so a route shorter than one stride
+## simply comes back to where it started rather than looping forever.
+func advance_guardian_patrol_stride(from_position: Vector2) -> void:
+	if guardian_patrol_route.size() < 2:
+		return
+	for _step: int in range(guardian_patrol_route.size()):
+		advance_guardian_patrol_target()
+		var target: Vector2 = guardian_patrol_route[guardian_patrol_index]
+		if from_position.distance_to(target) >= GUARDIAN_PATROL_STRIDE:
+			return
 
 
 ## Called by the Guardian body the moment it acquires the player by sight.
