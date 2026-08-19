@@ -83,15 +83,22 @@ around six seconds. Its raster decides coverage at the pixel centre, making it
 marginally more permissive than `_player_fits` — deliberately, so it can never
 invent a wall and fail the build for a corridor that is really open.
 
-Every hall entrance is drawn as a stone arch on `hall_walls.png`, and the focus
-constant is measured off that arch. The chemistry doorway was the exception for
-a while: that stretch of wall had nothing on it but a row of golden cabinets, so
-the bracket framed a blank alcove and players read the whole north-west corner
-as a dead end and reported the room as unreachable. It never was — a flood fill
-from the arrival spawn found 8171 walkable pixels inside its interaction margin,
-all in the spawn's own connected region. The arch there now is the Greenhouse
-arch, grafted out of this same image so the palette, light direction and
-brushwork match, fitted to the recess at 92%.
+Every room entrance in the hall is drawn as a stone arch on `hall_walls.png`,
+and the focus constant is measured off that arch. The Chemistry doorway was the
+exception for a while: that stretch of wall had nothing on it but a row of
+golden cabinets, so the bracket framed a blank alcove and players read the whole
+north-west corner as a dead end and reported the room as unreachable. It never
+was — a flood fill from the arrival spawn found 8171 walkable pixels inside its
+interaction margin, all in the spawn's own connected region. `442c317` patched
+that by grafting the Greenhouse arch into the recess. The 2026-08-19 wall layer
+makes the graft unnecessary: it draws an arch at all seven room doors natively,
+and all eight focus values were re-checked against it without one needing to
+move.
+
+The Service Wall door is the one focus rect with no arch under it, and that is
+deliberate. It is a sealed door in the hall's east wall that only opens once the
+Dining Hall yields the Service Corridor Key, so plain masonry is the point — the
+script tells the player it is there, and there is nothing to find before then.
 
 The lesson generalises: `check_static.py` can prove a door is *reachable*, but
 nothing can prove it is *findable*. A focus constant that lands on blank wall is
@@ -224,10 +231,18 @@ way that looks like something else entirely:
 The A* grid used to probe only the cell centre, which stranded 12.7% of the
 standable hall across 246 patches and cut the open region into pieces that left
 half the door anchors unreachable. It now probes a 4x8 grid inside each cell
-and opens the cell if the body fits anywhere, which covers 99.7% of standable
-floor; `find_path()` additionally slides either endpoint to the nearest open
-cell within three cells. Both are needed: the probe grid fixes connectivity,
-the endpoint slide covers what is left.
+and opens the cell if the body fits anywhere; `find_path()` additionally slides
+either endpoint to the nearest open cell within three cells. Both are needed:
+the probe grid fixes connectivity, the endpoint slide covers what is left.
+
+The wall art feeds this grid, so redrawing the walls redraws the Guardian's
+world. It is worth measuring both ways after any swap, because the numbers move
+a long way and neither shows up in play until someone reports the Guardian
+standing still. The hand-authored walls left the grid in **four** disconnected
+regions — pockets no path could ever enter — and 0.38% of standable floor in a
+cell the grid called solid. Generating collision from the 2026-08-19 art put the
+grid in **one** region of 1738 cells, with 0.09% stranded. Fewer, larger, better
+connected: the same probe code, a kinder map.
 
 ### A cell that is open somewhere is not open at its centre
 
@@ -268,9 +283,19 @@ hunting and standing still.
 ## `scenes/wall_collisions.tscn` is the authority for the hall
 
 Both collision and sight blocking read it. The node structure must stay
-`WallCollisions -> Wall_XXX (StaticBody2D) -> Shape (CollisionPolygon2D)`;
+`WallCollisions -> <StaticBody2D> -> <CollisionPolygon2D>`;
 `build_sight_blockers()` walks exactly that shape and silently sees nothing
-if the hierarchy changes.
+if the hierarchy changes. It does not care what the bodies are called, only
+that a wall is a `CollisionPolygon2D` under a `StaticBody2D` that is a direct
+child of the root.
+
+The scene is no longer hand-authored. Collision is generated from the opaque
+pixels of `hall_walls.png` at 4px, decomposed into axis-aligned rectangles, and
+grouped into `WallBlock_C*R*` bodies by screen position so the tree stays
+navigable. That is the point: collision cannot disagree with the painted stone
+by more than the quantisation, so an air wall is not expressible. The props —
+the two visual sprites, the storage rack, the three final-key machines and the
+five knowledge exhibits — are hand-placed and must survive any regeneration.
 
 ## Save format constraints
 
@@ -648,29 +673,29 @@ distorted.
 that the player can walk through, and no scale or offset can repair that —
 there is no alignment to find, only two maps.
 
-## Hall collision is derived from the wall art, with three deliberate holes
+## Hall collision is derived from the wall art, and nothing else
 
-The 34 hand-drawn `Wall_*` polygons covered only part of what
-`hall_walls.png` paints. Measured with the real 14x8 player box, a quarter of
-everywhere the player could stand was inside a painted wall, and the entire
-out-of-bounds ring outside the dungeon was open — you could walk into the
-border masonry and around the edge of the map.
+This used to be a hand-drawn set of 34 `Wall_*` polygons plus 163 `WallFix_*`
+patches that tried to catch up with what the art painted, and it never fully
+did: a quarter of everywhere the player could stand was inside a painted wall,
+three alcoves had to be left deliberately open because the art sealed doors the
+level design needed, and every art change reopened the whole argument.
 
-`WallFix_000..162` close that. They are axis-aligned rectangles from a greedy
-decomposition of (art ∪ outside) minus the existing polygons, which is exact:
-zero overflow, so they never block a pixel the art leaves open. Standing
-inside a wall drops from 24.9% of the walkable area to 8.7%, and roughly half
-of what remains is the pseudo-3D cap band, where walking behind a wall top is
-the intended look.
+Collision is now generated from the wall image, so there is no argument to
+have. The opaque pixels are quantised to 4px and decomposed into axis-aligned
+rectangles — 1396 of them at the time of writing — which puts art and collision
+within 1.66% of the map of each other, in both directions. An air wall is not
+something that can be expressed any more, and neither is a wall you can walk
+through.
 
-**Three alcoves are deliberately left open** — the Chemistry door, the Library
-door, and the building holding the hidden Library key. The art seals all three;
-filling them makes the doors unapproachable and the key uncollectable. That is
-a disagreement between the artwork and the level design, and it can only be
-settled by redrawing an opening or moving the object, not by editing collision.
+That moves the responsibility upstream: **the wall image is the level design.**
+A door that is not painted is a door that does not exist, and a corridor painted
+shut is shut. Regenerating is cheap; arguing with the picture is not.
 
-Any change here must re-check two things, because both are easy to break and
-neither shows up until play: that all nineteen key positions still have
-standing room within 60px, and that the Guardian's 24x24 body still shares a
-connected region with the player's. Tightening collision to match the art
-exactly fails both.
+Any regeneration has to preserve the hand-placed nodes — the two visual sprites,
+the storage rack, the three final-key machines, the five knowledge exhibits —
+and then re-check reachability. `tools/check_static.py` covers the doors and the
+exhibits, including whether their footing connects to the arrival spawn. It does
+not cover the NPC and clue markers, and the 2026-08-19 swap put seven of those
+inside stone. They were moved to the nearest standable floor **with room around
+it**, not to the nearest standable pixel, which wedges a body against a wall.

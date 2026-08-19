@@ -265,28 +265,28 @@ const GREENHOUSE_ROOM_SCENE_PATH: String = \
 #
 # 两者曾经填同一个值，于是角标框画在门前面的空地上——门明明在墙里，框却
 # 套着一块地砖。焦点值是逐扇门在墙体图上量出来的（1536x1024 按 x1.25 铺满
-# 1920x1280，所以图上坐标乘 1.25 就是世界坐标）：拱门取石框中心，化学门那
-# 面墙没画门，取玩家正对的那段墙面。
+# 1920x1280，所以图上坐标乘 1.25 就是世界坐标），取拱门石框中心。
 #
-# 改焦点值前先确认：焦点框外扩 14px 后仍要有可站立的地砖，否则提示永远不
-# 会出现。八扇门当前都留有 2000 个以上的可达立足像素。
+# 2026-08-19 换上新的大厅墙体图后八扇门逐一复核过：这一版由美术一次画全，
+# 七扇房间门都是原生绘制的拱门，不再需要 442c317 那种把绿房拱门移植到化学门
+# 壁龛的补丁。八个焦点值全部仍然压在各自的门上，一个都不用挪。
+# 服务通道墙门底下没有拱门是故意的——它要到拿了 Service Corridor Key 才存在。
+#
+# 改焦点值前先确认：焦点框外扩 14px 后仍要有可站立的地砖，而且那块地砖要和
+# 到达出生点连通，否则提示永远不会出现。tools/check_static.py 两条都会验，
+# 当前最紧的是 wake 门，仍有 5391 个可达立足像素。
 const CHEMISTRY_ROOM_DOOR_POSITION: Vector2 = Vector2(283, 162)
-## 这面墙上没有画门，只有一排金色壁柜。取正中那格带白色拱顶的凹龛
-## （墙面 y 32~120），框底压在门槛地砖上，玩家站在 (283,162) 仍能触发。
 const CHEMISTRY_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(287, 103)
 ## Door art and wall collision overlap at the old marker (283, 162). Spawn below
 ## the threshold, where the player has room to leave in every direction.
 const CHEMISTRY_ROOM_RETURN_POSITION: Vector2 = Vector2(267, 210)
 const CHEMISTRY_ROOM_DOOR_RADIUS: float = 100.0
 const GREENHOUSE_ROOM_DOOR_POSITION: Vector2 = Vector2(219, 409)
-## 拱门石框 x 188~246 / y 318~388。
 const GREENHOUSE_ROOM_DOOR_FOCUS_POSITION: Vector2 = Vector2(217, 353)
 const GREENHOUSE_ROOM_DOOR_RADIUS: float = 100.0
-const LIBRARY_DOOR_POSITION: Vector2 = Vector2(1676, 285)
-## 拱门石框 x 1632~1713 / y 203~265。
+const LIBRARY_DOOR_POSITION: Vector2 = Vector2(1673, 301)
 const LIBRARY_DOOR_FOCUS_POSITION: Vector2 = Vector2(1673, 234)
-const DINING_HALL_DOOR_POSITION: Vector2 = Vector2(1774, 715)
-## 拱门石框 x 1742~1800 / y 667~738。
+const DINING_HALL_DOOR_POSITION: Vector2 = Vector2(1785, 726)
 const DINING_HALL_DOOR_FOCUS_POSITION: Vector2 = Vector2(1771, 702)
 const HALL_ENEMY_START_POSITION := Vector2(1744, 1072)
 
@@ -515,28 +515,27 @@ const HALL_FIRST_ARRIVAL_POSITION: Vector2 = Vector2(240, 984)
 
 # Upper-left chemistry crime scene.
 const RED_STAIN_POSITION: Vector2 = Vector2(410.7005, 273.7006)
-const BUTLER_POSITION: Vector2 = Vector2(505.0796, 386.3819)
+const BUTLER_POSITION: Vector2 = Vector2(464, 386)
 
 # Upper-right greenhouse.
 const POLLEN_POSITION: Vector2 = Vector2(1509.753, 324.0475)
 # Keep the NPC on the walkable tile beside the east wall.
-const GARDENER_POSITION: Vector2 = Vector2(1648, 496)
+const GARDENER_POSITION: Vector2 = Vector2(1676, 496)
 
-# Lower entrance to the electrical machinery room.
-# The old point (332,899) was inside a wall cell. Use the walkable
-# threshold for interaction and keep the visual focus on the doorway.
-const CIRCUIT_DOOR_POSITION: Vector2 = Vector2(168, 691)
-## 这扇门的触发点正好落在拱门中心（石框 x 141~198 / y 664~718），焦点不必挪。
+# Lower entrance to the electrical machinery room. The player-side anchor is the
+# open floor north of the arch; the focus stays on the arch itself, which is
+# inside the wall as every door marker is.
+const CIRCUIT_DOOR_POSITION: Vector2 = Vector2(188, 643)
 const CIRCUIT_DOOR_FOCUS_POSITION: Vector2 = Vector2(168, 691)
 
 # Maintenance note in the service corridor outside the locked door.
-const CIRCUIT_NOTE_POSITION: Vector2 = Vector2(541.0419, 641.9716)
+const CIRCUIT_NOTE_POSITION: Vector2 = Vector2(564, 627)
 
 # Open floor on the right side of the large central machine.
 const CIRCUIT_CLUE_POSITION: Vector2 = Vector2(476.587, 709.4276)
 
 # Open floor near the lower part of the machinery room.
-const MECHANIC_POSITION := Vector2(339.7926, 804.8627)
+const MECHANIC_POSITION := Vector2(363, 821)
 
 # Open floor to the left of the round deduction table.
 const FINAL_ROOM_POSITION: Vector2 = Vector2(955, 138)
