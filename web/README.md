@@ -110,20 +110,26 @@ The `$GODOT_*` placeholders in the shell are substituted at export time.
 links and, with the PWA enabled, `<link rel="manifest">`.
 
 Progressive web app is on, so a service worker caches `index.wasm` and
-`index.pck`. Two details are worth keeping:
+`index.pck`. The shell owns the worker's whole lifecycle, for two reasons:
 
 - **The engine registers the worker only *after* `startGame()` finishes**, which
   means the first visit downloads 130MB before the worker exists and caches
   none of it — players would pay the full download twice. The shell therefore
   registers it up front and sends the `claim` message so it controls the page
-  before the game starts. It only does this on a first-ever install; claiming
-  while an older cache exists could pair an old `index.js` with a new `.pck`.
-- **A new deploy takes effect on the *second* load.** The worker is cache-first,
-  so the running page keeps the old build; the new worker installs in the
-  background and takes over on the next navigation. When testing a fresh export
-  against a browser that already ran the game, unregister the worker and clear
-  `caches` first or you will be looking at the previous build and drawing the
-  wrong conclusion.
+  before the game starts.
+- **A cache-first worker will serve the old build forever.** A new version
+  installs in the background and then sits in `waiting` until every tab running
+  the old one is closed — not reloaded, *closed*. No player has a reason to know
+  that, so a shipped fix simply would not reach them. The shell now promotes the
+  waiting worker with `claim` and reloads itself once, before `startGame`, which
+  is the only moment where it is safe: after the reload the JS, the wasm and the
+  pck all come from the new cache together, so there is no way to pair old code
+  with new data. A `sessionStorage` flag keeps it to one reload per tab.
+
+One refresh is therefore enough to pick up a deploy. When testing an export
+against a browser that has already run the game, still unregister the worker and
+clear `caches` first — the automatic path costs a reload, and a stale first
+paint is easy to misread as the new build failing.
 
 ## Domains and HTTPS
 All of this is done; it is written down because the certificate behaviour is
