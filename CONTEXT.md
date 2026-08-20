@@ -854,6 +854,51 @@ The lesson both share: the potion tables are the wrong place to check whether a
 potion works. `is_potion_active` returning true proves the countdown is running,
 not that a single pixel changed.
 
+## 装饰框的内腔比它的外框小得多
+
+`bag_detail_frame.png` 画在 `(504,120)` 的 `359x420` 上，但那圈铜饰本身很厚：
+实测内腔只有 `x 568..799`（宽 231）、`y 200..456`。框里的四个标题与描述标签
+原本一律是 `526` 起、`316` 宽 —— 比内腔宽出 85px，两侧各戳出约 42px，中英文
+都一样。`DETAIL_TEXT_X` / `DETAIL_TEXT_W` 现在把它们收在腔内。
+
+内腔是量出来的，不是估的：沿贴图中线取亮度剖面，从两端向内找铜饰亮度掉下去
+的位置。换框图就得重量一次。
+
+## 中文全是豆腐块，因为界面根本没指定过字体
+
+房间里的标签一个都没调用过 `add_theme_font_override`，项目也没有全局主题，
+于是它们统统落在引擎自带的默认字体上 —— `Open Sans SemiBold`，只有拉丁字母。
+英文时毫无破绽，一切到中文，目标面板、对话框、提示语整片变成方块。菜单反而
+是好的，因为 `ArchiveUi.apply_label()` 会显式指定字体，两条路一直不一样。
+
+修法是把默认字体本身换掉（`gui/theme/custom_font`），而不是去几十个 Label 上
+逐个补 override。
+
+**但 `project.godot` 的段内注释会让紧随其后的键被静默忽略。** 我第一版把说明
+写在 `[gui]` 和 `theme/custom_font=` 之间，导出、重跑、截图，豆腐块纹丝不动；
+`ProjectSettings.get_setting()` 读出来是空字符串 —— 键存在（引擎内置），值却
+没被吃进去。把注释挪走，同一行立刻生效。这个文件里**不要**在段内写注释，要
+解释就写在这里。
+
+判断字体到底行不行，一行就够，不必靠肉眼看截图：
+
+```gdscript
+print(Label.new().get_theme_font("font").has_char("行".unicode_at(0)))
+```
+
+### 界面文案和正文走的是同一张表
+
+`CaseLocale.line(english)` 以英文原句为键，`CaseScriptZh.LINES` 是那张表。
+行囊、钥匙栏、获得物品提示原本把英文直接贴在 `.text` 上，所以中文玩家拿到
+钥匙看到的还是英文。现在这些都在显示处过一道 `line()`，整张 `KEY_INFO` 数据表
+因此一次性被覆盖，不必逐条改数据。
+
+`tools/check_translations.py` 曾经把这些误判为“陈旧”。它的判据写成了
+`translated - set(found)`，而 `found` 只收“到达特定 sink”的句子；文档里说的却
+是“这句英文在源码里已经找不到了”。界面文案躺在数据表里、一个 sink 都不沾，
+于是整批被判死。现在按它自己声明的语义查全部字面量。**它报 100%，指的只是
+那几个 sink 覆盖的范围，不是全部界面文字。**
+
 ## 三块加载 / 转场画面，都不能是引擎给的那一块
 
 **网页加载屏**（`web/shell/loading_shell.html`）用的是游戏自己的标题画面当底，

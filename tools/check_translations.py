@@ -143,7 +143,22 @@ for lit, s, e in gd_string_literals(table):
         translated.add(lit)
 
 untranslated = {k: v for k, v in found.items() if k not in translated}
-stale = translated - set(found)
+
+# 陈旧的判据是“这句英文在源码里已经找不到了”，而不是“它没有走到我们认得的
+# 那几个 sink”。两者在很长一段时间里是同一件事，直到界面文案也开始走
+# CaseLocale.line() —— 那些句子躺在数据表里（KEY_INFO、行囊面板的标题），
+# 一个 sink 都不沾，于是整批被误判成陈旧，检查跟着变红。
+#
+# 这里改回按字面意思去查：扫遍所有源码里的字符串字面量，真的不见了才算陈旧。
+# 少了“必须经过 sink”这一层，恰恰是这个检查原本承诺的那件事 —— 英文被改写、
+# 中文被悄悄架空，仍然会被抓住。
+source_literals = set()
+for path in SRC:
+    text = open(path, encoding='utf-8').read()
+    for lit, _s, _e in gd_string_literals(text):
+        source_literals.add(lit)
+
+stale = translated - source_literals
 
 # A mistranslated format string is a runtime crash, not a cosmetic bug:
 # GDScript's % operator errors if the specifiers do not match the arguments.

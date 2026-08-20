@@ -163,7 +163,7 @@ func _create_entry_button() -> void:
 
 	entry_label = Label.new()
 	entry_label.name = "KeyHubLabel"
-	entry_label.text = "KEYS"
+	entry_label.text = CaseLocale.line("KEYS")
 	entry_label.position = Vector2(110.0, 82.0)
 	entry_label.size = Vector2(64.0, 20.0)
 	entry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -221,7 +221,7 @@ func _create_hub_overlay() -> void:
 
 	var title := Label.new()
 	title.name = "KeyRegisterTitle"
-	title.text = "KEY REGISTER"
+	title.text = CaseLocale.line("KEY REGISTER")
 	title.position = Vector2(64.0, 26.0)
 	title.size = Vector2(236.0, 28.0)
 	title.add_theme_font_size_override("font_size", 18)
@@ -232,7 +232,7 @@ func _create_hub_overlay() -> void:
 	board_panel.add_child(title)
 	var subtitle := Label.new()
 	subtitle.name = "KeyRegisterSubtitle"
-	subtitle.text = "TEETH · CRESTS · ACCESS"
+	subtitle.text = CaseLocale.line("TEETH · CRESTS · ACCESS")
 	subtitle.position = Vector2(66.0, 54.0)
 	subtitle.size = Vector2(236.0, 18.0)
 	subtitle.add_theme_font_size_override("font_size", 9)
@@ -422,7 +422,7 @@ func _create_unlock_toast() -> void:
 
 	var title: Label = Label.new()
 	title.name = "Title"
-	title.text = "KEY HUB AWAKENED"
+	title.text = CaseLocale.line("KEY HUB AWAKENED")
 	title.position = Vector2(12.0, 7.0)
 	title.size = Vector2(262.0, 22.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -433,7 +433,7 @@ func _create_unlock_toast() -> void:
 
 	var description: Label = Label.new()
 	description.name = "Description"
-	description.text = "Your first key has been recorded. Press I or click the key."
+	description.text = CaseLocale.line("Your first key has been recorded. Press I or click the key.")
 	description.position = Vector2(12.0, 30.0)
 	description.size = Vector2(262.0, 28.0)
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -482,7 +482,7 @@ func _sync_key_state() -> void:
 			slot.modulate = Color.WHITE
 			slot.tooltip_text = KEY_NAMES[index]
 			if state_label != null:
-				state_label.text = "RECOVERED"
+				state_label.text = CaseLocale.line("RECOVERED")
 				state_label.add_theme_color_override("font_color", Color(0.72, 0.94, 0.62, 1.0))
 		else:
 			slot.texture_normal = load(LOCK_TEXTURE_PATH) as Texture2D

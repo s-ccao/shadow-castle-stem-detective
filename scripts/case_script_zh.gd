@@ -600,4 +600,120 @@ const LINES: Dictionary = {
 		"月叶只在光谱偏冷的那一端才张开，所以给它什么光，和给它多少光一样要紧。\n\n它是林老师配方里的第二味药——月叶配蓝花，在二次蒸馏水里。",
 	"Every trial on this bed answered. The gardener's reserve yields %d more %s.":
 		"这条花坛的每一道题都答上来了。园丁的存货又给了 %d 份%s。",
+
+	# ---------- 获得物品提示（钥匙 / 证据 / 图纸） ----------
+	"A brass key bearing a red Ashford seal. It belongs to the Wake Room exit.":
+		"一把黄铜钥匙，压着阿什福德家的红色火漆。它开的是卧房的那道门。",
+	"A ceremonial key shaped for the castle's oldest lock.":
+		"一把礼仪用的钥匙，是照着城堡里最老的那把锁打的。",
+	"A cold key recovered from the route toward the Final Room.":
+		"一把冰凉的钥匙，是在通往终末之室的路上捡到的。",
+	"A dark metal key threaded with a violet current.":
+		"一把暗色金属钥匙，里面有一缕紫色的电流在走。",
+	"A green-stained key marked with a leaf-shaped crest.":
+		"一把染着绿渍的钥匙，上面刻着叶形的纹章。",
+	"A hand-drawn hall fragment from Dr. Lin's desk. Its missing sections will reveal themselves only as you explore.":
+		"林博士桌上一角手绘的大厅残图。缺掉的部分，只会随着你一步步走过去才浮现出来。",
+	"A hand-drawn repair map marking the three switches and the correct activation order.":
+		"一张手绘的检修图，标出了三个开关，以及正确的合闸顺序。",
+	"A heavy laboratory key. Its worn teeth carry a faint chemical-blue shine.":
+		"一把沉手的实验室钥匙。磨秃的齿上泛着一点药水般的幽蓝。",
+	"A maintenance record assigns one pair of gloves to the Mechanic. The right glove had a distinctive copper-thread cross-stitch repair and went missing after the blackout.":
+		"一份检修记录写明，有一副手套是发给机修工的。右手那只补过一道很好认的铜线十字缝，停电之后就不见了。",
+	"A silver-marked key recovered from the Circuit Room equipment cabinet.":
+		"一把带银色标记的钥匙，是从电路室的器材柜里取出来的。",
+	"A slim brass key stamped with the library's spiral archive seal.":
+		"一把细长的黄铜钥匙，打着图书馆那枚螺旋书库印。",
+	"A strange key with a glowing central core. Its purpose is unknown.":
+		"一把古怪的钥匙，芯子里亮着光。它是用来开什么的，还不知道。",
+	"A torn cuff fragment in Mrs. Lin's hand carries the same distinctive copper-thread cross-stitch described in the Mechanic's missing glove record.":
+		"林太太手里攥着一角撕下的袖口，上面那道铜线十字缝，和机修工那只失踪手套记录里写的一模一样。",
+	"A torn piece of the Final Room Key. It seems incomplete — three fragments must be found.":
+		"终末之室钥匙的一块残片。它显然还不完整——一共要找齐三块。",
+	"A torn piece of the distinctive maintenance insulating weave was caught in Mrs. Lin's hand. It links her final struggle to the Circuit and Service Area evidence without identifying a worker by itself.":
+		"林太太手里勾着一小块检修用的绝缘织物，纹路很好认。它把她最后的挣扎与电路室、勤务区的物证连了起来，但单凭它还指不到具体某个人。",
+	"A violet thread caught on the pipe matches the insulating weave documented in the Circuit Room maintenance equipment.":
+		"管道上挂着的一缕紫色丝线，和电路室检修器材记录里的绝缘织物对得上。",
+	"Added to Satchel":
+		"已收进行囊",
+	"Added to Satchel Maps":
+		"已收进行囊的地图册",
+	"An ornate key assembled from three torn fragments.":
+		"一把由三块残片拼合而成的华丽钥匙。",
+	"Archive Key":
+		"书库钥匙",
+	"Deep-room pollen on the tools — someone entered the greenhouse from outside.":
+		"工具上沾着温室深处的花粉——有人是从外面进的温室。",
+	"Lord Ashford's sealed record connects the castle's research wings, the Knowledge Engine, and the hidden archive route.":
+		"阿什福德勋爵那份封存的记录，把城堡的几处研究侧翼、知识引擎，还有那条隐蔽的书库通路串到了一起。",
+	"Map and Satchel unlocked":
+		"地图与行囊已解锁",
+	"Master Key":
+		"总钥匙",
+	"The burn pattern is not accidental — someone cut the power on purpose.":
+		"这道烧灼的痕迹不是意外——有人是存心把电切断的。",
+	"The dark trail contains violet grit and a chemical smell. Something heavy was dragged from the workshop.":
+		"那道暗色拖痕里有紫色的碎屑和一股药味。有很重的东西被从工坊拖了出去。",
+	"The meal ended at 11:40; fresh ash and a stopped clock mark the missing twenty minutes.":
+		"那顿饭在 11:40 结束；新落的灰和一台停摆的钟，标出了消失的那二十分钟。",
+	"The pendulum was stopped deliberately to create a false midnight timestamp.":
+		"钟摆是被人特意按停的，为的是造出一个假的午夜时刻。",
+	"The red liquid reacts with a basic cleaner — the stain was staged.":
+		"那摊红色液体遇上碱性清洁剂会起反应——这处污渍是做出来的。",
+	"The red thread matches a service uniform, not the dining decorations.":
+		"那根红线对得上的是勤务制服，而不是宴会厅的装饰。",
+	"Under the Vision Potion, the vault dial reveals a violet circuit mark — the culprit's route recorder.":
+		"在洞察药水下，金库的转盘上浮出一道紫色的电路印记——那是凶手留下的路线记录。",
+
+	# ---------- 行囊 / 钥匙栏界面 ----------
+	"SATCHEL":
+		"行囊",
+	"BAG":
+		"行囊",
+	"CASE SATCHEL":
+		"办案行囊",
+	"FIELD ARCHIVE  ·  RECOVERED MATERIALS":
+		"现场档案  ·  已回收的材料",
+	"CASE FILES":
+		"案件卷宗",
+	"ITEM INSPECTION":
+		"物品查验",
+	"USE":
+		"使用",
+	"Select an item":
+		"选择一件物品",
+	"EMPTY SATCHEL SLOT":
+		"空的行囊格",
+	"Choose a potion, material, or paper to inspect its details.":
+		"选一瓶药水、一份材料或一张纸页，查看它的详情。",
+	"OPEN MAP":
+		"打开地图",
+	"KEYS":
+		"钥匙",
+	"KEY REGISTER":
+		"钥匙名录",
+	"TEETH · CRESTS · ACCESS":
+		"齿纹 · 纹章 · 通行",
+	"KEY HUB AWAKENED":
+		"钥匙栏已启用",
+	"Your first key has been recorded. Press I or click the key.":
+		"你的第一把钥匙已登记在案。按 I 键，或点击那把钥匙。",
+	"RECOVERED":
+		"已寻回",
+	"Quantity: ":
+		"数量：",
+	"FILED: %d  •  SELECT AN ITEM TO INSPECT  •  TAB / ESC: CLOSE":
+		"已归档 %d 件  •  选中一件查看详情  •  TAB / ESC 关闭",
+	"FIELD KIT · FOUR FILES":
+		"现场工具 · 四类卷宗",
+	"1 · CHOOSE FILE    2 · INSPECT ITEM    3 · USE / OPEN":
+		"1 · 选择卷宗    2 · 查看物品    3 · 使用 / 打开",
+	"ALL":
+		"全部",
+	"POTIONS":
+		"药水",
+	"MATERIALS":
+		"材料",
+	"PAPERS":
+		"纸页",
 }

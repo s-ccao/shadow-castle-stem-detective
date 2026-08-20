@@ -6,6 +6,12 @@ extends CanvasLayer
 
 const BAG_ICON_PATH: String = "res://assets/ui/inventory/bag_satchel_icon.png"
 const BOARD_TEXTURE_PATH: String = "res://assets/ui/inventory/bag_inventory_board.png"
+## 详情框 bag_detail_frame.png 的内腔，实测为设计坐标 x 568..799、y 200..456。
+## 框里的标签原本一律是 526 起、316 宽，比内腔宽出 85px，于是无论中英文，
+## 长一点的描述都会从装饰边框里戳出去。这两个常量把它们收回腔内并留 10px 余量。
+const DETAIL_TEXT_X: float = 578.0
+const DETAIL_TEXT_W: float = 211.0
+
 const DETAIL_FRAME_PATH: String = "res://assets/ui/inventory/bag_detail_frame.png"
 const SLOT_FRAME_A_PATH: String = "res://assets/ui/inventory/bag_square_frame_a.png"
 const SLOT_FRAME_B_PATH: String = "res://assets/ui/inventory/bag_square_frame_b.png"
@@ -173,7 +179,7 @@ func _create_entry_button() -> void:
 	add_child(hover_plate)
 
 	hover_label = Label.new()
-	hover_label.text = "SATCHEL"
+	hover_label.text = CaseLocale.line("SATCHEL")
 	hover_label.position = Vector2(2.0, 1.0)
 	hover_label.size = Vector2(56.0, 22.0)
 	hover_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -187,7 +193,7 @@ func _create_entry_button() -> void:
 
 	entry_label = Label.new()
 	entry_label.name = "BagEntryLabel"
-	entry_label.text = "BAG"
+	entry_label.text = CaseLocale.line("BAG")
 	entry_label.position = Vector2(22.0, 82.0)
 	entry_label.size = Vector2(60.0, 20.0)
 	entry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -267,7 +273,7 @@ func _create_overlay() -> void:
 
 	var title: Label = Label.new()
 	title.name = "InventoryTitle"
-	title.text = "CASE SATCHEL"
+	title.text = CaseLocale.line("CASE SATCHEL")
 	title.position = Vector2(286.0, 16.0)
 	title.size = Vector2(420.0, 30.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -280,7 +286,7 @@ func _create_overlay() -> void:
 
 	var subtitle: Label = Label.new()
 	subtitle.name = "InventorySubtitle"
-	subtitle.text = "FIELD ARCHIVE  ·  RECOVERED MATERIALS"
+	subtitle.text = CaseLocale.line("FIELD ARCHIVE  ·  RECOVERED MATERIALS")
 	subtitle.position = Vector2(286.0, 47.0)
 	subtitle.size = Vector2(420.0, 16.0)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -326,16 +332,16 @@ func _create_overlay() -> void:
 		"accent": Color(0.90, 0.62, 0.24, 0.92),
 		"rule_y": 14.0,
 		"stamp_rect": Rect2(52.0, 20.0, 212.0, 26.0),
-		"stamp": "FIELD KIT · FOUR FILES",
+		"stamp": CaseLocale.line("FIELD KIT · FOUR FILES"),
 		"protocol_rect": Rect2(112.0, 598.0, 736.0, 24.0),
-		"protocol": "1 · CHOOSE FILE    2 · INSPECT ITEM    3 · USE / OPEN",
+		"protocol": CaseLocale.line("1 · CHOOSE FILE    2 · INSPECT ITEM    3 · USE / OPEN"),
 	})
 
 
 func _create_category_buttons() -> void:
 	var filing_label := Label.new()
 	filing_label.name = "SatchelFilingLabel"
-	filing_label.text = "CASE FILES"
+	filing_label.text = CaseLocale.line("CASE FILES")
 	# The tab row owns this heading, so it sits directly above the first authored
 	# recess instead of sharing a baseline with the centred case caption.
 	filing_label.position = Vector2(127.0, 56.0)
@@ -362,14 +368,14 @@ func _create_category_buttons() -> void:
 		var button: Button = Button.new()
 		var category_id: String = str(category["id"])
 		button.name = "Category_" + category_id
-		button.text = str(category["text"])
+		button.text = CaseLocale.line(str(category["text"]))
 		button.position = CATEGORY_BUTTON_RECTS[category_index].position
 		button.size = CATEGORY_BUTTON_RECTS[category_index].size
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = false
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		button.focus_mode = Control.FOCUS_ALL
-		button.set_meta("base_label", str(category["text"]))
+		button.set_meta("base_label", CaseLocale.line(str(category["text"])))
 		button.set_meta("authored_recess", CATEGORY_BUTTON_RECTS[category_index])
 		button.add_theme_font_size_override("font_size", 10)
 		if str(category["text"]).length() >= 9:
@@ -458,7 +464,7 @@ func _create_detail_panel() -> void:
 
 	var inspection_label := Label.new()
 	inspection_label.name = "InspectionLabel"
-	inspection_label.text = "ITEM INSPECTION"
+	inspection_label.text = CaseLocale.line("ITEM INSPECTION")
 	inspection_label.position = Vector2(548.0, 128.0)
 	inspection_label.size = Vector2(270.0, 18.0)
 	inspection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -469,8 +475,8 @@ func _create_detail_panel() -> void:
 
 	detail_title = Label.new()
 	detail_title.name = "SelectedItemTitle"
-	detail_title.position = Vector2(526.0, 288.0)
-	detail_title.size = Vector2(316.0, 42.0)
+	detail_title.position = Vector2(DETAIL_TEXT_X, 286.0)
+	detail_title.size = Vector2(DETAIL_TEXT_W, 40.0)
 	detail_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -484,8 +490,8 @@ func _create_detail_panel() -> void:
 
 	detail_category = Label.new()
 	detail_category.name = "SelectedItemCategory"
-	detail_category.position = Vector2(526.0, 332.0)
-	detail_category.size = Vector2(316.0, 18.0)
+	detail_category.position = Vector2(DETAIL_TEXT_X, 328.0)
+	detail_category.size = Vector2(DETAIL_TEXT_W, 16.0)
 	detail_category.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_category.clip_text = true
 	detail_category.add_theme_font_size_override("font_size", 10)
@@ -495,13 +501,13 @@ func _create_detail_panel() -> void:
 
 	detail_description = Label.new()
 	detail_description.name = "SelectedItemDescription"
-	detail_description.position = Vector2(526.0, 354.0)
-	detail_description.size = Vector2(316.0, 76.0)
+	detail_description.position = Vector2(DETAIL_TEXT_X, 348.0)
+	detail_description.size = Vector2(DETAIL_TEXT_W, 84.0)
 	detail_description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_description.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_description.clip_text = true
-	detail_description.max_lines_visible = 5
+	detail_description.max_lines_visible = 6
 	detail_description.add_theme_font_size_override("font_size", 11)
 	detail_description.add_theme_color_override("font_color", Color(0.88, 0.82, 0.68, 1.0))
 	detail_description.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -511,8 +517,8 @@ func _create_detail_panel() -> void:
 	detail_quantity.name = "SelectedItemQuantity"
 	# The plaque painted into the board ends here; the count has to read as part
 	# of the plaque, not as a line balanced on its lower edge.
-	detail_quantity.position = Vector2(526.0, 434.0)
-	detail_quantity.size = Vector2(316.0, 18.0)
+	detail_quantity.position = Vector2(DETAIL_TEXT_X, 436.0)
+	detail_quantity.size = Vector2(DETAIL_TEXT_W, 18.0)
 	detail_quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_quantity.add_theme_font_size_override("font_size", 10)
 	detail_quantity.add_theme_color_override("font_color", Color(0.96, 0.76, 0.34, 1.0))
@@ -534,7 +540,7 @@ func _create_detail_panel() -> void:
 
 	detail_use_button = Button.new()
 	detail_use_button.name = "SelectedItemUseButton"
-	detail_use_button.text = "USE"
+	detail_use_button.text = CaseLocale.line("USE")
 	detail_use_button.position = Vector2(612.0, 508.0)
 	detail_use_button.size = Vector2(144.0, 32.0)
 	detail_use_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -1125,13 +1131,15 @@ func _update_detail_panel() -> void:
 	if selected_index < 0 or selected_index >= entries.size():
 		detail_icon_texture.visible = false
 		detail_icon_label.text = "—"
-		detail_title.text = "Select an item"
-		detail_category.text = "EMPTY SATCHEL SLOT"
-		detail_description.text = "Choose a potion, material, or paper to inspect its details."
+		detail_title.text = CaseLocale.line("Select an item")
+		detail_category.text = CaseLocale.line("EMPTY SATCHEL SLOT")
+		detail_description.text = CaseLocale.line(
+			"Choose a potion, material, or paper to inspect its details."
+		)
 		detail_quantity.text = ""
 		detail_requirements.text = ""
 		detail_use_button.visible = false
-		detail_use_button.text = "USE"
+		detail_use_button.text = CaseLocale.line("USE")
 		return
 
 	var entry: Dictionary = entries[selected_index]
@@ -1156,9 +1164,16 @@ func _update_detail_panel() -> void:
 		"font_size",
 		10 if detail_description.text.length() > 72 else 11
 	)
-	detail_quantity.text = "Quantity: ∞" if int(entry["quantity"]) < 0 else "Quantity: ×" + str(entry["quantity"])
+	var count_label: String = CaseLocale.line("Quantity: ")
+	detail_quantity.text = (
+		count_label + "∞"
+		if int(entry["quantity"]) < 0
+		else count_label + "×" + str(entry["quantity"])
+	)
 	detail_requirements.text = str(entry["requirements"])
-	detail_use_button.text = "OPEN MAP" if kind == "map" else "USE"
+	detail_use_button.text = (
+		CaseLocale.line("OPEN MAP") if kind == "map" else CaseLocale.line("USE")
+	)
 	var potion_effect: String = str(GameState.POTION_INFO.get(str(entry["id"]), {}).get("effect", ""))
 	detail_use_button.visible = (
 		(kind == "potion" and not potion_effect.is_empty())
@@ -1169,7 +1184,9 @@ func _update_detail_panel() -> void:
 
 func _update_bottom_status() -> void:
 	var total_items: int = entries.size()
-	bottom_status.text = "FILED: %d  •  SELECT AN ITEM TO INSPECT  •  TAB / ESC: CLOSE" % total_items
+	bottom_status.text = CaseLocale.line(
+		"FILED: %d  •  SELECT AN ITEM TO INSPECT  •  TAB / ESC: CLOSE"
+	) % total_items
 
 
 func _animate_bag_open() -> void:

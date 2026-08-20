@@ -378,9 +378,12 @@ func _show_next() -> void:
 
 	var texture: Texture2D = load(str(item["icon"])) as Texture2D
 	_icon_rect.texture = texture
-	_title_label.text = str(item["title"])
-	_desc_label.text = str(item["desc"])
-	_hint_label.text = str(item["hint"])
+	# 这三行原本直接把表里的英文贴上去，所以中文玩家拿到钥匙时看到的还是
+	# 英文。CaseLocale.line() 就是以英文原句为键的翻译入口，在这里过一道，
+	# 整张 KEY_INFO / 证据 / 药水表就一起被覆盖了，不必逐条改数据。
+	_title_label.text = CaseLocale.line(str(item["title"]))
+	_desc_label.text = CaseLocale.line(str(item["desc"]))
+	_hint_label.text = CaseLocale.line(str(item["hint"]))
 
 	# 屏幕中心偏上（垂直 38%），不遮挡底部对话与顶部 HUD。
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size

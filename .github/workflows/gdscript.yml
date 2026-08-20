@@ -55,7 +55,7 @@ jobs:
       # library_light_lab_ui.gd came in with their existing warnings.
       - name: Lint against the recorded baseline
         env:
-          BASELINE: "1064"
+          BASELINE: "1063"
         run: |
           set -uo pipefail
           total=0
