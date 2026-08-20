@@ -196,3 +196,17 @@ The landing images under `web/landing/assets/` are compressed copies of
 project-owned art; the source game assets stay in their own folders.
 `web/.gdignore` keeps the whole web tree out of the Godot import pipeline, so
 none of it is packed into the game.
+
+## Community
+
+`web/landing/community.html` is a branded view over the repository's public
+GitHub Discussions. The repository setting **Discussions** must remain enabled.
+Players authenticate, publish and reply on GitHub, so the game site does not
+collect passwords or maintain a second account database.
+
+The browser cannot fetch GitHub's Atom feed directly because that response has
+no CORS header. `web/landing/api/community.js` is a read-only Vercel function
+that fetches the public feed, converts it to a small JSON payload, and caches it
+for one minute. It uses no token or deployment secret. New-post and reply links
+go to the corresponding GitHub Discussion category; do not redirect community
+posts into GitHub Issues, which remain the project's engineering tracker.

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Join the Shadow Castle investigator community: share theories, ask for puzzle help, and show what you discovered."
+    />
+    <meta name="theme-color" content="#15131d" />
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=IBM+Plex+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/community.css" />
+    <title>Investigator Network · Shadow Castle</title>
+  </head>
+  <body>
+    <header class="community-nav">
+      <a class="community-wordmark" href="/">Shadow Castle <span>STEM Detective</span></a>
+      <a class="play-link" href="https://play.shadowcastledetective.com/">Play online ▶</a>
+    </header>
+
+    <main class="network">
+      <header class="network__header">
+        <div>
+          <p class="network__kicker">Investigator Network</p>
+          <h1>Castle Community</h1>
+          <p class="network__intro">
+            Compare evidence, request a spoiler-safe hint, report Web build problems, or
+            propose the next scientific mystery.
+          </p>
+        </div>
+        <a
+          class="new-post"
+          id="new-post"
+          href="https://github.com/s-ccao/shadow-castle-stem-detective/discussions/new?category=general"
+        >
+          New field note +
+        </a>
+      </header>
+
+      <nav class="network__tabs" aria-label="Community sections">
+        <button class="network__tab is-active" type="button" data-category="all">Field notes</button>
+        <button class="network__tab" type="button" data-category="q-a">Puzzle help</button>
+        <button class="network__tab" type="button" data-category="ideas">Theories & ideas</button>
+        <button class="network__tab" type="button" data-category="show-and-tell">Showcase</button>
+      </nav>
+
+      <div class="network__body">
+        <section class="feed" aria-labelledby="feed-title">
+          <div class="feed__heading">
+            <div>
+              <p class="feed__label">Shared case desk</p>
+              <h2 id="feed-title">Recent discussions</h2>
+            </div>
+            <a
+              class="open-github"
+              href="https://github.com/s-ccao/shadow-castle-stem-detective/discussions"
+            >
+              Open full network ↗
+            </a>
+          </div>
+          <div class="feed__status" id="feed-status" role="status">Opening the archive…</div>
+          <div class="feed__list" id="feed-list"></div>
+        </section>
+
+        <aside class="network__guide">
+          <p class="guide__kicker">Posting protocol</p>
+          <h2>Keep every clue useful.</h2>
+          <ul>
+            <li>Keep ending spoilers out of titles.</li>
+            <li>Mark puzzle questions with the room name.</li>
+            <li>Include device and browser when reporting a bug.</li>
+            <li>Challenge theories with evidence, never the investigator.</li>
+          </ul>
+          <p>
+            Posting and replying use a GitHub account so the shared desk can resist spam
+            without collecting another password.
+          </p>
+        </aside>
+      </div>
+    </main>
+
+    <script src="/community.js" defer></script>
+  </body>
+</html>
