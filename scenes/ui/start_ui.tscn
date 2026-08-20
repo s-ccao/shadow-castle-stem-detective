@@ -141,6 +141,11 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text = "AUTOSAVE · Resume: Wake Room"
 
+[node name="RecordsButton" type="Button" parent="CaseIntake/Content/ActionStack" unique_id=774100255]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+text = "Save Records"
+
 [node name="ToolRow" type="HBoxContainer" parent="CaseIntake/Content/ActionStack"]
 layout_mode = 2
 theme_override_constants/separation = 8

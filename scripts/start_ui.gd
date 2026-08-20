@@ -8,6 +8,7 @@ signal continue_requested
 signal settings_requested
 signal language_requested
 signal quit_requested
+signal records_requested
 
 const PANEL_FILL := Color(0.029, 0.019, 0.021, 0.965)
 const PANEL_INLAY := Color(0.078, 0.043, 0.030, 0.99)
@@ -25,8 +26,10 @@ const MUTED_FILL := Color(0.052, 0.040, 0.038, 0.94)
 const MUTED_HOVER := Color(0.098, 0.069, 0.060, 0.98)
 const FOCUS_GOLD := Color(1.0, 0.84, 0.43, 1.0)
 const CASE_INTAKE_WIDTH := 380.0
-const CASE_INTAKE_HEIGHT_EMPTY := 254.0
-const CASE_INTAKE_HEIGHT_RESUME := 312.0
+## 面板高度要把“存档记录”这一行算进去。它和新案件、继续同宽，是面板里的
+## 一等公民，而不是浮在角落里的一颗孤零零的按钮。
+const CASE_INTAKE_HEIGHT_EMPTY := 297.0
+const CASE_INTAKE_HEIGHT_RESUME := 355.0
 
 var _arrival_tween: Tween
 var _button_tweens: Dictionary = {}
@@ -45,6 +48,7 @@ var _button_tweens: Dictionary = {}
 @onready var settings_button: Button = $CaseIntake/Content/ActionStack/ToolRow/SettingsButton
 @onready var language_button: Button = $CaseIntake/Content/ActionStack/ToolRow/LanguageButton
 @onready var quit_button: Button = $CaseIntake/Content/ActionStack/ToolRow/QuitButton
+@onready var records_button: Button = $CaseIntake/Content/ActionStack/RecordsButton
 @onready var save_label: Label = $CaseIntake/Content/ActionStack/ContinueBlock/SaveStatus
 
 
@@ -71,6 +75,7 @@ func _ready() -> void:
 	_connect_button(continue_button, continue_requested.emit, &"archive")
 	_connect_button(settings_button, settings_requested.emit, &"archive")
 	_connect_button(language_button, language_requested.emit, &"archive")
+	_connect_button(records_button, records_requested.emit, &"archive")
 	_connect_button(quit_button, quit_requested.emit, &"muted")
 	CaseLocale.locale_changed.connect(_refresh_copy)
 	_refresh_copy()
@@ -109,7 +114,7 @@ func _refresh_copy(_language: String = "") -> void:
 	var font := _font_for_locale()
 	for label: Label in [case_kicker, case_title, case_detail, case_meta, save_label]:
 		label.add_theme_font_override("font", font)
-	for button: Button in [start_button, continue_button, settings_button, language_button, quit_button]:
+	for button: Button in _all_buttons():
 		button.add_theme_font_override("font", font)
 	case_kicker.text = CaseLocale.text("menu.intake_kicker")
 	case_title.text = CaseLocale.text("menu.intake_title")
@@ -124,6 +129,7 @@ func _refresh_copy(_language: String = "") -> void:
 	settings_button.text = CaseLocale.text("menu.settings")
 	language_button.text = CaseLocale.text("menu.language")
 	quit_button.text = CaseLocale.text("menu.quit")
+	records_button.text = "存档记录" if CaseLocale.is_chinese() else "Save Records"
 	set_save_status(GameState.resume_label() if GameState.has_saved_game() else "")
 
 
@@ -209,11 +215,22 @@ func _update_focus_order() -> void:
 	quit_button.focus_neighbor_left = language_button.get_path()
 
 
+func _all_buttons() -> Array[Button]:
+	return [
+		start_button,
+		continue_button,
+		records_button,
+		settings_button,
+		language_button,
+		quit_button,
+	]
+
+
 func _navigable_buttons() -> Array[Button]:
 	var buttons: Array[Button] = [start_button]
 	if continue_block.visible and not continue_button.disabled:
 		buttons.append(continue_button)
-	buttons.append_array([settings_button, language_button, quit_button])
+	buttons.append_array([records_button, settings_button, language_button, quit_button])
 	return buttons
 
 

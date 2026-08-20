@@ -11,7 +11,9 @@ extends Node
 
 const PIXEL_FONT: FontFile = preload("res://assets/fonts/fusion-pixel-12px-proportional-zh_hans.ttf")
 const ARCHIVE_FONT: FontFile = preload("res://assets/fonts/source-han-sans-sc-regular.otf")
-const CASE_FRAME: Texture2D = preload("res://assets/ui/frames/menu_banner_frame.png")
+## 开启案卷那段转场里牌子的位置与大小。视口是 1024x768，这块板居中。
+const PLATE_RECT := Rect2(Vector2(232.0, 310.0), Vector2(560.0, 148.0))
+const PLATE_PAD := 32.0
 const SCREEN_ATMOSPHERE_SHADER: Shader = preload("res://assets/ui/screen_atmosphere.gdshader")
 
 const COLOR_GOLD := Color(0.98, 0.82, 0.45, 1.0)
@@ -612,45 +614,58 @@ func play_case_open_transition(host: Node, on_complete: Callable) -> void:
 	veil.modulate.a = 0.0
 	fade.add_child(veil)
 
-	var frame := TextureRect.new()
-	frame.texture = CASE_FRAME
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	frame.position = Vector2(262.0, 300.0)
-	frame.size = Vector2(500.0, 156.0)
-	frame.modulate.a = 0.0
-	fade.add_child(frame)
+	# 这里原本贴的是 menu_banner_frame.png：1536x1024 的图（宽高比 1.5）被塞进
+	# 一个 500x156 的框（宽高比 3.2），KEEP_ASPECT_CENTERED 于是把它画成 234 宽，
+	# 而压在上面的文字是按 404 宽排的 —— 字比牌子宽了将近一倍，两头都戳在外面。
+	# 换成游戏里到处在用的那套面板样式，尺寸由代码定、文字排在内边距里，
+	# 比例对不上这种事从此不可能发生。
+	var plate := Panel.new()
+	plate.position = PLATE_RECT.position
+	plate.size = PLATE_RECT.size
+	plate.pivot_offset = PLATE_RECT.size * 0.5
+	plate.add_theme_stylebox_override("panel", panel_style(COLOR_PANEL, COLOR_BRASS, 2, 5))
+	plate.modulate.a = 0.0
+	plate.scale = Vector2(0.94, 0.94)
+	fade.add_child(plate)
 
 	var title := Label.new()
 	title.text = CaseLocale.text("menu.case_opened")
-	title.position = Vector2(310.0, 336.0)
-	title.size = Vector2(404.0, 30.0)
+	title.position = Vector2(PLATE_PAD, 26.0)
+	title.size = Vector2(PLATE_RECT.size.x - PLATE_PAD * 2.0, 30.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	apply_label(title, &"title")
-	title.modulate.a = 0.0
-	fade.add_child(title)
+	plate.add_child(title)
+
+	# 从中间向两侧展开的一道金线：档案被启封的动作，也是这段转场里唯一的动势。
+	var seal := ColorRect.new()
+	seal.color = COLOR_BRASS
+	seal.size = Vector2(PLATE_RECT.size.x - PLATE_PAD * 2.0, 1.0)
+	seal.position = Vector2(PLATE_PAD, 66.0)
+	seal.pivot_offset = Vector2(seal.size.x * 0.5, 0.0)
+	seal.scale = Vector2(0.0, 1.0)
+	plate.add_child(seal)
 
 	var detail := Label.new()
 	detail.text = CaseLocale.text("menu.case_opened_detail")
-	detail.position = Vector2(310.0, 378.0)
-	detail.size = Vector2(404.0, 26.0)
+	detail.position = Vector2(PLATE_PAD, 80.0)
+	detail.size = Vector2(PLATE_RECT.size.x - PLATE_PAD * 2.0, 26.0)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail.add_theme_font_size_override("font_size", 13)
 	apply_label(detail, &"body")
-	detail.modulate.a = 0.0
-	fade.add_child(detail)
+	plate.add_child(detail)
 
 	var transition := layer.create_tween()
 	transition.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	transition.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	transition.tween_property(veil, "modulate:a", 1.0, 0.16)
-	transition.parallel().tween_property(frame, "modulate:a", 1.0, 0.18)
-	transition.parallel().tween_property(title, "modulate:a", 1.0, 0.18)
-	transition.parallel().tween_property(detail, "modulate:a", 1.0, 0.18)
-	transition.tween_interval(0.22)
+	transition.parallel().tween_property(plate, "modulate:a", 1.0, 0.20)
+	transition.parallel().tween_property(plate, "scale", Vector2.ONE, 0.24)
+	transition.parallel().tween_property(seal, "scale", Vector2.ONE, 0.30).set_delay(0.10)
+	transition.tween_interval(0.26)
 	transition.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	transition.tween_property(fade, "modulate:a", 0.0, 0.16)
+	transition.tween_property(fade, "modulate:a", 0.0, 0.18)
 	transition.tween_callback(func() -> void:
 		if is_instance_valid(layer):
 			layer.queue_free()

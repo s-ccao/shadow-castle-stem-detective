@@ -854,6 +854,26 @@ The lesson both share: the potion tables are the wrong place to check whether a
 potion works. `is_potion_active` returning true proves the countdown is running,
 not that a single pixel changed.
 
+## 三块加载 / 转场画面，都不能是引擎给的那一块
+
+**网页加载屏**（`web/shell/loading_shell.html`）用的是游戏自己的标题画面当底，
+上面压一块和 case intake 同款的档案面板。位置不是随手摆的：舞台按引擎的规矩
+做成 1024x768 等比居中的信箱框，面板钉在 `31.45% / 57.33% / 37.11%`，也就是
+真面板的设计坐标 `(322, 440)` `380x297` 换算出来的比例。所以淡出的那一帧画面
+完全不动 —— 玩家看到的不是“换了个界面”，而是同一块板上的字变了。**改动
+start_ui 里的面板高度常量，就必须回来同步这三个数。**
+
+底图是内嵌的 base64（1024x768 的 webp，约 60KB）。这一屏必须在网络还在搬
+130MB 的时候就画好，多一个请求都是在拖它后腿；内嵌之后本地起服务、离线打开
+也都长得一模一样。
+
+**开启案卷的转场**曾经是穿模的。它把 1536x1024 的 `menu_banner_frame.png`
+（宽高比 1.5）塞进一个 500x156 的框（宽高比 3.2），`KEEP_ASPECT_CENTERED`
+于是把牌子画成 234 宽，而压在上面的文字是按 404 宽排的 —— 字比牌子宽了将近
+一倍，两头都戳在外面。现在牌子改用 `panel_style()` 画，尺寸写死在
+`PLATE_RECT`，文字排在 `PLATE_PAD` 的内边距里，比例对不上这种事不可能再发生。
+**拿一张固定比例的图去当可变尺寸的框，迟早是这个下场。**
+
 ## 存档原本会在开新案件时被删掉
 
 游戏只有一个自动存档位，而“开始新案件”做的第一件事是
