@@ -1,0 +1,9 @@
+# Deliberately almost empty, and it has to exist.
+#
+# The Vercel CLI falls back to .gitignore when there is no .vercelignore, and
+# the .gitignore in this folder is `*` — it keeps the build artifacts out of the
+# repository. Without this file the CLI would apply that rule to the upload and
+# publish a site containing nothing but vercel.json, with no error.
+#
+# Everything in this folder is the build and belongs in the deployment.
+.vercel

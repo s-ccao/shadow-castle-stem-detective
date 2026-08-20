@@ -8,4 +8,5 @@
 # vercel.json is the exception: it configures the deploy and is hand-written.
 *
 !.gitignore
+!.vercelignore
 !vercel.json
