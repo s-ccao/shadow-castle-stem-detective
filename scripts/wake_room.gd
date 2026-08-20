@@ -77,7 +77,13 @@ var window_position := Vector2(460, 127)
 
 const DOOR_INTERACT_RADIUS := 150.0
 const CLUE_INTERACT_RADIUS := 165.0
-const PROP_INTERACT_RADIUS := 75.0
+## 点击走位到达后判定用的带宽，比站着不动时的 14px 宽。
+##
+## _get_visual_interaction_approach() 把落脚点放在 13.5px 的接触带上，而
+## move_along_path() 允许在目标点前 click_stop_distance（6px）就停下，两者
+## 相加就越过了 14px —— 角色明明已经贴到物品上，却仍被判为不够近。键盘玩家
+## 是自己走到贴脸位置的，所以这个缺口只有点击这条路会踩到。
+const CLICK_ARRIVAL_MARGIN := 22.0
 const SHOW_INTERACTION_MARKERS := false
 
 @export var interaction_hint_position: Vector2 = Vector2(238, 696)
@@ -681,15 +687,21 @@ func _on_prop_input_event(
 			if _is_near_interaction("prop:" + id):
 				show_inspect(id)
 			else:
-				# 走位前先确认可达，避免寻路失败导致交互卡死。
-				if calculate_room_path(
-					player.global_position,
+				# 这里曾经只把 pending_mouse_interaction 设上就返回。那个变量
+				# 只驱动“Walking to the interaction...”这句提示，没有任何人
+				# 因此走起来，于是玩家盯着提示、角色一步不动，而到达回调
+				# 永远不会触发。键盘玩家走过去按 E 走的是另一条路，所以这条
+				# 从没被发现；手机上点击就是主要交互方式，它是致命的。
+				#
+				# 目标点用 p["position"] 而不是另算一个：建表时
+				# _get_visual_interaction_approach() 已经沿着 13.5px 接触带
+				# 挑出了一个可行走的点，那正是判定要求玩家站的地方。绕开它
+				# 自己按半径推算，落脚不是差在带外就是踩进不可走的像素里。
+				begin_mouse_interaction_at_point(
+					"prop:" + id,
+					p["focus_position"],
 					p["position"]
-				).is_empty():
-					temporary_prompt_text = "Can't reach that spot."
-					temporary_prompt_time_left = 2.0
-					return
-				pending_mouse_interaction = "prop:" + id
+				)
 
 
 func create_inspect_ui() -> void:
@@ -2623,6 +2635,8 @@ func begin_mouse_interaction_at_point(
 		return
 
 	player.move_along_path(path)
+
+
 func hide_debug_room_path():
 	if debug_path_line == null:
 		return
@@ -2697,7 +2711,10 @@ func on_player_click_target_reached():
 			if interaction_to_run.begins_with("prop:"):
 				var prop_id: String = interaction_to_run.trim_prefix("prop:")
 				if props.has(prop_id):
-					if _is_near_interaction("prop:" + prop_id):
+					if _is_near_interaction(
+						"prop:" + prop_id,
+						CLICK_ARRIVAL_MARGIN
+					):
 						show_inspect(prop_id)
 					else:
 						show_failed_approach_message()

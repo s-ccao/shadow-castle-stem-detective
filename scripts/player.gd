@@ -75,6 +75,10 @@ func _unhandled_input(event):
 
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			# 摇杆和动作键上的手指同样会被模拟成一次左键按下，不挡住的话
+			# 每次推摇杆都会额外派发一条“走到脚下去”的点地指令。
+			if TouchControls != null and TouchControls.blocks_world_point(event.position):
+				return
 			# The room decides whether this position is reachable
 			# and supplies the A* path.
 			ground_move_started.emit(
@@ -512,6 +516,10 @@ func show_idle_frame() -> void:
 	character_sprite.stop()
 	character_sprite.frame = 0
 func _ready() -> void:
+	# 触摸操作层靠这个组判断“此刻有没有人可以操控”，所以它必须先于下面的
+	# 早退发生。scripts/examples/door_puzzle_example.gd 也一直在查这个组。
+	add_to_group(&"player")
+
 	if character_sprite == null:
 		push_error(
 			"CharacterSprite was not found."

@@ -854,6 +854,54 @@ The lesson both share: the potion tables are the wrong place to check whether a
 potion works. `is_potion_active` returning true proves the countdown is running,
 not that a single pixel changed.
 
+## 手机和电脑共用一份网页版
+
+触摸操作层（`autoload/touch_controls.gd`）是自己决定去留的：收到
+`InputEventScreenTouch` 就现身，收到键盘事件就退场。不做一次性的设备检测，
+因为同一台机器随时会换手（手机接键盘、笔记本有触屏），一次性判断必然有一半
+人是错的。
+
+它只做移动这一件事，而且不碰玩家速度：摇杆按住 `move_*` 四个动作，
+`player.gd` 那句 `Input.get_vector(...).normalized()` 照原样吃下去。方向对了
+就够，移动、走路动画、药水加速全都沿用同一条路径，一行都不用改。
+
+三个位置上的约束，少一个就出问题：
+
+- **层号 15**，低于所有 UI（房间 UI 是 30，最低的面板是 20）。摇杆被面板盖住
+  是对的——面板开着时本来也不该走路。
+- **输入走 `_unhandled_input` 而不是 `_input`**。对话框、检查面板、小游戏都是
+  会吃输入的 Control，先经过它们，落在面板上的手指就不会把角色推着走。
+- **`player.gd` 要问一句 `TouchControls.blocks_world_point()`**。触摸会被模拟
+  成左键按下，不挡的话每次推摇杆都同时派发一条“走到脚下去”的点地指令。
+
+只在 `player` 组里有人时才出现，所以菜单和过场里不会有一个操控不了任何东西的
+摇杆浮在标题上。这个组是这次才加的——`scripts/examples/door_puzzle_example.gd`
+一直在查它，而在此之前没有任何人加入过。
+
+### 点物品走过去这条路，从来没有真正走通过
+
+`wake_room.gd` 的道具点击只做了一半：它检查完可达性，把
+`pending_mouse_interaction` 设上，然后就返回了。那个变量只驱动
+“Walking to the interaction...”这句提示，没有任何人因此走起来。于是玩家盯着
+提示、角色一步不动，而到达回调永远等不到。门和线索都老老实实调了
+`begin_mouse_interaction*()`，只有道具漏了；连 `PROP_INTERACT_RADIUS` 那个常量
+都定义好了却从没被引用过，正是这条路半途而废的痕迹。
+
+键盘玩家自己走过去按 E，走的是另一条分支，所以桌面上永远撞不到。手机上点击
+就是主要交互方式，它是致命的。
+
+补上调用之后还差第二段：落脚点必须用建表时算好的 `p["position"]`。
+`_get_visual_interaction_approach()` 已经沿着 13.5px 的接触带挑出了一个可行走
+的点，那正是判定要求玩家站的位置；自己按半径绕着 `position` 推算，落脚不是差
+在带外就是踩进不可走的像素里——而 `calculate_room_path()` 对不可达目标直接返回
+空路径，不做任何吸附。
+
+第三段是算术：接触带 13.5px、判定带 14px，只剩 0.5px 余量，而
+`move_along_path()` 允许在目标点前 `click_stop_distance`（6px）就停下。角色明明
+已经贴到物品上，仍然会被判为不够近。到达判定因此用 `CLICK_ARRIVAL_MARGIN`
+（22px）而不是默认的 14px —— 玩家是被送到一个本来就在带内的点上的，停在它
+六像素外不该算失败。
+
 ## A CanvasLayer cannot fade, and it will not tell you
 
 Both screen transitions built their overlay as a `CanvasLayer` with the veil,
