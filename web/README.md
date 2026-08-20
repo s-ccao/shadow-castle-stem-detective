@@ -96,8 +96,36 @@ with `GDPC` and `index.wasm` with `\0asm`:
 curl -sS -r 0-3 https://play.shadowcastledetective.com/index.pck | xxd
 ```
 
-## Domains and HTTPS
+## The loading screen and the offline cache
 
+`web/shell/loading_shell.html` replaces Godot's default page (via
+`html/custom_html_shell`) and `web/shell/offline.html` replaces its bare
+"You are offline" fallback. Both are self-contained on purpose: no webfont, no
+image, no third-party request. The first screen a player sees has to paint while
+the network is busy moving 130MB, and it has to look the same when served from
+a local directory or from the cache with no connection at all.
+
+The `$GODOT_*` placeholders in the shell are substituted at export time.
+`$GODOT_HEAD_INCLUDE` is not optional — that is where Godot injects the icon
+links and, with the PWA enabled, `<link rel="manifest">`.
+
+Progressive web app is on, so a service worker caches `index.wasm` and
+`index.pck`. Two details are worth keeping:
+
+- **The engine registers the worker only *after* `startGame()` finishes**, which
+  means the first visit downloads 130MB before the worker exists and caches
+  none of it — players would pay the full download twice. The shell therefore
+  registers it up front and sends the `claim` message so it controls the page
+  before the game starts. It only does this on a first-ever install; claiming
+  while an older cache exists could pair an old `index.js` with a new `.pck`.
+- **A new deploy takes effect on the *second* load.** The worker is cache-first,
+  so the running page keeps the old build; the new worker installs in the
+  background and takes over on the next navigation. When testing a fresh export
+  against a browser that already ran the game, unregister the worker and clear
+  `caches` first or you will be looking at the previous build and drawing the
+  wrong conclusion.
+
+## Domains and HTTPS
 All of this is done; it is written down because the certificate behaviour is
 not what the Vercel UI implies.
 

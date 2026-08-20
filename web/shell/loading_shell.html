@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
+	<meta name="theme-color" content="#0b0912">
+	<title>$GODOT_PROJECT_NAME</title>
+	<style>
+	/*
+	   自绘的加载层。不引任何外部字体或图片：这一屏必须在网络还在搬 131MB
+	   的时候就已经画好，任何一个额外请求都是在拖它的后腿；而且不依赖外部
+	   资源，本地起服务或离线打开时它长得一模一样。
+	   配色直接沿用 web/landing/tokens.css，官网和游戏是同一个东西。
+	*/
+	:root {
+		--paper: oklch(11% 0.018 284);
+		--paper-2: oklch(15% 0.02 284);
+		--ink: oklch(94% 0.018 80);
+		--muted: oklch(62% 0.018 282);
+		--accent: oklch(76% 0.15 75);
+		--arcane: oklch(68% 0.13 300);
+		--rule: oklch(30% 0.035 68);
+		--mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+		--serif: ui-serif, Georgia, "Times New Roman", serif;
+	}
+
+	html, body, #canvas { margin: 0; padding: 0; border: 0; }
+
+	body {
+		background: var(--paper);
+		color: var(--ink);
+		overflow: hidden;
+		touch-action: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	#canvas { display: block; }
+	#canvas:focus { outline: none; }
+
+	#boot {
+		position: fixed;
+		inset: 0;
+		z-index: 10;
+		display: grid;
+		place-items: center;
+		background:
+			radial-gradient(120% 90% at 50% 42%, oklch(19% 0.03 290) 0%, var(--paper) 58%, oklch(7% 0.014 284) 100%);
+		opacity: 1;
+		transition: opacity 620ms cubic-bezier(0.7, 0, 0.84, 0);
+	}
+
+	#boot.done { opacity: 0; pointer-events: none; }
+
+	/* 极细的横向扫描线，给一点显像管味道，不喧宾夺主。 */
+	#boot::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: repeating-linear-gradient(
+			to bottom,
+			oklch(100% 0 0 / 0.028) 0px,
+			oklch(100% 0 0 / 0.028) 1px,
+			transparent 1px,
+			transparent 3px
+		);
+		mix-blend-mode: overlay;
+	}
+
+	.stack {
+		position: relative;
+		display: grid;
+		justify-items: center;
+		gap: clamp(14px, 2.4vh, 26px);
+		padding: 24px;
+		width: min(92vw, 640px);
+		text-align: center;
+	}
+
+	#dial {
+		display: block;
+		width: min(46vh, 66vw, 340px);
+		height: min(46vh, 66vw, 340px);
+	}
+
+	.wordmark {
+		display: grid;
+		gap: 6px;
+	}
+
+	.wordmark .line-1 {
+		font-family: var(--serif);
+		font-size: clamp(1.35rem, 4.4vw, 2.1rem);
+		font-weight: 600;
+		letter-spacing: 0.10em;
+		color: var(--ink);
+		text-shadow: 0 0 26px oklch(76% 0.15 75 / 0.30);
+	}
+
+	.wordmark .line-2 {
+		font-family: var(--mono);
+		font-size: clamp(0.6rem, 2.1vw, 0.78rem);
+		letter-spacing: 0.42em;
+		text-indent: 0.42em;
+		color: var(--accent);
+		opacity: 0.86;
+	}
+
+	.readout {
+		display: grid;
+		gap: 9px;
+		width: min(100%, 430px);
+	}
+
+	#phase {
+		font-family: var(--mono);
+		font-size: clamp(0.62rem, 2vw, 0.76rem);
+		letter-spacing: 0.2em;
+		color: var(--ink);
+		min-height: 1.25em;
+		opacity: 0.9;
+	}
+
+	/* 分段刻度条：比一根实心条更像仪器，也更容易看出还剩多少。 */
+	.meter {
+		display: flex;
+		gap: 3px;
+		height: 8px;
+	}
+
+	.meter i {
+		flex: 1;
+		border-radius: 1px;
+		background: oklch(30% 0.02 284);
+		transition: background 180ms linear, box-shadow 180ms linear;
+	}
+
+	.meter i.on {
+		background: var(--accent);
+		box-shadow: 0 0 10px oklch(76% 0.15 75 / 0.55);
+	}
+
+	.meter i.edge {
+		background: oklch(86% 0.14 78);
+		box-shadow: 0 0 16px oklch(82% 0.18 78 / 0.85);
+	}
+
+	#bytes {
+		font-family: var(--mono);
+		font-size: clamp(0.58rem, 1.8vw, 0.7rem);
+		letter-spacing: 0.14em;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	#footnote {
+		font-family: var(--mono);
+		font-size: clamp(0.54rem, 1.7vw, 0.66rem);
+		letter-spacing: 0.08em;
+		color: var(--muted);
+		opacity: 0.72;
+		max-width: 44ch;
+		line-height: 1.55;
+	}
+
+	#notice {
+		display: none;
+		font-family: var(--mono);
+		font-size: 0.76rem;
+		line-height: 1.6;
+		color: oklch(78% 0.16 28);
+		border: 1px solid oklch(46% 0.14 28);
+		background: oklch(18% 0.05 28 / 0.6);
+		border-radius: 6px;
+		padding: 14px 16px;
+		max-width: 46ch;
+		text-align: left;
+		white-space: pre-wrap;
+	}
+
+	#boot.failed #dial,
+	#boot.failed .readout { display: none; }
+	#boot.failed #notice { display: block; }
+
+	@media (prefers-reduced-motion: reduce) {
+		#boot { transition: none; }
+	}
+	</style>
+	$GODOT_HEAD_INCLUDE
+</head>
+<body>
+	<canvas id="canvas">HTML5 canvas is required to run this game.</canvas>
+
+	<noscript>This game requires JavaScript.</noscript>
+
+	<div id="boot">
+		<div class="stack">
+			<canvas id="dial" aria-hidden="true"></canvas>
+			<div class="wordmark">
+				<div class="line-1" id="wm1">Shadow Castle</div>
+				<div class="line-2" id="wm2">STEM DETECTIVE</div>
+			</div>
+			<div class="readout">
+				<div id="phase"></div>
+				<div class="meter" id="meter"></div>
+				<div id="bytes"></div>
+			</div>
+			<div id="footnote"></div>
+			<div id="notice"></div>
+		</div>
+	</div>
+
+	<script src="$GODOT_URL"></script>
+	<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const boot = document.getElementById('boot');
+	const notice = document.getElementById('notice');
+	const phaseEl = document.getElementById('phase');
+	const bytesEl = document.getElementById('bytes');
+	const meterEl = document.getElementById('meter');
+	const footEl = document.getElementById('footnote');
+	const dial = document.getElementById('dial');
+
+	const zh = (navigator.language || '').toLowerCase().startsWith('zh');
+
+	// 阶段文案跟着真实进度走。最后一段是留给 wasm 编译的：那一步会占住主
+	// 线程，动画必然卡住，所以要先说清楚在干什么，卡住才不像崩了。
+	const PHASES = zh ? [
+		[0.00, '建立上行链路'],
+		[0.06, '解密案卷 · 阿什福德停电案'],
+		[0.24, '绘制城堡平面'],
+		[0.44, '校准提灯光学'],
+		[0.61, '配置现场试剂'],
+		[0.77, '编目知识之锁'],
+		[0.91, '守卫开始苏醒'],
+		[1.00, '正在点火'],
+	] : [
+		[0.00, 'ESTABLISHING UPLINK'],
+		[0.06, 'DECRYPTING CASE FILE · ASHFORD BLACKOUT'],
+		[0.24, 'MAPPING THE CASTLE FLOORPLAN'],
+		[0.44, 'CALIBRATING LANTERN OPTICS'],
+		[0.61, 'SYNTHESISING FIELD REAGENTS'],
+		[0.77, 'INDEXING THE KNOWLEDGE LOCKS'],
+		[0.91, 'THE GUARDIAN STIRS'],
+		[1.00, 'IGNITING'],
+	];
+
+	const SEGMENTS = 28;
+	const segs = [];
+	for (let i = 0; i < SEGMENTS; i++) {
+		const s = document.createElement('i');
+		meterEl.appendChild(s);
+		segs.push(s);
+	}
+
+	let totalBytes = 0;
+	try {
+		const sizes = GODOT_CONFIG['fileSizes'] || {};
+		for (const k in sizes) { totalBytes += sizes[k]; }
+	} catch (e) { totalBytes = 0; }
+
+	function mb(n) { return (n / 1048576).toFixed(1); }
+
+	footEl.textContent = zh
+		? '首次载入约 ' + (totalBytes ? mb(totalBytes) : '130') + ' MB，之后由浏览器缓存，再进来会快很多。进度存在本机，随时可以关掉。'
+		: 'First load is about ' + (totalBytes ? mb(totalBytes) : '130') + ' MB. It is cached afterwards, and your progress is kept on this device.';
+
+	let shown = 0;      // 平滑后的进度，用来画
+	let target = 0;     // onProgress 报来的真实进度
+	let settled = false;
+	let phaseText = '';
+
+	function setPhase(p) {
+		let t = PHASES[0][1];
+		for (let i = 0; i < PHASES.length; i++) {
+			if (p >= PHASES[i][0]) { t = PHASES[i][1]; }
+		}
+		if (t !== phaseText) { phaseText = t; phaseEl.textContent = t; }
+	}
+
+	function paintMeter(p) {
+		const lit = Math.round(p * SEGMENTS);
+		for (let i = 0; i < SEGMENTS; i++) {
+			const on = i < lit;
+			segs[i].className = on ? (i === lit - 1 ? 'on edge' : 'on') : '';
+		}
+	}
+
+	/* ---------------------------------------------------------------- 仪式盘 */
+
+	const ctx = dial.getContext('2d');
+	let dpr = 1;
+	let size = 0;
+
+	function resizeDial() {
+		dpr = Math.min(window.devicePixelRatio || 1, 2);
+		const css = dial.getBoundingClientRect().width;
+		if (css <= 0) { return; }
+		size = css;
+		dial.width = Math.round(css * dpr);
+		dial.height = Math.round(css * dpr);
+	}
+
+	function ring(cx, cy, r, from, to, color, width, glow) {
+		ctx.beginPath();
+		ctx.arc(cx, cy, r, from, to);
+		ctx.strokeStyle = color;
+		ctx.lineWidth = width;
+		ctx.lineCap = 'round';
+		ctx.shadowBlur = glow || 0;
+		ctx.shadowColor = glow ? color : 'transparent';
+		ctx.stroke();
+		ctx.shadowBlur = 0;
+	}
+
+	// 地面上的罗盘纹章：既是侦探的方位盘，也是城堡的法阵，正好是这个游戏。
+	function compass(cx, cy, r, spin) {
+		ctx.save();
+		ctx.translate(cx, cy);
+		ctx.rotate(spin);
+		for (let i = 0; i < 8; i++) {
+			const long = i % 2 === 0;
+			const len = long ? r : r * 0.52;
+			const wide = long ? r * 0.15 : r * 0.09;
+			ctx.rotate(Math.PI / 4);
+			ctx.beginPath();
+			ctx.moveTo(0, -len);
+			ctx.lineTo(wide, 0);
+			ctx.lineTo(0, len * 0.16);
+			ctx.lineTo(-wide, 0);
+			ctx.closePath();
+			ctx.fillStyle = long
+				? 'oklch(76% 0.15 75 / 0.62)'
+				: 'oklch(68% 0.13 300 / 0.45)';
+			ctx.fill();
+		}
+		ctx.restore();
+	}
+
+	function drawDial(now) {
+		if (size <= 0) { resizeDial(); if (size <= 0) { return; } }
+		const w = dial.width;
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.clearRect(0, 0, w, w);
+		ctx.scale(dpr, dpr);
+
+		const c = size / 2;
+		const R = size * 0.46;
+		const t = now / 1000;
+
+		// 外圈刻度：12 个长刻 + 中间的短刻，像一台仪器的表盘。
+		ctx.save();
+		ctx.translate(c, c);
+		ctx.rotate(t * 0.06);
+		for (let i = 0; i < 48; i++) {
+			const major = i % 4 === 0;
+			ctx.beginPath();
+			ctx.moveTo(0, -R);
+			ctx.lineTo(0, -R + (major ? size * 0.045 : size * 0.022));
+			ctx.strokeStyle = major
+				? 'oklch(76% 0.15 75 / 0.34)'
+				: 'oklch(62% 0.018 282 / 0.22)';
+			ctx.lineWidth = major ? 1.6 : 1;
+			ctx.stroke();
+			ctx.rotate(Math.PI * 2 / 48);
+		}
+		ctx.restore();
+
+		// 反向自转的内圈虚线。
+		ctx.save();
+		ctx.translate(c, c);
+		ctx.rotate(-t * 0.22);
+		ctx.setLineDash([size * 0.035, size * 0.055]);
+		ring(0, 0, R * 0.62, 0, Math.PI * 2, 'oklch(68% 0.13 300 / 0.40)', 1.4, 0);
+		ctx.setLineDash([]);
+		ctx.restore();
+
+		// 进度轨与进度弧。
+		const P = R * 0.82;
+		ring(c, c, P, 0, Math.PI * 2, 'oklch(30% 0.02 284 / 0.9)', size * 0.018, 0);
+
+		const start = -Math.PI / 2;
+		const end = start + Math.PI * 2 * shown;
+		if (shown > 0.001) {
+			ring(c, c, P, start, end, 'oklch(80% 0.16 76)', size * 0.018, size * 0.05);
+			// 弧头的亮点，让进度有个“正在推进”的焦点。
+			const hx = c + Math.cos(end) * P;
+			const hy = c + Math.sin(end) * P;
+			ctx.beginPath();
+			ctx.arc(hx, hy, size * 0.017, 0, Math.PI * 2);
+			ctx.fillStyle = 'oklch(94% 0.10 82)';
+			ctx.shadowBlur = size * 0.09;
+			ctx.shadowColor = 'oklch(82% 0.18 78)';
+			ctx.fill();
+			ctx.shadowBlur = 0;
+		}
+
+		// 每隔几秒扫过一次的探测光，是这一屏“科幻”的来源。
+		const sweep = (t * 0.5) % 1;
+		if (sweep < 0.5) {
+			const a = start + Math.PI * 2 * (sweep * 2);
+			const g = ctx.createLinearGradient(
+				c, c,
+				c + Math.cos(a) * R, c + Math.sin(a) * R
+			);
+			g.addColorStop(0, 'oklch(68% 0.13 300 / 0)');
+			g.addColorStop(1, 'oklch(72% 0.14 300 / 0.30)');
+			ctx.beginPath();
+			ctx.moveTo(c, c);
+			ctx.lineTo(c + Math.cos(a) * R, c + Math.sin(a) * R);
+			ctx.strokeStyle = g;
+			ctx.lineWidth = 1.6;
+			ctx.stroke();
+		}
+
+		compass(c, c, R * 0.50, t * 0.10);
+
+		// 罗盘要留在中心（它是场景地面上的纹章），但读数也得压在正中，两者
+		// 直接重叠就谁都看不清。压一层暗盘把纹章推到背后，再给一圈内环当
+		// 表镜边框，数字才浮得起来。
+		const inner = R * 0.36;
+		const veil = ctx.createRadialGradient(c, c, 0, c, c, inner);
+		veil.addColorStop(0, 'oklch(9% 0.016 284 / 0.92)');
+		veil.addColorStop(0.72, 'oklch(9% 0.016 284 / 0.86)');
+		veil.addColorStop(1, 'oklch(9% 0.016 284 / 0)');
+		ctx.beginPath();
+		ctx.arc(c, c, inner, 0, Math.PI * 2);
+		ctx.fillStyle = veil;
+		ctx.fill();
+		ring(c, c, inner * 0.94, 0, Math.PI * 2, 'oklch(76% 0.15 75 / 0.22)', 1, 0);
+
+		// 中心读数：进度盘中间就是最该放百分比的地方。
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = '600 ' + Math.round(size * 0.125) + 'px ui-monospace, Menlo, monospace';
+		ctx.shadowBlur = size * 0.06;
+		ctx.shadowColor = 'oklch(9% 0.016 284)';
+		ctx.fillStyle = 'oklch(95% 0.03 82)';
+		ctx.fillText(Math.round(shown * 100) + '%', c, c + size * 0.004);
+		ctx.shadowBlur = 0;
+	}
+
+	let raf = 0;
+	function frame(now) {
+		// 只做指数逼近：网络进度是跳变的，直接画会一格一格顿。
+		shown += (target - shown) * 0.10;
+		if (settled) { shown += (1 - shown) * 0.16; }
+		paintMeter(shown);
+		setPhase(shown);
+		drawDial(now);
+		raf = requestAnimationFrame(frame);
+	}
+
+	resizeDial();
+	window.addEventListener('resize', resizeDial);
+	setPhase(0);
+	bytesEl.textContent = zh ? '等待响应…' : 'AWAITING RESPONSE';
+	raf = requestAnimationFrame(frame);
+
+	function stopDial() {
+		if (raf) { cancelAnimationFrame(raf); raf = 0; }
+	}
+
+	function fail(err) {
+		console.error(err);
+		stopDial();
+		let msg;
+		if (err instanceof Error) { msg = err.message; } else if (typeof err === 'string') { msg = err; } else {
+			msg = zh ? '发生了未知错误。' : 'An unknown error occurred.';
+		}
+		notice.textContent = (zh ? '无法启动\n\n' : 'Could not start\n\n') + msg;
+		boot.classList.add('failed');
+	}
+
+	const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+
+	// Service worker 默认是在 startGame 结束之后才注册的，也就是说第一次那
+	// 130MB 是在它存在之前就下完的，一个字节都没进缓存 —— 玩家要来第三次
+	// 才享受得到。这里先注册再接管，第一次下载就顺手存下来，第二次进来就是
+	// 本地读取，断网也能开。
+	//
+	// 只在“从来没装过”的那一次接管。已经有旧缓存时贸然让新 worker 上位，
+	// 会出现页面还是旧的 index.js、资源却换成了新 pck 的错配；那种情况按
+	// 浏览器默认的节奏走，下次进来自然就是新版。
+	function claimServiceWorker() {
+		return new Promise(function (resolve) {
+			if (!GODOT_CONFIG['serviceWorker'] || !('serviceWorker' in navigator)) {
+				resolve();
+				return;
+			}
+			if (navigator.serviceWorker.controller) {
+				resolve();
+				return;
+			}
+			// 兜底：注册出问题也不能把开局卡在这里。
+			const escape = setTimeout(resolve, 2500);
+			navigator.serviceWorker.register(GODOT_CONFIG['serviceWorker']).then(function (reg) {
+				if (reg.waiting) {
+					clearTimeout(escape);
+					resolve();
+					return;
+				}
+				const sw = reg.installing || reg.active;
+				if (!sw) {
+					clearTimeout(escape);
+					resolve();
+					return;
+				}
+				navigator.serviceWorker.addEventListener('controllerchange', function () {
+					clearTimeout(escape);
+					resolve();
+				}, { once: true });
+				const claim = function () {
+					if (sw.state === 'activated') { sw.postMessage('claim'); }
+				};
+				claim();
+				sw.addEventListener('statechange', claim);
+			}).catch(function (err) {
+				console.warn('Service worker unavailable:', err);
+				clearTimeout(escape);
+				resolve();
+			});
+		});
+	}
+
+	function launch() {
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					target = Math.min(current / total, 1);
+					bytesEl.textContent = mb(current) + ' / ' + mb(total) + ' MB';
+				} else if (totalBytes > 0) {
+					bytesEl.textContent = (zh ? '正在取回 ' : 'FETCHING ') + mb(totalBytes) + ' MB';
+				}
+			},
+		}).then(function () {
+			settled = true;
+			target = 1;
+			// 让最后那一格补满被看见，再淡出交给游戏。
+			setTimeout(function () {
+				boot.classList.add('done');
+				setTimeout(function () { stopDial(); boot.remove(); }, 700);
+			}, 260);
+		}, fail);
+	}
+
+	if (missing.length !== 0) {
+		fail((zh
+			? '这个浏览器缺少运行所需的功能：\n'
+			: 'This browser is missing features required to run the game:\n') + missing.join('\n'));
+	} else {
+		claimServiceWorker().then(launch, launch);
+	}
+}());
+	</script>
+</body>
+</html>

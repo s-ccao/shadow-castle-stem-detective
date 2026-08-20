@@ -75,6 +75,9 @@ const GUARDIAN_OBJECTIVE_ROOM_ORDER: Array[String] = [
 ]
 var _loading_save: bool = false
 var _save_queued: bool = false
+## 抵达新房间时置位，让下一次落盘顺手留一张快照。合并在自动存档里，避免
+## 为了快照多写一次文件。
+var _snapshot_pending: bool = false
 
 
 func _ready() -> void:
@@ -117,7 +120,25 @@ func _queue_save() -> void:
 func _flush_queued_save() -> void:
 	_save_queued = false
 	if game_started and not _loading_save:
-		save_to_disk()
+		var written: bool = save_to_disk()
+		# 快照必须在存档真正落盘之后再拷，否则拷到的是上一次的内容。
+		if written and _snapshot_pending:
+			_snapshot_pending = false
+			SaveSlots.capture(SAVE_PATH, SaveSlots.REASON_CHECKPOINT)
+
+
+## 开新案件之前调用。原本这里是 delete_saved_game()，上一轮的进度会当场消失；
+## 现在先留一张快照，玩家在“存档”界面里永远翻得回去。
+func archive_saved_game() -> void:
+	SaveSlots.capture(SAVE_PATH, SaveSlots.REASON_NEW_CASE)
+	delete_saved_game()
+
+
+## 把一张快照写回存档位并立刻读入。成功后调用方直接跳到 resume_scene_path。
+func restore_save_slot(slot_path: String) -> bool:
+	if not SaveSlots.restore(slot_path, SAVE_PATH):
+		return false
+	return load_saved_game()
 
 
 func has_saved_game() -> bool:
@@ -145,6 +166,7 @@ func save_to_disk() -> bool:
 		return false
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
+		"saved_at": int(Time.get_unix_time_from_system()),
 		"reputation": reputation,
 		"evidence_items": evidence_items,
 		"knowledge_items": knowledge_items,
@@ -1197,6 +1219,7 @@ func save_room_checkpoint(
 	resume_scene_path = scene_path
 	resume_room_id = room_id
 	resume_spawn_id = spawn_id
+	_snapshot_pending = true
 	state_changed.emit()
 
 
@@ -1212,12 +1235,25 @@ func has_room_checkpoint() -> bool:
 
 
 func resume_label() -> String:
+	var room_id: String = resume_room_id
 	if not has_room_checkpoint():
-		return CaseLocale.text("save.none")
+		# 主菜单上还没有读过档，实时状态里当然没有检查点，于是这里一直回
+		# “没有进行中的案件” —— 存档明明躺在硬盘上，玩家却被告知没有。要判断
+		# 存档在不在，只能去问存档文件本身。
+		room_id = _saved_resume_room_id()
+		if room_id.is_empty():
+			return CaseLocale.text("save.none")
 	return CaseLocale.text(
 		"save.resume",
-		{"room": CaseLocale.room_name(resume_room_id)}
+		{"room": CaseLocale.room_name(room_id)}
 	)
+
+
+func _saved_resume_room_id() -> String:
+	var payload: Dictionary = SaveSlots.read_slot(SAVE_PATH)
+	if payload.is_empty() or not bool(payload.get("checkpoint_valid", false)):
+		return ""
+	return str(payload.get("resume_room_id", ""))
 
 
 func prepare_room_transition(

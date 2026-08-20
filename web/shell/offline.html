@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#0b0912">
+	<title>Shadow Castle: STEM Detective</title>
+	<style>
+	/*
+	   离线兜底页。只有在“网断了、而且游戏还没被缓存下来”时才会看到，
+	   所以它必须完全自足：没有外链字体、没有图片、没有脚本依赖。
+	*/
+	:root {
+		--paper: oklch(11% 0.018 284);
+		--ink: oklch(94% 0.018 80);
+		--muted: oklch(62% 0.018 282);
+		--accent: oklch(76% 0.15 75);
+		--mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+		--serif: ui-serif, Georgia, "Times New Roman", serif;
+	}
+	html, body { margin: 0; height: 100%; }
+	body {
+		background: radial-gradient(120% 90% at 50% 40%, oklch(18% 0.03 290), var(--paper) 62%, oklch(7% 0.014 284));
+		color: var(--ink);
+		display: grid;
+		place-items: center;
+		padding: 24px;
+		box-sizing: border-box;
+	}
+	.card { text-align: center; max-width: 42ch; display: grid; gap: 18px; justify-items: center; }
+	svg { width: 92px; height: 92px; opacity: 0.9; }
+	h1 { font-family: var(--serif); font-size: 1.6rem; font-weight: 600; letter-spacing: 0.06em; margin: 0; }
+	.kicker {
+		font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.4em;
+		text-indent: 0.4em; color: var(--accent); margin: 0;
+	}
+	p { font-family: var(--mono); font-size: 0.74rem; line-height: 1.75; color: var(--muted); margin: 0; }
+	button {
+		font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
+		color: oklch(14% 0.02 284); background: var(--accent);
+		border: 0; border-radius: 3px; padding: 11px 22px; cursor: pointer;
+	}
+	button:hover { background: oklch(84% 0.16 78); }
+	</style>
+</head>
+<body>
+	<div class="card">
+		<svg viewBox="0 0 100 100" aria-hidden="true">
+			<circle cx="50" cy="50" r="42" fill="none" stroke="oklch(76% 0.15 75 / 0.45)" stroke-width="2"/>
+			<circle cx="50" cy="50" r="33" fill="none" stroke="oklch(68% 0.13 300 / 0.4)" stroke-width="1.4" stroke-dasharray="5 7"/>
+			<path d="M50 22 L56 50 L50 78 L44 50 Z" fill="oklch(76% 0.15 75 / 0.6)"/>
+			<path d="M22 50 L50 44 L78 50 L50 56 Z" fill="oklch(68% 0.13 300 / 0.45)"/>
+			<line x1="26" y1="26" x2="74" y2="74" stroke="oklch(70% 0.17 28 / 0.75)" stroke-width="3" stroke-linecap="round"/>
+		</svg>
+		<p class="kicker" id="kicker">SIGNAL LOST</p>
+		<h1 id="title">The uplink is down</h1>
+		<p id="body"></p>
+		<button id="retry" type="button">RETRY</button>
+	</div>
+	<script>
+	(function () {
+		var zh = (navigator.language || '').toLowerCase().indexOf('zh') === 0;
+		if (zh) {
+			document.getElementById('kicker').textContent = '信号中断';
+			document.getElementById('title').textContent = '连不上案卷库';
+			document.getElementById('body').textContent =
+				'这台设备现在没有网络，而游戏还没有完整缓存到本地。'
+				+ '联网完整加载过一次之后，之后就算断网也能直接开始办案。';
+			document.getElementById('retry').textContent = '重试';
+			document.documentElement.lang = 'zh';
+		} else {
+			document.getElementById('body').textContent =
+				'This device is offline and the game has not been fully cached yet. '
+				+ 'Once it has finished loading online one time, it will start without a connection.';
+		}
+		document.getElementById('retry').addEventListener('click', function () {
+			window.location.reload();
+		});
+	}());
+	</script>
+</body>
+</html>

@@ -854,6 +854,30 @@ The lesson both share: the potion tables are the wrong place to check whether a
 potion works. `is_potion_active` returning true proves the countdown is running,
 not that a single pixel changed.
 
+## 存档原本会在开新案件时被删掉
+
+游戏只有一个自动存档位，而“开始新案件”做的第一件事是
+`GameState.delete_saved_game()` —— 没有确认、没有备份，上一轮的进度当场消失。
+主菜单还会火上浇油：`resume_label()` 读的是内存里的实时状态，而主菜单上根本
+还没读过档，于是明明有存档，界面却写着“尚无进行中的案件”。玩家有充分理由
+认为自己的存档已经没了。
+
+现在有两层：
+
+- **快照库**（`scripts/save_slots.gd`）。每抵达一个新房间留一张，开新案件之前
+  再留一张，存在 `user://saves/`。快照就是自动存档文件的整份拷贝，不另外维护
+  索引 —— 索引迟早会和真实存档漂移，而存档本身已经带着复盘所需的全部字段，
+  列表上那几行一律从快照自己身上读。
+- **存档记录界面**（`scripts/save_slots_ui.gd`）。主菜单上始终可见的入口，和
+  通关后才解锁的剧情档案 `CaseArchiveUi` 是两回事，别把两者混起来。
+
+写快照的时机合并进了自动存档：`save_room_checkpoint()` 只置一个
+`_snapshot_pending`，真正的拷贝发生在 `_flush_queued_save()` 里、而且必须在
+`save_to_disk()` 返回成功之后 —— 早一步拷到的是上一次的内容。
+
+同一个房间、同样的证据与知识数量会被判为“还停在原地”而跳过，否则在一个房间
+里来回走几趟就能把有用的旧快照挤出 24 张的上限。
+
 ## 手机和电脑共用一份网页版
 
 触摸操作层（`autoload/touch_controls.gd`）是自己决定去留的：收到

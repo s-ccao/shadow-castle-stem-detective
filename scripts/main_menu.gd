@@ -19,6 +19,8 @@ var volume_controls: Array[Control] = []
 var active_dialog := ""
 var case_archive_button: Button
 var case_archive_ui: CaseArchiveUi
+var save_records_button: Button
+var save_records_ui: SaveSlotsUi
 
 @onready var start_ui: Control = $StartUI
 
@@ -27,6 +29,50 @@ func _ready() -> void:
 	_connect_start_ui()
 	create_menu_dialog()
 	_create_case_archive_entry()
+	_create_save_records_entry()
+
+
+## 存档记录入口。和上面那个通关后才解锁的剧情档案不同，这一个任何时候都在：
+## 它存在的意义就是让玩家确认自己的进度还在、并且随时能翻回去。
+func _create_save_records_entry() -> void:
+	save_records_button = Button.new()
+	save_records_button.name = "SaveRecordsButton"
+	save_records_button.position = Vector2(36.0, 646.0)
+	save_records_button.size = Vector2(240.0, 44.0)
+	ArchiveUi.apply_button(save_records_button, ArchiveUi.ROLE_ARCHIVE)
+	save_records_button.pressed.connect(_open_save_records)
+	add_child(save_records_button)
+	_refresh_save_records_entry()
+
+
+func _refresh_save_records_entry() -> void:
+	if save_records_button == null:
+		return
+	save_records_button.text = "存档记录" if CaseLocale.is_chinese() else "SAVE RECORDS"
+
+
+func _open_save_records() -> void:
+	if save_records_ui == null or not is_instance_valid(save_records_ui):
+		save_records_ui = SaveSlotsUi.new()
+		add_child(save_records_ui)
+		save_records_ui.closed.connect(_on_save_records_closed)
+		save_records_ui.slot_loaded.connect(_on_save_slot_loaded)
+	if start_ui != null:
+		start_ui.call("set_ui_enabled", false)
+	save_records_ui.open()
+
+
+func _on_save_records_closed() -> void:
+	if start_ui != null:
+		start_ui.call("set_ui_enabled", true)
+	if save_records_button != null:
+		save_records_button.call_deferred("grab_focus")
+
+
+func _on_save_slot_loaded(scene_path: String) -> void:
+	ArchiveUi.play_case_open_transition(self, func() -> void:
+		get_tree().change_scene_to_file(scene_path)
+	)
 
 
 ## A finished case stays readable. The entry only exists once an ending has been
@@ -329,7 +375,7 @@ func start_game() -> void:
 	_hide_menu_dialog()
 	if start_ui != null and start_ui.has_method("set_ui_enabled"):
 		start_ui.call("set_ui_enabled", false)
-	GameState.delete_saved_game()
+	GameState.archive_saved_game()
 	GameState.reset_new_game()
 	if NoteHud != null:
 		NoteHud.reset()
@@ -353,6 +399,7 @@ func _refresh_copy(_language: String = "") -> void:
 		)
 	ArchiveUi.refresh_tree(menu_dialog_layer)
 	_refresh_case_archive_entry()
+	_refresh_save_records_entry()
 	menu_dialog_close_button.text = CaseLocale.text("menu.close")
 	menu_dialog_guidance_button.text = CaseLocale.text(
 		"menu.guidance_on"
