@@ -448,6 +448,43 @@ hysteresis. Past the horizon the urgency bar fills to zero anyway, so leaving
 the panel up drew a large number over an empty gauge for the whole game. A
 warning that is always on screen tells the player nothing about when to run.
 
+## The first Hall chase is an authored tutorial, not ordinary escalation
+
+`OnboardingHud` existed but its only public method had no callers, so the
+orientation card was dead code. The first Hall entry now opens a short survival
+card, then its completion callback starts the existing Guardian reveal and the
+live blue route to Chemistry. The card is only the explanation; reaching the
+room is the actual tutorial.
+
+The first spawn must be chosen by **A* route distance**, never straight-line
+distance. From the authored corner the Guardian is about 1,500px away in a
+straight line but 4,688px away through the maze, while the player reaches
+Chemistry in 1,720px. A Euclidean "800px reaction distance" therefore produced
+no chase at all. The tutorial now samples the authored patrol route and selects
+a point closest to 720px of real route; the measured fresh-game result is 694px.
+This calculation requires the player's real Wake-door spawn to be assigned
+before `setup_enemy()` -- the scene's placeholder `(512,384)` is not gameplay.
+
+Tutorial speeds are exact, not escalation-derived: stakeout 38, search 78,
+approach 154 and the final return 176px/s against the player's 180. Completion
+of `hall_first_route_complete` switches every mode back to the normal
+82/96/145-plus-escalation table.
+
+## Guardian pressure has one source of truth
+
+The contact estimate drives all three warnings. Its 0..1 urgency continuously
+heats the bar from amber through orange to red, crossfades the already
+beat-aligned bed/tension/chase music layers, and feeds a full-screen shader below
+the UI. The centre stays controllable while the edges shiver and split; blur
+only begins in the final half. A discrete colour switch or discrete music state
+would tell the player only "danger / no danger", not whether the gap is closing.
+
+Dialogue is not a safe time to keep counting down. `start_dialogue_pause()`
+freezes the actors without pausing the SceneTree, so the estimate, music and
+shader must explicitly stand down while `dialogue_active`; otherwise the screen
+reaches maximum distortion while both bodies are immobile and the player cannot
+act. Tree-paused hubs also hide the shader immediately.
+
 ## Being caught has to be shown, not just recorded
 
 The Guardian usually lands its catch from behind or beside the player, so the

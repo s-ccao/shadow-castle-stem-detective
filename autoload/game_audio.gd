@@ -175,6 +175,24 @@ func set_music_for_guardian(hunt_active: bool, chasing: bool) -> void:
 		set_music_intensity(INTENSITY_CALM)
 
 
+## Continuous pursuit mix. The three authored tracks remain beat-aligned because
+## they never stop; only their gains move. Pressure is the same 0..1 value that
+## colours the contact bar and destabilises the world, so all three warnings
+## agree instead of changing on unrelated thresholds.
+func set_guardian_pressure(hunt_active: bool, chasing: bool, pressure: float) -> void:
+	if not hunt_active:
+		set_music_intensity(INTENSITY_CALM)
+		return
+	if not chasing:
+		set_music_intensity(INTENSITY_TENSION)
+		return
+	var p := clampf(pressure, 0.0, 1.0)
+	music_intensity = INTENSITY_CHASE
+	_layer_target["bed"] = lerpf(0.72, 0.36, p)
+	_layer_target["tension"] = lerpf(0.42, 0.92, p)
+	_layer_target["chase"] = smoothstep(0.08, 0.90, p)
+
+
 func layer_gain(layer: String) -> float:
 	return float(_layer_gain.get(layer, 0.0))
 

@@ -39,6 +39,15 @@ const GUARDIAN_MAX_ESCALATION_TIER: int = 6
 ## An unaware Guardian only loiters near the player's next objective.
 const GUARDIAN_STAKEOUT_SPEED: float = 44.0
 const GUARDIAN_SEARCH_SPEED: float = 96.0
+## The first Hall route has authored speeds rather than inheriting escalation.
+## It begins below the player's 180px/s so a new player can read the route, then
+## accelerates on the final return to Chemistry. That last 176px/s is close
+## enough to feel like a near miss, but still leaves a 4px/s margin for a player
+## who follows the route cleanly.
+const GUARDIAN_TUTORIAL_STAKEOUT_SPEED: float = 38.0
+const GUARDIAN_TUTORIAL_SEARCH_SPEED: float = 78.0
+const GUARDIAN_TUTORIAL_APPROACH_SPEED: float = 154.0
+const GUARDIAN_TUTORIAL_FINAL_DASH_SPEED: float = 176.0
 const GUARDIAN_SEARCH_DURATION: float = 6.0
 const GUARDIAN_SIGHT_RANGE: float = 300.0
 const GUARDIAN_SIGHT_HALF_ANGLE_DEGREES: float = 46.0
@@ -1420,6 +1429,13 @@ func get_guardian_escalation_multiplier() -> float:
 ## Speed once the Guardian has actually locked onto the player. This is the
 ## stacked value the user asked for: it never decays, only rises per room.
 func get_guardian_chase_speed() -> float:
+	if _is_first_hall_route_active():
+		var tutorial_speed := (
+			GUARDIAN_TUTORIAL_FINAL_DASH_SPEED
+			if has_story_flag("hall_first_route_core_studied")
+			else GUARDIAN_TUTORIAL_APPROACH_SPEED
+		)
+		return tutorial_speed * get_guardian_mire_multiplier()
 	return (
 		GUARDIAN_BASE_CHASE_SPEED
 		* get_guardian_escalation_multiplier()
@@ -1430,6 +1446,8 @@ func get_guardian_chase_speed() -> float:
 ## Speed while the Guardian has lost the player and is sweeping the last known
 ## position. Escalation still applies, but it is well below a full chase.
 func get_guardian_search_speed() -> float:
+	if _is_first_hall_route_active():
+		return GUARDIAN_TUTORIAL_SEARCH_SPEED * get_guardian_mire_multiplier()
 	return (
 		GUARDIAN_SEARCH_SPEED
 		* get_guardian_escalation_multiplier()
@@ -1440,10 +1458,19 @@ func get_guardian_search_speed() -> float:
 ## Speed while the Guardian is merely loitering. Deliberately slow so an unseen
 ## player can reposition; escalation does not apply here.
 func get_guardian_unaware_speed() -> float:
+	if _is_first_hall_route_active():
+		return GUARDIAN_TUTORIAL_STAKEOUT_SPEED * get_guardian_mire_multiplier()
 	var base: float = (
 		GUARDIAN_PATROL_SPEED if guardian_tracking_serum else GUARDIAN_STAKEOUT_SPEED
 	)
 	return base * get_guardian_mire_multiplier()
+
+
+func _is_first_hall_route_active() -> bool:
+	return (
+		has_story_flag("hall_first_route_started")
+		and not has_story_flag("hall_first_route_complete")
+	)
 
 
 ## The mire is applied here rather than in the body so that everything reading a

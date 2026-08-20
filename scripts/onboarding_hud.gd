@@ -25,6 +25,8 @@ var move_keycaps: Array[Label] = []
 var inspect_keycap: Label
 var _arrival_tween: Tween
 var _paused_before_open := false
+var _orientation_context := &"wake"
+var _completion_callback := Callable()
 
 
 func _ready() -> void:
@@ -42,12 +44,37 @@ func show_wake_orientation() -> void:
 		return
 	if overlay.visible:
 		return
+	_orientation_context = &"wake"
+	_completion_callback = Callable()
 	_refresh_copy()
 	_paused_before_open = get_tree().paused
 	get_tree().paused = true
 	overlay.visible = true
 	_reset_appearance()
 	call_deferred("_play_appearance")
+
+
+## The Hall is the first place where failure can chase the player. Movement and
+## inspection alone are no longer enough: the player must know that rooms are
+## shelter, and that the warming contact bar, tightening score and unstable
+## image are all one warning. Keep this card short; the live run to Chemistry is
+## the practice.
+func show_hall_orientation(on_complete: Callable = Callable()) -> bool:
+	if not PlayerPreferences.field_prompts_enabled:
+		return false
+	if GameState.has_story_flag("hall_orientation_completed"):
+		return false
+	if overlay.visible:
+		return false
+	_orientation_context = &"hall"
+	_completion_callback = on_complete
+	_refresh_copy()
+	_paused_before_open = get_tree().paused
+	get_tree().paused = true
+	overlay.visible = true
+	_reset_appearance()
+	call_deferred("_play_appearance")
+	return true
 
 
 func _create_overlay() -> void:
@@ -207,16 +234,31 @@ func _refresh_copy(_language: String = "") -> void:
 		keycap.add_theme_font_override("font", font)
 	if inspect_keycap != null:
 		inspect_keycap.add_theme_font_override("font", font)
-	field_kicker_label.text = CaseLocale.text("guide.field_kicker")
-	title_label.text = CaseLocale.text("guide.field_title")
-	intro_label.text = CaseLocale.text("guide.field_intro")
-	move_detail_label.text = CaseLocale.text("guide.move_detail")
-	inspect_detail_label.text = CaseLocale.text("guide.inspect_detail")
-	first_lead_kicker_label.text = CaseLocale.text("guide.first_lead_kicker")
-	first_lead_label.text = CaseLocale.text("guide.first_lead")
+	if _orientation_context == &"hall":
+		title_label.add_theme_font_size_override("font_size", 23)
+		first_lead_label.add_theme_font_size_override("font_size", 14)
+		field_kicker_label.text = CaseLocale.text("guide.hall_kicker")
+		title_label.text = CaseLocale.text("guide.hall_title")
+		intro_label.text = CaseLocale.text("guide.hall_intro")
+		move_detail_label.text = CaseLocale.text("guide.hall_move_detail")
+		inspect_detail_label.text = CaseLocale.text("guide.hall_inspect_detail")
+		first_lead_kicker_label.text = CaseLocale.text("guide.hall_lead_kicker")
+		first_lead_label.text = CaseLocale.text("guide.hall_lead")
+	else:
+		title_label.add_theme_font_size_override("font_size", 28)
+		first_lead_label.add_theme_font_size_override("font_size", 18)
+		field_kicker_label.text = CaseLocale.text("guide.field_kicker")
+		title_label.text = CaseLocale.text("guide.field_title")
+		intro_label.text = CaseLocale.text("guide.field_intro")
+		move_detail_label.text = CaseLocale.text("guide.move_detail")
+		inspect_detail_label.text = CaseLocale.text("guide.inspect_detail")
+		first_lead_kicker_label.text = CaseLocale.text("guide.first_lead_kicker")
+		first_lead_label.text = CaseLocale.text("guide.first_lead")
 	if begin_button != null:
 		begin_button.add_theme_font_override("font", font)
-		begin_button.text = CaseLocale.text("guide.begin")
+		begin_button.text = CaseLocale.text(
+			"guide.hall_begin" if _orientation_context == &"hall" else "guide.begin"
+		)
 
 
 func _play_appearance() -> void:
@@ -241,8 +283,13 @@ func _reset_appearance() -> void:
 
 
 func _complete_orientation() -> void:
-	GameState.set_story_flag("wake_orientation_completed")
+	GameState.set_story_flag(
+		"hall_orientation_completed"
+		if _orientation_context == &"hall"
+		else "wake_orientation_completed"
+	)
 	_close_orientation()
+	_finish_callback()
 
 
 func _close_orientation() -> void:
@@ -258,6 +305,14 @@ func _close_orientation() -> void:
 func _on_guidance_changed(enabled: bool) -> void:
 	if not enabled and overlay.visible:
 		_close_orientation()
+		_finish_callback()
+
+
+func _finish_callback() -> void:
+	var callback := _completion_callback
+	_completion_callback = Callable()
+	if callback.is_valid():
+		callback.call()
 
 
 func _panel_style(fill: Color, border: Color, border_width: int, radius: int) -> StyleBoxFlat:

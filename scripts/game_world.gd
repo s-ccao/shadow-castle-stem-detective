@@ -592,6 +592,11 @@ const ENEMY_START_POSITION: Vector2 = Vector2(1744, 1072)
 # separation preserves at least ~4.3 seconds of reaction before contact without
 # weakening the requested +12% per-key escalation.
 const GUARDIAN_ENTRY_MIN_DISTANCE: float = 800.0
+## The old first-arrival spawn used Euclidean distance. On this maze the authored
+## corner is 1,500px away in a straight line but 4,688px away by a route, while
+## the player reaches Chemistry in 1,720px; the Guardian was never part of the
+## tutorial. Pick a patrol point near this actual route distance instead.
+const GUARDIAN_TUTORIAL_ROUTE_DISTANCE: float = 720.0
 const GUARDIAN_REVEAL_PAN_DURATION: float = 0.55
 const GUARDIAN_REVEAL_HOLD_DURATION: float = 0.70
 const GUARDIAN_REVEAL_MARCH_DURATION: float = 0.55
@@ -654,6 +659,7 @@ var guardian_awareness_panel: Panel
 var guardian_awareness_state: Label
 var guardian_awareness_detail: Label
 var guardian_awareness_effects: Label
+var guardian_pressure_fx: Dictionary = {}
 var guardian_eta_seconds: float = INF
 var guardian_eta_refresh_remaining: float = 0.0
 var guardian_reveal_fog_was_visible: bool = true
@@ -817,6 +823,11 @@ func _ready():
 	# 大厅墙体由 wall_collisions.tscn 提供；玩家移动使用其真实
 	# StaticBody2D/CollisionPolygon2D 做形状查询，不再被粗略网格挡住。
 	player.collision_mask = 0
+	# Spawn before setup_enemy(). The Guardian's first-arrival placement is chosen
+	# by route distance to the player; leaving the scene-authored placeholder
+	# (512,384) here made that calculation target a person who was not there, then
+	# teleported the real player to the Wake entrance after the enemy was placed.
+	player.position = get_safe_floor_one_spawn_position()
 	build_sight_blockers()
 	sync_hall_knowledge_items()
 
@@ -826,12 +837,12 @@ func _ready():
 
 	create_fog_cells()
 	create_game_ui()
+	_create_guardian_pressure_fx()
 	create_interaction_focus()
 	create_potion_field_effects()
 	create_developer_mode_label()
 	create_game_over_ui()
 	apply_persistent_visual_state()
-	player.position = get_safe_floor_one_spawn_position()
 
 	if player.has_method("set_room_visual_scale"):
 		player.call(
@@ -898,6 +909,7 @@ func _process(delta: float) -> void:
 		_damage_invincible_timer -= delta
 	update_enemy_chase_state(delta)
 	_update_guardian_countdown(delta)
+	_update_guardian_pressure(delta)
 	_update_music_intensity()
 	_update_guardian_awareness_readout()
 	if guardian_entry_sequence_active:
@@ -2160,6 +2172,10 @@ func _nearest_guardian_walkable_position(target: Vector2) -> Vector2:
 
 
 func _guardian_hall_spawn_position(patrol_route: Array[Vector2]) -> Vector2:
+	if not GameState.hall_arrival_seen:
+		var tutorial_spawn := _guardian_tutorial_spawn(patrol_route)
+		if tutorial_spawn != Vector2.ZERO:
+			return tutorial_spawn
 	var preferred := GameState.get_guardian_hall_position()
 	if (
 		is_player_position_walkable(preferred)
@@ -2180,6 +2196,31 @@ func _guardian_hall_spawn_position(patrol_route: Array[Vector2]) -> Vector2:
 			farthest_distance = distance
 			farthest_position = point
 	return farthest_position
+
+
+func _guardian_tutorial_spawn(patrol_route: Array[Vector2]) -> Vector2:
+	var best := Vector2.ZERO
+	var best_error := INF
+	# The authored route is one point per 18px. Sampling every twelfth point keeps
+	# this one-time search cheap while still locating the target within ~108px.
+	for route_index: int in range(0, patrol_route.size(), 12):
+		var candidate := patrol_route[route_index]
+		var route := find_route(candidate, player.global_position)
+		if route.size() < 2:
+			continue
+		var distance := _polyline_length(route)
+		var error := absf(distance - GUARDIAN_TUTORIAL_ROUTE_DISTANCE)
+		if error < best_error:
+			best_error = error
+			best = candidate
+	return best
+
+
+func _polyline_length(points: PackedVector2Array) -> float:
+	var total := 0.0
+	for point_index: int in range(1, points.size()):
+		total += points[point_index - 1].distance_to(points[point_index])
+	return total
 
 
 ## Keep the rendered Hall entity synchronized with the persistent FSM. The
@@ -4576,9 +4617,70 @@ func _update_music_intensity() -> void:
 	var chasing := (
 		GameState.is_guardian_hunt_active()
 		and GameState.get_guardian_mode() == GameState.GuardianMode.CHASE
+		and not dialogue_active
 		and not game_over
 	)
-	GameAudio.set_music_for_guardian(GameState.is_guardian_hunt_active() and not game_over, chasing)
+	GameAudio.set_guardian_pressure(
+		GameState.is_guardian_hunt_active() and not game_over,
+		chasing,
+		float(guardian_pressure_fx.get("smoothed", 0.0))
+	)
+
+
+## A full-screen screen-texture pass below the UI. The bar and text stay sharp,
+## while the castle itself starts to shiver, soften and split at the edges.
+func _create_guardian_pressure_fx() -> void:
+	var canvas := CanvasLayer.new()
+	canvas.name = "GuardianPressureCanvas"
+	canvas.layer = 20
+	var rect := ColorRect.new()
+	rect.name = "GuardianPressureScreen"
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shader := load("res://assets/ui/guardian_pressure.gdshader") as Shader
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("strength", 0.0)
+	rect.material = material
+	rect.visible = false
+	canvas.add_child(rect)
+	add_child(canvas)
+	guardian_pressure_fx = {
+		"canvas": canvas,
+		"rect": rect,
+		"material": material,
+		"smoothed": 0.0,
+	}
+
+
+func _update_guardian_pressure(delta: float) -> void:
+	if guardian_pressure_fx.is_empty():
+		return
+	var rect := guardian_pressure_fx["rect"] as ColorRect
+	var material := guardian_pressure_fx["material"] as ShaderMaterial
+	var target := 0.0
+	if (
+		is_finite(guardian_eta_seconds)
+		and GameState.get_guardian_mode() == GameState.GuardianMode.CHASE
+		and not guardian_entry_sequence_active
+		and not dialogue_active
+		and not game_over
+	):
+		var urgency := 1.0 - clampf(
+			guardian_eta_seconds / GUARDIAN_ETA_DISPLAY_HORIZON,
+			0.0,
+			1.0
+		)
+		# The first third belongs to the bar and score. Distorting the screen while
+		# the Guardian is still remote creates permanent visual noise and teaches
+		# the player to ignore it.
+		target = smoothstep(0.32, 1.0, urgency)
+	var current := float(guardian_pressure_fx.get("smoothed", 0.0))
+	var response := 4.8 if target > current else 2.4
+	current = move_toward(current, target, delta * response)
+	guardian_pressure_fx["smoothed"] = current
+	rect.visible = current > 0.002
+	material.set_shader_parameter("strength", current)
 
 
 func _notification(what: int) -> void:
@@ -4593,6 +4695,10 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_PAUSED:
 		if guardian_countdown_panel != null:
 			guardian_countdown_panel.visible = false
+		if not guardian_pressure_fx.is_empty():
+			var pressure_rect := guardian_pressure_fx.get("rect") as ColorRect
+			if pressure_rect != null:
+				pressure_rect.visible = false
 	elif what == NOTIFICATION_UNPAUSED:
 		_update_guardian_countdown(0.0)
 
@@ -4606,6 +4712,7 @@ func _update_guardian_countdown(delta: float) -> void:
 		and enemy != null
 		and not guardian_entry_sequence_active
 		and not power_route_scan_active
+		and not dialogue_active
 		and (power_restoration_panel == null or not power_restoration_panel.visible)
 		and not game_over
 	)
@@ -5531,7 +5638,17 @@ func start_investigation_from_intro():
 	clear_buttons()
 	end_dialogue_pause()
 	if not GameState.hall_arrival_seen:
-		_begin_guardian_entry_sequence(true)
+		var onboarding_started := OnboardingHud.show_hall_orientation(
+			Callable(self, "_start_first_hall_pursuit")
+		)
+		if not onboarding_started:
+			_start_first_hall_pursuit()
+
+
+func _start_first_hall_pursuit() -> void:
+	if not is_inside_tree() or GameState.hall_arrival_seen:
+		return
+	_begin_guardian_entry_sequence(true)
 
 
 func _restore_hall_arrival_route() -> void:

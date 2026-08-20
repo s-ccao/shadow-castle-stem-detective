@@ -133,6 +133,26 @@ const TEXT: Dictionary = {
 	},
 	"guide.first_lead_kicker": {"en": "FIRST LEAD", "zh": "首条线索"},
 	"guide.begin": {"en": "BEGIN SEARCH", "zh": "开始搜查"},
+	"guide.hall_kicker": {"en": "HALL SURVIVAL CARD", "zh": "大厅生存卡"},
+	"guide.hall_title": {"en": "THE GUARDIAN IS HUNTING", "zh": "守卫已经开始追捕"},
+	"guide.hall_intro": {
+		"en": "It follows sight and sound. A room door is shelter.",
+		"zh": "它会追随视线与声响。进入房间就是脱险。",
+	},
+	"guide.hall_move_detail": {
+		"en": "RUN\n—or click a clear route",
+		"zh": "奔跑\n或点击空地寻路",
+	},
+	"guide.hall_inspect_detail": {
+		"en": "USE a marked door or exhibit",
+		"zh": "使用标记的门或知识展品",
+	},
+	"guide.hall_lead_kicker": {"en": "READ THE DANGER", "zh": "看懂危险信号"},
+	"guide.hall_lead": {
+		"en": "Follow the blue route to Chemistry. As the bar warms, the music tightens and the image breaks up: reach a room.",
+		"zh": "沿蓝色路线前往化学室。进度条越热、音乐越急、画面越不稳定，守卫就越近——立刻进房间。",
+	},
+	"guide.hall_begin": {"en": "BEGIN THE ESCAPE", "zh": "开始逃脱"},
 	"guide.first_lead_step_1_title": {"en": "FIRST LEAD  ·  1 / 3", "zh": "第一条线索  ·  1 / 3"},
 	"guide.first_lead_step_1_body": {
 		"en": "Read the candle note beside the bed.",
