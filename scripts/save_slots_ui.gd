@@ -181,6 +181,8 @@ func _room_title(slot: Dictionary, chinese: bool) -> String:
 	)
 	if str(slot.get("reason", "")) == SaveSlots.REASON_NEW_CASE:
 		return room + ("　·　开新案件前" if chinese else "  ·  before a new case")
+	if str(slot.get("reason", "")) == SaveSlots.REASON_CLOUD:
+		return room + ("　·　云端恢复前" if chinese else "  ·  before cloud restore")
 	return room
 
 

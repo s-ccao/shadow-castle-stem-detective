@@ -5,5 +5,7 @@
 # repository. Without this file the CLI would apply that rule to the upload and
 # publish a site containing nothing but vercel.json, with no error.
 #
-# Everything in this folder is the build and belongs in the deployment.
+# Everything else in this folder is the build and belongs in the deployment.
 .vercel
+.env*
+node_modules

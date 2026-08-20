@@ -17,6 +17,9 @@ const NPC_DIALOGUE_PORTRAITS: Dictionary = {
 
 const USE_IMAGE_BACKGROUND := true
 const WAKE_ROOM_BACKGROUND := "res://assets/backgrounds/wake_room_bg.png"
+const WAKE_ARRIVAL_FLAG: String = "wake_room_arrival_complete"
+const WAKE_BEDSIDE_SPAWN := Vector2(286.0, 452.0)
+const WAKE_FIRST_STEP_TARGET := Vector2(336.0, 500.0)
 
 const SHOW_DEBUG_OBJECTS := false
 const WALKABLE_MASK_PATH := \
@@ -171,6 +174,7 @@ var debug_walkable_overlay: Sprite2D
 var desk_briefing_read := false
 var spatial := RoomSpatialRuntime.new()
 var door_interaction_rect := Rect2()
+var wake_arrival_layer: CanvasLayer
 func _ready():
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
@@ -221,7 +225,12 @@ func _ready():
 
 	# 从大厅返回时出现在门内侧（door_position 附近）。首次进入不再
 	# 自动播放一段例外剧情：桌上的卷轴就是本房间的第一条可交互信息。
-	var preferred_spawn := Vector2(500, 550)
+	var first_arrival: bool = (
+		GameState.is_game_started()
+		and GameState.return_spawn_id != "wake_room_door"
+		and not GameState.has_story_flag(WAKE_ARRIVAL_FLAG)
+	)
+	var preferred_spawn := WAKE_BEDSIDE_SPAWN if first_arrival else Vector2(500, 550)
 	if GameState.return_spawn_id == "wake_room_door":
 		preferred_spawn = door_position + Vector2(-46, 0)
 		if exit_door_unlocked and door_marker_node != null:
@@ -233,6 +242,93 @@ func _ready():
 		preferred_spawn,
 		Rect2(Vector2.ZERO, Vector2(ROOM_WIDTH, ROOM_HEIGHT))
 	)
+	if first_arrival:
+		call_deferred("_play_wake_arrival")
+
+
+func _play_wake_arrival() -> void:
+	player.set_physics_process(false)
+	player.velocity = Vector2.ZERO
+	player.modulate.a = 0.0
+	if ui_layer != null:
+		ui_layer.visible = false
+
+	wake_arrival_layer = CanvasLayer.new()
+	wake_arrival_layer.name = "WakeArrivalLayer"
+	wake_arrival_layer.layer = 90
+	add_child(wake_arrival_layer)
+
+	var veil := ColorRect.new()
+	veil.color = Color(0.012, 0.018, 0.035, 1.0)
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_STOP
+	wake_arrival_layer.add_child(veil)
+
+	var title := Label.new()
+	title.position = Vector2(96.0, 560.0)
+	title.size = Vector2(832.0, 46.0)
+	title.text = "阿什福德城堡" if CaseLocale.is_chinese() else "ASHFORD CASTLE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.94, 0.78, 0.40))
+	title.modulate.a = 0.0
+	wake_arrival_layer.add_child(title)
+
+	var detail := Label.new()
+	detail.position = Vector2(96.0, 610.0)
+	detail.size = Vector2(832.0, 64.0)
+	detail.text = (
+		"客房 · 你在陌生的床边醒来，停电前的记忆只剩碎片。"
+		if CaseLocale.is_chinese()
+		else "GUEST CHAMBER · You wake beside an unfamiliar bed. "
+		+ "Only fragments remain from before the blackout."
+	)
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.add_theme_font_size_override("font_size", 14)
+	detail.add_theme_color_override("font_color", Color(0.83, 0.82, 0.86))
+	detail.modulate.a = 0.0
+	wake_arrival_layer.add_child(detail)
+
+	var reveal := create_tween()
+	reveal.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	reveal.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	reveal.tween_interval(0.18)
+	reveal.tween_property(veil, "color:a", 0.38, 0.72)
+	reveal.parallel().tween_property(title, "modulate:a", 1.0, 0.48)
+	reveal.parallel().tween_property(detail, "modulate:a", 1.0, 0.58)
+	reveal.tween_property(player, "modulate:a", 1.0, 0.42)
+	reveal.tween_callback(func() -> void:
+		if player.has_method("update_character_animation"):
+			player.call("update_character_animation", Vector2(1.0, 0.72) * 70.0)
+	)
+	reveal.tween_property(
+		player,
+		"position",
+		spatial.resolve_safe_spawn(
+			player,
+			WAKE_FIRST_STEP_TARGET,
+			Rect2(Vector2.ZERO, Vector2(ROOM_WIDTH, ROOM_HEIGHT))
+		),
+		0.72
+	)
+	reveal.tween_callback(func() -> void:
+		if player.has_method("update_character_animation"):
+			player.call("update_character_animation", Vector2.ZERO)
+	)
+	reveal.tween_interval(0.72)
+	reveal.tween_property(title, "modulate:a", 0.0, 0.28)
+	reveal.parallel().tween_property(detail, "modulate:a", 0.0, 0.28)
+	reveal.tween_property(veil, "color:a", 0.0, 0.38)
+	await reveal.finished
+
+	if wake_arrival_layer != null and is_instance_valid(wake_arrival_layer):
+		wake_arrival_layer.queue_free()
+	if ui_layer != null:
+		ui_layer.visible = true
+	player.set_physics_process(true)
+	GameState.set_story_flag(WAKE_ARRIVAL_FLAG)
+	_refresh_first_lead_objective(true)
 
 func _process(delta):
 	_update_prop_occlusion_layers()

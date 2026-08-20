@@ -9,6 +9,7 @@ signal settings_requested
 signal language_requested
 signal quit_requested
 signal records_requested
+signal account_requested
 
 const PANEL_FILL := Color(0.029, 0.019, 0.021, 0.965)
 const PANEL_INLAY := Color(0.078, 0.043, 0.030, 0.99)
@@ -28,8 +29,8 @@ const FOCUS_GOLD := Color(1.0, 0.84, 0.43, 1.0)
 const CASE_INTAKE_WIDTH := 380.0
 ## 面板高度要把“存档记录”这一行算进去。它和新案件、继续同宽，是面板里的
 ## 一等公民，而不是浮在角落里的一颗孤零零的按钮。
-const CASE_INTAKE_HEIGHT_EMPTY := 297.0
-const CASE_INTAKE_HEIGHT_RESUME := 355.0
+const CASE_INTAKE_HEIGHT_EMPTY := 340.0
+const CASE_INTAKE_HEIGHT_RESUME := 398.0
 
 var _arrival_tween: Tween
 var _button_tweens: Dictionary = {}
@@ -49,6 +50,7 @@ var _button_tweens: Dictionary = {}
 @onready var language_button: Button = $CaseIntake/Content/ActionStack/ToolRow/LanguageButton
 @onready var quit_button: Button = $CaseIntake/Content/ActionStack/ToolRow/QuitButton
 @onready var records_button: Button = $CaseIntake/Content/ActionStack/RecordsButton
+@onready var account_button: Button = $CaseIntake/Content/ActionStack/AccountButton
 @onready var save_label: Label = $CaseIntake/Content/ActionStack/ContinueBlock/SaveStatus
 
 
@@ -76,6 +78,7 @@ func _ready() -> void:
 	_connect_button(settings_button, settings_requested.emit, &"archive")
 	_connect_button(language_button, language_requested.emit, &"archive")
 	_connect_button(records_button, records_requested.emit, &"archive")
+	_connect_button(account_button, account_requested.emit, &"archive")
 	_connect_button(quit_button, quit_requested.emit, &"muted")
 	CaseLocale.locale_changed.connect(_refresh_copy)
 	_refresh_copy()
@@ -130,7 +133,19 @@ func _refresh_copy(_language: String = "") -> void:
 	language_button.text = CaseLocale.text("menu.language")
 	quit_button.text = CaseLocale.text("menu.quit")
 	records_button.text = "存档记录" if CaseLocale.is_chinese() else "Save Records"
+	set_cloud_account(CloudSave.username)
 	set_save_status(GameState.resume_label() if GameState.has_saved_game() else "")
+
+
+func set_cloud_account(account_name: String) -> void:
+	if account_button == null:
+		return
+	account_button.text = (
+		("云存档 · %s ✓" % account_name) if CaseLocale.is_chinese()
+		else ("Cloud Save · %s ✓" % account_name)
+	) if not account_name.is_empty() else (
+		"云存档 · 登入" if CaseLocale.is_chinese() else "Cloud Save · Sign in"
+	)
 
 
 func _apply_static_style() -> void:
@@ -220,6 +235,7 @@ func _all_buttons() -> Array[Button]:
 		start_button,
 		continue_button,
 		records_button,
+		account_button,
 		settings_button,
 		language_button,
 		quit_button,
@@ -230,7 +246,13 @@ func _navigable_buttons() -> Array[Button]:
 	var buttons: Array[Button] = [start_button]
 	if continue_block.visible and not continue_button.disabled:
 		buttons.append(continue_button)
-	buttons.append_array([records_button, settings_button, language_button, quit_button])
+	buttons.append_array([
+		records_button,
+		account_button,
+		settings_button,
+		language_button,
+		quit_button,
+	])
 	return buttons
 
 

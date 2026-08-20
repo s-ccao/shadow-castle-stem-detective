@@ -20,6 +20,7 @@ const MAX_SLOTS: int = 24
 
 const REASON_CHECKPOINT: String = "checkpoint"
 const REASON_NEW_CASE: String = "new_case"
+const REASON_CLOUD: String = "cloud_replaced"
 
 
 static func ensure_dir() -> void:

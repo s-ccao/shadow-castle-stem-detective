@@ -20,6 +20,7 @@ var active_dialog := ""
 var case_archive_button: Button
 var case_archive_ui: CaseArchiveUi
 var save_records_ui: SaveSlotsUi
+var cloud_account_ui: CloudAccountUi
 
 @onready var start_ui: Control = $StartUI
 
@@ -108,8 +109,54 @@ func _connect_start_ui() -> void:
 	start_ui.settings_requested.connect(_show_settings_dialog)
 	start_ui.language_requested.connect(_show_language_dialog)
 	start_ui.records_requested.connect(_open_save_records)
+	start_ui.account_requested.connect(_open_cloud_account)
 	start_ui.quit_requested.connect(quit_game)
 	CaseLocale.locale_changed.connect(_refresh_copy)
+	CloudSave.account_changed.connect(_on_cloud_account_changed)
+	CloudSave.cloud_save_imported.connect(_on_cloud_save_imported)
+	call_deferred("_reconcile_cloud_session")
+
+
+func _open_cloud_account() -> void:
+	if cloud_account_ui == null or not is_instance_valid(cloud_account_ui):
+		cloud_account_ui = CloudAccountUi.new()
+		add_child(cloud_account_ui)
+		cloud_account_ui.closed.connect(_on_cloud_account_closed)
+	if start_ui != null:
+		start_ui.call("set_ui_enabled", false)
+	cloud_account_ui.open()
+
+
+func _on_cloud_account_closed() -> void:
+	if start_ui != null:
+		start_ui.call("set_ui_enabled", true)
+
+
+func _on_cloud_account_changed(account_name: String) -> void:
+	if start_ui != null and start_ui.has_method("set_cloud_account"):
+		start_ui.call("set_cloud_account", account_name)
+
+
+func _on_cloud_save_imported() -> void:
+	if start_ui == null:
+		return
+	start_ui.call("set_continue_enabled", GameState.has_saved_game())
+	start_ui.call("set_save_status", GameState.resume_label())
+
+
+func _reconcile_cloud_session() -> void:
+	if not CloudSave.is_signed_in():
+		return
+	start_ui.call("set_ui_enabled", false)
+	await CloudSave.reconcile()
+	if not is_inside_tree() or get_tree().current_scene != self:
+		return
+	start_ui.call("set_continue_enabled", GameState.has_saved_game())
+	start_ui.call(
+		"set_save_status",
+		GameState.resume_label() if GameState.has_saved_game() else ""
+	)
+	start_ui.call("set_ui_enabled", true)
 
 func create_menu_dialog() -> void:
 	menu_dialog_layer = CanvasLayer.new()

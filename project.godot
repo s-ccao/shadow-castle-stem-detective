@@ -20,6 +20,7 @@ boot_splash/show_image=false
 
 GameState="*res://autoload/game_state.gd"
 CaseLocale="*res://autoload/case_locale.gd"
+CloudSave="*res://autoload/cloud_save.gd"
 ArchiveUi="*res://autoload/archive_ui.gd"
 PlayerPreferences="*res://autoload/player_preferences.gd"
 GameAudio="*res://autoload/game_audio.gd"

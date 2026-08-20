@@ -14,6 +14,7 @@ const SAVE_PATH: String = "user://shadow_castle_save.json"
 # 写到一半崩溃或强退就会留下截断的 JSON，玩家整局进度全丢。先写临时文件
 # 再改名，让替换过程对读取方来说是原子的。
 const SAVE_TEMP_PATH: String = "user://shadow_castle_save.json.tmp"
+const SAVE_BACKUP_PATH: String = "user://shadow_castle_save.json.bak"
 const SAVE_VERSION: int = 1
 ## The first usable map is deliberately incomplete: it gives the player a
 ## reason to enter the hall, while the Map Hub still reveals the castle through
@@ -84,12 +85,15 @@ const GUARDIAN_OBJECTIVE_ROOM_ORDER: Array[String] = [
 ]
 var _loading_save: bool = false
 var _save_queued: bool = false
+var save_generation: int = 0
+var case_id: String = ""
 ## 抵达新房间时置位，让下一次落盘顺手留一张快照。合并在自动存档里，避免
 ## 为了快照多写一次文件。
 var _snapshot_pending: bool = false
 
 
 func _ready() -> void:
+	_recover_interrupted_save()
 	state_changed.connect(_queue_save)
 	if not get_tree().scene_changed.is_connected(_sync_global_hud_visibility):
 		get_tree().scene_changed.connect(_sync_global_hud_visibility)
@@ -173,8 +177,11 @@ func delete_saved_game() -> void:
 func save_to_disk() -> bool:
 	if not game_started or _loading_save:
 		return false
+	save_generation += 1
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
+		"save_generation": save_generation,
+		"case_id": case_id,
 		"saved_at": int(Time.get_unix_time_from_system()),
 		"reputation": reputation,
 		"evidence_items": evidence_items,
@@ -232,13 +239,98 @@ func save_to_disk() -> bool:
 		return false
 	file.store_string(JSON.stringify(payload))
 	file.close()
-	var rename_result: Error = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
-	if rename_result != OK:
-		# 有的平台不允许直接改名覆盖已存在的文件。此时完整的新存档已经
-		# 落盘为 .tmp，最坏情况也只是残留一个临时文件，不会写坏正式存档。
-		DirAccess.remove_absolute(SAVE_PATH)
-		rename_result = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
-	return rename_result == OK
+	var written: bool = _replace_save_from_temp()
+	if written:
+		var cloud_save: Node = get_node_or_null("/root/CloudSave")
+		if cloud_save != null and cloud_save.has_method("queue_sync"):
+			cloud_save.call("queue_sync")
+	return written
+
+
+func read_save_payload() -> Dictionary:
+	return _read_save_payload_at(SAVE_PATH)
+
+
+func _read_save_payload_at(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	var payload: Dictionary = parsed
+	return payload if is_valid_save_payload(payload) else {}
+
+
+func is_valid_save_payload(payload: Dictionary) -> bool:
+	return (
+		int(payload.get("version", 0)) == SAVE_VERSION
+		and bool(payload.get("checkpoint_valid", false))
+		and int(payload.get("saved_at", 0)) > 0
+	)
+
+
+func import_save_payload(payload: Dictionary, archive_reason: String) -> bool:
+	if not is_valid_save_payload(payload):
+		return false
+	var has_active_save: bool = not read_save_payload().is_empty()
+	if has_active_save and not SaveSlots.capture(SAVE_PATH, archive_reason):
+		push_error("Cloud save import stopped because the local checkpoint could not be archived.")
+		return false
+	var file := FileAccess.open(SAVE_TEMP_PATH, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(JSON.stringify(payload))
+	file.flush()
+	file.close()
+	if not _replace_save_from_temp():
+		return false
+	return load_saved_game()
+
+
+func _replace_save_from_temp() -> bool:
+	if not FileAccess.file_exists(SAVE_TEMP_PATH):
+		return false
+	if FileAccess.file_exists(SAVE_BACKUP_PATH):
+		DirAccess.remove_absolute(SAVE_BACKUP_PATH)
+	var had_active_save: bool = FileAccess.file_exists(SAVE_PATH)
+	if had_active_save:
+		if DirAccess.rename_absolute(SAVE_PATH, SAVE_BACKUP_PATH) != OK:
+			return false
+	var replace_error: Error = DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH)
+	if replace_error != OK:
+		if had_active_save and FileAccess.file_exists(SAVE_BACKUP_PATH):
+			DirAccess.rename_absolute(SAVE_BACKUP_PATH, SAVE_PATH)
+		return false
+	return true
+
+
+func _recover_interrupted_save() -> void:
+	var active: Dictionary = _read_save_payload_at(SAVE_PATH)
+	var pending: Dictionary = _read_save_payload_at(SAVE_TEMP_PATH)
+	var backup: Dictionary = _read_save_payload_at(SAVE_BACKUP_PATH)
+	if not active.is_empty():
+		if (
+			not pending.is_empty()
+			and int(pending.get("save_generation", 0))
+				>= int(active.get("save_generation", 0))
+		):
+			_replace_save_from_temp()
+		elif FileAccess.file_exists(SAVE_TEMP_PATH):
+			DirAccess.remove_absolute(SAVE_TEMP_PATH)
+		return
+	if not pending.is_empty():
+		if FileAccess.file_exists(SAVE_PATH):
+			DirAccess.remove_absolute(SAVE_PATH)
+		if DirAccess.rename_absolute(SAVE_TEMP_PATH, SAVE_PATH) == OK:
+			return
+	if not backup.is_empty():
+		if FileAccess.file_exists(SAVE_PATH):
+			DirAccess.remove_absolute(SAVE_PATH)
+		DirAccess.rename_absolute(SAVE_BACKUP_PATH, SAVE_PATH)
 
 
 func load_saved_game() -> bool:
@@ -256,6 +348,8 @@ func load_saved_game() -> bool:
 		return false
 
 	_loading_save = true
+	save_generation = maxi(int(data.get("save_generation", 0)), 0)
+	case_id = str(data.get("case_id", "legacy"))
 	reputation = int(data.get("reputation", 0))
 	evidence_items = _string_array(data.get("evidence_items", []))
 	knowledge_items = _string_array(data.get("knowledge_items", []))
@@ -786,8 +880,14 @@ var individual_scene_debug_state_applied: bool = false
 # New game
 # ============================================================
 
+func _new_case_id() -> String:
+	return Crypto.new().generate_random_bytes(16).hex_encode()
+
+
 func reset_new_game() -> void:
 	game_started = false
+	save_generation = 0
+	case_id = _new_case_id()
 	developer_mode = false
 	individual_scene_debug_state_applied = false
 	get_tree().debug_collisions_hint = false

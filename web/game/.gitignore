@@ -10,4 +10,9 @@
 !.gitignore
 !.vercelignore
 !vercel.json
+!package.json
+!package-lock.json
+!api/
+!api/**
 .vercel
+.env*

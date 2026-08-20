@@ -53,6 +53,31 @@ Godot writes fixed filenames (`index.html`, `index.js`, `index.wasm`,
 nothing changed, and a new build is picked up immediately instead of being
 served from a stale cache for a year.
 
+## Cloud saves
+
+Cloud saves are optional and never replace offline play. Godot always writes the
+normal versioned `user://` checkpoint first; a signed-in Web player then uploads
+that snapshot in the background. Before a newer cloud checkpoint replaces the
+local one, the local checkpoint must be copied into Save Records successfully.
+
+The account endpoint is `web/game/api/cloud-save.js`. Accounts use a normalized
+Investigator ID and a passphrase hashed with salted `scrypt`; plaintext
+passphrases are never stored. Thirty-day signed sessions are kept in the
+browser's `user://` storage. Save writes carry an opaque server revision and use
+Blob ETags, so an old computer cannot overwrite a newer device's progress.
+Repeated failed logins are rate-limited and persistently lock the targeted
+account for fifteen minutes.
+
+The private Vercel Blob store `shadow-castle-cloud-saves` is connected to
+`shadow-castle-detective-play`. Production and preview also require the sensitive
+`CLOUD_SAVE_SECRET` environment variable. Vercel injects Blob credentials; do
+not put either secret in source or in an exported game. `web/game/.vercelignore`
+must continue to exclude `.env*` and `node_modules`.
+
+Unlike the generated Godot files, `web/game/api/`, `package.json`, and
+`package-lock.json` are source and are explicitly unignored. A Godot export
+writes beside them rather than deleting them.
+
 ## Deploying the game
 
 ```bash
