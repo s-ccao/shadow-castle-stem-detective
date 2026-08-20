@@ -1,0 +1,11 @@
+# Everything Godot writes here is a build artifact, not source.
+#
+# The export filenames are fixed (index.html, index.wasm, index.pck, ...), so a
+# new build overwrites the old one and git would carry every revision of a
+# ~40MB wasm+pck pair forever. The repository is already 680MB; this folder is
+# the one place where that would get materially worse.
+#
+# vercel.json is the exception: it configures the deploy and is hand-written.
+*
+!.gitignore
+!vercel.json

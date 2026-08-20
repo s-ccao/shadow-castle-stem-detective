@@ -1,0 +1,9 @@
+# The web presence is not game content.
+#
+# Without this, Godot imports web/landing/assets/*.jpg as game textures: it
+# writes .import files next to them and packs 1.2MB of marketing photography
+# into the .pck that players download. The landing page serves those files
+# directly over HTTP and never through res://.
+#
+# The generated game export lives under web/game/ and is deliberately inside an
+# ignored folder too, so an export can never be re-imported as source.

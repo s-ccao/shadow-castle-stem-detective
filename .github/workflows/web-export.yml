@@ -1,0 +1,115 @@
+name: Web export
+
+# Vercel cannot build this site itself: its build image has no Godot and no
+# export templates, so a plain "connect the repo" deploy of web/game would ship
+# an empty folder. The build happens here instead, and the result is either
+# downloaded from the run or pushed straight to Vercel.
+#
+# Runs on demand and on version tags rather than on every push, because a full
+# template download plus export is minutes of CI for a payload that only needs
+# rebuilding when the game changes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to Vercel production after building"
+        type: boolean
+        default: false
+  push:
+    tags: ["v*"]
+
+env:
+  GODOT_VERSION: "4.7"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  export:
+    name: Export and verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-templates-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Install Godot
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download"
+          tag="${GODOT_VERSION}-${GODOT_RELEASE}"
+          name="Godot_v${tag}_linux.x86_64"
+          curl -fsSL -o godot.zip "${base}/${tag}/${name}.zip"
+          unzip -q godot.zip
+          chmod +x "${name}"
+          sudo mv "${name}" /usr/local/bin/godot
+          godot --version
+
+      - name: Install export templates
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download"
+          tag="${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl -fsSL -o templates.tpz \
+            "${base}/${tag}/Godot_v${tag}_export_templates.tpz"
+          unzip -q templates.tpz
+          target="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$target"
+          mv templates/* "$target"
+
+      # The first headless run has no .godot cache, so every resource imports
+      # now rather than during the export. It reports errors on stderr and
+      # still exits 0, which is why the export step is the one that gates.
+      - name: Import resources
+        run: godot --headless --import --quit-after 400 || true
+
+      - name: Export web build
+        run: |
+          set -euo pipefail
+          mkdir -p web/game
+          godot --headless --export-release "Web" web/game/index.html
+
+      # An export that "succeeds" while producing nothing is the failure mode
+      # worth catching: a missing template or a bad preset name both exit 0 in
+      # some Godot builds.
+      - name: Verify the build is real
+        run: |
+          set -euo pipefail
+          cd web/game
+          for f in index.html index.js index.wasm index.pck; do
+            test -s "$f" || { echo "::error::missing or empty $f"; exit 1; }
+          done
+          wasm_bytes=$(wc -c < index.wasm)
+          test "$wasm_bytes" -gt 1000000 || {
+            echo "::error::index.wasm is only ${wasm_bytes} bytes"; exit 1; }
+          ls -lh index.*
+          du -sh .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web/game
+          retention-days: 14
+
+      - name: Deploy to Vercel
+        if: >-
+          inputs.deploy == true ||
+          startsWith(github.ref, 'refs/tags/v')
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_GAME_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::notice::VERCEL_TOKEN is not set; skipping deploy."
+            echo "Download the web-build artifact and deploy it by hand instead."
+            exit 0
+          fi
+          npx --yes vercel@latest deploy web/game \
+            --prod --yes --token "$VERCEL_TOKEN"
