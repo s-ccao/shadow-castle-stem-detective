@@ -1,0 +1,5 @@
+# Source frames for the player sheet, kept for re-export only.
+#
+# Same reason as assets/incoming/.gdignore: .gitignore keeps these out of the
+# repository but not out of the build. The game uses the packed 8-direction
+# sheet beside this folder, never these.

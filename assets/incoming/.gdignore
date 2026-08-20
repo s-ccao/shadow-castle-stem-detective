@@ -1,0 +1,8 @@
+# Source material, not game content.
+#
+# .gitignore already keeps this folder out of the repository, but git ignoring
+# a folder does not stop Godot importing it: every file here was being packed
+# into the .pck, putting 33MB of raw source downloads into the payload players
+# have to fetch before the game starts. Nothing in the project references
+# assets/incoming/ at all -- the game uses the processed copies in the other
+# asset folders.
