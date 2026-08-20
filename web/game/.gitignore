@@ -10,3 +10,4 @@
 !.gitignore
 !.vercelignore
 !vercel.json
+.vercel

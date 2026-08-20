@@ -853,3 +853,21 @@ that entry exists to be looked at.**
 The lesson both share: the potion tables are the wrong place to check whether a
 potion works. `is_potion_active` returning true proves the countdown is running,
 not that a single pixel changed.
+
+## A deploy that returns 200 is not a deploy that works
+
+The web build ships as four fixed filenames totalling 131MB, and every way the
+upload can go wrong still leaves a URL that responds. The `.vercelignore` trap
+is the sharp one: the Vercel CLI falls back to `.gitignore` when a directory has
+no `.vercelignore`, and `web/game/.gitignore` is `*` — so the deploy reports
+success having uploaded `vercel.json` and nothing else. Serving `index.wasm` as
+`application/octet-stream` fails differently and just as quietly, because the
+browser cannot stream-compile it.
+
+Check the payload, not the status code: sizes must match `ls -l web/game/`
+exactly, `index.wasm` must be `application/wasm`, and both large files are
+self-identifying (`GDPC` and `\0asm` in their first four bytes). `web/README.md`
+carries the commands, along with the two DNS traps that cost the most time here
+— Vercel never retrying a certificate for a domain that was added before its
+DNS resolved, and macOS `mDNSResponder` serving a stale address to `curl` and
+browsers while `dig` reports the correct one.

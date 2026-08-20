@@ -4,11 +4,15 @@ Two Vercel projects, one repository. The portfolio site stays small and
 redeploys on every push; the game payload is tens of megabytes and is deployed
 and rolled back on its own schedule.
 
-| Hostname | Vercel project root | Deploys from | Purpose |
+| Hostname | Vercel project | Deploys from | Purpose |
 | --- | --- | --- | --- |
-| `shadowcastledetective.com` | `web/landing` | Git push (automatic) | Game and portfolio site |
-| `www.shadowcastledetective.com` | — | Redirect to apex | Canonical-domain redirect |
-| `play.shadowcastledetective.com` | `web/game` | Built export (see below) | Browser-playable game |
+| `shadowcastledetective.com` | `shadow-castle-detective-site` (`web/landing`) | Git push (automatic) | Game and portfolio site |
+| `www.shadowcastledetective.com` | same | Redirect to apex | Canonical-domain redirect |
+| `play.shadowcastledetective.com` | `shadow-castle-detective-play` (`web/game`) | Built export (see below) | Browser-playable game |
+
+All three are live over HTTPS. `web/game/.vercel/project.json` links the game
+directory to its project, so `npx vercel --prod` from that directory redeploys
+without asking anything.
 
 ## Why the game site is not a plain Git deploy
 
@@ -52,9 +56,14 @@ served from a stale cache for a year.
 ## Deploying the game
 
 ```bash
-# One-off, from the project root, after building:
-npx vercel deploy web/game --prod
+# From web/game, which is already linked to the project:
+cd web/game && npx vercel --prod
 ```
+
+The CLI falls back to `.gitignore` when a directory has no `.vercelignore`, and
+`web/game/.gitignore` is `*`. Without `web/game/.vercelignore` the deploy
+succeeds while uploading nothing but `vercel.json` — a working URL serving a
+404. That file existing is the only thing preventing it, so do not delete it.
 
 Or run the **Web export** workflow from the Actions tab with *Deploy to Vercel*
 ticked, which needs three repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`
@@ -63,32 +72,93 @@ and uploads the result as a downloadable artifact.
 
 Tagging a release (`git tag v1.0.0 && git push --tags`) builds and deploys.
 
-## Steps that need your account, not this repository
+### Checking that a deploy is real
 
-These cannot be scripted from here — they need a logged-in Vercel session and
-registrar access:
+Every way this can fail — a truncated upload, the `.vercelignore` trap, a host
+that rewrites unknown extensions — produces a page that loads and a game that
+does not start. Compare sizes against the local build and check the two MIME
+types that matter:
 
-1. **Vercel > Add New > Project**, import `s-ccao/shadow-castle-stem-detective`.
-   Framework preset **Other**, root directory `web/landing`, no build command.
-   This is the site project.
-2. **Vercel > Add New > Project** again for the game. Root directory
-   `web/game`, framework preset **Other**, no build command. It will deploy
-   empty until the first export is uploaded — that is expected.
-3. **Settings > Domains** on the site project: add `shadowcastledetective.com`
-   and `www.shadowcastledetective.com`, and set `www` to redirect to the apex.
-4. **Settings > Domains** on the game project: add
-   `play.shadowcastledetective.com`.
-5. **Namecheap > Advanced DNS**: add the records Vercel shows you. At the time
-   of writing that is an `A` record on `@` pointing at `76.76.21.21` and a
-   `CNAME` on `play` (and `www`) pointing at the value on the Domains page —
-   **use the values Vercel prints, not these**, because they change.
-   Leave every existing `MX` and `TXT` record alone or email stops working.
-6. Wait for Vercel to report the domains as valid. HTTPS is issued
-   automatically once DNS resolves.
+```bash
+for f in index.html index.js index.wasm index.pck; do
+  printf '%-12s ' "$f"
+  curl -sS -o /dev/null -w '%{http_code} %{size_download}B %{content_type}\n' \
+    "https://play.shadowcastledetective.com/$f"
+done
+```
 
-## Registrar
+`index.wasm` must come back as `application/wasm`; anything else and the
+browser cannot stream-compile it. Sizes must match `ls -l web/game/` exactly.
+For a stronger check the payloads are self-identifying — `index.pck` starts
+with `GDPC` and `index.wasm` with `\0asm`:
 
-Namecheap remains the registrar and DNS owner. The landing images under
-`web/landing/assets/` are compressed copies of project-owned art; the source
-game assets stay in their own folders. `web/.gdignore` keeps the whole web tree
-out of the Godot import pipeline, so none of it is packed into the game.
+```bash
+curl -sS -r 0-3 https://play.shadowcastledetective.com/index.pck | xxd
+```
+
+## Domains and HTTPS
+
+All of this is done; it is written down because the certificate behaviour is
+not what the Vercel UI implies.
+
+Namecheap holds the domain and serves DNS from **BasicDNS**
+(`dns1`/`dns2.registrar-servers.com`). The Web Hosting DNS nameservers
+(`namecheaphosting.com`) lock the Advanced DNS tab and serve a parking page —
+if the apex ever shows "Namecheap Parking Page" with `Server: LiteSpeed`, the
+nameservers got switched back.
+
+Current records, alongside the untouched `MX`/`TXT` rows that Private Email
+needs:
+
+| Type | Host | Value |
+| --- | --- | --- |
+| `A` | `@` | `76.76.21.21` |
+| `CNAME` | `www` | `cname.vercel-dns.com` |
+| `CNAME` | `play` | `cname.vercel-dns.com` |
+
+Those work, but they are Vercel's **legacy** endpoints. `vercel domains verify
+<domain>` ranks them second and now recommends two apex `A` records
+(`216.198.79.1` and `64.29.17.1`) and a per-domain `CNAME`. Read the current
+values out of that command rather than copying the table above.
+
+### A domain added before DNS resolves will never get a certificate
+
+Vercel issues certificates over ACME, which needs the hostname to already
+resolve to Vercel. Add the domain first and the challenge fails, the domain
+enters a long backoff, and nothing in the dashboard says so — the domain reads
+as attached and verified, HTTP works, and HTTPS just refuses the handshake
+forever. That is exactly what happened to the apex and `www` here.
+
+```bash
+npx vercel certs ls                      # a missing hostname means no certificate
+npx vercel certs issue example.com www.example.com   # ~13s, breaks the backoff
+```
+
+So: point DNS first, confirm it resolves, *then* add the domain. If the order
+slipped, `certs issue` is the repair.
+
+### macOS caches DNS past the record's TTL
+
+`dig` queries a resolver directly; `curl`, `openssl` and browsers go through
+`mDNSResponder`, which held the old Namecheap address here long after every
+public resolver had the new one. The symptom is a parking page or a stale site
+that no amount of DNS checking explains. Diagnose with `dscacheutil -q host -a
+name <domain>` — if it disagrees with `dig`, the cache is lying:
+
+```bash
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+```
+
+`dscacheutil -flushcache` on its own does not clear it. To check the real state
+without touching the cache, pin the address instead:
+
+```bash
+curl -sSI --resolve example.com:443:76.76.21.21 https://example.com/
+```
+
+## Assets
+
+The landing images under `web/landing/assets/` are compressed copies of
+project-owned art; the source game assets stay in their own folders.
+`web/.gdignore` keeps the whole web tree out of the Godot import pipeline, so
+none of it is packed into the game.
