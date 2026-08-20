@@ -596,12 +596,21 @@ func play_case_open_transition(host: Node, on_complete: Callable) -> void:
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	host.add_child(layer)
 
+	# A CanvasLayer is a Node, not a CanvasItem, so it has no `modulate` at all.
+	# Fading one out silently does nothing — the overlay stays at full opacity
+	# until it is freed, and the transition ends in a hard cut. Everything hangs
+	# off this Control so the fade has something that can actually fade.
+	var fade := Control.new()
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(fade)
+
 	var veil := ColorRect.new()
 	veil.color = Color(0.015, 0.01, 0.025, 0.94)
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	veil.mouse_filter = Control.MOUSE_FILTER_STOP
 	veil.modulate.a = 0.0
-	layer.add_child(veil)
+	fade.add_child(veil)
 
 	var frame := TextureRect.new()
 	frame.texture = CASE_FRAME
@@ -610,7 +619,7 @@ func play_case_open_transition(host: Node, on_complete: Callable) -> void:
 	frame.position = Vector2(262.0, 300.0)
 	frame.size = Vector2(500.0, 156.0)
 	frame.modulate.a = 0.0
-	layer.add_child(frame)
+	fade.add_child(frame)
 
 	var title := Label.new()
 	title.text = CaseLocale.text("menu.case_opened")
@@ -620,7 +629,7 @@ func play_case_open_transition(host: Node, on_complete: Callable) -> void:
 	title.add_theme_font_size_override("font_size", 18)
 	apply_label(title, &"title")
 	title.modulate.a = 0.0
-	layer.add_child(title)
+	fade.add_child(title)
 
 	var detail := Label.new()
 	detail.text = CaseLocale.text("menu.case_opened_detail")
@@ -630,7 +639,7 @@ func play_case_open_transition(host: Node, on_complete: Callable) -> void:
 	detail.add_theme_font_size_override("font_size", 13)
 	apply_label(detail, &"body")
 	detail.modulate.a = 0.0
-	layer.add_child(detail)
+	fade.add_child(detail)
 
 	var transition := layer.create_tween()
 	transition.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
@@ -641,7 +650,7 @@ func play_case_open_transition(host: Node, on_complete: Callable) -> void:
 	transition.parallel().tween_property(detail, "modulate:a", 1.0, 0.18)
 	transition.tween_interval(0.22)
 	transition.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	transition.tween_property(layer, "modulate:a", 0.0, 0.16)
+	transition.tween_property(fade, "modulate:a", 0.0, 0.16)
 	transition.tween_callback(func() -> void:
 		if is_instance_valid(layer):
 			layer.queue_free()
@@ -662,12 +671,18 @@ func play_room_transition(
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().root.add_child(layer)
 
+	# See play_case_open_transition: the fade needs a CanvasItem to act on.
+	var fade := Control.new()
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(fade)
+
 	var veil := ColorRect.new()
 	veil.color = Color(0.008, 0.006, 0.018, 0.97)
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	veil.mouse_filter = Control.MOUSE_FILTER_STOP
 	veil.modulate.a = 0.0
-	layer.add_child(veil)
+	fade.add_child(veil)
 
 	var title := Label.new()
 	title.text = title_text
@@ -680,7 +695,7 @@ func play_room_transition(
 	title.add_theme_font_size_override("font_size", 22)
 	apply_label(title, &"title")
 	title.modulate = Color(0.62, 0.82, 1.0, 0.0)
-	layer.add_child(title)
+	fade.add_child(title)
 
 	var detail := Label.new()
 	detail.text = detail_text
@@ -693,7 +708,7 @@ func play_room_transition(
 	detail.add_theme_font_size_override("font_size", 12)
 	apply_label(detail, &"muted")
 	detail.modulate.a = 0.0
-	layer.add_child(detail)
+	fade.add_child(detail)
 
 	var transition := layer.create_tween()
 	transition.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
@@ -704,7 +719,7 @@ func play_room_transition(
 	transition.tween_interval(0.16)
 	transition.tween_callback(on_midpoint)
 	transition.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	transition.tween_property(layer, "modulate:a", 0.0, 0.22)
+	transition.tween_property(fade, "modulate:a", 0.0, 0.22)
 	transition.tween_callback(func() -> void:
 		if is_instance_valid(layer):
 			layer.queue_free()

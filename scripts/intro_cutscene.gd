@@ -501,6 +501,11 @@ func _start_ambient_score() -> void:
 	score_player.stream = stream
 	score_player.bus = &"Master"
 	score_player.volume_db = -20.0
+	# The web export defaults every player to sample playback, and a generator
+	# has no samples to hand over — it is filled a frame at a time from
+	# _fill_score_buffer(). Leaving this at the default costs nothing on desktop
+	# and makes the whole opening silent in a browser.
+	score_player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	add_child(score_player)
 	score_player.play()
 	score_playback = score_player.get_stream_playback() as AudioStreamGeneratorPlayback

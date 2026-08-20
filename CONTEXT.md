@@ -854,6 +854,29 @@ The lesson both share: the potion tables are the wrong place to check whether a
 potion works. `is_potion_active` returning true proves the countdown is running,
 not that a single pixel changed.
 
+## A CanvasLayer cannot fade, and it will not tell you
+
+Both screen transitions built their overlay as a `CanvasLayer` with the veil,
+frame and labels as children, faded the children *in*, and then faded the whole
+layer *out* with `tween_property(layer, "modulate:a", 0.0, ...)`. `CanvasLayer`
+derives from `Node`, not `CanvasItem`, so it has no `modulate` at all: the
+tweener was never created, the tween ran empty, and the overlay was freed at
+full opacity. Every case-open and every room change ended in a hard cut that was
+supposed to be a fade, in both directions, for as long as the code existed.
+
+The overlay now hangs off a full-rect `Control` inside the layer and the fade
+acts on that. Anything that needs to fade as one piece needs a CanvasItem to
+fade.
+
+What made this survive is how differently it reports itself. The editor build
+says `The tweened property "modulate:a" does not exist` and names the class; the
+exported build takes another path and says `Type mismatch between initial and
+final value: Nil and float`, with no property, no object and no script line —
+and `Nil` there is precisely the missing property. Neither message appears
+unless someone is watching a console, which on the web build means opening
+devtools. Checking `layer.get("modulate")` in a headless one-liner answers it in
+seconds and is worth doing whenever a fade "does nothing".
+
 ## A deploy that returns 200 is not a deploy that works
 
 The web build ships as four fixed filenames totalling 131MB, and every way the
@@ -871,3 +894,14 @@ carries the commands, along with the two DNS traps that cost the most time here
 — Vercel never retrying a certificate for a domain that was added before its
 DNS resolved, and macOS `mDNSResponder` serving a stale address to `curl` and
 browsers while `dig` reports the correct one.
+
+### The browser is a different platform, so play it there
+
+Both bugs above were invisible until the exported build ran in an actual
+browser: one is web-only, the other only *reports* itself usefully off the web.
+A third was too — `AudioStreamGenerator` cannot be sampled, and the web export
+defaults every `AudioStreamPlayer` to sample playback, so the intro's procedural
+score was silent in a browser and fine on desktop. It needs
+`playback_type = AudioServer.PLAYBACK_TYPE_STREAM`, which costs nothing
+anywhere else. Loading the scene headless found none of the three; opening the
+deployed URL with a console visible found all three in one run.
