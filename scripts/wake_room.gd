@@ -86,6 +86,7 @@ const CLUE_INTERACT_RADIUS := 165.0
 const CLICK_ARRIVAL_MARGIN := 22.0
 const SHOW_INTERACTION_MARKERS := false
 
+
 @export var interaction_hint_position: Vector2 = Vector2(238, 696)
 @export var interaction_hint_size: Vector2 = Vector2(548, 68)
 
@@ -3348,19 +3349,17 @@ func _open_flame_minigame() -> void:
 
 
 func _on_flame_minigame_finished(cleared_all: bool, stages: int) -> void:
-	# 一关都没推出来就关掉面板，不算做过。原来这里无条件发放，于是打开面板
-	# 立刻关掉，也能拿到卷轴和林博士的工具包，而且书桌从此只剩一张卷轴——
-	# 练习再也打不开了。玩家的原话是"系统好像自动认为已经通关"。
-	if stages <= 0:
+	# 卷轴锁在八关全过之后。原来推对一关就发，于是答两题按 Close 就能拿到
+	# 林博士的工具包 —— 练习被跳过了，而这道练习教的正是门上那把知识锁问的
+	# 东西。这条曾经为了不卡住做不出来的孩子而放宽，但放宽的代价是所有人都
+	# 会顺手跳过：真正的保险不是降低门槛，而是这道练习在通过之前一直开着，
+	# 玩家可以从书桌反复重来，想不明白就再试一次。
+	if not cleared_all:
 		start_dialogue_pause()
 		clear_buttons()
 		show_dialogue(
 			"You",
-			_mg_text(
-				"You step back from the candles without working a single jar "
-				+ "out. The row is still waiting on the desk.",
-				"你从那排蜡烛前退开，一只罐子也没推出来。桌上那排还等在那里。"
-			)
+			_flame_progress_text(stages)
 		)
 		reset_dialogue_scrolls()
 		add_dialogue_button(
@@ -3368,15 +3367,34 @@ func _on_flame_minigame_finished(cleared_all: bool, stages: int) -> void:
 		)
 		return
 
-	# 卷轴一定要给，只要玩家真的推对过一关。它带着笔记工具和林博士的工具包，
-	# 把它锁在"八关全过"之后，等于让打不过练习的孩子卡在第一个房间。
-	# 练习是体验，卷轴是进度，两者不能绑在一起。
 	show_scroll_clue()
+	GameState.set_story_flag("wake_flame_drilled")
 
-	# 只有八关全过，书桌才换成直接给卷轴。原来推对一关就置位，剩下七关从此
-	# 再也见不到——而卷轴本来就已经进了侦探笔记，随时翻得到。
-	if cleared_all:
-		GameState.set_story_flag("wake_flame_drilled")
+
+## 没做完时的回话。说清楚推出了几只、还剩几只，玩家才知道自己是在推进还是
+## 在原地打转 —— 一句笼统的“还没做完”只会让人觉得被拒绝。
+func _flame_progress_text(stages: int) -> String:
+	if stages <= 0:
+		return _mg_text(
+			"You step back from the candles without working a single jar out."
+			+ " The row is still waiting on the desk.",
+			"你从那排蜡烛前退开，一只罐子也没推出来。桌上那排还等在那里。"
+		)
+	# 关卡总数写在这里而不是类级：这个文件在首个 var 之后每多一条类级定义
+	# 就多一条 class-definitions-order。改了 flame_air_minigame.gd 的 LEVELS
+	# 就得同步这个数。
+	const TOTAL := 8
+	var total: int = TOTAL
+	if CaseLocale != null and CaseLocale.is_chinese():
+		return (
+			"你推对了 %d 只罐子，还剩 %d 只。整排都想明白之前，桌上那卷东西"
+			+ "不会摊开 —— 回书桌就能接着推。"
+		) % [stages, total - stages]
+	return (
+		"You worked out %d of the jars, with %d still standing. The scroll on"
+		+ " the desk stays rolled until the whole row makes sense — the desk"
+		+ " will take you back to it."
+	) % [stages, total - stages]
 
 
 func _mg_text(english: String, chinese: String) -> String:

@@ -4664,17 +4664,32 @@ func _update_guardian_countdown(delta: float) -> void:
 		"font_color",
 		Color(1.0, 0.34, 0.22, 1.0) if imminent else Color(1.0, 0.88, 0.70, 1.0)
 	)
-	guardian_countdown_bar.color = (
-		Color(1.0, 0.12, 0.10, 1.0)
-		if imminent
-		else Color(0.92, 0.28, 0.18, 1.0)
-	)
+	# 颜色随百分比连续走，而不是在 4 秒那一刻突然翻红。一根只有两种颜色的
+	# 条子只能回答“危不危险”；同一根条子平滑地从琥珀走到血红，回答的是
+	# “还剩多少”——玩家不用读秒也知道自己在被追上还是在拉开。
+	guardian_countdown_bar.color = _threat_gradient(urgency)
 	if CaseLocale.is_chinese():
 		guardian_countdown_title.text = "预计守卫接触时间"
 		guardian_countdown_status.text = "马上被抓  •  立刻躲入房间" if imminent else "路径已锁定  •  保持移动"
 	else:
 		guardian_countdown_title.text = "GUARDIAN CONTACT ESTIMATE"
 		guardian_countdown_status.text = "IMMINENT  •  REACH A ROOM" if imminent else "PATH LOCKED  •  KEEP MOVING"
+
+
+## 把 0..1 的紧迫度映射成一段连续的颜色：前半段琥珀→橙，后半段橙→红。
+## 条子在缩短的同时也在升温，两个信号说的是同一件事。
+##
+## 中间那一档是必要的：从琥珀直接插值到红，中段会经过一片发脏的褐色，看起来
+## 像条子坏了。三个色标写在函数里而不是类级 —— 这个文件在首个 var 之后每多
+## 一条类级定义就多一条 class-definitions-order。
+func _threat_gradient(urgency: float) -> Color:
+	const FAR := Color(0.95, 0.74, 0.30, 1.0)
+	const MID := Color(0.96, 0.44, 0.16, 1.0)
+	const NEAR := Color(1.0, 0.13, 0.10, 1.0)
+	var u: float = clampf(urgency, 0.0, 1.0)
+	if u <= 0.5:
+		return FAR.lerp(MID, u / 0.5)
+	return MID.lerp(NEAR, (u - 0.5) / 0.5)
 
 
 ## Compact readout for the awareness model. Without it the escalation tier, the
