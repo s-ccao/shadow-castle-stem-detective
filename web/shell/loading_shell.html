@@ -250,6 +250,32 @@ const GODOT_CONFIG = $GODOT_CONFIG;
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
 
+window.shadowCastleUpdate = (function () {
+	let waitingWorker = null;
+	let snoozedUntil = 0;
+
+	return {
+		setWaiting: function (worker) {
+			waitingWorker = worker;
+			snoozedUntil = 0;
+		},
+		isReady: function () {
+			return Boolean(waitingWorker && Date.now() >= snoozedUntil);
+		},
+		snooze: function (milliseconds) {
+			snoozedUntil = Date.now() + Math.max(0, Number(milliseconds) || 0);
+		},
+		activate: function () {
+			if (!waitingWorker) { return false; }
+			navigator.serviceWorker.addEventListener('controllerchange', function () {
+				window.location.reload();
+			}, { once: true });
+			waitingWorker.postMessage('claim');
+			return true;
+		},
+	};
+}());
+
 (function () {
 	const boot = document.getElementById('boot');
 	const notice = document.getElementById('notice');
@@ -369,16 +395,13 @@ const engine = new Engine(GODOT_CONFIG);
 	// 只在“从来没装过”的那一次接管。已经有旧缓存时贸然让新 worker 上位，会
 	// 出现页面还是旧的 index.js、资源却换成了新 pck 的错配；那种情况按浏览器
 	// 默认的节奏走，下次进来自然就是新版。
-	const RELOADED_FOR_UPDATE = 'shadow_castle_sw_reload';
-
 	// Service worker 是缓存优先的，所以一旦装上，玩家拿到的永远是缓存里那一版。
 	// 新版本会在后台悄悄装好、然后停在 waiting，直到用旧版的标签页全部关掉才
 	// 换代 —— 玩家没有任何理由知道自己该去关标签页，于是发出去的修复对他们
 	// 等于不存在。
 	//
-	// 这里在游戏还没开始加载之前就把新 worker 请上位，然后重载一次。之所以
-	// 安全，正是因为时机在 startGame 之前：重载后 index.js、wasm、pck 全部来自
-	// 新缓存，不会出现旧代码配新资源的错配。整个会话只做一次，避免万一转圈。
+	// 新 worker 下载完整后交给游戏内 UpdateNotice。它会暂停整个场景树，并让
+	// 玩家选择立即重启或稍后再说；只有明确选择重启才会发送 claim。
 	function prepareServiceWorker() {
 		return new Promise(function (resolve) {
 			if (!GODOT_CONFIG['serviceWorker'] || !('serviceWorker' in navigator)) {
@@ -387,45 +410,32 @@ const engine = new Engine(GODOT_CONFIG);
 			}
 
 			let settled = false;
-			const finish = function (reloading) {
-				if (!settled) { settled = true; resolve(reloading); }
+			const finish = function () {
+				if (!settled) { settled = true; resolve(false); }
 			};
 			// 注册出问题也不能把开局卡在这里。
 			const escape = setTimeout(function () { finish(false); }, 3000);
 
 			navigator.serviceWorker.register(GODOT_CONFIG['serviceWorker']).then(function (reg) {
-				const takeOver = function () {
-					if (!reg.waiting) { return false; }
-					try {
-						if (sessionStorage.getItem(RELOADED_FOR_UPDATE)) { return false; }
-						sessionStorage.setItem(RELOADED_FOR_UPDATE, '1');
-					} catch (e) { /* 无痕模式下拿不到 sessionStorage，那就不自动重载。 */
-						return false;
-					}
-					clearTimeout(escape);
-					phaseEl.textContent = zh ? '正在更新到新版本' : 'UPDATING TO THE LATEST BUILD';
-					navigator.serviceWorker.addEventListener('controllerchange', function () {
-						window.location.reload();
-					}, { once: true });
-					reg.waiting.postMessage('claim');
-					finish(true);
-					return true;
+				const publishUpdate = function (worker) {
+					if (!worker) { return; }
+					window.shadowCastleUpdate.setWaiting(worker);
 				};
 
-				if (takeOver()) { return; }
+				if (reg.waiting) { publishUpdate(reg.waiting); }
 
 				reg.addEventListener('updatefound', function () {
 					const installing = reg.installing;
 					if (!installing) { return; }
 					installing.addEventListener('statechange', function () {
 						if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-							takeOver();
+							publishUpdate(installing);
 						}
 					});
 				});
 
 				// 已经被接管、又没有新版本在等 —— 正常开局。
-				if (navigator.serviceWorker.controller) { clearTimeout(escape); finish(false); return; }
+				if (navigator.serviceWorker.controller) { clearTimeout(escape); finish(); return; }
 
 				// 从来没装过的那一次：先接管当前页，第一次下载的 130MB 才会进缓存。
 				// 不这样做的话，第一次是在 worker 存在之前下完的，一个字节都留不下。
@@ -433,7 +443,7 @@ const engine = new Engine(GODOT_CONFIG);
 				if (!sw) { clearTimeout(escape); finish(false); return; }
 				navigator.serviceWorker.addEventListener('controllerchange', function () {
 					clearTimeout(escape);
-					finish(false);
+					finish();
 				}, { once: true });
 				const claim = function () {
 					if (sw.state === 'activated') { sw.postMessage('claim'); }
@@ -443,7 +453,7 @@ const engine = new Engine(GODOT_CONFIG);
 			}).catch(function (err) {
 				console.warn('Service worker unavailable:', err);
 				clearTimeout(escape);
-				finish(false);
+				finish();
 			});
 		});
 	}
@@ -474,10 +484,7 @@ const engine = new Engine(GODOT_CONFIG);
 			? '这个浏览器缺少运行所需的功能：\n'
 			: 'This browser is missing features required to run the game:\n') + missing.join('\n'));
 	} else {
-		prepareServiceWorker().then(function (reloading) {
-			// 正在换新版本时不要开局：马上就要重载了，这时候去下 130MB 是白下。
-			if (!reloading) { launch(); }
-		}, launch);
+		prepareServiceWorker().then(launch, launch);
 	}
 }());
 	</script>
