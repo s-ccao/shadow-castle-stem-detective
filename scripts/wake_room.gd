@@ -155,6 +155,7 @@ var first_lead_objective_panel: Panel
 var first_lead_objective_title: Label
 var first_lead_objective_body: Label
 var first_lead_objective_tween: Tween
+const WAKE_TUTORIAL_DOOR_CHECKED_FLAG := "wake_tutorial_door_checked"
 
 var clue_node: ColorRect
 var door_marker_node: ColorRect
@@ -329,6 +330,7 @@ func _play_wake_arrival() -> void:
 	player.set_physics_process(true)
 	GameState.set_story_flag(WAKE_ARRIVAL_FLAG)
 	_refresh_first_lead_objective(true)
+	OnboardingHud.show_wake_orientation()
 
 func _process(delta):
 	_update_prop_occlusion_layers()
@@ -351,6 +353,9 @@ func _process(delta):
 	# dialogue_active=true，若不先处理关闭，玩家会被永久锁死。
 	if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("ui_cancel"):
 		if _close_any_open_panel():
+			# Dismissing a panel must not hand the detective back to a walk that
+			# was still queued underneath it.
+			cancel_pending_mouse_interaction()
 			hide_interaction_feedback()
 			return
 
@@ -1369,6 +1374,13 @@ func update_interaction_focus() -> void:
 				interaction_focus.clear_focus()
 		return
 	if current_interaction.is_empty():
+		var tutorial_target := _wake_tutorial_target_interaction()
+		if not tutorial_target.is_empty():
+			_set_rect_focus(
+				tutorial_target,
+				_wake_tutorial_target_title(tutorial_target)
+			)
+			return
 		interaction_focus.clear_focus()
 		return
 
@@ -1871,13 +1883,17 @@ func _refresh_first_lead_objective(animate: bool) -> void:
 	if first_lead_objective_panel == null:
 		return
 	var objective: Dictionary = _first_lead_objective_copy()
-	# A small route card teaches the common door loop without preventing any
-	# interaction. It disappears only when this room's door has opened.
-	first_lead_objective_panel.visible = not exit_door_unlocked
+	# Keep the final "go through the door" step visible after the lock opens.
+	first_lead_objective_panel.visible = first_lead_step != FirstLeadStep.COMPLETE
 	if not first_lead_objective_panel.visible:
 		return
 	first_lead_objective_title.text = str(objective["title"])
 	first_lead_objective_body.text = str(objective["body"])
+	ObjectiveCard.fit(
+		first_lead_objective_panel,
+		first_lead_objective_title,
+		first_lead_objective_body
+	)
 	if not animate:
 		first_lead_objective_panel.modulate = Color.WHITE
 		first_lead_objective_panel.scale = Vector2.ONE
@@ -1903,6 +1919,11 @@ func _refresh_first_lead_objective(animate: bool) -> void:
 
 
 func _first_lead_objective_copy() -> Dictionary:
+	if not GameState.has_story_flag(WAKE_TUTORIAL_DOOR_CHECKED_FLAG):
+		return {
+			"title": CaseLocale.text("guide.wake_first_door_title"),
+			"body": CaseLocale.text("guide.wake_first_door_body"),
+		}
 	if not desk_briefing_read:
 		return {
 			"title": CaseLocale.text("guide.wake_desk_title"),
@@ -1918,10 +1939,43 @@ func _first_lead_objective_copy() -> Dictionary:
 			"title": CaseLocale.text("guide.wake_answer_title"),
 			"body": CaseLocale.text("guide.wake_answer_body"),
 		}
+	if not exit_door_unlocked:
+		return {
+			"title": CaseLocale.text("guide.wake_door_title"),
+			"body": CaseLocale.text("guide.wake_door_body"),
+		}
 	return {
-		"title": CaseLocale.text("guide.wake_door_title"),
-		"body": CaseLocale.text("guide.wake_door_body"),
+		"title": CaseLocale.text("guide.wake_exit_title"),
+		"body": CaseLocale.text("guide.wake_exit_body"),
 	}
+
+
+func _wake_tutorial_target_interaction() -> String:
+	if exit_door_unlocked:
+		return "door"
+	if not GameState.has_story_flag(WAKE_TUTORIAL_DOOR_CHECKED_FLAG):
+		return "door"
+	if not desk_briefing_read:
+		return "prop:desk"
+	if not GameState.has_key(WAKE_ROOM_KEY_ID):
+		return "prop:bed"
+	if not first_lock_rule_learned:
+		return "prop:bookshelf"
+	return "door"
+
+
+func _wake_tutorial_target_title(interaction_id: String) -> String:
+	match interaction_id:
+		"door":
+			return "Knowledge lock"
+		"prop:desk":
+			return "Study desk"
+		"prop:bed":
+			return "Bed"
+		"prop:bookshelf":
+			return "Bookshelf"
+		_:
+			return "Next step"
 
 
 func _on_case_locale_changed(_language: String) -> void:
@@ -1970,7 +2024,8 @@ func update_interaction_prompt():
 			interact_label.text = "Move closer to inspect the door"
 
 		interact_label.visible = true
-		return
+		if not current_interaction.is_empty():
+			return
 	for id in props.keys():
 		if not _is_prop_available_in_first_lead(id):
 			continue
@@ -1981,7 +2036,8 @@ func update_interaction_prompt():
 			else:
 				interact_label.text = "Move closer to inspect " + props[id]["prompt"]
 			interact_label.visible = true
-			return
+			if not current_interaction.is_empty():
+				return
 
 	# Walking up to the note has to work on its own. Until now the note was
 	# mouse-only: current_interaction was never set to "room_clue", so the E-key
@@ -1998,7 +2054,8 @@ func update_interaction_prompt():
 				else "Press E to read the candle note"
 			)
 		interact_label.visible = true
-		return
+		if not current_interaction.is_empty():
+			return
 
 	if _is_near_interaction("door"):
 		current_interaction = "door"
@@ -2033,6 +2090,9 @@ func handle_exit_door():
 
 	# 钥匙优先：没有实体钥匙时不能激活知识锁问题。
 	if not GameState.has_key(WAKE_ROOM_KEY_ID):
+		if not GameState.has_story_flag(WAKE_TUTORIAL_DOOR_CHECKED_FLAG):
+			GameState.set_story_flag(WAKE_TUTORIAL_DOOR_CHECKED_FLAG)
+			_refresh_first_lead_objective(true)
 		show_no_key_hint()
 		return
 
@@ -2249,11 +2309,7 @@ func leave_wake_room():
 			scene_transitioning = false
 			player.set_physics_process(true)
 			push_error("Failed to enter Castle Hall. Error: " + str(change_error))
-	ArchiveUi.play_room_transition(
-		switch_to_hall,
-		CaseLocale.text("transition.hall_title"),
-		CaseLocale.text("transition.hall_detail")
-	)
+	ArchiveUi.play_hall_transition(switch_to_hall)
 
 
 func add_dialogue_button(text: String, callback: Callable):

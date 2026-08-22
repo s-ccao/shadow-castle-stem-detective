@@ -191,6 +191,7 @@ func save_to_disk() -> bool:
 		"recipe_items": recipe_items,
 		"map_items": map_items,
 		"herb_counts": herb_counts,
+		"herb_plot_harvested_at": herb_plot_harvested_at,
 		"material_counts": material_counts,
 		"potion_effects": potion_effects,
 		"dish_counts": dish_counts,
@@ -358,6 +359,7 @@ func load_saved_game() -> bool:
 	recipe_items = _string_array(data.get("recipe_items", []))
 	map_items = _string_array(data.get("map_items", []))
 	herb_counts = _dictionary(data.get("herb_counts", {}))
+	herb_plot_harvested_at = _dictionary(data.get("herb_plot_harvested_at", {}))
 	material_counts = _dictionary(data.get("material_counts", {}))
 	potion_effects = _dictionary(data.get("potion_effects", {}))
 	dish_counts = _dictionary(data.get("dish_counts", {}))
@@ -505,6 +507,10 @@ var inventory_items: Array[String] = []
 var recipe_items: Array[String] = []
 var map_items: Array[String] = []
 var herb_counts: Dictionary = {}
+## Unix timestamp of the last harvest per greenhouse plot. Stored as absolute
+## time so a plot keeps regrowing while the player is in another room, and
+## across a save/load, instead of only ticking while the greenhouse is open.
+var herb_plot_harvested_at: Dictionary = {}
 var material_counts: Dictionary = {}
 var potion_effects: Dictionary = {}
 var player_health: int = 3
@@ -619,6 +625,42 @@ const RECIPE_INFO: Dictionary = {
 		"herb_cost": {"moonleaf": 2},
 		"material_cost": {"prism_dust": 1, "distilled_water": 1},
 	},
+	# Refining recipes. Without these the potion economy is a dead end: the
+	# castle only ever yields 2 distilled water, 1 iron salt and 1 prism dust,
+	# against the 5/4/5 needed to brew one of every potion. These convert the
+	# greenhouse's renewable herbs into the scarce materials, which is what
+	# makes regrowing plots worth walking back to.
+	#
+	# Each conversion follows the herb's own botany, so the chemistry reads:
+	# dewcap condenses water, ironvine draws metal salts, emberroot bakes
+	# moonleaf's silica into prism dust.
+	"recipe_dew_distill": {
+		"name": "Dewcap Distillation",
+		"description": "Dewcap x3 -> Distilled Water x2. The caps give up the water they pull from the air.",
+		"produces": "distilled_water",
+		"produces_kind": "material",
+		"produces_amount": 2,
+		"herb_cost": {"dewcap": 3},
+		"material_cost": {},
+	},
+	"recipe_vine_salt": {
+		"name": "Ironvine Reduction",
+		"description": "Ironvine x3 -> Iron Salt x2. Burn the vine down and the metal it drank stays behind.",
+		"produces": "iron_salt",
+		"produces_kind": "material",
+		"produces_amount": 2,
+		"herb_cost": {"ironvine": 3},
+		"material_cost": {},
+	},
+	"recipe_ember_prism": {
+		"name": "Emberroot Calcination",
+		"description": "Emberroot x2 + Moonleaf x1 -> Prism Dust x2. The root's stored heat vitrifies moonleaf into clear grit.",
+		"produces": "prism_dust",
+		"produces_kind": "material",
+		"produces_amount": 2,
+		"herb_cost": {"emberroot": 2, "moonleaf": 1},
+		"material_cost": {},
+	},
 }
 
 const HERB_INFO: Dictionary = {
@@ -630,7 +672,25 @@ const HERB_INFO: Dictionary = {
 		"name": "Moonleaf",
 		"description": "A silver-veined leaf that opens only under violet light.",
 	},
+	"emberroot": {
+		"name": "Emberroot",
+		"description": "A root that stores the day's heat and releases it slowly.",
+	},
+	"dewcap": {
+		"name": "Dewcap",
+		"description": "A cap that condenses water straight out of the air.",
+	},
+	"ironvine": {
+		"name": "Ironvine",
+		"description": "A vine that draws metal salts up from the soil.",
+	},
 }
+
+## Greenhouse plots regrow on a wall clock so the room is a renewable supply
+## rather than a one-time pickup. Three minutes is long enough that a plot is
+## not a button to spam, short enough that a round trip through another room
+## comes back to something ready.
+const HERB_PLOT_REGROW_SECONDS: float = 180.0
 
 const MATERIAL_INFO: Dictionary = {
 	"distilled_water": {
@@ -683,6 +743,23 @@ const ITEM_VISUAL_INFO: Dictionary = {
 		"accent": Color(0.80, 0.84, 0.90, 1.0),
 		"model_class": "formula",
 	},
+	# Refining sheets reuse the closest existing formula art and are told apart
+	# by accent colour, matching the herb each one renders down.
+	"recipe_dew_distill": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_purification.png",
+		"accent": Color(0.46, 0.86, 0.90, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_vine_salt": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_mire.png",
+		"accent": Color(0.66, 0.68, 0.74, 1.0),
+		"model_class": "formula",
+	},
+	"recipe_ember_prism": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/recipe_daze.png",
+		"accent": Color(0.95, 0.48, 0.22, 1.0),
+		"model_class": "formula",
+	},
 	"blue_blossom": {
 		"texture": "res://assets/ui/item_models/pixel_art_v1/blue_blossom.png",
 		"accent": Color(0.24, 0.58, 1.0, 1.0),
@@ -691,6 +768,24 @@ const ITEM_VISUAL_INFO: Dictionary = {
 	"moonleaf": {
 		"texture": "res://assets/ui/item_models/pixel_art_v1/moonleaf.png",
 		"accent": Color(0.42, 0.72, 0.35, 1.0),
+		"model_class": "herb",
+	},
+	# The three greenhouse additions have no bespoke art yet. They borrow the
+	# closest existing silhouette and are told apart by accent colour, which is
+	# what the item chips and satchel tint by. A blank slot would read as a bug.
+	"emberroot": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/moonleaf.png",
+		"accent": Color(0.95, 0.48, 0.22, 1.0),
+		"model_class": "herb",
+	},
+	"dewcap": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/blue_blossom.png",
+		"accent": Color(0.46, 0.86, 0.90, 1.0),
+		"model_class": "herb",
+	},
+	"ironvine": {
+		"texture": "res://assets/ui/item_models/pixel_art_v1/moonleaf.png",
+		"accent": Color(0.66, 0.68, 0.74, 1.0),
 		"model_class": "herb",
 	},
 	"distilled_water": {
@@ -868,6 +963,9 @@ var guardian_patrol_objective: String = ""
 var guardian_tracking_serum: bool = true
 var guardian_stun_remaining: float = 0.0
 var guardian_mire_remaining: float = 0.0
+## Live speed multiplier for the guided first crossing. Reset per run: it is
+## pacing state for one scripted sequence, not saved progress.
+var guardian_tutorial_pace: float = 1.0
 var guardian_search_remaining: float = 0.0
 var guardian_last_known_player_position: Vector2 = GUARDIAN_HALL_START_POSITION
 ## Hall-space entrance of each room, registered by Castle Hall so the Guardian
@@ -901,6 +999,7 @@ func reset_new_game() -> void:
 	recipe_items.clear()
 	map_items.clear()
 	herb_counts.clear()
+	herb_plot_harvested_at.clear()
 	material_counts.clear()
 	dish_counts.clear()
 	potion_effects.clear()
@@ -1526,6 +1625,13 @@ func get_guardian_escalation_multiplier() -> float:
 	return 1.0 + float(get_guardian_escalation_tier()) * GUARDIAN_ESCALATION_STEP
 
 
+## Adaptive pacing for the guided first crossing. The Hall measures how far the
+## Guardian actually is by path and publishes a multiplier here, so the speed
+## the legs use, the walk cycle and the contact estimate all agree.
+func set_guardian_tutorial_pace(pace: float) -> void:
+	guardian_tutorial_pace = clampf(pace, 0.2, 2.0)
+
+
 ## Speed once the Guardian has actually locked onto the player. This is the
 ## stacked value the user asked for: it never decays, only rises per room.
 func get_guardian_chase_speed() -> float:
@@ -1535,7 +1641,7 @@ func get_guardian_chase_speed() -> float:
 			if has_story_flag("hall_first_route_core_studied")
 			else GUARDIAN_TUTORIAL_APPROACH_SPEED
 		)
-		return tutorial_speed * get_guardian_mire_multiplier()
+		return tutorial_speed * guardian_tutorial_pace * get_guardian_mire_multiplier()
 	return (
 		GUARDIAN_BASE_CHASE_SPEED
 		* get_guardian_escalation_multiplier()
@@ -2026,6 +2132,36 @@ func add_herb(herb_id: String, amount: int = 1) -> void:
 	herb_counts[herb_id] = int(herb_counts.get(herb_id, 0)) + amount
 	state_changed.emit()
 	item_acquired.emit(herb_id, "herb", amount)
+
+
+## Seconds until a plot is ready again, or 0.0 when it can be picked now.
+func herb_plot_seconds_remaining(plot_id: String) -> float:
+	if not herb_plot_harvested_at.has(plot_id):
+		return 0.0
+	var elapsed := (
+		Time.get_unix_time_from_system()
+		- float(herb_plot_harvested_at[plot_id])
+	)
+	# A clock that moved backwards (timezone change, manual clock edit) must not
+	# strand a plot as permanently unripe.
+	if elapsed < 0.0:
+		herb_plot_harvested_at.erase(plot_id)
+		return 0.0
+	return maxf(0.0, HERB_PLOT_REGROW_SECONDS - elapsed)
+
+
+func is_herb_plot_ready(plot_id: String) -> bool:
+	return herb_plot_seconds_remaining(plot_id) <= 0.0
+
+
+## Harvest a plot. Returns false when it has not regrown yet, so callers can
+## show the waiting message instead of granting a second free pick.
+func harvest_herb_plot(plot_id: String, herb_id: String, amount: int) -> bool:
+	if not is_herb_plot_ready(plot_id):
+		return false
+	herb_plot_harvested_at[plot_id] = Time.get_unix_time_from_system()
+	add_herb(herb_id, amount)
+	return true
 
 
 func get_herb_count(herb_id: String) -> int:

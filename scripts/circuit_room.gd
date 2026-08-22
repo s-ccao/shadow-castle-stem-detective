@@ -533,6 +533,11 @@ func _create_switch_models() -> void:
 
 
 func try_interact() -> void:
+	# Choosing to inspect something is a decision to stand still. A click-move
+	# still running underneath the dialogue walks the detective off on its own
+	# once the panel closes, which reads as the character moving by itself.
+	if player != null and player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
 	if current_interaction == "exit":
 		return_to_castle_hall()
 		return
@@ -892,16 +897,17 @@ func return_to_castle_hall() -> void:
 		player.call("cancel_click_movement")
 	player.set_physics_process(false)
 
-	GameState.prepare_return_to_hub(RETURN_SPAWN_ID)
-
-	var change_error: Error = get_tree().change_scene_to_file(
-		GameState.return_scene_path
-	)
-	if change_error != OK:
-		scene_transitioning = false
-		room_input_enabled = true
-		player.set_physics_process(true)
-		push_error(
-			"Failed to return to Castle Hall. Error: "
-			+ str(change_error)
+	var switch_to_hall := func() -> void:
+		GameState.prepare_return_to_hub(RETURN_SPAWN_ID)
+		var change_error: Error = get_tree().change_scene_to_file(
+			GameState.return_scene_path
 		)
+		if change_error != OK:
+			scene_transitioning = false
+			room_input_enabled = true
+			player.set_physics_process(true)
+			push_error(
+				"Failed to return to Castle Hall. Error: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_hall_transition(switch_to_hall)

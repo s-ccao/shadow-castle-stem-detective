@@ -124,6 +124,10 @@ var reputation_label: Label
 var interact_label: Label
 var interaction_hint_panel: Panel
 var interaction_focus: WorldInteractionFocus
+var case_objective_panel: Panel
+var case_objective_title: Label
+var case_objective_body: Label
+var case_objective_tween: Tween
 
 var message_panel: Panel
 var message_label: Label
@@ -306,6 +310,11 @@ func update_interaction_prompt() -> void:
 
 
 func handle_interaction() -> void:
+	# Choosing to inspect something is a decision to stand still. A click-move
+	# still running underneath the dialogue walks the detective off on its own
+	# once the panel closes, which reads as the character moving by itself.
+	if player != null and player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
 	match current_interaction:
 		"exit":
 			return_to_castle_hall()
@@ -1310,6 +1319,23 @@ func _craft_potion(recipe_id: String, produces: String, cost: Dictionary, materi
 		GameState.consume_herb(herb_id, int(cost[herb_id]))
 	for material_id: String in material_cost.keys():
 		GameState.consume_material(material_id, int(material_cost[material_id]))
+	# Refining recipes yield a reagent rather than a bottle. Routing them through
+	# add_inventory_item() would file iron salt as a usable potion.
+	var recipe_data: Dictionary = GameState.RECIPE_INFO.get(recipe_id, {})
+	if str(recipe_data.get("produces_kind", "item")) == "material":
+		var yielded: int = int(recipe_data.get("produces_amount", 1))
+		GameState.add_material(produces, yielded)
+		show_message(
+			"You",
+			"Refined %d %s." % [
+				yielded,
+				str(GameState.MATERIAL_INFO.get(produces, {}).get("name", produces))
+			]
+		)
+		clear_message_buttons()
+		add_message_button("Back to Crafting", show_craft_panel)
+		add_message_button("Close", close_message_panel)
+		return
 	GameState.add_inventory_item(produces)
 	end_dialogue_pause()
 
@@ -1397,6 +1423,7 @@ func collect_red_stain_evidence() -> void:
 	GameState.add_evidence(
 		"fake_red_stain"
 	)
+	_refresh_case_objective(true)
 
 	# 剧情：红渍调查笔记（一次性写入侦探笔记）。
 	if NoteHud != null and not NoteHud.has_clue("chemistry_room_note"):
@@ -1476,6 +1503,7 @@ func show_butler_dialogue() -> void:
 
 	# 分支 4：考验完成 → Butler 告知他知道的信息。
 	GameState.set_story_flag("chemistry_butler_interviewed")
+	_refresh_case_objective(true)
 	show_message(
 		"Butler",
 		"You were right. That stain is a mixture of "
@@ -1599,6 +1627,7 @@ func update_room_completion() -> void:
 
 func apply_persistent_state() -> void:
 	update_reputation_label()
+	_refresh_case_objective(false)
 
 	if GameState.has_evidence(
 		"fake_red_stain"
@@ -1751,6 +1780,13 @@ func update_interaction_focus() -> void:
 	if interaction_focus == null:
 		return
 	if current_interaction.is_empty():
+		# Standing in open floor is exactly when a first-time player needs to be
+		# told where to go. Wake Room and the Hall both point at the next step
+		# here; without this Chemistry silently drops the guided run.
+		var objective_target := _case_objective_interaction()
+		if not objective_target.is_empty():
+			_set_objective_focus(objective_target)
+			return
 		interaction_focus.clear_focus()
 		return
 
@@ -1795,6 +1831,49 @@ func update_interaction_focus() -> void:
 	)
 
 
+## The interaction the running objective is currently asking for, or "" when
+## guidance is off or the room is already solved.
+func _case_objective_interaction() -> String:
+	if not PlayerPreferences.field_prompts_enabled:
+		return ""
+	if not GameState.has_evidence("fake_red_stain"):
+		return "red_stain"
+	if not GameState.has_story_flag("chemistry_butler_interviewed"):
+		return "butler"
+	return "exit"
+
+
+func _set_objective_focus(interaction_id: String) -> void:
+	var focus_title: String = ""
+	var fallback_position: Vector2 = Vector2.ZERO
+	match interaction_id:
+		"red_stain":
+			focus_title = "Red stain"
+			fallback_position = RED_STAIN_POSITION
+		"butler":
+			focus_title = "Butler"
+			fallback_position = BUTLER_POSITION
+		"exit":
+			focus_title = "Castle Hall exit"
+			fallback_position = EXIT_POSITION
+		_:
+			interaction_focus.clear_focus()
+			return
+	var focus_rect := spatial.grow_rect(
+		get_interaction_rect(interaction_id),
+		Vector2(10.0, 10.0)
+	)
+	var target_position := fallback_position
+	if focus_rect.size.x > 0.0 and focus_rect.size.y > 0.0:
+		target_position = focus_rect.get_center()
+	interaction_focus.set_focus(
+		target_position,
+		focus_title,
+		false,
+		focus_rect.size
+	)
+
+
 func hide_interaction_feedback() -> void:
 	if interaction_focus != null:
 		interaction_focus.clear_focus()
@@ -1802,6 +1881,106 @@ func hide_interaction_feedback() -> void:
 		interaction_hint_panel.visible = false
 	if interact_label != null:
 		interact_label.visible = false
+
+
+## The tutorial cannot stop at the Hall door. Chemistry is the first room the
+## player solves alone, and without a running objective the guided run ends the
+## moment the door closes behind them.
+func _create_case_objective() -> void:
+	if ui_layer == null or case_objective_panel != null:
+		return
+	case_objective_panel = Panel.new()
+	case_objective_panel.name = "CaseObjective"
+	case_objective_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	case_objective_panel.offset_left = -334.0
+	case_objective_panel.offset_top = 22.0
+	case_objective_panel.offset_right = -26.0
+	case_objective_panel.offset_bottom = 96.0
+	case_objective_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	case_objective_panel.z_index = 45
+	var objective_style := StyleBoxFlat.new()
+	objective_style.bg_color = Color(0.028, 0.018, 0.040, 0.94)
+	objective_style.border_color = Color(0.77, 0.54, 0.20, 0.90)
+	objective_style.set_border_width_all(1)
+	objective_style.set_corner_radius_all(6)
+	objective_style.shadow_color = Color(0.005, 0.002, 0.010, 0.72)
+	objective_style.shadow_size = 8
+	objective_style.shadow_offset = Vector2(0.0, 3.0)
+	case_objective_panel.add_theme_stylebox_override("panel", objective_style)
+	ui_layer.add_child(case_objective_panel)
+
+	case_objective_title = Label.new()
+	case_objective_title.name = "ObjectiveKicker"
+	case_objective_title.position = Vector2(16.0, 10.0)
+	case_objective_title.size = Vector2(276.0, 18.0)
+	case_objective_title.add_theme_font_size_override("font_size", 11)
+	case_objective_title.add_theme_color_override(
+		"font_color",
+		Color(0.92, 0.70, 0.30, 1.0)
+	)
+	case_objective_panel.add_child(case_objective_title)
+
+	case_objective_body = Label.new()
+	case_objective_body.name = "ObjectiveBody"
+	case_objective_body.position = Vector2(16.0, 29.0)
+	case_objective_body.size = Vector2(276.0, 34.0)
+	case_objective_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	case_objective_body.add_theme_font_size_override("font_size", 14)
+	case_objective_body.add_theme_color_override(
+		"font_color",
+		Color(0.97, 0.90, 0.73, 1.0)
+	)
+	case_objective_panel.add_child(case_objective_body)
+	_refresh_case_objective(false)
+
+
+func _case_objective_copy() -> Dictionary:
+	if not GameState.has_evidence("fake_red_stain"):
+		return {
+			"title": CaseLocale.text("guide.chem_stain_title"),
+			"body": CaseLocale.text("guide.chem_stain_body"),
+		}
+	if not GameState.has_story_flag("chemistry_butler_interviewed"):
+		return {
+			"title": CaseLocale.text("guide.chem_butler_title"),
+			"body": CaseLocale.text("guide.chem_butler_body"),
+		}
+	return {
+		"title": CaseLocale.text("guide.chem_exit_title"),
+		"body": CaseLocale.text("guide.chem_exit_body"),
+	}
+
+
+func _refresh_case_objective(animate: bool) -> void:
+	if case_objective_panel == null:
+		return
+	# Guidance is a player preference everywhere else in the game; this panel
+	# must honour it rather than being the one card that cannot be turned off.
+	if not PlayerPreferences.field_prompts_enabled:
+		case_objective_panel.visible = false
+		return
+	var objective: Dictionary = _case_objective_copy()
+	case_objective_panel.visible = true
+	case_objective_title.text = str(objective["title"])
+	case_objective_body.text = str(objective["body"])
+	ObjectiveCard.fit(case_objective_panel, case_objective_title, case_objective_body)
+	if not animate:
+		case_objective_panel.modulate = Color.WHITE
+		case_objective_panel.scale = Vector2.ONE
+		return
+	if case_objective_tween != null and case_objective_tween.is_valid():
+		case_objective_tween.kill()
+	case_objective_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	case_objective_panel.scale = Vector2(0.97, 0.97)
+	case_objective_tween = create_tween()
+	case_objective_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	case_objective_tween.tween_property(case_objective_panel, "modulate:a", 1.0, 0.18)
+	case_objective_tween.parallel().tween_property(
+		case_objective_panel,
+		"scale",
+		Vector2.ONE,
+		0.24
+	)
 
 
 func create_room_ui() -> void:
@@ -1844,6 +2023,8 @@ func create_room_ui() -> void:
 	interact_label.add_theme_color_override("font_color", Color(0.93, 0.87, 0.70, 1.0))
 	interact_label.visible = false
 	interaction_hint_panel.add_child(interact_label)
+
+	_create_case_objective()
 
 	message_panel = Panel.new()
 	message_panel.z_index = 40
@@ -2241,25 +2422,24 @@ func return_to_castle_hall() -> void:
 
 	player.set_physics_process(false)
 
-	GameState.prepare_return_to_hub(
-		"chemistry_door"
-	)
-
-	var change_error: Error = (
-		get_tree().change_scene_to_file(
-			GameState.return_scene_path
+	var switch_to_hall := func() -> void:
+		GameState.prepare_return_to_hub(
+			"chemistry_door"
 		)
-	)
-
-	if change_error != OK:
-		scene_transitioning = false
-		room_input_enabled = true
-		player.set_physics_process(true)
-
-		push_error(
-			"Failed to return to Castle Hall. Error: "
-			+ str(change_error)
+		var change_error: Error = (
+			get_tree().change_scene_to_file(
+				GameState.return_scene_path
+			)
 		)
+		if change_error != OK:
+			scene_transitioning = false
+			room_input_enabled = true
+			player.set_physics_process(true)
+			push_error(
+				"Failed to return to Castle Hall. Error: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_hall_transition(switch_to_hall)
 
 
 # ============================================================

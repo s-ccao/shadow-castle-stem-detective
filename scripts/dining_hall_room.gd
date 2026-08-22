@@ -217,6 +217,11 @@ func _show_dining_note(note_id: String, title: String, content: String) -> void:
 
 
 func try_interact() -> void:
+	# Choosing to inspect something is a decision to stand still. A click-move
+	# still running underneath the dialogue walks the detective off on its own
+	# once the panel closes, which reads as the character moving by itself.
+	if player != null and player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
 	if current_interaction == "exit":
 		return_to_castle_hall()
 		return
@@ -303,24 +308,26 @@ func return_to_castle_hall() -> void:
 		player.call("cancel_click_movement")
 	player.set_physics_process(false)
 
-	# 调查完成后离开：敌人察觉玩家接近真相，进入追逐模式。
-	if GameState.has_key("service_corridor_key"):
-		GameState.set_story_flag("castle_guardian_activated")
-		GameState.start_chase_mode()
-
-	GameState.prepare_return_to_hub(RETURN_SPAWN_ID)
-
-	var change_error: Error = get_tree().change_scene_to_file(
-		GameState.return_scene_path
-	)
-	if change_error != OK:
-		scene_transitioning = false
-		room_input_enabled = true
-		player.set_physics_process(true)
-		push_error(
-			"Failed to return to Castle Hall. Error: "
-			+ str(change_error)
+	var guardian_alerted := GameState.has_key("service_corridor_key")
+	var switch_to_hall := func() -> void:
+		# The warning is already visible under the transition before the chase begins.
+		if guardian_alerted:
+			GameState.set_story_flag("castle_guardian_activated")
+			GameState.start_chase_mode()
+			GameState.set_story_flag("dining_guardian_warning_seen")
+		GameState.prepare_return_to_hub(RETURN_SPAWN_ID)
+		var change_error: Error = get_tree().change_scene_to_file(
+			GameState.return_scene_path
 		)
+		if change_error != OK:
+			scene_transitioning = false
+			room_input_enabled = true
+			player.set_physics_process(true)
+			push_error(
+				"Failed to return to Castle Hall. Error: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_hall_transition(switch_to_hall, guardian_alerted)
 
 
 ## 落地钟前的时间推演。餐厅知识展品讲的是"用变化稳定的量推算时间，而且

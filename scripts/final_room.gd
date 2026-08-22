@@ -703,7 +703,15 @@ func _close_final_archive_document_ui() -> void:
 func _archive_reader_to_main_menu() -> void:
 	archive_reader_root.visible = false
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	var open_main_menu := func() -> void:
+		var change_error := get_tree().change_scene_to_file(
+			"res://scenes/main_menu.tscn"
+		)
+		if change_error != OK:
+			archive_reader_root.visible = true
+			get_tree().paused = true
+			push_error("Failed to return to main menu. Error: " + str(change_error))
+	ArchiveUi.play_main_menu_transition(open_main_menu)
 
 
 func _show_ending_overlay() -> void:
@@ -749,7 +757,15 @@ func _view_ending_conclusion() -> void:
 func _return_to_main_menu_from_ending() -> void:
 	ending_screen_root.visible = false
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	var open_main_menu := func() -> void:
+		var change_error := get_tree().change_scene_to_file(
+			"res://scenes/main_menu.tscn"
+		)
+		if change_error != OK:
+			ending_screen_root.visible = true
+			get_tree().paused = true
+			push_error("Failed to return to main menu. Error: " + str(change_error))
+	ArchiveUi.play_main_menu_transition(open_main_menu)
 
 
 func _make_deduction_token_texture(token_index: int) -> AtlasTexture:
@@ -1066,6 +1082,11 @@ func update_interaction_prompt() -> void:
 
 
 func try_interact() -> void:
+	# Choosing to inspect something is a decision to stand still. A click-move
+	# still running underneath the dialogue walks the detective off on its own
+	# once the panel closes, which reads as the character moving by itself.
+	if player != null and player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
 	if current_interaction == "exit":
 		return_to_castle_hall()
 		return
@@ -1343,19 +1364,20 @@ func return_to_castle_hall() -> void:
 		player.call("cancel_click_movement")
 	player.set_physics_process(false)
 
-	GameState.prepare_return_to_hub(RETURN_SPAWN_ID)
-
-	var change_error: Error = get_tree().change_scene_to_file(
-		GameState.return_scene_path
-	)
-	if change_error != OK:
-		scene_transitioning = false
-		room_input_enabled = true
-		player.set_physics_process(true)
-		push_error(
-			"Failed to return to Castle Hall. Error: "
-			+ str(change_error)
+	var switch_to_hall := func() -> void:
+		GameState.prepare_return_to_hub(RETURN_SPAWN_ID)
+		var change_error: Error = get_tree().change_scene_to_file(
+			GameState.return_scene_path
 		)
+		if change_error != OK:
+			scene_transitioning = false
+			room_input_enabled = true
+			player.set_physics_process(true)
+			push_error(
+				"Failed to return to Castle Hall. Error: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_hall_transition(switch_to_hall)
 
 
 ## 知识引擎的黄铜星象仪。剧情里写着金库门要等符号确认路线才会开，这里把

@@ -168,12 +168,17 @@ const TEXT: Dictionary = {
 		"en": "Open the brass-marked door to the castle hall.",
 		"zh": "打开带黄铜标记的门，前往城堡大厅。",
 	},
-	"guide.wake_desk_title": {"en": "WAKE ROOM  ·  START HERE", "zh": "苏醒室  ·  从这里开始"},
-	"guide.wake_desk_body": {
-		"en": "Inspect the study desk for Dr. Lin's note on castle locks.",
-		"zh": "调查书桌，阅读林博士留下的城堡门锁说明。",
+	"guide.wake_first_door_title": {"en": "WAKE ROOM  ·  1 / 6", "zh": "苏醒室  ·  1 / 6"},
+	"guide.wake_first_door_body": {
+		"en": "Walk to the large door with WASD, the stick, or a click. Press E or tap it to inspect the lock.",
+		"zh": "用 WASD、摇杆或点击移动到大门前，再按 E 或点击大门检查门锁。",
 	},
-	"guide.wake_key_title": {"en": "WAKE ROOM  ·  FIND THE KEY", "zh": "苏醒室  ·  寻找钥匙"},
+	"guide.wake_desk_title": {"en": "WAKE ROOM  ·  2 / 6", "zh": "苏醒室  ·  2 / 6"},
+	"guide.wake_desk_body": {
+		"en": "Inspect the study desk and complete its flame lesson to recover Dr. Lin's field notes.",
+		"zh": "调查书桌，完成火焰教学，取回林博士留下的现场笔记。",
+	},
+	"guide.wake_key_title": {"en": "WAKE ROOM  ·  3 / 6", "zh": "苏醒室  ·  3 / 6"},
 	"note.knowledge.chemistry.title": {"en": "Chemistry Room Knowledge", "zh": "化学室知识"},
 	"note.knowledge.chemistry.body": {
 		"en": "A chemical change creates new substances: burning paper is chemical, while melting ice, breaking glass and dissolving sugar are physical changes.",
@@ -212,18 +217,51 @@ const TEXT: Dictionary = {
 	"wake.unclaimed.desk_note": {"en": "Mrs. Lin's note on the study desk", "zh": "书桌上林夫人的字条"},
 	"wake.unclaimed.candle_note": {"en": "the candle note beside the bed", "zh": "床边的蜡烛笔记"},
 	"guide.wake_key_body": {
-		"en": "The Wake Room key is hidden beneath the bed pillow.",
-		"zh": "苏醒室的钥匙藏在床枕下。",
+		"en": "Inspect the bed and take the Wake Room key from beneath the pillow.",
+		"zh": "调查床铺，从枕头下拿走苏醒室钥匙。",
 	},
-	"guide.wake_answer_title": {"en": "WAKE ROOM  ·  FIND THE ANSWER", "zh": "苏醒室  ·  寻找答案"},
+	"guide.wake_answer_title": {"en": "WAKE ROOM  ·  4 / 6", "zh": "苏醒室  ·  4 / 6"},
 	"guide.wake_answer_body": {
 		"en": "Read the bookshelf's science volume before answering the door.",
 		"zh": "在回答门锁前，阅读书架上的科学书籍。",
 	},
-	"guide.wake_door_title": {"en": "WAKE ROOM  ·  TEST THE LOCK", "zh": "苏醒室  ·  测试门锁"},
+	"guide.wake_door_title": {"en": "WAKE ROOM  ·  5 / 6", "zh": "苏醒室  ·  5 / 6"},
 	"guide.wake_door_body": {
 		"en": "Return to the door. Use the key, then answer its question.",
 		"zh": "回到大门前：使用钥匙，然后回答门上的问题。",
+	},
+	"guide.wake_exit_title": {"en": "WAKE ROOM  ·  6 / 6", "zh": "苏醒室  ·  6 / 6"},
+	"guide.wake_exit_body": {
+		"en": "The lock is open. Interact with the door once more to enter Castle Hall.",
+		"zh": "门锁已经打开。再次与大门互动，进入城堡大厅。",
+	},
+	"guide.chem_stain_title": {"en": "CHEMISTRY ROOM  ·  1 / 3", "zh": "化学室  ·  1 / 3"},
+	"guide.chem_stain_body": {
+		"en": "Investigate the red stain on the floor, then record what the powder and indicator reveal.",
+		"zh": "调查地面上的红色污渍，并记录白色粉末与指示剂说明的真相。",
+	},
+	"guide.chem_butler_title": {"en": "CHEMISTRY ROOM  ·  2 / 3", "zh": "化学室  ·  2 / 3"},
+	"guide.chem_butler_body": {
+		"en": "Tell the Butler the stain was staged, then answer his question to clear him.",
+		"zh": "把污渍是伪造的结论告诉管家，并回答他的问题来洗清他的嫌疑。",
+	},
+	"guide.chem_exit_title": {"en": "CHEMISTRY ROOM  ·  3 / 3", "zh": "化学室  ·  3 / 3"},
+	"guide.chem_exit_body": {
+		"en": "The room is solved. Return to Castle Hall — the Guardian is still hunting out there.",
+		"zh": "本房间已经查清。返回城堡大厅 —— 守卫仍在外面搜捕。",
+	},
+	"hall.guided_shove": {
+		"en": "The Guardian's shoulder throws you aside — it stumbles, and you keep moving.",
+		"zh": "守卫的肩膀把你撞开 —— 它踉跄了一下，你趁机继续跑。",
+	},
+	"hall.near_miss_title": {"en": "IT HAS YOU", "zh": "它抓住你了"},
+	"hall.near_miss_body": {
+		"en": "Its hand closes on the air behind your collar.",
+		"zh": "它的手在你的衣领后合拢，抓了个空。",
+	},
+	"hall.near_miss_escape": {
+		"en": "The Chemistry door swings shut between you. For now.",
+		"zh": "化学室的门在你们之间合上了。暂时。",
 	},
 	"hall.arrival_body": {
 		"en": "The brass lock shuts behind you. Castle Hall lies silent beneath violet glass.\n\nA blue signal pulses in the north wing. Follow it.",
@@ -266,6 +304,70 @@ const TEXT: Dictionary = {
 	"hall.chemistry_enter": {"en": "ENTER THE CHEMISTRY ROOM", "zh": "进入化学室"},
 	"transition.hall_title": {"en": "CASTLE HALL", "zh": "城堡大厅"},
 	"transition.hall_detail": {"en": "NORTH WING SIGNAL DETECTED", "zh": "已侦测到北翼讯号"},
+	"transition.hall_alert_detail": {
+		"en": "GUARDIAN ALERT · MOVE BEFORE IT CLOSES THE DISTANCE",
+		"zh": "守卫已经警觉 · 趁它逼近前立刻行动",
+	},
+	"transition.wake_room_detail": {
+		"en": "SOUTH CHAMBER · RETURN ROUTE",
+		"zh": "南侧房间 · 返回苏醒现场",
+	},
+	"transition.chemistry_room_detail": {
+		"en": "WEST LABORATORY · MATERIAL ANALYSIS",
+		"zh": "西侧实验室 · 物质分析",
+	},
+	"transition.greenhouse_room_detail": {
+		"en": "EAST WING · LIVING EVIDENCE",
+		"zh": "东侧区域 · 活体证据",
+	},
+	"transition.circuit_room_detail": {
+		"en": "NORTH-WEST WING · POWER SYSTEMS",
+		"zh": "西北区域 · 电力系统",
+	},
+	"transition.library_detail": {
+		"en": "NORTH-EAST WING · RESTRICTED RECORDS",
+		"zh": "东北区域 · 限制档案",
+	},
+	"transition.dining_hall_detail": {
+		"en": "WEST WING · SERVICE TRAIL",
+		"zh": "西侧区域 · 仆役通道线索",
+	},
+	"transition.final_deduction_room_detail": {
+		"en": "NORTH VAULT · DEDUCTION PROTOCOL",
+		"zh": "北侧密库 · 启动推理程序",
+	},
+	"transition.retry_title": {"en": "REOPENING THE TRAIL", "zh": "重新追踪线索"},
+	"transition.retry_detail": {
+		"en": "EVIDENCE SECURED · RESTORING THIS ROOM",
+		"zh": "证物已保留 · 正在恢复当前房间",
+	},
+	"transition.checkpoint_title": {"en": "RETURNING TO CHECKPOINT", "zh": "返回检查点"},
+	"transition.checkpoint_detail": {
+		"en": "CASE NOTES INTACT · RESTORING LAST ENTRY",
+		"zh": "案件笔记完好 · 正在恢复上次入口",
+	},
+	"transition.menu_title": {"en": "CASE ARCHIVE", "zh": "案件档案库"},
+	"transition.menu_detail": {
+		"en": "SECURING FIELD NOTES · RETURNING TO INTAKE",
+		"zh": "正在保存现场笔记 · 返回案件接收处",
+	},
+	"update.kicker": {"en": "CASE ARCHIVE  /  SYSTEM NOTICE", "zh": "案件档案库  /  系统通告"},
+	"update.title": {"en": "A NEW GAME UPDATE IS READY", "zh": "游戏更新已经准备完成"},
+	"update.body": {
+		"en": "The latest fixes and improvements have finished downloading.\n\nRestart now to use the new build, or continue this session and restart later. Your current checkpoint will be saved before restarting.",
+		"zh": "最新修复与改进已经下载完成。\n\n你可以立即重启以使用新版本，也可以继续本次游戏、稍后再重启。立即重启前会先保存当前检查点。",
+	},
+	"update.restart": {"en": "RESTART NOW", "zh": "立即重启"},
+	"update.later": {"en": "REMIND ME LATER", "zh": "稍后再说"},
+	"update.restarting": {"en": "SAVING CASE · APPLYING UPDATE…", "zh": "正在保存案件 · 应用更新…"},
+	"update.save_failed": {
+		"en": "The current checkpoint could not be saved. The update was not applied.",
+		"zh": "当前检查点无法保存，因此尚未应用更新。",
+	},
+	"update.activate_failed": {
+		"en": "The update could not restart yet. Continue playing and try again later.",
+		"zh": "暂时无法重启更新。请继续游戏，稍后再试。",
+	},
 	"menu.intake_kicker": {"en": "CASE INTAKE  /  ASHFORD ESTATE", "zh": "案件接收  /  阿什福德庄园"},
 	"menu.intake_title": {"en": "OPEN A CASE FILE", "zh": "开启案件档案"},
 	"menu.intake_detail": {

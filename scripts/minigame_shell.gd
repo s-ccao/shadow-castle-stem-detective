@@ -24,7 +24,11 @@ const SUCCESS := Color(0.55, 0.92, 0.52, 1.0)
 const FAILURE := Color(1.0, 0.48, 0.38, 1.0)
 const INK_OUTLINE := Color(0.09, 0.05, 0.02, 1.0)
 
-const PANEL_SIZE := Vector2(820.0, 560.0)
+## Raised from 560. The column has to seat a two-line failure banner *and* the
+## tallest level (five jars over a details block and a pick button); at 560 the
+## content area came up 14px short, so the pick row printed on top of the banner.
+## The extra margin above that minimum is headroom for longer translations.
+const PANEL_SIZE := Vector2(820.0, 648.0)
 
 ## 过关后停留多久再切下一关，让特效播完。
 const LEVEL_CLEAR_DELAY: float = 0.9
@@ -102,6 +106,9 @@ func _build_chrome() -> void:
 
 	_title_label = _make_label("", 22, GOLD)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The title shares its row with the stage counter. A long localized title
+	# must not push that counter off the panel, so it gives way instead.
+	_title_label.clip_text = true
 	header.add_child(_title_label)
 
 	_progress_label = _make_label("", 15, PARCHMENT)
@@ -127,7 +134,12 @@ func _build_chrome() -> void:
 
 	_banner = _make_label("", 17, SUCCESS)
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_banner.custom_minimum_size = Vector2(0.0, 26.0)
+	# A wrong answer prints a full explanation. Without wrapping, the Label
+	# reports that whole sentence as its minimum width, which drags this shared
+	# column — every jar, the title and the footer with it — far outside the
+	# fixed-width panel. Wrapping keeps the demand at zero and grows downward.
+	_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_banner.custom_minimum_size = Vector2(0.0, 44.0)
 	_banner.modulate.a = 0.0
 	column.add_child(_banner)
 

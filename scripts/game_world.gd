@@ -602,6 +602,26 @@ const GUARDIAN_REVEAL_HOLD_DURATION: float = 0.70
 const GUARDIAN_REVEAL_MARCH_DURATION: float = 0.55
 const GUARDIAN_REVEAL_RETURN_DURATION: float = 0.50
 const GUARDIAN_REVEAL_ZOOM: Vector2 = Vector2(3.05, 3.05)
+## Guided-crossing tether. Beyond FAR the Guardian is losing the chase and
+## closes; inside NEAR it is close enough to be frightening and eases off. These
+## are path distances through the maze, not straight lines.
+const GUIDED_CROSSING_TETHER_NEAR: float = 190.0
+const GUIDED_CROSSING_TETHER_FAR: float = 620.0
+## Multipliers on the tutorial chase speed. The ceiling is above the player's
+## own speed so a sprinter can still be run down to arm's length; the floor is
+## well under it so a lost newcomer always keeps a lead.
+const GUIDED_CROSSING_PACE_MIN: float = 0.42
+const GUIDED_CROSSING_PACE_MAX: float = 1.24
+const GUIDED_CROSSING_PACE_RESPONSE: float = 1.6
+## Contact during the guided crossing costs ground, not the run.
+const GUIDED_CROSSING_SHOVE_PUSHBACK: float = 210.0
+const GUIDED_CROSSING_SHOVE_STAGGER: float = 1.15
+const GUIDED_CROSSING_SHOVE_INVINCIBILITY: float = 1.6
+## The near-miss at the Chemistry door.
+const GUARDIAN_NEAR_MISS_STANDOFF: float = 150.0
+const GUARDIAN_NEAR_MISS_CLOSEST: float = 46.0
+const GUARDIAN_NEAR_MISS_ZOOM: Vector2 = Vector2(2.45, 2.45)
+const GUARDIAN_NEAR_MISS_HOLD: float = 0.85
 ## The capture beat. Short enough not to punish a retry, long enough that the
 ## player sees the Guardian standing over them before the report opens.
 const CAPTURE_PUSH_DURATION: float = 0.42
@@ -617,12 +637,12 @@ const GUARDIAN_ETA_REFRESH_INTERVAL: float = 0.12
 # on the far side of the hall. Recovery is still rate-limited, so gaining ground
 # reads as the clock easing back rather than snapping.
 const GUARDIAN_ETA_RELIEF_RATE: float = 3.0
-const GUARDIAN_ETA_DISPLAY_HORIZON: float = 18.0
+const GUARDIAN_ETA_DISPLAY_HORIZON: float = 10.0
 # A Guardian further away than the horizon fills none of the bar, so the panel
 # was showing a large number above an empty gauge for most of the game and read
 # as permanent pursuit. It now withdraws entirely at that range and comes back
 # with a little hysteresis so a Guardian pacing the boundary cannot strobe it.
-const GUARDIAN_ETA_WITHDRAW_HORIZON: float = 21.0
+const GUARDIAN_ETA_WITHDRAW_HORIZON: float = 12.0
 const GUARDIAN_CATCH_DISTANCE: float = 24.0
 ## Sight is sampled every third of a Hall tile so no wall is stepped over.
 const GUARDIAN_SIGHT_SAMPLE_STEP: float = 24.0
@@ -642,6 +662,9 @@ var enemy_chase_started := false
 var _damage_invincible_timer: float = 0.0
 var guardian_entry_sequence_active: bool = false
 var guardian_entry_sequence_played: bool = false
+var guardian_near_miss_active: bool = false
+var guardian_near_miss_played: bool = false
+var guardian_tutorial_pace: float = 1.0
 var guardian_hold_watchdog: float = 0.0
 ## Cell -> the point inside it a mover must steer to, for the cells whose
 ## geometric centre is buried in a wall. See cell_nav_point().
@@ -908,6 +931,7 @@ func _process(delta: float) -> void:
 	if _damage_invincible_timer > 0.0:
 		_damage_invincible_timer -= delta
 	update_enemy_chase_state(delta)
+	_update_guardian_tutorial_pace(delta)
 	_update_guardian_countdown(delta)
 	_update_guardian_pressure(delta)
 	_update_music_intensity()
@@ -1031,6 +1055,13 @@ func create_modular_visuals() -> void:
 func on_player_ground_move_started(
 	target_position: Vector2
 ) -> void:
+	if (
+		not current_interaction.is_empty()
+		and get_interaction_rect(current_interaction).has_point(target_position)
+	):
+		try_investigate_clue()
+		return
+
 	var target_cell: Vector2i = world_to_cell(
 		target_position
 	)
@@ -2205,6 +2236,8 @@ func _guardian_tutorial_spawn(patrol_route: Array[Vector2]) -> Vector2:
 	# this one-time search cheap while still locating the target within ~108px.
 	for route_index: int in range(0, patrol_route.size(), 12):
 		var candidate := patrol_route[route_index]
+		if candidate.distance_to(player.global_position) < GUARDIAN_ENTRY_MIN_DISTANCE:
+			continue
 		var route := find_route(candidate, player.global_position)
 		if route.size() < 2:
 			continue
@@ -2333,8 +2366,215 @@ func create_game_over_ui() -> void:
 	game_over_screen_root.connect("main_menu_requested", Callable(self, "return_to_main_menu"))
 
 
+## Contact during the guided crossing. The Guardian shoulders the detective
+## aside and loses a step recovering, which keeps the threat physical without
+## ending a run the player has barely started.
+func _play_guided_crossing_shove() -> void:
+	if _damage_invincible_timer > 0.0:
+		return
+	_damage_invincible_timer = GUIDED_CROSSING_SHOVE_INVINCIBILITY
+	GameAudio.play(&"guardian_alert")
+	if enemy != null and player != null:
+		var away: Vector2 = (
+			enemy.global_position - player.global_position
+		).normalized()
+		if away.is_equal_approx(Vector2.ZERO):
+			away = Vector2.RIGHT
+		# Push the Guardian back rather than teleporting the player: the player
+		# keeps their bearings, and the route they were following stays valid.
+		var recover := _nearest_guardian_walkable_position(
+			enemy.global_position + away * GUIDED_CROSSING_SHOVE_PUSHBACK
+		)
+		enemy.global_position = recover
+		GameState.update_guardian_hall_position(recover)
+		if enemy.has_method("set_cinematic_hold"):
+			enemy.call("set_cinematic_hold", true)
+			get_tree().create_timer(GUIDED_CROSSING_SHOVE_STAGGER).timeout.connect(
+				func() -> void:
+					if enemy != null and is_instance_valid(enemy):
+						if enemy.has_method("set_cinematic_hold"):
+							enemy.call("set_cinematic_hold", false)
+			)
+	show_hall_notice(CaseLocale.text("hall.guided_shove"))
+
+
+## Brief, self-clearing line in the interaction hint strip. Used for beats that
+## are worth naming but must not take control away from the player.
+func show_hall_notice(message: String) -> void:
+	if interact_label == null or interaction_hint_panel == null:
+		return
+	interact_label.text = message
+	interact_label.visible = true
+	interaction_hint_panel.visible = true
+
+
+## Adaptive pacing for the guided crossing.
+##
+## A fixed speed cannot serve both players: it either runs down a newcomer
+## reading every label, or it trails uselessly behind someone who knows the
+## route. The Guardian instead holds a tether — it closes hard when it falls
+## behind and eases off when it crowds — so the crossing feels like the same
+## near-thing at any pace.
+func _update_guardian_tutorial_pace(delta: float) -> void:
+	if enemy == null or player == null:
+		return
+	# The near-miss owns the Guardian outright while it plays; the route is
+	# already marked complete by then, so this check has to come first.
+	if guardian_entry_sequence_active or guardian_near_miss_active:
+		return
+	if not _is_hall_arrival_active():
+		guardian_tutorial_pace = 1.0
+		GameState.set_guardian_tutorial_pace(1.0)
+		return
+	var separation := _guardian_path_distance()
+	var target_pace := 1.0
+	if separation >= GUIDED_CROSSING_TETHER_FAR:
+		target_pace = GUIDED_CROSSING_PACE_MAX
+	elif separation <= GUIDED_CROSSING_TETHER_NEAR:
+		target_pace = GUIDED_CROSSING_PACE_MIN
+	else:
+		var span := GUIDED_CROSSING_TETHER_FAR - GUIDED_CROSSING_TETHER_NEAR
+		var travelled := (separation - GUIDED_CROSSING_TETHER_NEAR) / maxf(span, 1.0)
+		target_pace = lerpf(
+			GUIDED_CROSSING_PACE_MIN,
+			GUIDED_CROSSING_PACE_MAX,
+			smoothstep(0.0, 1.0, travelled)
+		)
+	# Ease toward the target so the walk cycle never snaps between speeds.
+	guardian_tutorial_pace = move_toward(
+		guardian_tutorial_pace,
+		target_pace,
+		delta * GUIDED_CROSSING_PACE_RESPONSE
+	)
+	GameState.set_guardian_tutorial_pace(guardian_tutorial_pace)
+
+
+## The payoff: the Guardian's hand closes on empty air as the door shuts.
+## Returns true when it staged the beat, false when it has already played.
+func _try_guardian_near_miss() -> bool:
+	if guardian_near_miss_played or enemy == null or player == null:
+		return false
+	if follow_camera == null or game_over:
+		return false
+	guardian_near_miss_played = true
+	guardian_near_miss_active = true
+	_run_guardian_near_miss()
+	return true
+
+
+func _run_guardian_near_miss() -> void:
+	GameAudio.play(&"guardian_alert")
+	GameAudio.duck_music(1.2)
+	hide_interaction_feedback()
+	ArchiveUi.set_hub_entries_suppressed(true)
+	if player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
+	player.set_physics_process(false)
+	if enemy.has_method("set_catch_enabled"):
+		enemy.call("set_catch_enabled", false)
+	if enemy.has_method("set_cinematic_hold"):
+		enemy.call("set_cinematic_hold", true)
+	var near_miss_map_hud := get_node_or_null("/root/MapHud")
+	if (
+		near_miss_map_hud != null
+		and near_miss_map_hud.has_method("set_guardian_tracking_suppressed")
+	):
+		near_miss_map_hud.call("set_guardian_tracking_suppressed", true)
+
+	# Bring the Guardian to arm's length, on the side it was actually coming
+	# from, so the lunge reads as the end of the chase the player just ran.
+	var approach: Vector2 = (
+		enemy.global_position - player.global_position
+	).normalized()
+	if approach.is_equal_approx(Vector2.ZERO):
+		approach = Vector2.RIGHT
+	var lunge_from := _nearest_guardian_walkable_position(
+		player.global_position + approach * GUARDIAN_NEAR_MISS_STANDOFF
+	)
+	enemy.global_position = lunge_from
+	if enemy.has_method("face_toward"):
+		enemy.call("face_toward", player.global_position)
+
+	var near_miss_camera := Camera2D.new()
+	near_miss_camera.name = "GuardianNearMissCamera"
+	near_miss_camera.global_position = follow_camera.get_screen_center_position()
+	near_miss_camera.zoom = follow_camera.zoom
+	near_miss_camera.position_smoothing_enabled = false
+	near_miss_camera.limit_left = 0
+	near_miss_camera.limit_top = 0
+	near_miss_camera.limit_right = MAP_PIXEL_WIDTH
+	near_miss_camera.limit_bottom = MAP_PIXEL_HEIGHT
+	add_child(near_miss_camera)
+	near_miss_camera.make_current()
+
+	if guardian_reveal_overlay != null:
+		guardian_reveal_overlay.visible = true
+		guardian_reveal_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		guardian_reveal_title.text = CaseLocale.text("hall.near_miss_title")
+		guardian_reveal_body.text = CaseLocale.text("hall.near_miss_body")
+		var overlay_in := create_tween()
+		overlay_in.tween_property(guardian_reveal_overlay, "modulate:a", 1.0, 0.16)
+
+	var framing: Vector2 = (enemy.global_position + player.global_position) * 0.5
+	var push := create_tween()
+	push.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	push.tween_property(near_miss_camera, "global_position", framing, 0.34)
+	push.parallel().tween_property(
+		near_miss_camera, "zoom", GUARDIAN_NEAR_MISS_ZOOM, 0.34
+	)
+	# The lunge itself: it reaches, and comes up just short.
+	push.parallel().tween_property(
+		enemy,
+		"global_position",
+		_nearest_guardian_walkable_position(
+			player.global_position + approach * GUARDIAN_NEAR_MISS_CLOSEST
+		),
+		0.30
+	)
+	await push.finished
+	if not is_inside_tree():
+		return
+
+	await get_tree().create_timer(GUARDIAN_NEAR_MISS_HOLD).timeout
+	if not is_inside_tree():
+		return
+	if guardian_reveal_body != null:
+		guardian_reveal_body.text = CaseLocale.text("hall.near_miss_escape")
+	await get_tree().create_timer(GUARDIAN_NEAR_MISS_HOLD).timeout
+	if not is_inside_tree():
+		return
+
+	if guardian_reveal_overlay != null:
+		var overlay_out := create_tween()
+		overlay_out.tween_property(guardian_reveal_overlay, "modulate:a", 0.0, 0.18)
+		await overlay_out.finished
+		if not is_inside_tree():
+			return
+		guardian_reveal_overlay.visible = false
+
+	if is_instance_valid(near_miss_camera):
+		near_miss_camera.queue_free()
+	if follow_camera != null:
+		follow_camera.make_current()
+	ArchiveUi.set_hub_entries_suppressed(false)
+	if (
+		near_miss_map_hud != null
+		and near_miss_map_hud.has_method("set_guardian_tracking_suppressed")
+	):
+		near_miss_map_hud.call("set_guardian_tracking_suppressed", false)
+	guardian_near_miss_active = false
+	# The door is the escape. Control returns inside Chemistry, not out here.
+	enter_chemistry_room()
+
+
 func on_player_caught():
 	if game_over:
+		return
+	# The first crossing is a set piece, not a skill check. A newcomer who does
+	# not know the maze must not lose the run to it, so contact here becomes a
+	# shove that costs ground and dignity instead of the game.
+	if _is_hall_arrival_active():
+		_play_guided_crossing_shove()
 		return
 	# Hall pursuit is intentionally a one-hit failure state. `take_damage()`
 	# preserves the older multi-hit behavior for non-pursuit hazards only.
@@ -2645,11 +2885,15 @@ func update_interaction_focus() -> void:
 
 	match current_interaction:
 		"arrival_chemistry_door":
-			target_position = CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
+			target_position = _hall_arrival_target_position(
+				HallArrivalStep.REACH_CHEMISTRY_DOOR
+			)
 			focus_title = "Chemistry Room"
 			is_primary = true
 		"arrival_chemistry_core":
-			target_position = _get_hall_knowledge_position("ChemistryRoomKnowledge")
+			target_position = _hall_arrival_target_position(
+				HallArrivalStep.STUDY_CHEMISTRY_CORE
+			)
 			focus_title = "Brass core"
 			is_primary = true
 		"chemistry_room_door":
@@ -3224,7 +3468,16 @@ func _is_final_key_station_active(station_index: int) -> bool:
 			return false
 
 
+## Choosing to inspect something is a decision to stand still. A click-move that
+## is still running underneath the dialogue walks the detective off on its own
+## once the panel closes, which reads as the character moving by itself.
+func _stop_walking_to_interact() -> void:
+	if player != null and player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
+
+
 func try_investigate_clue() -> void:
+	_stop_walking_to_interact()
 	if _is_hall_arrival_active():
 		_try_hall_arrival_interaction()
 		return
@@ -4231,11 +4484,15 @@ func show_wrong_accusation_ending(suspect_id: String):
 	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nMrs. Lin:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
 func restart_current_game():
 	# Retry 只重载当前场景；玩家保留实时调查进度。
-	GameState.recover_from_interruption()
 	var current_path: String = "res://scenes/game_world.tscn"
 	if get_tree().current_scene != null and not get_tree().current_scene.scene_file_path.is_empty():
 		current_path = get_tree().current_scene.scene_file_path
-	get_tree().change_scene_to_file(current_path)
+	var reopen_room := func() -> void:
+		GameState.recover_from_interruption()
+		var change_error := get_tree().change_scene_to_file(current_path)
+		if change_error != OK:
+			push_error("Failed to retry current room. Error: " + str(change_error))
+	ArchiveUi.play_recovery_transition(reopen_room, false)
 
 
 func restart_from_checkpoint() -> void:
@@ -4244,14 +4501,24 @@ func restart_from_checkpoint() -> void:
 		restart_current_game()
 		return
 	var checkpoint_path: String = GameState.checkpoint_scene_path
-	get_tree().change_scene_to_file(checkpoint_path)
+	var restore_checkpoint := func() -> void:
+		var change_error := get_tree().change_scene_to_file(checkpoint_path)
+		if change_error != OK:
+			push_error("Failed to restore checkpoint. Error: " + str(change_error))
+	ArchiveUi.play_recovery_transition(restore_checkpoint, true)
 
 
 func return_to_main_menu():
 	# Main-menu return is also a recovery path: never serialize a dead player
 	# or an active chase for the next Continue action.
-	GameState.recover_from_interruption()
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	var open_main_menu := func() -> void:
+		GameState.recover_from_interruption()
+		var change_error := get_tree().change_scene_to_file(
+			"res://scenes/main_menu.tscn"
+		)
+		if change_error != OK:
+			push_error("Failed to return to main menu. Error: " + str(change_error))
+	ArchiveUi.play_main_menu_transition(open_main_menu)
 func update_objective_text():
 	if objective_summary_label == null:
 		# The compact summary is intentionally absent, but the detailed objective
@@ -4470,7 +4737,7 @@ func _begin_guardian_entry_sequence(start_route_after: bool = false) -> void:
 			if enemy.has_method("set_catch_enabled"):
 				enemy.call("set_catch_enabled", true)
 		if start_route_after:
-			_begin_hall_arrival_route()
+			_begin_first_hall_route_after_reveal()
 		return
 
 	guardian_entry_sequence_played = true
@@ -4605,7 +4872,7 @@ func _begin_guardian_entry_sequence(start_route_after: bool = false) -> void:
 			guardian_reveal_overlay.visible = false
 	)
 	if start_route_after:
-		_begin_hall_arrival_route()
+		_begin_first_hall_route_after_reveal()
 	else:
 		_refresh_hall_route_ui(false)
 
@@ -5638,17 +5905,21 @@ func start_investigation_from_intro():
 	clear_buttons()
 	end_dialogue_pause()
 	if not GameState.hall_arrival_seen:
-		var onboarding_started := OnboardingHud.show_hall_orientation(
-			Callable(self, "_start_first_hall_pursuit")
-		)
-		if not onboarding_started:
-			_start_first_hall_pursuit()
+		_start_first_hall_pursuit()
 
 
 func _start_first_hall_pursuit() -> void:
 	if not is_inside_tree() or GameState.hall_arrival_seen:
 		return
 	_begin_guardian_entry_sequence(true)
+
+
+func _begin_first_hall_route_after_reveal() -> void:
+	var onboarding_started := OnboardingHud.show_hall_orientation(
+		Callable(self, "_begin_hall_arrival_route")
+	)
+	if not onboarding_started:
+		_begin_hall_arrival_route()
 
 
 func _restore_hall_arrival_route() -> void:
@@ -5725,6 +5996,15 @@ func _get_hall_knowledge_position(exhibit_id: String) -> Vector2:
 	for item: Dictionary in hall_knowledge_items:
 		if str(item.get("id", "")) == exhibit_id:
 			return item.get("position", Vector2.ZERO) as Vector2
+	return Vector2.ZERO
+
+
+func _hall_arrival_target_position(step: HallArrivalStep) -> Vector2:
+	match step:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR, HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+			return CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
+		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+			return _get_hall_knowledge_position("ChemistryRoomKnowledge")
 	return Vector2.ZERO
 
 
@@ -5820,6 +6100,10 @@ func _open_first_chemistry_room() -> void:
 	_set_hall_arrival_step(HallArrivalStep.COMPLETE)
 	GameState.hall_arrival_seen = true
 	GameState.set_room_completed("wake_room")
+	# The chase does not simply stop at the door. The Guardian gets one last
+	# lunge that lands on the closing door; that beat enters the room itself.
+	if _try_guardian_near_miss():
+		return
 	enter_chemistry_room()
 
 
@@ -6132,6 +6416,19 @@ func _refresh_hall_route_ui(animate: bool) -> void:
 		return
 	hall_route_title.text = str(copy["title"])
 	hall_route_body.text = str(copy["body"])
+	# The compass sits below the body, so the body has to be measured before the
+	# compass can be placed and the card sized around both.
+	var body_height := ObjectiveCard.text_height(hall_route_body)
+	if body_height > 0.0:
+		hall_route_body.size.y = body_height
+		hall_route_compass.position.y = hall_route_body.position.y + body_height + 6.0
+		var card_height := (
+			hall_route_compass.position.y
+			+ hall_route_compass.size.y
+			+ ObjectiveCard.PADDING_BOTTOM
+		)
+		hall_route_panel.offset_bottom = hall_route_panel.offset_top + card_height
+		hall_route_panel.size.y = card_height
 	hall_route_ui_only = bool(copy.get("ui_only", false))
 	if hall_route_ui_only:
 		hall_route_target = player.global_position
@@ -6168,19 +6465,19 @@ func _hall_route_copy() -> Dictionary:
 			return {
 				"title": CaseLocale.text("hall.route_step_1_title"),
 				"body": CaseLocale.text("hall.route_step_1_body"),
-				"target": CHEMISTRY_ROOM_DOOR_FOCUS_POSITION,
+				"target": _hall_arrival_target_position(hall_arrival_step),
 			}
 		HallArrivalStep.STUDY_CHEMISTRY_CORE:
 			return {
 				"title": CaseLocale.text("hall.route_step_2_title"),
 				"body": CaseLocale.text("hall.route_step_2_body"),
-				"target": _get_hall_knowledge_position("ChemistryRoomKnowledge"),
+				"target": _hall_arrival_target_position(hall_arrival_step),
 			}
 		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
 			return {
 				"title": CaseLocale.text("hall.route_step_3_title"),
 				"body": CaseLocale.text("hall.route_step_3_body"),
-				"target": CHEMISTRY_ROOM_DOOR_FOCUS_POSITION,
+				"target": _hall_arrival_target_position(hall_arrival_step),
 			}
 	return {}
 
@@ -6776,56 +7073,21 @@ func apply_persistent_visual_state() -> void:
 	update_knowledge_journal_text()
 	update_objective_text()
 func enter_greenhouse_room() -> void:
-	if scene_transitioning:
-		return
-
-	scene_transitioning = true
-	current_interaction = ""
-
-	var room_scene: PackedScene = load(
-		GREENHOUSE_ROOM_SCENE_PATH
-	) as PackedScene
-	if room_scene == null:
-		scene_transitioning = false
-		show_not_developed_prompt("Greenhouse Room")
-		return
-
-	GameState.save_room_checkpoint(
+	_enter_new_room(
 		GREENHOUSE_ROOM_SCENE_PATH,
 		"greenhouse_room",
+		"greenhouse_door",
+		"Greenhouse Room",
 		"greenhouse_start"
 	)
-
-	if interact_label != null:
-		interact_label.visible = false
-	if player.has_method("cancel_click_movement"):
-		player.call("cancel_click_movement")
-	player.set_physics_process(false)
-	if enemy != null:
-		enemy.set_physics_process(false)
-	_record_guardian_before_room_transition()
-
-	GameState.prepare_room_transition(
-		"greenhouse_room",
-		"res://scenes/game_world.tscn",
-		"greenhouse_door"
-	)
-
-	var change_error: Error = get_tree().change_scene_to_packed(room_scene)
-	if change_error != OK:
-		scene_transitioning = false
-		player.set_physics_process(true)
-		push_error(
-			"Failed to enter Greenhouse Room. Error: "
-			+ str(change_error)
-		)
 
 
 func _enter_new_room(
 	scene_path: String,
 	room_id: String,
 	spawn_id: String,
-	failure_name: String
+	failure_name: String,
+	checkpoint_spawn_id: String = ""
 ) -> void:
 	if scene_transitioning:
 		return
@@ -6839,8 +7101,6 @@ func _enter_new_room(
 		show_not_developed_prompt(failure_name)
 		return
 
-	GameState.save_room_checkpoint(scene_path, room_id, spawn_id)
-
 	if interact_label != null:
 		interact_label.visible = false
 	if player.has_method("cancel_click_movement"):
@@ -6850,22 +7110,30 @@ func _enter_new_room(
 		enemy.set_physics_process(false)
 	_record_guardian_before_room_transition()
 
-	GameState.prepare_room_transition(
-		room_id,
-		"res://scenes/game_world.tscn",
-		spawn_id
-	)
-
-	var change_error: Error = get_tree().change_scene_to_packed(room_scene)
-	if change_error != OK:
-		scene_transitioning = false
-		player.set_physics_process(true)
-		push_error(
-			"Failed to enter "
-			+ failure_name
-			+ ". Error: "
-			+ str(change_error)
+	var switch_to_room := func() -> void:
+		GameState.save_room_checkpoint(
+			scene_path,
+			room_id,
+			checkpoint_spawn_id if not checkpoint_spawn_id.is_empty() else spawn_id
 		)
+		GameState.prepare_room_transition(
+			room_id,
+			"res://scenes/game_world.tscn",
+			spawn_id
+		)
+		var change_error: Error = get_tree().change_scene_to_packed(room_scene)
+		if change_error != OK:
+			scene_transitioning = false
+			player.set_physics_process(true)
+			if enemy != null:
+				enemy.set_physics_process(true)
+			push_error(
+				"Failed to enter "
+				+ failure_name
+				+ ". Error: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_room_entry_transition(switch_to_room, room_id)
 
 
 func enter_circuit_room() -> void:
@@ -6905,139 +7173,24 @@ func enter_final_room() -> void:
 
 
 func enter_chemistry_room() -> void:
-	if scene_transitioning:
-		return
-
-	scene_transitioning = true
-	current_interaction = ""
-
-	var scene_exists: bool = ResourceLoader.exists(
-		CHEMISTRY_ROOM_SCENE_PATH
-	)
-
-	if not scene_exists:
-		scene_transitioning = false
-
-		push_error(
-			"Chemistry Room scene does not exist at: "
-			+ CHEMISTRY_ROOM_SCENE_PATH
-		)
-		return
-
-	var room_scene: PackedScene = load(
-		CHEMISTRY_ROOM_SCENE_PATH
-	) as PackedScene
-
-	if room_scene == null:
-		scene_transitioning = false
-
-		push_error(
-			"Chemistry Room file exists but could not "
-			+ "be loaded as a PackedScene."
-		)
-		return
-
-	GameState.save_room_checkpoint(
+	_enter_new_room(
 		CHEMISTRY_ROOM_SCENE_PATH,
 		"chemistry_room",
+		"chemistry_door",
+		"Chemistry Room",
 		"chemistry_start"
 	)
-
-	if interact_label != null:
-		interact_label.visible = false
-
-	if player.has_method("cancel_click_movement"):
-		player.call("cancel_click_movement")
-
-	player.set_physics_process(false)
-
-	if enemy != null:
-		enemy.set_physics_process(false)
-
-	_record_guardian_before_room_transition()
-
-	GameState.prepare_room_transition(
-		"chemistry_room",
-		"res://scenes/game_world.tscn",
-		"chemistry_door"
-	)
-
-	var change_error: Error = (
-		get_tree().change_scene_to_packed(
-			room_scene
-		)
-	)
-
-	if change_error != OK:
-		scene_transitioning = false
-		player.set_physics_process(true)
-
-		push_error(
-			"Failed to enter Chemistry Room. Error: "
-			+ str(change_error)
-		)
 
 
 func enter_wake_room() -> void:
 	# 从大厅返回 wake_room（门已解锁后始终可进出，不再答题）。
-	if scene_transitioning:
-		return
-
-	scene_transitioning = true
-	current_interaction = ""
-
-	var room_scene: PackedScene = load(
-		WAKE_ROOM_SCENE_PATH
-	) as PackedScene
-
-	if room_scene == null:
-		scene_transitioning = false
-
-		push_error(
-			"Wake Room file exists but could not "
-			+ "be loaded as a PackedScene."
-		)
-		return
-
-	GameState.save_room_checkpoint(
+	_enter_new_room(
 		WAKE_ROOM_SCENE_PATH,
 		"wake_room",
+		"wake_room_door",
+		"Wake Room",
 		"wake_room_start"
 	)
-
-	if interact_label != null:
-		interact_label.visible = false
-
-	if player.has_method("cancel_click_movement"):
-		player.call("cancel_click_movement")
-
-	player.set_physics_process(false)
-
-	if enemy != null:
-		enemy.set_physics_process(false)
-
-	_record_guardian_before_room_transition()
-
-	GameState.prepare_room_transition(
-		"wake_room",
-		"res://scenes/game_world.tscn",
-		"wake_room_door"
-	)
-
-	var change_error: Error = (
-		get_tree().change_scene_to_packed(
-			room_scene
-		)
-	)
-
-	if change_error != OK:
-		scene_transitioning = false
-		player.set_physics_process(true)
-
-		push_error(
-			"Failed to enter Wake Room. Error: "
-			+ str(change_error)
-		)
 
 
 func _record_guardian_before_room_transition() -> void:

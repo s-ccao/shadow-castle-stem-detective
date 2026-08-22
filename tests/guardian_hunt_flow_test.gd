@@ -76,6 +76,21 @@ func _run() -> void:
 		_expect(not bool(hall.get("guardian_entry_sequence_active")), "Guardian close-up returns control to the player")
 		_expect(hall.get_node_or_null("GuardianRevealCamera") == null, "Player follow camera resumes after the reveal")
 		_expect(player != null and player.is_physics_processing(), "Player movement resumes after the reveal")
+		var onboarding_hud := root.get_node_or_null("OnboardingHud")
+		var orientation_overlay := (
+			onboarding_hud.get_node_or_null("FieldOrientationOverlay") as Control
+			if onboarding_hud != null
+			else null
+		)
+		_expect(
+			orientation_overlay != null and orientation_overlay.visible,
+			"Hall escape controls appear after the Guardian close-up"
+		)
+		_expect(paused, "Hall escape controls freeze the chase until acknowledged")
+		if onboarding_hud != null:
+			onboarding_hud.call("_complete_orientation")
+			await process_frame
+		_expect(not paused, "Acknowledging Hall controls starts the chase")
 		if guardian != null:
 			_expect(bool(guardian.get("catch_enabled")), "Guardian contact becomes lethal after the reveal")
 			# The close-up hands control back, but control is worthless if the
@@ -128,8 +143,19 @@ func _run() -> void:
 			_expect(not countdown.visible, "Contact estimate withdraws while a hub holds the world paused")
 			hall.propagate_notification(Node.NOTIFICATION_UNPAUSED)
 			_expect(countdown.visible, "Contact estimate returns when the hub closes and the chase resumes")
-			guardian.global_position = resting_position
-			game_state.call("update_guardian_hall_position", resting_position)
+			var farthest_position := resting_position
+			var farthest_eta := -1.0
+			for patrol_point: Vector2 in _guardian_patrol_route(game_state):
+				guardian.global_position = patrol_point
+				var candidate_eta := float(hall.call("get_guardian_catch_eta"))
+				if candidate_eta > farthest_eta:
+					farthest_eta = candidate_eta
+					farthest_position = patrol_point
+			guardian.global_position = farthest_position
+			# Hold the guided-crossing tether at neutral: this assertion is about
+			# distance retiring the readout, not about tutorial pacing. The loop
+			# below is synchronous, so `_process` cannot overwrite this.
+			game_state.call("set_guardian_tutorial_pace", 1.0)
 			# Recovery is rate-limited on purpose, so give it time to climb. It has
 			# to climb at all: relief used to be priced below the countdown's own
 			# tick, so the estimate sank to 00.0 and stayed there forever.
@@ -137,8 +163,13 @@ func _run() -> void:
 				hall.call("_update_guardian_countdown", 0.5)
 			_expect(
 				not countdown.visible,
-				"Contact estimate withdraws once the Guardian is no longer a live threat"
+				"Contact estimate withdraws once the Guardian is no longer a live threat (measured %.2f, displayed %.2f)" % [
+					farthest_eta,
+					float(hall.get("guardian_eta_seconds")),
+				]
 			)
+			guardian.global_position = resting_position
+			game_state.call("update_guardian_hall_position", resting_position)
 			guardian.set_physics_process(true)
 		# The hall's real walls are collision polygons, not solid grid cells, so the
 		# grid happily reports the outermost border as walkable. A corner pinned
@@ -206,6 +237,27 @@ func _run() -> void:
 		_expect(not route_markers.is_empty(), "First-arrival floor route renders guidance markers")
 		_expect(corner_count > 0, "First-arrival floor route marks turns with explicit 90-degree corners")
 		_expect(diagonal_marker_count == 0, "First-arrival floor route contains no diagonal arrows")
+		var chemistry_exhibit := hall.get_node_or_null(
+			"WallCollisions/KnowledgeExhibits/ChemistryRoomKnowledge"
+		) as Node2D
+		var arrival_step_before: int = int(hall.get("hall_arrival_step"))
+		hall.set("hall_arrival_step", 2)
+		var core_route := hall.call("_hall_route_copy") as Dictionary
+		_expect(
+			chemistry_exhibit != null
+			and (core_route.get("target", Vector2.ZERO) as Vector2).is_equal_approx(
+				chemistry_exhibit.global_position
+			),
+			"Tutorial route follows the player-authored Chemistry Knowledge position"
+		)
+		hall.set("hall_arrival_step", arrival_step_before)
+		# From here the test is about the ordinary hunt, not the guided crossing.
+		# The tutorial has its own guarantees (survivable at any pace, near-miss
+		# at the door) covered by guardian_tutorial_chase_test; asserting the
+		# lethal-contact rule against it would contradict that design.
+		hall.call("_set_hall_arrival_step", 4)
+		game_state.hall_arrival_seen = true
+		await process_frame
 	if guardian != null:
 		_expect(guardian.is_physics_processing(), "Guardian physics runs during Hall chase")
 
@@ -240,6 +292,7 @@ func _run() -> void:
 		guardian.call("check_player_collision")
 		_expect(bool(hall.get("game_over")), "Guardian body contact opens the interruption state")
 		_expect(int(game_state.player_health) == 0, "Guardian body contact is immediately fatal")
+		await create_timer(2.65).timeout
 		var death_screen := hall.get("game_over_screen_root") as Control
 		_expect(death_screen != null and death_screen.visible, "Guardian capture shows checkpoint recovery UI")
 		_expect(bool(game_state.call("load_room_checkpoint")), "Checkpoint recovery succeeds after Guardian capture")
