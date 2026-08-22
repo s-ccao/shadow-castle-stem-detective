@@ -75,6 +75,113 @@ const GREENHOUSE_PROP_PATHS: Dictionary = {
 
 # 温室可交互物品（素材已去背景，Y-sort 遮挡由 Worldsort 处理）。
 const ITEM_INTERACT_RADIUS: float = 90.0
+## Segmented harvest points. Each large planting is several distinct plots
+## rather than one prompt, so a sweep of the greenhouse yields a spread of
+## reagents instead of a single herb. Positions are read off
+## greenhouse_room_bg.png; every plot sits within reach of the walkable aisle.
+##
+## Yields are deliberately small (1-2). A full sweep of all ten plots returns
+## roughly a dozen units, which is a few potions' worth — enough to reward the
+## trip without making the bench minigames pointless.
+const HERB_PLOTS: Array[Dictionary] = [
+	# 中央石花坛：三个方位，围着圆坛分布。
+	{
+		"id": "planter_north",
+		"herb": "blue_blossom",
+		"amount": 2,
+		"position": Vector2(515, 520),
+		"label_en": "the planter's north arc",
+		"label_zh": "石花坛北侧",
+	},
+	{
+		"id": "planter_west",
+		"herb": "dewcap",
+		"amount": 1,
+		"position": Vector2(390, 645),
+		"label_en": "the shaded west arc",
+		"label_zh": "石花坛西侧背阴处",
+	},
+	{
+		"id": "planter_east",
+		"herb": "emberroot",
+		"amount": 1,
+		"position": Vector2(640, 645),
+		"label_en": "the sunlit east arc",
+		"label_zh": "石花坛东侧向阳处",
+	},
+	# 园丁工作台：两个育苗盘。
+	{
+		"id": "bench_trays",
+		"herb": "dewcap",
+		"amount": 2,
+		"position": Vector2(440, 965),
+		"label_en": "the seedling trays",
+		"label_zh": "工作台育苗盘",
+	},
+	{
+		"id": "bench_drying",
+		"herb": "moonleaf",
+		"amount": 1,
+		"position": Vector2(590, 965),
+		"label_en": "the drying rack",
+		"label_zh": "工作台晾晒架",
+	},
+	# 左花坛：小游戏之外的三段速采点。
+	{
+		"id": "bed_left_upper",
+		"herb": "blue_blossom",
+		"amount": 2,
+		"position": Vector2(214, 430),
+		"label_en": "the upper blue blossom rows",
+		"label_zh": "左花坛上段蓝铃花",
+	},
+	{
+		"id": "bed_left_mid",
+		"herb": "ironvine",
+		"amount": 1,
+		"position": Vector2(214, 640),
+		"label_en": "the ironvine trellis",
+		"label_zh": "左花坛铁蔓架",
+	},
+	# 右花坛：同样分段。
+	{
+		"id": "bed_right_upper",
+		"herb": "moonleaf",
+		"amount": 2,
+		"position": Vector2(806, 430),
+		"label_en": "the upper moonleaf rows",
+		"label_zh": "右花坛上段月叶",
+	},
+	{
+		"id": "bed_right_mid",
+		"herb": "ironvine",
+		"amount": 1,
+		"position": Vector2(806, 640),
+		"label_en": "the mineral bed",
+		"label_zh": "右花坛矿物苗床",
+	},
+	{
+		"id": "pots_cluster",
+		"herb": "emberroot",
+		"amount": 1,
+		"position": Vector2(200, 1200),
+		"label_en": "the emberroot pots",
+		"label_zh": "烬根花盆",
+	},
+]
+const HERB_PLOT_REACH: float = 78.0
+const HERB_PLOT_READY_COLOR := Color(0.55, 0.98, 0.62, 0.80)
+const HERB_PLOT_SPENT_COLOR := Color(0.42, 0.38, 0.32, 0.42)
+const HERB_PLOT_MARKER_INTERVAL: float = 0.5
+const REFINING_RECIPES: Array[String] = [
+	"recipe_dew_distill",
+	"recipe_vine_salt",
+	"recipe_ember_prism",
+]
+
+var _herb_plot_markers: Dictionary = {}
+var _herb_plot_refresh_timer: float = 0.0
+
 var INTERACT_ITEMS: Array[Dictionary] = [
 	{
 		"name": "magic_planter",
@@ -244,6 +351,7 @@ func _ready() -> void:
 	create_exit_ui()
 	create_interaction_focus()
 	create_gardener_npc()
+	_create_herb_plot_markers()
 
 	await get_tree().process_frame
 
@@ -257,6 +365,7 @@ func _process(delta: float) -> void:
 
 	update_camera_zoom(delta)
 	_update_prop_occlusion_layers()
+	_tick_herb_plot_markers(delta)
 
 	if not room_input_enabled:
 		hide_interaction_feedback()
@@ -757,6 +866,179 @@ func end_dialogue_pause() -> void:
 		player.set_physics_process(true)
 
 
+## Choosing to inspect something is a decision to stand still. A click-move
+## still running underneath the dialogue walks the detective off on its own
+## once the panel closes, which reads as the character moving by itself.
+func _stop_walking_to_interact() -> void:
+	if player != null and player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
+
+
+## Plot nearest the player within reach. Ready plots win over regrowing ones so
+## standing between two segments always offers the one worth picking.
+func _nearest_ready_or_reachable_plot() -> Dictionary:
+	if player == null:
+		return {}
+	var best: Dictionary = {}
+	var best_score := INF
+	for plot: Dictionary in HERB_PLOTS:
+		var distance: float = player.global_position.distance_to(
+			plot["position"] as Vector2
+		)
+		if distance > HERB_PLOT_REACH:
+			continue
+		# Regrowing plots are still offered (so the player learns the timer
+		# exists), but they never win a tie against something pickable.
+		var score := distance
+		if not GameState.is_herb_plot_ready(str(plot["id"])):
+			score += 10000.0
+		if score < best_score:
+			best_score = score
+			best = plot
+	return best
+
+
+func _herb_plot_prompt(plot: Dictionary) -> String:
+	var label: String = str(
+		plot["label_zh" if CaseLocale.is_chinese() else "label_en"]
+	)
+	var remaining: float = GameState.herb_plot_seconds_remaining(str(plot["id"]))
+	if remaining > 0.0:
+		return _bilingual(
+			"%s is still regrowing (%ds)" % [label.capitalize(), int(ceilf(remaining))],
+			"%s还在长（%d 秒）" % [label, int(ceilf(remaining))]
+		)
+	return _bilingual(
+		"Press E to gather from %s" % label,
+		"按 E 采集%s" % label
+	)
+
+
+## The refining recipes are what make the greenhouse matter: the castle only
+## ever hands out 2 distilled water, 1 iron salt and 1 prism dust, which is not
+## enough for even half the potion list. Learning to render herbs down into
+## those reagents is the moment the supply becomes renewable, so it is taught
+## the first time the player actually picks something.
+func _grant_refining_knowledge() -> void:
+	if GameState.has_story_flag("greenhouse_refining_learned"):
+		return
+	GameState.set_story_flag("greenhouse_refining_learned")
+	for recipe_id: String in REFINING_RECIPES:
+		GameState.add_recipe(recipe_id)
+	if NoteHud != null:
+		NoteHud.add_clue("greenhouse_refining", {
+			"title": _bilingual(
+				"Rendering Herbs into Reagents",
+				"把草药炼成试剂"
+			),
+			"content": _bilingual(
+				(
+					"The gardener's handbook explains what the beds are really for. "
+					+ "Dewcap gives up the water it condensed from the air. Ironvine "
+					+ "burns down to the metal salts it drew out of the soil. "
+					+ "Emberroot's stored heat vitrifies moonleaf into prism dust.\n\n"
+					+ "Three recipes added to the alchemy bench. The greenhouse "
+					+ "regrows, so reagents are no longer a fixed supply."
+				),
+				(
+					"园丁手册写清了这些花坛真正的用途。露伞菇会释出它从空气里凝结的水；"
+					+ "铁蔓烧尽后留下它从土里吸上来的金属盐；烬根储存的热量能把月叶烧结成棱镜粉。\n\n"
+					+ "炼金台新增三个配方。温室会重新长出草药，所以试剂不再是固定数量。"
+				)
+			),
+			"category": "herb",
+		})
+	show_message(
+		"You",
+		_bilingual(
+			"The gardener's handbook lists three refining recipes. "
+			+ "Herbs can become reagents — and these beds grow back.",
+			"园丁手册上记着三个精炼配方。草药可以炼成试剂 —— 而这些花坛会重新长起来。"
+		)
+	)
+
+
+func _harvest_herb_plot(plot: Dictionary) -> void:
+	var plot_id: String = str(plot["id"])
+	var herb_id: String = str(plot["herb"])
+	var amount: int = int(plot["amount"])
+	var herb_name: String = str(
+		GameState.HERB_INFO.get(herb_id, {}).get("name", herb_id)
+	)
+	if not GameState.harvest_herb_plot(plot_id, herb_id, amount):
+		var remaining: int = int(
+			ceilf(GameState.herb_plot_seconds_remaining(plot_id))
+		)
+		show_message(
+			"You",
+			_bilingual(
+				"This patch was picked clean. Give it about %d more seconds." % remaining,
+				"这一小片刚被采过，大约还要 %d 秒才长得回来。" % remaining
+			)
+		)
+		return
+	GameAudio.play(&"ui_confirm")
+	_refresh_herb_plot_markers()
+	_grant_refining_knowledge()
+	show_message(
+		"You",
+		_bilingual(
+			"Gathered %d %s." % [amount, herb_name],
+			"采到了 %d 份%s。" % [amount, herb_name]
+		)
+	)
+
+
+## A renewable plot the player cannot see is a plot they will not revisit. Each
+## segment gets a small glyph that reads ripe or spent at a glance, so the
+## greenhouse shows its state from the doorway.
+func _create_herb_plot_markers() -> void:
+	var layer := Node2D.new()
+	layer.name = "HerbPlotMarkers"
+	layer.z_index = 6
+	add_child(layer)
+	for plot: Dictionary in HERB_PLOTS:
+		var marker := Node2D.new()
+		marker.name = "Plot_" + str(plot["id"])
+		marker.position = plot["position"] as Vector2
+		layer.add_child(marker)
+
+		var glow := ColorRect.new()
+		glow.name = "Glow"
+		glow.size = Vector2(20.0, 20.0)
+		glow.position = -glow.size * 0.5
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		marker.add_child(glow)
+
+		_herb_plot_markers[str(plot["id"])] = glow
+	_refresh_herb_plot_markers()
+
+
+func _refresh_herb_plot_markers() -> void:
+	for plot: Dictionary in HERB_PLOTS:
+		var plot_id: String = str(plot["id"])
+		var glow := _herb_plot_markers.get(plot_id) as ColorRect
+		if glow == null:
+			continue
+		if GameState.is_herb_plot_ready(plot_id):
+			glow.color = HERB_PLOT_READY_COLOR
+			glow.size = Vector2(20.0, 20.0)
+		else:
+			glow.color = HERB_PLOT_SPENT_COLOR
+			glow.size = Vector2(12.0, 12.0)
+		glow.position = -glow.size * 0.5
+
+
+## Regrowth is on a wall clock, so the markers only need a lazy poll rather
+## than a per-frame recompute across every plot.
+func _tick_herb_plot_markers(delta: float) -> void:
+	_herb_plot_refresh_timer -= delta
+	if _herb_plot_refresh_timer > 0.0:
+		return
+	_herb_plot_refresh_timer = HERB_PLOT_MARKER_INTERVAL
+	_refresh_herb_plot_markers()
+
+
 func update_exit_interaction() -> void:
 	if interact_label == null:
 		return
@@ -770,7 +1052,21 @@ func update_exit_interaction() -> void:
 		interact_label.text = "Press E to talk to the Gardener"
 		interact_label.visible = true
 		if Input.is_action_just_pressed("interact"):
+			_stop_walking_to_interact()
 			show_gardener_dialogue()
+		return
+
+	# 采集点优先于大件家具：玩家站在花坛某一段前，想要的是采这一段，
+	# 而不是又读一遍整条花坛的描述。
+	var plot: Dictionary = _nearest_ready_or_reachable_plot()
+	if not plot.is_empty():
+		var plot_id: String = str(plot["id"])
+		current_interaction = "herb_plot:" + plot_id
+		interact_label.text = _herb_plot_prompt(plot)
+		interact_label.visible = true
+		if Input.is_action_just_pressed("interact"):
+			_stop_walking_to_interact()
+			_harvest_herb_plot(plot)
 		return
 
 	# 物品交互优先：靠近任意可交互物品时显示 Press E 提示。
@@ -786,6 +1082,7 @@ func update_exit_interaction() -> void:
 			interact_label.text = "Press E to inspect " + str(item["label"])
 			interact_label.visible = true
 			if Input.is_action_just_pressed("interact"):
+				_stop_walking_to_interact()
 				_mark_inspected(item_name)
 				_show_item_dialogue(item_name)
 			return
@@ -798,6 +1095,7 @@ func update_exit_interaction() -> void:
 		interact_label.text = "Press E to return to the Castle Hall"
 		interact_label.visible = true
 		if Input.is_action_just_pressed("interact"):
+			_stop_walking_to_interact()
 			return_to_castle_hall()
 		return
 
@@ -1086,22 +1384,21 @@ func return_to_castle_hall() -> void:
 
 	player.set_physics_process(false)
 
-	GameState.prepare_return_to_hub(
-		"greenhouse_door"
-	)
-
-	var change_error: Error = (
-		get_tree().change_scene_to_file(
-			GameState.return_scene_path
+	var switch_to_hall := func() -> void:
+		GameState.prepare_return_to_hub(
+			"greenhouse_door"
 		)
-	)
-
-	if change_error != OK:
-		scene_transitioning = false
-		room_input_enabled = true
-		player.set_physics_process(true)
-
-		push_error(
-			"Failed to return to Castle Hall: "
-			+ str(change_error)
+		var change_error: Error = (
+			get_tree().change_scene_to_file(
+				GameState.return_scene_path
+			)
 		)
+		if change_error != OK:
+			scene_transitioning = false
+			room_input_enabled = true
+			player.set_physics_process(true)
+			push_error(
+				"Failed to return to Castle Hall: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_hall_transition(switch_to_hall)
