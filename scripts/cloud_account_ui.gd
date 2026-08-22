@@ -128,6 +128,14 @@ func open() -> void:
 	visible = true
 	_refresh_mode()
 	_fit_layout()
+	var request_active: bool = CloudSave.is_request_active()
+	_set_busy(request_active)
+	if request_active:
+		status_label.text = (
+			"云端档案正在完成当前请求…"
+			if CaseLocale.is_chinese()
+			else "Cloud archive is finishing the current request…"
+		)
 	if CloudSave.is_signed_in():
 		sync_button.call_deferred("grab_focus")
 	else:

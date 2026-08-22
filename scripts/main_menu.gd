@@ -366,7 +366,21 @@ func _continue_game() -> void:
 	var resume_path: String = GameState.resume_scene_path
 	if not ResourceLoader.exists(resume_path):
 		resume_path = "res://scenes/wake_room.tscn"
-	get_tree().change_scene_to_file(resume_path)
+	var resume_room_id: String = GameState.resume_room_id
+	if resume_room_id.is_empty():
+		resume_room_id = "wake_room"
+	if start_ui != null:
+		start_ui.call("set_ui_enabled", false)
+	var reopen_case := func() -> void:
+		var change_error := get_tree().change_scene_to_file(resume_path)
+		if change_error != OK:
+			if start_ui != null:
+				start_ui.call("set_ui_enabled", true)
+			push_error(
+				"Failed to reopen saved case. Error: "
+				+ str(change_error)
+			)
+	ArchiveUi.play_room_entry_transition(reopen_case, resume_room_id)
 
 
 func _show_settings_dialog() -> void:

@@ -39,9 +39,39 @@ func _test_account_ui() -> void:
 			root.get_viewport().get_visible_rect().size,
 		]
 	)
+	var cloud_save := root.get_node("CloudSave")
+	cloud_save.set("_request_active", true)
+	account_ui.open()
+	_expect(
+		bool(account_ui.get("_busy"))
+		and account_ui.close_button.disabled,
+		"Cloud dialog inherits an already-running request's busy state"
+	)
+	cloud_save.set("_request_active", false)
+	account_ui.call("_set_busy", false)
 	account_ui.close()
 	account_ui.queue_free()
 	await process_frame
+
+	var cloud_save_script := load("res://autoload/cloud_save.gd") as Script
+	var isolated_cloud_save: Node = cloud_save_script.new()
+	isolated_cloud_save.set("session_token", "account-a-token")
+	isolated_cloud_save.set("_session_generation", 4)
+	_expect(
+		isolated_cloud_save.call("_session_matches", 4, "account-a-token"),
+		"Authenticated response matches the session that started it"
+	)
+	isolated_cloud_save.set("_session_generation", 5)
+	isolated_cloud_save.set("session_token", "")
+	_expect(
+		not isolated_cloud_save.call(
+			"_session_matches",
+			4,
+			"account-a-token"
+		),
+		"Authenticated response is discarded after sign-out changes the session"
+	)
+	isolated_cloud_save.free()
 
 
 func _test_wake_arrival() -> void:
@@ -84,6 +114,19 @@ func _test_wake_arrival() -> void:
 		player.position.distance_to(Vector2(336.0, 500.0)) < 48.0,
 		"Wake-up staging leaves the detective on a safe first step"
 	)
+	var onboarding_hud := root.get_node_or_null("OnboardingHud")
+	var orientation_overlay := (
+		onboarding_hud.get_node_or_null("FieldOrientationOverlay") as Control
+		if onboarding_hud != null
+		else null
+	)
+	_expect(
+		orientation_overlay != null and orientation_overlay.visible,
+		"First wake-up continues directly into the movement tutorial"
+	)
+	if onboarding_hud != null:
+		onboarding_hud.call("_complete_orientation")
+		await process_frame
 
 	wake_room.queue_free()
 	await process_frame

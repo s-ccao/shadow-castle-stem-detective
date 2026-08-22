@@ -680,6 +680,9 @@ func play_room_transition(
 	title_text: String,
 	detail_text: String
 ) -> void:
+	var tree := get_tree()
+	var was_paused := tree.paused
+	tree.paused = true
 	var layer := CanvasLayer.new()
 	layer.name = "RoomTransition"
 	layer.layer = 90
@@ -688,11 +691,13 @@ func play_room_transition(
 
 	# See play_case_open_transition: the fade needs a CanvasItem to act on.
 	var fade := Control.new()
+	fade.name = "Fade"
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(fade)
 
 	var veil := ColorRect.new()
+	veil.name = "Veil"
 	veil.color = Color(0.008, 0.006, 0.018, 0.97)
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	veil.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -700,6 +705,7 @@ func play_room_transition(
 	fade.add_child(veil)
 
 	var title := Label.new()
+	title.name = "DestinationTitle"
 	title.text = title_text
 	title.set_anchors_preset(Control.PRESET_CENTER)
 	title.offset_left = -230.0
@@ -713,6 +719,7 @@ func play_room_transition(
 	fade.add_child(title)
 
 	var detail := Label.new()
+	detail.name = "DestinationDetail"
 	detail.text = detail_text
 	detail.set_anchors_preset(Control.PRESET_CENTER)
 	detail.offset_left = -260.0
@@ -738,6 +745,57 @@ func play_room_transition(
 	transition.tween_callback(func() -> void:
 		if is_instance_valid(layer):
 			layer.queue_free()
+		tree.paused = was_paused
+	)
+
+
+func play_room_entry_transition(on_midpoint: Callable, room_id: String) -> void:
+	play_room_transition(
+		on_midpoint,
+		CaseLocale.room_name(room_id).to_upper(),
+		CaseLocale.text("transition." + room_id + "_detail")
+	)
+
+
+func play_hall_transition(
+	on_midpoint: Callable,
+	guardian_alerted: bool = false
+) -> void:
+	play_room_transition(
+		on_midpoint,
+		CaseLocale.text("transition.hall_title"),
+		CaseLocale.text(
+			"transition.hall_alert_detail"
+			if guardian_alerted
+			else "transition.hall_detail"
+		)
+	)
+
+
+func play_recovery_transition(
+	on_midpoint: Callable,
+	from_checkpoint: bool
+) -> void:
+	play_room_transition(
+		on_midpoint,
+		CaseLocale.text(
+			"transition.checkpoint_title"
+			if from_checkpoint
+			else "transition.retry_title"
+		),
+		CaseLocale.text(
+			"transition.checkpoint_detail"
+			if from_checkpoint
+			else "transition.retry_detail"
+		)
+	)
+
+
+func play_main_menu_transition(on_midpoint: Callable) -> void:
+	play_room_transition(
+		on_midpoint,
+		CaseLocale.text("transition.menu_title"),
+		CaseLocale.text("transition.menu_detail")
 	)
 
 

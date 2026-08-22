@@ -29,6 +29,10 @@ func is_signed_in() -> bool:
 	return not username.is_empty() and not session_token.is_empty()
 
 
+func is_request_active() -> bool:
+	return _request_active
+
+
 func register_account(investigator_id: String, passphrase: String) -> Dictionary:
 	var result: Dictionary = await _post({
 		"action": "register",
@@ -266,6 +270,7 @@ func _post(payload: Dictionary, authenticated: bool = false) -> Dictionary:
 		}
 	_request_active = true
 	var request_token: String = session_token
+	var request_generation: int = _session_generation
 	sync_status_changed.emit(
 		"正在连接云端档案…" if CaseLocale.is_chinese() else "Contacting cloud archive…",
 		true
@@ -279,7 +284,7 @@ func _post(payload: Dictionary, authenticated: bool = false) -> Dictionary:
 		"Accept: application/json",
 	])
 	if authenticated:
-		headers.append("Authorization: Bearer " + session_token)
+		headers.append("Authorization: Bearer " + request_token)
 	var start_error: Error = request.request(
 		_api_url(),
 		headers,
@@ -300,6 +305,15 @@ func _post(payload: Dictionary, authenticated: bool = false) -> Dictionary:
 	var completed: Array = await request.request_completed
 	request.queue_free()
 	_request_active = false
+	if (
+		authenticated
+		and not _session_matches(request_generation, request_token)
+	):
+		return {
+			"ok": false,
+			"code": "session_changed",
+			"error": "Cloud account changed while the request was running.",
+		}
 	var transport_result: int = int(completed[0])
 	var response_code: int = int(completed[1])
 	var body: PackedByteArray = completed[3]
@@ -392,6 +406,14 @@ func _api_url() -> String:
 		if typeof(origin) == TYPE_STRING and str(origin).begins_with("http"):
 			return str(origin) + "/api/cloud-save"
 	return PRODUCTION_API
+
+
+func _session_matches(generation: int, token: String) -> bool:
+	return (
+		generation == _session_generation
+		and not token.is_empty()
+		and token == session_token
+	)
 
 
 func _mark_synced(payload: Dictionary) -> void:
