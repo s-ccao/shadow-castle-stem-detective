@@ -22,9 +22,24 @@ const EIGHT_DIRECTIONS: Array[StringName] = [
 	&"north_west",
 ]
 
+## The cast stands its ground. Wandering NPCs read as aimless — five of them
+## sliding around a room looks like a bug, not like people at work. Each one
+## holds its authored mark and its authored pose, and the only thing that
+## changes is that it turns to meet a player who comes over.
+##
+## Distance at which an NPC notices the player, with a wider release distance
+## so someone standing exactly on the boundary cannot make it snap back and
+## forth between poses.
+const ATTENTION_RADIUS: float = 132.0
+const ATTENTION_RELEASE_RADIUS: float = 168.0
+## Column of a 4-frame walk strip that reads as "standing": both feet planted.
+const IDLE_STANDING_FRAME: int = 0
+const IDLE_SHEET_FPS: float = 4.0
+
 var character_name: String = "NPC"
 var sprite_sheet_path: String = ""
 var visual_scale: float = 0.20
+## Retained for call-site compatibility; the cast no longer patrols.
 var patrol_offset: Vector2 = Vector2.ZERO
 var patrol_speed: float = 14.0
 var start_direction: StringName = &"down"
@@ -35,9 +50,11 @@ var idle_only: bool = false
 var visual_foot_anchor: Vector2 = Vector2(0.0, -28.0)
 
 var actor_sprite: AnimatedSprite2D
-var _patrol_origin: Vector2
-var _patrol_sign: float = 1.0
 var _is_configured: bool = false
+var _attention_target: Node2D
+var _attending: bool = false
+var _facing: StringName = &"down"
+var _notice_tween: Tween
 
 
 func configure(
@@ -78,28 +95,68 @@ func _ready() -> void:
 	if not _is_configured:
 		push_warning("AnimatedNpc must be configured before entering the scene tree.")
 		return
-	_patrol_origin = position
+	_facing = start_direction
 	_create_sprite()
 	_play_idle(start_direction)
 
 
-func _process(delta: float) -> void:
-	if actor_sprite == null or patrol_offset.length_squared() <= 1.0:
+## Who this NPC turns toward. Defaults to the player; rooms can override it for
+## a scripted beat (an NPC watching a door, say).
+func set_attention_target(target: Node2D) -> void:
+	_attention_target = target
+
+
+func _resolve_attention_target() -> Node2D:
+	if _attention_target != null and is_instance_valid(_attention_target):
+		return _attention_target
+	if not is_inside_tree():
+		return null
+	_attention_target = get_tree().get_first_node_in_group(&"player") as Node2D
+	return _attention_target
+
+
+func _process(_delta: float) -> void:
+	if actor_sprite == null:
+		return
+	var target := _resolve_attention_target()
+	if target == null:
 		return
 
-	var target_position: Vector2 = _patrol_origin + patrol_offset * _patrol_sign
-	var distance_to_target: float = position.distance_to(target_position)
-	if distance_to_target <= 1.5:
-		_patrol_sign *= -1.0
-		target_position = _patrol_origin + patrol_offset * _patrol_sign
-
-	var direction: Vector2 = position.direction_to(target_position)
-	position = position.move_toward(target_position, patrol_speed * delta)
-	var direction_name: StringName = _direction_name(direction)
-	if idle_only:
-		_play_idle(direction_name)
+	# Hysteresis: a player standing on the boundary would otherwise flip the
+	# NPC between "greeting" and "back to work" every frame.
+	var distance: float = global_position.distance_to(target.global_position)
+	var was_attending := _attending
+	if _attending:
+		_attending = distance <= ATTENTION_RELEASE_RADIUS
 	else:
-		_play_walk(direction_name)
+		_attending = distance <= ATTENTION_RADIUS
+
+	var wanted: StringName = (
+		_direction_name(target.global_position - global_position)
+		if _attending
+		else start_direction
+	)
+	if _attending and not was_attending:
+		_play_notice_reaction()
+	if wanted != _facing:
+		_facing = wanted
+	_play_idle(_facing)
+
+
+## A small, quiet acknowledgement when someone walks up: the figure straightens
+## slightly and settles. Turning alone is easy to miss on a 4-frame sprite, and
+## anything larger would read as a wandering NPC again.
+func _play_notice_reaction() -> void:
+	if actor_sprite == null:
+		return
+	if _notice_tween != null and _notice_tween.is_valid():
+		_notice_tween.kill()
+	var settled := Vector2(visual_scale, visual_scale)
+	actor_sprite.scale = settled
+	_notice_tween = create_tween()
+	_notice_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_notice_tween.tween_property(actor_sprite, "scale", settled * 1.06, 0.12)
+	_notice_tween.tween_property(actor_sprite, "scale", settled, 0.18)
 
 
 func _create_sprite() -> void:
@@ -131,8 +188,16 @@ func _build_sprite_frames(sprite_sheet: Texture2D) -> SpriteFrames:
 		frames.set_animation_speed(walk_animation, 6.0)
 		frames.set_animation_loop(walk_animation, true)
 		frames.add_animation(idle_animation)
-		frames.set_animation_speed(idle_animation, 1.6)
 		frames.set_animation_loop(idle_animation, true)
+		if idle_only:
+			# A dedicated idle sheet is a breathing loop: every frame belongs to
+			# standing still, so play the whole thing gently.
+			frames.set_animation_speed(idle_animation, IDLE_SHEET_FPS)
+		else:
+			# A walk sheet is a stride. Resting on the whole cycle steps the legs
+			# in place at 1.6fps, which reads as a stuttering, aimless shuffle.
+			# Standing still means holding the neutral frame instead.
+			frames.set_animation_speed(idle_animation, 1.0)
 		for column: int in range(frame_count):
 			var frame: AtlasTexture = _make_atlas_frame(
 				sprite_sheet,
@@ -140,7 +205,8 @@ func _build_sprite_frames(sprite_sheet: Texture2D) -> SpriteFrames:
 				column
 			)
 			frames.add_frame(walk_animation, frame)
-			frames.add_frame(idle_animation, frame)
+			if idle_only or column == IDLE_STANDING_FRAME:
+				frames.add_frame(idle_animation, frame)
 	return frames
 
 
@@ -159,15 +225,6 @@ func _make_atlas_frame(
 	)
 	return frame
 
-
-func _play_walk(direction: StringName) -> void:
-	if actor_sprite == null:
-		return
-	var animation: StringName = StringName("walk_" + str(direction))
-	if actor_sprite.animation != animation:
-		actor_sprite.play(animation)
-	elif not actor_sprite.is_playing():
-		actor_sprite.play()
 
 
 func _play_idle(direction: StringName) -> void:
