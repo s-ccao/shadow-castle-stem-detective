@@ -202,6 +202,10 @@ var circuit_note_node: ColorRect
 var circuit_door_open := false
 var circuit_door_position := Vector2.ZERO
 var discovered_fog_cells := {}
+## Explored ground, maintained incrementally so the per-frame fog pass is a
+## copy instead of a rebuild over every cell ever discovered.
+var fog_memory_image: Image
+var _fog_memory_count: int = 0
 var visible_fog_cells := {}
 var visible_fog_distances := {}
 var powered_memory_hydrated := false
@@ -1266,6 +1270,10 @@ func create_fog_cells():
 	)
 	fog_image.fill(Color(0.0, 0.0, 0.0, 1.0))
 	fog_texture = ImageTexture.create_from_image(fog_image)
+	# Explored ground is kept on its own layer that only changes when a new cell
+	# is discovered. Rebuilding it every frame from the discovered set meant the
+	# per-frame cost grew with how much of the map had been walked.
+	reset_fog_memory()
 
 	fog_sprite = Sprite2D.new()
 	fog_sprite.name = "FogOfWarSprite"
@@ -1276,6 +1284,66 @@ func create_fog_cells():
 	fog_sprite.z_index = 100
 	fog_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(fog_sprite)
+
+
+## Blank the explored-memory layer. Used on creation and whenever the set of
+## discovered cells is replaced wholesale (a load, or a developer reset).
+func reset_fog_memory() -> void:
+	fog_memory_image = Image.create(
+		FOG_COLS, FOG_ROWS, false, Image.FORMAT_RGBA8
+	)
+	fog_memory_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	_fog_memory_count = 0
+
+
+## Record a cell as explored, updating both the set and the memory layer so the
+## per-frame pass never has to reconstruct it.
+func mark_fog_discovered(fog_cell: Vector2i) -> void:
+	var key := fog_key(fog_cell)
+	if discovered_fog_cells.has(key):
+		return
+	discovered_fog_cells[key] = true
+	_paint_fog_memory(fog_cell)
+	# Count what this layer has actually painted, not the size of the set at the
+	# time. Storing the set size here makes the check below miss the case that
+	# matters: a direct write adds one entry, later helper calls add more, and
+	# the two totals coincide again while the directly-written cell was never
+	# painted.
+	_fog_memory_count += 1
+
+
+func _paint_fog_memory(fog_cell: Vector2i) -> void:
+	if fog_memory_image == null:
+		return
+	if (
+		fog_cell.x < 0 or fog_cell.x >= FOG_COLS
+		or fog_cell.y < 0 or fog_cell.y >= FOG_ROWS
+	):
+		return
+	fog_memory_image.set_pixel(
+		fog_cell.x, fog_cell.y, Color(0.0, 0.0, 0.0, DISCOVERED_DARKNESS)
+	)
+
+
+## Rebuild the memory layer from the discovered set.
+##
+## The incremental path above is only correct while every write goes through
+## mark_fog_discovered(). Requiring that of every caller is a rule that will be
+## broken eventually — a save restore, a test fixture, a debug command writing
+## the dictionary directly. Rather than depend on that discipline, the per-frame
+## pass compares sizes (O(1)) and repairs itself when they disagree.
+func _sync_fog_memory() -> void:
+	if fog_memory_image == null:
+		return
+	if _fog_memory_count == discovered_fog_cells.size():
+		return
+	reset_fog_memory()
+	for key: Variant in discovered_fog_cells.keys():
+		var parts: PackedStringArray = str(key).split(",")
+		if parts.size() != 2:
+			continue
+		_paint_fog_memory(Vector2i(int(parts[0]), int(parts[1])))
+	_fog_memory_count = discovered_fog_cells.size()
 
 
 func update_fog_of_war():
@@ -1305,25 +1373,17 @@ func update_fog_of_war():
 		powered_memory_hydrated = false
 
 	# 基础全黑。
-	fog_image.fill(Color(0.0, 0.0, 0.0, 1.0))
-
 	# The blackout has no visual memory: outside the current flashlight even
 	# previously crossed walls return to pure black. Restoring Circuit power is
 	# the one progression event that enables gray explored-ground memory.
-	if power_restored:
-		for key: Variant in discovered_fog_cells.keys():
-			var parts: PackedStringArray = str(key).split(",")
-			if parts.size() != 2:
-				continue
-			var cell_x: int = int(parts[0])
-			var cell_y: int = int(parts[1])
-			if cell_x < 0 or cell_x >= FOG_COLS or cell_y < 0 or cell_y >= FOG_ROWS:
-				continue
-			fog_image.set_pixel(
-				cell_x,
-				cell_y,
-				Color(0.0, 0.0, 0.0, DISCOVERED_DARKNESS)
-			)
+	#
+	# The memory layer is maintained incrementally, so this is a copy rather
+	# than a per-frame rebuild over every cell ever discovered.
+	if power_restored and fog_memory_image != null:
+		_sync_fog_memory()
+		fog_image.copy_from(fog_memory_image)
+	else:
+		fog_image.fill(Color(0.0, 0.0, 0.0, 1.0))
 
 	# Before power restoration the Hall always uses the tighter flashlight,
 	# regardless of Guardian mode. Pursuit keeps that pressure after power is on.
@@ -1362,7 +1422,7 @@ func update_fog_of_war():
 				var key = fog_key(fog_cell)
 				visible_fog_cells[key] = true
 				visible_fog_distances[key] = distance
-				discovered_fog_cells[key] = true
+				mark_fog_discovered(fog_cell)
 
 				var edge_amount = 0.0
 				if distance > clear_radius:
@@ -1395,7 +1455,7 @@ func _reveal_powered_hall_cell(hall_key: String) -> void:
 			var fog_cell := Vector2i(hall_x * 2 + offset_x, hall_y * 2 + offset_y)
 			if fog_cell.x < 0 or fog_cell.x >= FOG_COLS or fog_cell.y < 0 or fog_cell.y >= FOG_ROWS:
 				continue
-			discovered_fog_cells[fog_key(fog_cell)] = true
+			mark_fog_discovered(fog_cell)
 
 
 func _should_play_power_restoration_sequence() -> bool:
