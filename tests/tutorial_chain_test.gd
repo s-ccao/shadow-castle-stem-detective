@@ -32,12 +32,12 @@ func _run() -> void:
 func _test_wake_chain_covers_every_step(game_state: Node) -> void:
 	var case_locale := root.get_node("CaseLocale")
 	var guided_keys: Array[String] = [
+		"coach.move", "coach.interact",
 		"guide.wake_first_door_title", "guide.wake_first_door_body",
-		"guide.wake_desk_title", "guide.wake_desk_body",
-		"guide.wake_key_title", "guide.wake_key_body",
+		"guide.wake_search_title", "guide.wake_search_body",
 		"guide.wake_answer_title", "guide.wake_answer_body",
-		"guide.wake_door_title", "guide.wake_door_body",
 		"guide.wake_exit_title", "guide.wake_exit_body",
+		"guide.rule_title", "guide.rule_body", "guide.rule_continue",
 		"hall.route_step_1_title", "hall.route_step_1_body",
 		"hall.route_step_2_title", "hall.route_step_2_body",
 		"hall.route_step_3_title", "hall.route_step_3_body",

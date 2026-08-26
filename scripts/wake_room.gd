@@ -151,6 +151,7 @@ enum FirstLeadStep {
 }
 
 var first_lead_step: FirstLeadStep = FirstLeadStep.LETTER
+var tutorial_coach: TutorialCoach
 var first_lead_objective_panel: Panel
 var first_lead_objective_title: Label
 var first_lead_objective_body: Label
@@ -223,6 +224,7 @@ func _ready():
 	create_book_ui()
 	create_clue_journal()
 	_restore_first_lead_step()
+	_create_tutorial_coach()
 
 	# 从大厅返回时出现在门内侧（door_position 附近）。首次进入不再
 	# 自动播放一段例外剧情：桌上的卷轴就是本房间的第一条可交互信息。
@@ -330,7 +332,11 @@ func _play_wake_arrival() -> void:
 	player.set_physics_process(true)
 	GameState.set_story_flag(WAKE_ARRIVAL_FLAG)
 	_refresh_first_lead_objective(true)
-	OnboardingHud.show_wake_orientation()
+	# Teaching starts only now, and one lesson at a time. Raising a modal here
+	# used to bury the objective card's entrance behind it, so the card was
+	# never seen arriving and read as part of the HUD.
+	if tutorial_coach != null:
+		tutorial_coach.begin(player)
 
 func _process(delta):
 	_update_prop_occlusion_layers()
@@ -367,9 +373,13 @@ func _process(delta):
 	update_interaction_focus()
 	if interaction_hint_panel != null:
 		interaction_hint_panel.visible = interact_label.visible
+	if tutorial_coach != null:
+		tutorial_coach.set_interaction_available(not current_interaction.is_empty())
 
 	if Input.is_action_just_pressed("interact"):
 		cancel_pending_mouse_interaction()
+		if tutorial_coach != null and not current_interaction.is_empty():
+			tutorial_coach.notify_interacted()
 
 		if current_interaction == "room_clue":
 			show_first_room_clue()
@@ -964,7 +974,7 @@ func show_door_inspect():
 	var texture: Texture2D = load("res://assets/sprites/wake_room/door_magical.png")
 	if texture != null:
 		inspect_texture.texture = texture
-	inspect_label.text = "A massive armored door bars the way into the castle hall.\n\nYour brass key has awakened its purple lock wheel. A question is now written in the center: \"What does a flame need from the air to keep burning?\"\n\nThe answer is somewhere in this room. Review the bookshelf before you answer."
+	inspect_label.text = "A massive armored door bars the way into the castle hall.\n\nYour brass key has awakened its purple lock wheel. A question is now written in the center: \"What does a flame need from the air to keep burning?\"\n\nThe answer is not written here. It is something you learned in this room."
 	inspect_confirm_button.visible = true
 	inspect_confirm_button.text = "Read the door question"
 	_show_dialogue(inspect_panel)
@@ -1837,6 +1847,14 @@ func _unlock_first_lead_door() -> void:
 	_set_first_lead_step(FirstLeadStep.CASTLE_DOOR)
 
 
+func _create_tutorial_coach() -> void:
+	if tutorial_coach != null:
+		return
+	tutorial_coach = TutorialCoach.new()
+	tutorial_coach.name = "TutorialCoach"
+	add_child(tutorial_coach)
+
+
 func _create_first_lead_objective() -> void:
 	if ui_layer == null or first_lead_objective_panel != null:
 		return
@@ -1918,36 +1936,39 @@ func _refresh_first_lead_objective(animate: bool) -> void:
 	)
 
 
+## Three phases, not six errands.
+##
+## The previous version named the next object every time — "inspect the study
+## desk", "inspect the bed", "read the bookshelf" — which turned the room into
+## a list to tick off. A player who follows a list learns where things are, not
+## how the game works, and then stalls at the first door that does not tell them
+## the answer. These phases state the goal and leave the search to the player.
 func _first_lead_objective_copy() -> Dictionary:
 	if not GameState.has_story_flag(WAKE_TUTORIAL_DOOR_CHECKED_FLAG):
 		return {
 			"title": CaseLocale.text("guide.wake_first_door_title"),
 			"body": CaseLocale.text("guide.wake_first_door_body"),
 		}
-	if not desk_briefing_read:
+	if not exit_door_unlocked and not _first_lead_prerequisites_met():
 		return {
-			"title": CaseLocale.text("guide.wake_desk_title"),
-			"body": CaseLocale.text("guide.wake_desk_body"),
-		}
-	if not GameState.has_key(WAKE_ROOM_KEY_ID):
-		return {
-			"title": CaseLocale.text("guide.wake_key_title"),
-			"body": CaseLocale.text("guide.wake_key_body"),
-		}
-	if not first_lock_rule_learned:
-		return {
-			"title": CaseLocale.text("guide.wake_answer_title"),
-			"body": CaseLocale.text("guide.wake_answer_body"),
+			"title": CaseLocale.text("guide.wake_search_title"),
+			"body": CaseLocale.text("guide.wake_search_body"),
 		}
 	if not exit_door_unlocked:
 		return {
-			"title": CaseLocale.text("guide.wake_door_title"),
-			"body": CaseLocale.text("guide.wake_door_body"),
+			"title": CaseLocale.text("guide.wake_answer_title"),
+			"body": CaseLocale.text("guide.wake_answer_body"),
 		}
 	return {
 		"title": CaseLocale.text("guide.wake_exit_title"),
 		"body": CaseLocale.text("guide.wake_exit_body"),
 	}
+
+
+## The player has everything the door will ask of them: the key in hand, and the
+## science to answer with.
+func _first_lead_prerequisites_met() -> bool:
+	return GameState.has_key(WAKE_ROOM_KEY_ID) and first_lock_rule_learned
 
 
 func _wake_tutorial_target_interaction() -> String:
@@ -2239,7 +2260,6 @@ func add_first_lock_answer_button(text: String, is_correct: bool):
 
 func on_first_lock_correct():
 	exit_door_unlocked = true
-	# 持久化：从大厅返回 wake_room 时门保持解锁，不用再答题。
 	GameState.wake_room_door_unlocked = true
 	_set_first_lead_step(FirstLeadStep.COMPLETE)
 
@@ -2254,9 +2274,44 @@ func on_first_lock_correct():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "Correct.\n\nMrs. Lin:\nYes. Fire needs oxygen from the air. The knowledge lock recognized the answer.\n\nThe door unlocks with a heavy click.\n\nYou can enter the castle hall now, or stay here and review the room first.")
+	show_dialogue("Mrs. Lin", "Correct.\n\nMrs. Lin:\nYes. Fire needs oxygen from the air. The knowledge lock recognized the answer.\n\nThe door unlocks with a heavy click.")
 	reset_dialogue_scrolls()
 
+	# Name the rule the moment the player has just lived it. Without this beat
+	# a player leaves the first room having learned only "press E on things",
+	# and treats every later knowledge lock as an arbitrary quiz rather than a
+	# question they already hold the answer to.
+	add_dialogue_button("Continue", _show_dual_lock_rule)
+
+
+## The one transferable lesson of the opening: a key opens the door, a question
+## guards it, and the answer is always something learned somewhere else.
+func _show_dual_lock_rule() -> void:
+	if GameState.has_story_flag("dual_lock_rule_taught"):
+		close_message_panel()
+		_offer_leave_or_stay()
+		return
+	GameState.set_story_flag("dual_lock_rule_taught")
+	clear_buttons()
+	_show_dialogue(message_panel)
+	show_dialogue(
+		CaseLocale.text("guide.rule_title"),
+		CaseLocale.text("guide.rule_body")
+	)
+	reset_dialogue_scrolls()
+	add_dialogue_button(
+		CaseLocale.text("guide.rule_continue"), _offer_leave_or_stay
+	)
+
+
+func _offer_leave_or_stay() -> void:
+	clear_buttons()
+	_show_dialogue(message_panel)
+	show_dialogue(
+		"Mrs. Lin",
+		"You can enter the castle hall now, or stay here and review the room first."
+	)
+	reset_dialogue_scrolls()
 	add_dialogue_button("Stay in this room", close_message_panel)
 	add_dialogue_button("Enter the Castle Hall", leave_wake_room)
 

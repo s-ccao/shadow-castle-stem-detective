@@ -114,6 +114,10 @@ func _test_wake_arrival() -> void:
 		player.position.distance_to(Vector2(336.0, 500.0)) < 48.0,
 		"Wake-up staging leaves the detective on a safe first step"
 	)
+	# The opening no longer raises a modal here. A card at the moment of
+	# handover buried the objective card's entrance behind it, and taught
+	# controls in the abstract with nothing to practise on. A coach now teaches
+	# one lesson at a time, in context, after control returns.
 	var onboarding_hud := root.get_node_or_null("OnboardingHud")
 	var orientation_overlay := (
 		onboarding_hud.get_node_or_null("FieldOrientationOverlay") as Control
@@ -121,12 +125,20 @@ func _test_wake_arrival() -> void:
 		else null
 	)
 	_expect(
-		orientation_overlay != null and orientation_overlay.visible,
-		"First wake-up continues directly into the movement tutorial"
+		orientation_overlay == null or not orientation_overlay.visible,
+		"First wake-up does not bury the screen under a control modal"
 	)
-	if onboarding_hud != null:
-		onboarding_hud.call("_complete_orientation")
-		await process_frame
+	var coach := wake_room.find_child("TutorialCoach", true, false)
+	_expect(coach != null, "First wake-up hands over to the tutorial coach")
+	if coach != null:
+		var waited := 0.0
+		while waited < 3.0 and str(coach.call("current_lesson")).is_empty():
+			await create_timer(0.1).timeout
+			waited += 0.1
+		_expect(
+			str(coach.call("current_lesson")) == "move",
+			"First wake-up continues into the movement lesson"
+		)
 
 	wake_room.queue_free()
 	await process_frame

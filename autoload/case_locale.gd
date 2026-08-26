@@ -168,17 +168,26 @@ const TEXT: Dictionary = {
 		"en": "Open the brass-marked door to the castle hall.",
 		"zh": "打开带黄铜标记的门，前往城堡大厅。",
 	},
-	"guide.wake_first_door_title": {"en": "WAKE ROOM  ·  1 / 6", "zh": "苏醒室  ·  1 / 6"},
+	"guide.wake_first_door_title": {"en": "FIRST LEAD  ·  1 / 3", "zh": "第一条线索  ·  1 / 3"},
 	"guide.wake_first_door_body": {
-		"en": "Walk to the large door with WASD, the stick, or a click. Press E or tap it to inspect the lock.",
-		"zh": "用 WASD、摇杆或点击移动到大门前，再按 E 或点击大门检查门锁。",
+		"en": "Find a way out of this room.",
+		"zh": "找到离开这个房间的办法。",
 	},
-	"guide.wake_desk_title": {"en": "WAKE ROOM  ·  2 / 6", "zh": "苏醒室  ·  2 / 6"},
-	"guide.wake_desk_body": {
-		"en": "Inspect the study desk and complete its flame lesson to recover Dr. Lin's field notes.",
-		"zh": "调查书桌，完成火焰教学，取回林博士留下的现场笔记。",
+	"guide.wake_search_title": {"en": "FIRST LEAD  ·  2 / 3", "zh": "第一条线索  ·  2 / 3"},
+	"guide.wake_search_body": {
+		"en": "The door needs a key, and it will ask you a question. Search the room for both.",
+		"zh": "门需要一把钥匙，还会问你一个问题。在房间里把两样都找出来。",
 	},
-	"guide.wake_key_title": {"en": "WAKE ROOM  ·  3 / 6", "zh": "苏醒室  ·  3 / 6"},
+	"guide.wake_answer_title": {"en": "FIRST LEAD  ·  3 / 3", "zh": "第一条线索  ·  3 / 3"},
+	"guide.wake_answer_body": {
+		"en": "Return to the door and answer what it asks.",
+		"zh": "回到门前，回答它的问题。",
+	},
+	"guide.wake_exit_title": {"en": "THE HALL AWAITS", "zh": "大厅在等着你"},
+	"guide.wake_exit_body": {
+		"en": "The lock is open. Go through when you are ready.",
+		"zh": "锁已经开了。准备好就出发。",
+	},
 	"note.knowledge.chemistry.title": {"en": "Chemistry Room Knowledge", "zh": "化学室知识"},
 	"note.knowledge.chemistry.body": {
 		"en": "A chemical change creates new substances: burning paper is chemical, while melting ice, breaking glass and dissolving sugar are physical changes.",
@@ -216,25 +225,6 @@ const TEXT: Dictionary = {
 	},
 	"wake.unclaimed.desk_note": {"en": "Mrs. Lin's note on the study desk", "zh": "书桌上林夫人的字条"},
 	"wake.unclaimed.candle_note": {"en": "the candle note beside the bed", "zh": "床边的蜡烛笔记"},
-	"guide.wake_key_body": {
-		"en": "Inspect the bed and take the Wake Room key from beneath the pillow.",
-		"zh": "调查床铺，从枕头下拿走苏醒室钥匙。",
-	},
-	"guide.wake_answer_title": {"en": "WAKE ROOM  ·  4 / 6", "zh": "苏醒室  ·  4 / 6"},
-	"guide.wake_answer_body": {
-		"en": "Read the bookshelf's science volume before answering the door.",
-		"zh": "在回答门锁前，阅读书架上的科学书籍。",
-	},
-	"guide.wake_door_title": {"en": "WAKE ROOM  ·  5 / 6", "zh": "苏醒室  ·  5 / 6"},
-	"guide.wake_door_body": {
-		"en": "Return to the door. Use the key, then answer its question.",
-		"zh": "回到大门前：使用钥匙，然后回答门上的问题。",
-	},
-	"guide.wake_exit_title": {"en": "WAKE ROOM  ·  6 / 6", "zh": "苏醒室  ·  6 / 6"},
-	"guide.wake_exit_body": {
-		"en": "The lock is open. Interact with the door once more to enter Castle Hall.",
-		"zh": "门锁已经打开。再次与大门互动，进入城堡大厅。",
-	},
 	"guide.chem_stain_title": {"en": "CHEMISTRY ROOM  ·  1 / 3", "zh": "化学室  ·  1 / 3"},
 	"guide.chem_stain_body": {
 		"en": "Investigate the red stain on the floor, then record what the powder and indicator reveal.",
@@ -250,6 +240,38 @@ const TEXT: Dictionary = {
 		"en": "The room is solved. Return to Castle Hall — the Guardian is still hunting out there.",
 		"zh": "本房间已经查清。返回城堡大厅 —— 守卫仍在外面搜捕。",
 	},
+	"coach.move": {
+		"en": "Move with these keys — or click anywhere on the floor.",
+		"zh": "用这几个键移动 —— 也可以直接点地面。",
+	},
+	"coach.interact": {
+		"en": "Something is within reach. Press this to look at it.",
+		"zh": "面前有东西可以查看。按这个键。",
+	},
+	"guide.rule_title": {
+		"en": "HOW EVERY DOOR IN THIS CASTLE WORKS",
+		"zh": "这座城堡里每一道门的规则",
+	},
+	"guide.rule_body": {
+		"en": (
+			"That door had two locks. A key, and a question.\n\n"
+			+ "The key was in this room. The answer was not — you learned it from "
+			+ "the flame and the book. Every locked door from here on is the same: "
+			+ "find the key nearby, and find the answer somewhere you have already "
+			+ "been.\n\n"
+			+ "Your notebook keeps everything you learn. When a door asks you "
+			+ "something, the answer is already in there."
+		),
+		"zh": (
+			"那道门上着两把锁：一把钥匙，一道问题。\n\n"
+			+ "钥匙在这个房间里，答案却不在 —— 你是从火焰和书本里学到的。"
+			+ "从这里开始，每一道锁着的门都是这样：钥匙在附近找，"
+			+ "答案要去你已经去过的地方找。\n\n"
+			+ "你的笔记本会记下你学到的一切。当一道门向你提问时，"
+			+ "答案早就在里面了。"
+		),
+	},
+	"guide.rule_continue": {"en": "I UNDERSTAND", "zh": "我明白了"},
 	"hall.guided_shove": {
 		"en": "The Guardian's shoulder throws you aside — it stumbles, and you keep moving.",
 		"zh": "守卫的肩膀把你撞开 —— 它踉跄了一下，你趁机继续跑。",
