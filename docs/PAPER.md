@@ -6,17 +6,7 @@
 
 ---
 
-> **写作说明（提交前请删除本引用块）**
-> 本文按学术论文结构撰写，全部内容基于本项目的真实实现。
-> 每一节开头的灰色引用块是中文要点提示，方便你理解与修改，**正式提交时请删除所有引用块**。
-> 参考文献部分标注了需要你亲自核实的事项，请务必逐条确认后再提交。
-
----
-
 ## Abstract
-
-> **本节要点：** 说明问题（科学教育中"记忆概念"与"运用概念推理"的差距）、本项目做了什么、
-> 与已有教育游戏的区别、目前完成到什么程度。摘要不夸大，不声称做过未做的实验。
 
 Science education research has long distinguished between knowing a scientific
 fact and being able to reason with it. Students can frequently state that
@@ -61,9 +51,6 @@ intrinsic integration, evidence-based argumentation, educational game design
 ---
 
 ## 1. Introduction
-
-> **本节要点：** 先讲科学教育的真实困难（学生会背定义但不会用），
-> 再讲为什么游戏适合解决这个问题，最后引出本项目。
 
 Scientific literacy is not primarily the retention of facts. Contemporary
 science education frameworks describe it as a set of practices: constructing
@@ -118,9 +105,6 @@ The contributions of this work are:
 ---
 
 ## 2. Background and Related Work
-
-> **本节要点：** 介绍已有工作的三类（模拟工具、叙事探究游戏、游戏化课程），
-> 说明各自的贡献与局限，最后点出研究空缺。
 
 ### 2.1 Simulation tools for conceptual understanding
 
@@ -184,10 +168,6 @@ with an engineering solution, described in Section 3.5.
 ---
 
 ## 3. Methodology
-
-> **本节要点：** 这是全文最重要的部分。依次说明：整体设计原则、
-> 科学内容如何嵌入门锁、追逐系统如何制造"证据是否充分"的判断、
-> 两层结局、以及用测试锁定教学设计。
 
 ### 3.1 Design principle: the concept is the lock
 
@@ -349,9 +329,6 @@ a stale device from overwriting newer progress.
 
 ## 4. Results
 
-> **本节要点：** 说明"已经做出了什么"，用截图证明这是可运行的成品而非概念设计。
-> 注意：这里只报告实现成果，不报告未做过的学习效果数据。
-
 ### 4.1 Implemented system
 
 The project is a complete, publicly playable build rather than a prototype
@@ -425,9 +402,6 @@ outcomes, which is addressed in Section 5.2.
 
 ## 5. Conclusion
 
-> **本节要点：** 总结贡献，然后诚实列出局限与未来工作。
-> 局限写得越具体、越诚实，越显得研究成熟。
-
 ### 5.1 Contributions
 
 This paper described the design and implementation of *Shadow Castle: STEM
@@ -497,15 +471,6 @@ which would model the structure of scientific argumentation more explicitly [10]
 ---
 
 ## References
-
-> **提交前必须完成的事项（完成后请删除本块）：**
-> 1. 下列文献均为真实存在且被广泛引用的来源，但**你必须亲自核实每一条的
->    作者、年份、卷期与页码**，并按你学校要求的引用格式（APA / IEEE / MLA）重排。
-> 2. 请只保留你**确实读过**的文献。引用未读过的文献是学术不端。
->    建议至少精读 [3][4][6] 三篇，它们是本文论证的核心支撑。
-> 3. 若你在正文中增删了论点，请同步调整引用编号。
-> 4. 图 1–3 为本项目自摄截图，标注为 "Screenshot from Shadow Castle: STEM
->    Detective"。若你在文中加入他人项目截图，必须注明原始出处。
 
 [1] NGSS Lead States. *Next Generation Science Standards: For States, By States.*
 National Academies Press, 2013.
