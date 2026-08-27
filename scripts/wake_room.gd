@@ -991,6 +991,7 @@ func _on_inspect_confirm_pressed():
 
 	if current_inspect_confirm == "wake_room_key":
 		GameState.add_key(WAKE_ROOM_KEY_ID)
+		_record_wake_room_checkpoint()
 		inspect_confirm_button.visible = false
 		current_inspect_confirm = ""
 		_refresh_first_lead_objective(true)
@@ -1242,6 +1243,7 @@ func show_book_clue() -> void:
 		GameState.set_story_flag("wake_room_bookshelf_read")
 		# 只有书架给出门锁的答案；书桌只解释所有房间通用的规则。
 		first_lock_rule_learned = true
+		_record_wake_room_checkpoint()
 		GameState.learned_fire_oxygen_rule = true
 		# 允许玩家先看书架，也不会丢失笔记功能。
 		unlock_notes_tool()
@@ -3576,6 +3578,19 @@ func _on_flame_minigame_finished(cleared_all: bool, stages: int) -> void:
 
 	show_scroll_clue()
 	GameState.set_story_flag("wake_flame_drilled")
+	_record_wake_room_checkpoint()
+
+
+## Eight stages of the flame lesson, the key and the book are real work. Until
+## now the room only recorded a checkpoint on the way out, so a player who
+## stopped partway was returned to re-enter rather than resumed where they
+## stood, and the lesson had to be repeated.
+func _record_wake_room_checkpoint() -> void:
+	GameState.save_room_checkpoint(
+		"res://scenes/wake_room.tscn",
+		"wake_room",
+		"wake_room_start"
+	)
 
 
 ## 没做完时的回话。说清楚推出了几只、还剩几只，玩家才知道自己是在推进还是

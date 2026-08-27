@@ -2360,6 +2360,13 @@ func _release_stale_guardian_hold(delta: float) -> void:
 	):
 		guardian_hold_watchdog = 0.0
 		return
+	# A hold that something is deliberately maintaining is not stale. The
+	# arrival dialogue is the case that mattered: reading it takes longer than
+	# this timeout, so the watchdog fired on every first-time player, armed the
+	# Guardian and skipped the guided route that makes the crossing survivable.
+	if dialogue_active or message_panel.visible or get_tree().paused:
+		guardian_hold_watchdog = 0.0
+		return
 	guardian_hold_watchdog += delta
 	if guardian_hold_watchdog < GUARDIAN_HOLD_WATCHDOG_TIMEOUT:
 		return
@@ -2379,6 +2386,12 @@ func _force_end_guardian_cinematic() -> void:
 	if enemy.has_method("set_catch_enabled"):
 		enemy.call("set_catch_enabled", true)
 	enemy.set_physics_process(true)
+	# Recovery must not hand back a lethal Guardian and a tutorial that never
+	# started. The guided route is what makes contact a shove rather than a
+	# death, so on a first arrival it has to be in force before the Guardian is.
+	if not GameState.hall_arrival_seen and hall_arrival_step == HallArrivalStep.NONE:
+		guardian_entry_sequence_played = true
+		_begin_hall_arrival_route()
 	if not guardian_entry_sequence_active and not power_route_scan_active:
 		return
 	if guardian_entry_sequence_active:
