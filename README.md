@@ -157,6 +157,7 @@ git clone https://github.com/s-ccao/shadow-castle-stem-detective.git
 
 ## Documentation
 
+- [Design paper](docs/PAPER.md) — the instructional argument behind the game: why scientific reasoning is the progression mechanic, how the finale separates a lead from proof, and how pedagogical guarantees are held in place by tests.
 - [Project status](docs/PROJECT_STATUS.md) — current phase, implemented flow, acceptance focus.
 - [Development history](docs/DEVELOPMENT_HISTORY.md) — versioned milestones with technical decisions and evidence.
 - [Agent handoff](docs/AGENT_HANDOFF.md) — system map, safeguards, validation flow, next priorities.

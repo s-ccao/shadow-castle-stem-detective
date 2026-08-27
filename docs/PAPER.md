@@ -1,6 +1,6 @@
 # Teaching Scientific Reasoning Through Investigative Gameplay: The Design and Implementation of *Shadow Castle: STEM Detective*
 
-**Author:** [Your Name]
+**Author:** Changyang Cao
 **Project repository:** https://github.com/s-ccao/shadow-castle-stem-detective
 **Playable build:** https://play.shadowcastledetective.com/
 
