@@ -272,6 +272,10 @@ const TEXT: Dictionary = {
 		),
 	},
 	"guide.rule_continue": {"en": "I UNDERSTAND", "zh": "我明白了"},
+	"hall.guided_return": {
+		"en": "Not that way — back to the marked route.",
+		"zh": "不是那边 —— 回到标记的路线上。",
+	},
 	"hall.guided_shove": {
 		"en": "The Guardian's shoulder throws you aside — it stumbles, and you keep moving.",
 		"zh": "守卫的肩膀把你撞开 —— 它踉跄了一下，你趁机继续跑。",

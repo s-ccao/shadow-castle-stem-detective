@@ -91,6 +91,30 @@ func _run() -> void:
 			onboarding_hud.call("_complete_orientation")
 			await process_frame
 		_expect(not paused, "Acknowledging Hall controls starts the chase")
+		# The guided crossing is a scripted rehearsal: the Guardian is placed
+		# relative to the player's progress along the route, cannot catch them,
+		# and holds its distance rather than closing. That contract is covered by
+		# guided_crossing_test. Everything below describes the ordinary hunt that
+		# follows, so retire the tutorial before asserting against it.
+		# Snapshot the markers' metadata, not the nodes: completing the step
+		# frees them, and a saved reference would be a freed object by the time
+		# the assertions below run.
+		var guided_markers: Array = []
+		for marker_node: Variant in (hall.get("hall_route_marker_nodes") as Array):
+			var live := marker_node as Node2D
+			if live == null:
+				continue
+			guided_markers.append({
+				"kind": str(live.get_meta("route_kind", "")),
+				"incoming": live.get_meta("incoming_direction", Vector2.ZERO) as Vector2,
+				"outgoing": live.get_meta("outgoing_direction", Vector2.ZERO) as Vector2,
+				"direction": live.get_meta("route_direction", Vector2.ZERO) as Vector2,
+			})
+		hall.call("_set_hall_arrival_step", 4)
+		game_state.hall_arrival_seen = true
+		if guardian != null:
+			guardian.call("set_catch_enabled", true)
+		await process_frame
 		if guardian != null:
 			_expect(bool(guardian.get("catch_enabled")), "Guardian contact becomes lethal after the reveal")
 			# The close-up hands control back, but control is worthless if the
@@ -214,25 +238,21 @@ func _run() -> void:
 			guardian.global_position = guardian_position_before_eta
 			game_state.call("update_guardian_hall_position", guardian_position_before_eta)
 			guardian.set_physics_process(true)
-		var route_markers: Array = hall.get("hall_route_marker_nodes") as Array
+		var route_markers: Array = guided_markers
 		var corner_count := 0
 		var diagonal_marker_count := 0
-		for marker_variant: Variant in route_markers:
-			var marker := marker_variant as Node2D
-			if marker == null:
-				continue
-			var route_kind := str(marker.get_meta("route_kind", ""))
+		for entry: Variant in route_markers:
+			var marker: Dictionary = entry as Dictionary
+			var route_kind: String = str(marker["kind"])
 			if route_kind == "corner_90":
 				corner_count += 1
-				var incoming := marker.get_meta("incoming_direction", Vector2.ZERO) as Vector2
-				var outgoing := marker.get_meta("outgoing_direction", Vector2.ZERO) as Vector2
+				var incoming: Vector2 = marker["incoming"]
+				var outgoing: Vector2 = marker["outgoing"]
 				if not is_zero_approx(incoming.dot(outgoing)):
 					diagonal_marker_count += 1
 			elif route_kind == "straight" or route_kind == "destination":
-				var direction := marker.get_meta("route_direction", Vector2.ZERO) as Vector2
-				if not (
-					is_zero_approx(direction.x) != is_zero_approx(direction.y)
-				):
+				var direction: Vector2 = marker["direction"]
+				if not (is_zero_approx(direction.x) != is_zero_approx(direction.y)):
 					diagonal_marker_count += 1
 		_expect(not route_markers.is_empty(), "First-arrival floor route renders guidance markers")
 		_expect(corner_count > 0, "First-arrival floor route marks turns with explicit 90-degree corners")

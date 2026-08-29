@@ -701,6 +701,37 @@ enum HallArrivalStep {
 	COMPLETE,
 }
 
+## The guided crossing is a rehearsal, not a chase the player can lose.
+##
+## Free pursuit during the tutorial produced two failures immediately: the
+## Guardian pathed through geometry that the navigation grid and the wall
+## polygons disagree about, and it could crowd a player into a state they had no
+## way out of. Both came from the same cause — its position was decided
+## independently of the player's progress.
+##
+## During the tutorial the Guardian is instead placed relative to how far along
+## the route the player has actually walked. It advances when they advance, so
+## it cannot arrive early and cannot corner them.
+##
+## The gap it holds shrinks as the crossing proceeds. Early on it trails far
+## enough to read as distant pursuit; by the final segment it is close enough to
+## be frightening. That is the escalation, and because it is expressed in
+## waypoints rather than speed, it stays survivable at any pace.
+const TUTORIAL_TRAIL_START: int = 9
+const TUTORIAL_TRAIL_END: int = 4
+## How near a waypoint counts as reaching it.
+const TUTORIAL_WAYPOINT_REACH: float = 96.0
+## Straying further than this from every waypoint means the player has left the
+## route, and is returned to the last one they reached.
+const TUTORIAL_ROUTE_LEASH: float = 420.0
+
+var hall_tutorial_route: Array[Vector2] = []
+var hall_tutorial_reached: int = 0
+## Where the Guardian stands before the player has walked far enough for the
+## trailing gap to reach into the route. Without this the clamp put it on
+## waypoint zero, which is the player's own starting mark.
+var hall_tutorial_guardian_origin: Vector2 = Vector2.ZERO
+
 var hall_arrival_step: HallArrivalStep = HallArrivalStep.NONE
 var hall_route_panel: Panel
 var hall_route_title: Label
@@ -936,6 +967,7 @@ func _process(delta: float) -> void:
 		_damage_invincible_timer -= delta
 	update_enemy_chase_state(delta)
 	_update_guardian_tutorial_pace(delta)
+	_update_hall_tutorial_chase()
 	_update_guardian_countdown(delta)
 	_update_guardian_pressure(delta)
 	_update_music_intensity()
@@ -6013,8 +6045,103 @@ func _begin_hall_arrival_route() -> void:
 	if GameState.hall_arrival_seen:
 		return
 	_set_hall_arrival_step(HallArrivalStep.REACH_CHEMISTRY_DOOR)
+	_build_hall_tutorial_route()
 	call_deferred("_sync_hall_arrival_huds")
 	_show_hall_route_arrival_toast()
+
+
+## The scripted path the rehearsal runs along. Built once, from the same route
+## builder that draws the floor markers, so what the Guardian follows and what
+## the player is shown are the same line.
+func _build_hall_tutorial_route() -> void:
+	hall_tutorial_route.clear()
+	hall_tutorial_reached = 0
+	if player == null:
+		return
+	var built: Array[Vector2] = _get_hall_route_path(
+		player.global_position, CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
+	)
+	if built.size() < 2:
+		return
+	hall_tutorial_route = built
+	if enemy != null and is_instance_valid(enemy):
+		hall_tutorial_guardian_origin = enemy.global_position
+		enemy.global_position = _hall_tutorial_guardian_position()
+		GameState.update_guardian_hall_position(enemy.global_position)
+
+
+## Where the player is returned to if they leave the route.
+func hall_tutorial_checkpoint_position() -> Vector2:
+	if hall_tutorial_route.is_empty():
+		return player.global_position if player != null else Vector2.ZERO
+	return hall_tutorial_route[clampi(
+		hall_tutorial_reached, 0, hall_tutorial_route.size() - 1
+	)]
+
+
+## The Guardian's scripted mark: a shrinking number of waypoints behind whatever
+## the player has actually reached.
+func _hall_tutorial_guardian_position() -> Vector2:
+	if hall_tutorial_route.is_empty():
+		return ENEMY_START_POSITION
+	var progress := (
+		float(hall_tutorial_reached) / float(maxi(hall_tutorial_route.size() - 1, 1))
+	)
+	var trail := int(round(lerpf(
+		float(TUTORIAL_TRAIL_START), float(TUTORIAL_TRAIL_END), clampf(progress, 0.0, 1.0)
+	)))
+	var index := hall_tutorial_reached - trail
+	# Until the player has walked far enough for the trailing gap to reach into
+	# the route, the Guardian waits at the mark it entered on.
+	if index < 0:
+		return hall_tutorial_guardian_origin
+	return hall_tutorial_route[clampi(index, 0, hall_tutorial_route.size() - 1)]
+
+
+## Drive the rehearsal. The Guardian is placed rather than steered, so it can
+## neither clip through geometry on its way nor arrive before the player has
+## earned the next beat.
+func _update_hall_tutorial_chase() -> void:
+	if hall_tutorial_route.is_empty() or player == null or enemy == null:
+		return
+	if not _is_hall_arrival_active() or guardian_entry_sequence_active:
+		return
+	if guardian_near_miss_active or game_over or dialogue_active:
+		return
+
+	# Advance as far along the route as the player has actually walked.
+	var advanced := hall_tutorial_reached
+	for index: int in range(hall_tutorial_reached, hall_tutorial_route.size()):
+		if player.global_position.distance_to(hall_tutorial_route[index]) <= TUTORIAL_WAYPOINT_REACH:
+			advanced = index
+	hall_tutorial_reached = maxi(hall_tutorial_reached, advanced)
+
+	# Left the route entirely: put them back on it rather than let them wander
+	# into the Guardian or get lost in the dark.
+	var nearest := INF
+	for point: Vector2 in hall_tutorial_route:
+		nearest = minf(nearest, player.global_position.distance_to(point))
+	if nearest > TUTORIAL_ROUTE_LEASH:
+		_return_player_to_route()
+		return
+
+	if enemy.has_method("set_catch_enabled"):
+		enemy.call("set_catch_enabled", false)
+	enemy.global_position = _hall_tutorial_guardian_position()
+	if enemy.has_method("face_toward"):
+		enemy.call("face_toward", player.global_position)
+	GameState.update_guardian_hall_position(enemy.global_position)
+
+
+func _return_player_to_route() -> void:
+	var checkpoint := hall_tutorial_checkpoint_position()
+	if player.has_method("cancel_click_movement"):
+		player.call("cancel_click_movement")
+	player.global_position = checkpoint
+	if enemy != null and is_instance_valid(enemy):
+		enemy.global_position = _hall_tutorial_guardian_position()
+		GameState.update_guardian_hall_position(enemy.global_position)
+	show_hall_notice(CaseLocale.text("hall.guided_return"))
 
 
 func _is_hall_arrival_active() -> bool:
