@@ -2722,6 +2722,33 @@ func on_player_caught():
 ## seeing what ended it, which reads as the game closing rather than as
 ## something the Guardian did. This pans onto the Guardian, names the capture,
 ## and only then opens the report.
+## Guarantee the recovery screen. The capture beat is presentation; being able
+## to retry is not optional, so it is raised on a timer that runs regardless of
+## what the animation does or whether the tree is paused.
+func _arm_capture_watchdog() -> void:
+	var deadline := (
+		CAPTURE_PUSH_DURATION
+		+ CAPTURE_HOLD_DURATION
+		+ CAPTURE_ESCORT_DURATION
+		+ 1.5
+	)
+	get_tree().create_timer(deadline, true).timeout.connect(
+		func() -> void:
+			if not is_inside_tree() or not game_over:
+				return
+			if game_over_screen_root != null and game_over_screen_root.visible:
+				return
+			if guardian_reveal_overlay != null:
+				guardian_reveal_overlay.visible = false
+			var stalled_camera := get_node_or_null("GuardianCaptureCamera")
+			if stalled_camera != null and is_instance_valid(stalled_camera):
+				stalled_camera.queue_free()
+			if follow_camera != null:
+				follow_camera.make_current()
+			_show_game_over_screen()
+	)
+
+
 func _play_capture_sequence() -> void:
 	# Any missing piece means the beat cannot be staged. This is the death path,
 	# so it falls through to the report rather than risking a crash on the frame
@@ -2738,6 +2765,11 @@ func _play_capture_sequence() -> void:
 	GameAudio.play(&"guardian_alert")
 	GameAudio.duck_music(1.6)
 	hide_interaction_feedback()
+	# The beat below waits on four tweens and timers. Any of them stalling would
+	# leave the player frozen under a black overlay with no way to retry or
+	# quit, which is worse than losing the animation. This guarantees the
+	# recovery screen arrives even if the sequence never finishes.
+	_arm_capture_watchdog()
 	if hall_route_panel != null:
 		hall_route_panel.visible = false
 	if fog_sprite != null:
@@ -2759,6 +2791,7 @@ func _play_capture_sequence() -> void:
 	guardian_reveal_title.text = CaseLocale.text("capture.title")
 	guardian_reveal_body.text = CaseLocale.text("capture.seized")
 	var overlay_in := create_tween()
+	overlay_in.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	overlay_in.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	overlay_in.tween_property(guardian_reveal_overlay, "modulate:a", 1.0, 0.18)
 
@@ -2777,6 +2810,7 @@ func _play_capture_sequence() -> void:
 	# Frame both bodies rather than the Guardian alone, so the picture shows the
 	# two of them together and the player can read what just happened to them.
 	var close_in := create_tween()
+	close_in.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	close_in.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	close_in.tween_property(capture_camera, "global_position", framing, CAPTURE_PUSH_DURATION)
 	close_in.parallel().tween_property(capture_camera, "zoom", CAPTURE_ZOOM, CAPTURE_PUSH_DURATION)
@@ -2784,15 +2818,16 @@ func _play_capture_sequence() -> void:
 	if not is_inside_tree():
 		return
 
-	await get_tree().create_timer(CAPTURE_HOLD_DURATION).timeout
+	await get_tree().create_timer(CAPTURE_HOLD_DURATION, true).timeout
 	if not is_inside_tree():
 		return
 	guardian_reveal_body.text = CaseLocale.text("capture.escorted")
-	await get_tree().create_timer(CAPTURE_ESCORT_DURATION).timeout
+	await get_tree().create_timer(CAPTURE_ESCORT_DURATION, true).timeout
 	if not is_inside_tree():
 		return
 
 	var overlay_out := create_tween()
+	overlay_out.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	overlay_out.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	overlay_out.tween_property(guardian_reveal_overlay, "modulate:a", 0.0, 0.22)
 	await overlay_out.finished
@@ -6109,11 +6144,19 @@ func _hall_tutorial_guardian_position() -> Vector2:
 ## neither clip through geometry on its way nor arrive before the player has
 ## earned the next beat.
 func _update_hall_tutorial_chase() -> void:
-	if hall_tutorial_route.is_empty() or player == null or enemy == null:
+	if player == null or enemy == null:
 		return
 	if not _is_hall_arrival_active() or guardian_entry_sequence_active:
 		return
 	if guardian_near_miss_active or game_over or dialogue_active:
+		return
+
+	# The rehearsal is never lethal. This is asserted here rather than only
+	# where the route is driven, because a route that failed to build would
+	# otherwise leave a live Guardian loose with no protection at all.
+	if enemy.has_method("set_catch_enabled"):
+		enemy.call("set_catch_enabled", false)
+	if hall_tutorial_route.is_empty():
 		return
 
 	# Advance as far along the route as the player has actually walked.
@@ -6132,8 +6175,6 @@ func _update_hall_tutorial_chase() -> void:
 		_return_player_to_route()
 		return
 
-	if enemy.has_method("set_catch_enabled"):
-		enemy.call("set_catch_enabled", false)
 	enemy.global_position = _hall_tutorial_guardian_position()
 	if enemy.has_method("face_toward"):
 		enemy.call("face_toward", player.global_position)
