@@ -828,4 +828,34 @@ const LINES: Dictionary = {
 		"还没有记下任何笔记。\n\n去调查书桌，先弄明白阿什福德的门锁是怎么运作的。",
 	"--------------------------------\n\n":
 		"--------------------------------\n\n",
+	"Knowledge Lock":
+		"知识锁",
+	"The question is etched into the door, but the golden wheel stays dark.\n\nA physical key is required before the lock will accept an answer. Search the room: the Wake Room key is hidden beneath the bed pillow.":
+		"问题已经刻在门上，但金色的轮盘依然黯淡。\n\n必须先插入实体钥匙，锁才会接受答案。在房间里找找：苏醒室的钥匙藏在床枕下面。",
+	"Beneath the pillow rests a brass key bearing a red Ashford seal.":
+		"枕头底下压着一把黄铜钥匙，上面有阿什福德家的红色印记。",
+	"This is the key to the Wake Room exit. A small blue-gold glint appears at the edge of the room, as if a new place in your casework has awakened.":
+		"这就是苏醒室出口的钥匙。房间角落浮起一点蓝金色的微光，像是你的案卷里又醒来了一个地方。",
+	"Take the Wake Room Key":
+		"拿走苏醒室钥匙",
+	"Behind the books, Mrs. Lin has left a heavy laboratory key.":
+		"书本后面，林女士留下了一把沉甸甸的实验室钥匙。",
+	"This is the key for the Chemistry Room. The door beyond this chamber still asks a question; the answer will be hidden near that lock.":
+		"「这是化学室的钥匙。这间屋子外面的那道门仍会向你提问，而答案就藏在那把锁的附近。\n\n—— 林博士」",
+	"Take the Chemistry Room Key":
+		"拿走化学室钥匙",
+	"The Science of Flame\n\nEvery fire needs air to burn. But not all of the air — only one part of it: oxygen.\n\nWithout oxygen, no flame can keep burning.":
+		"火焰的科学\n\n任何火焰燃烧都需要空气。但并非空气的全部 —— 只需要其中的一种成分：氧气。\n\n没有氧气，任何火焰都无法继续燃烧。",
+	"The Knowledge Lock asks:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is oxygen.\n\n— Ashford Library, Shelf 3\n\nBehind these books, Dr. Lin left the Chemistry Room key.":
+		"知识锁问的是：\n\n「火焰需要从空气中获得什么才能持续燃烧？」\n\n答案是氧气。\n\n—— 阿什福德藏书室，第三排\n\n这些书的后面，林博士留下了化学室的钥匙。",
+	"Search the room":
+		"搜索房间",
+	"Narrator":
+		"旁白",
+	"You":
+		"你",
+	"Mrs. Lin":
+		"林女士",
+	"Dr. Lin":
+		"林博士",
 }

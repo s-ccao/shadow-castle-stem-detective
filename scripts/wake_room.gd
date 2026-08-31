@@ -339,6 +339,11 @@ func _play_wake_arrival() -> void:
 		tutorial_coach.begin(player)
 
 func _process(delta):
+	if tutorial_coach != null:
+		tutorial_coach.set_obscured(
+			dialogue_active or message_panel.visible or puzzle_open
+			or knowledge_panel_open
+		)
 	_update_prop_occlusion_layers()
 	if temporary_prompt_time_left > 0.0:
 		temporary_prompt_time_left = max(
@@ -936,11 +941,12 @@ func show_wake_room_key_inspect() -> void:
 		inspect_confirm_button.visible = false
 	else:
 		inspect_label.text = (
-			"Beneath the pillow rests a brass key bearing a red Ashford seal.\n\n"
-			+ "This is the key to the Wake Room exit. A small blue-gold glint appears at the edge of the room, as if a new place in your casework has awakened."
+			CaseLocale.line("Beneath the pillow rests a brass key bearing a red Ashford seal.")
+			+ "\n\n"
+			+ CaseLocale.line("This is the key to the Wake Room exit. A small blue-gold glint appears at the edge of the room, as if a new place in your casework has awakened.")
 		)
 		inspect_confirm_button.visible = true
-		inspect_confirm_button.text = "Take the Wake Room Key"
+		inspect_confirm_button.text = CaseLocale.line("Take the Wake Room Key")
 	_show_dialogue(inspect_panel)
 
 
@@ -958,11 +964,12 @@ func show_chemistry_key_inspect() -> void:
 		inspect_confirm_button.visible = false
 	else:
 		inspect_label.text = (
-			"Behind the books, Mrs. Lin has left a heavy laboratory key.\n\n"
-			+ "\"This is the key for the Chemistry Room. The door beyond this chamber still asks a question; the answer will be hidden near that lock.\n\n— Dr. Lin\""
+			CaseLocale.line("Behind the books, Mrs. Lin has left a heavy laboratory key.")
+			+ "\n\n"
+			+ CaseLocale.line("This is the key for the Chemistry Room. The door beyond this chamber still asks a question; the answer will be hidden near that lock.")
 		)
 		inspect_confirm_button.visible = true
-		inspect_confirm_button.text = "Take the Chemistry Room Key"
+		inspect_confirm_button.text = CaseLocale.line("Take the Chemistry Room Key")
 	_show_dialogue(inspect_panel)
 
 
@@ -1194,7 +1201,7 @@ func create_book_ui():
 	# 书架的古书提供本房间大门问题的答案，并藏着下一扇门的钥匙。
 	book_continue_button = Button.new()
 	book_continue_button.name = "BookContinueButton"
-	book_continue_button.text = "Take the Chemistry Room Key"
+	book_continue_button.text = CaseLocale.line("Take the Chemistry Room Key")
 	book_continue_button.position = Vector2(620, 536)
 	book_continue_button.size = Vector2(180, 42)
 	book_continue_button.visible = false
@@ -1255,8 +1262,8 @@ func show_book_clue() -> void:
 				"category": "evidence",
 			})
 
-	book_label_left.text = "The Science of Flame\n\nEvery fire needs air to burn. But not all of the air — only one part of it: oxygen.\n\nWithout oxygen, no flame can keep burning."
-	book_label_right.text = "The Knowledge Lock asks:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is oxygen.\n\n— Ashford Library, Shelf 3\n\nBehind these books, Dr. Lin left the Chemistry Room key."
+	book_label_left.text = CaseLocale.line("The Science of Flame\n\nEvery fire needs air to burn. But not all of the air — only one part of it: oxygen.\n\nWithout oxygen, no flame can keep burning.")
+	book_label_right.text = CaseLocale.line("The Knowledge Lock asks:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is oxygen.\n\n— Ashford Library, Shelf 3\n\nBehind these books, Dr. Lin left the Chemistry Room key.")
 	book_continue_button.visible = true
 	_show_dialogue(book_panel)
 	_refresh_first_lead_objective(true)
@@ -1664,12 +1671,15 @@ func show_dialogue(speaker: String, text: String) -> void:
 
 
 func _render_segment() -> void:
-	message_label.text = "%s:\n%s" % [_current_speaker, _dialogue_segments[_segment_index]]
+	message_label.text = "%s:\n%s" % [
+		CaseLocale.line(_current_speaker),
+		_dialogue_segments[_segment_index],
+	]
 	clear_buttons(false)
 	if _segment_index < _dialogue_segments.size() - 1:
 		var continue_button := Button.new()
 		continue_button.name = "SegmentContinueButton"
-		continue_button.text = "Continue"
+		continue_button.text = CaseLocale.line("Continue")
 		continue_button.custom_minimum_size = Vector2(0, 38)
 		continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		continue_button.add_theme_font_size_override("font_size", 15)
@@ -2160,9 +2170,9 @@ func show_no_key_hint():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Narrator", "The question is etched into the door, but the golden wheel stays dark.\n\nA physical key is required before the lock will accept an answer. Search the room: the Wake Room key is hidden beneath the bed pillow.")
+	show_dialogue("Narrator", CaseLocale.line("The question is etched into the door, but the golden wheel stays dark.\n\nA physical key is required before the lock will accept an answer. Search the room: the Wake Room key is hidden beneath the bed pillow."))
 	reset_dialogue_scrolls()
-	add_dialogue_button("Search the room", close_message_panel)
+	add_dialogue_button(CaseLocale.line("Search the room"), close_message_panel)
 
 
 func show_desk_first_hint() -> void:
@@ -2459,7 +2469,7 @@ func create_puzzle_overlay_ui():
 	margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Knowledge Lock"
+	title.text = CaseLocale.line("Knowledge Lock")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color(0.95, 0.78, 0.36, 1.0))

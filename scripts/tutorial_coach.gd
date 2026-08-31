@@ -41,6 +41,7 @@ var _pending: Array[StringName] = []
 var _delay: float = 0.0
 var _origin: Vector2 = Vector2.ZERO
 var _interaction_available := false
+var _obscured := false
 var _tween: Tween
 
 
@@ -80,7 +81,21 @@ func notify_interacted() -> void:
 		_complete_lesson()
 
 
+## The room reports whether a panel is covering the lower screen, so the coach
+## does not print its line on top of narration the player is trying to read.
+func set_obscured(obscured: bool) -> void:
+	_obscured = obscured
+	if _panel == null:
+		return
+	if _obscured:
+		_panel.visible = false
+	elif _lesson != LESSON_NONE:
+		_show()
+
+
 func _process(delta: float) -> void:
+	if _obscured:
+		return
 	if _pending.is_empty() and _lesson == LESSON_NONE:
 		return
 	if _delay > 0.0:
