@@ -798,4 +798,34 @@ const LINES: Dictionary = {
 		"这条知识已记入笔记本。",
 	"The color of one object":
 		"某一件物品的颜色",
+	"Knowledge Notes":
+		"知识笔记",
+	"Close note":
+		"关闭笔记",
+	"Tutorial: Knowledge Notes\n\n":
+		"教学：知识笔记\n\n",
+	"This tool stores important knowledge you discover while exploring.\n\n":
+		"这个工具会记录你在探索中发现的重要知识。\n\n",
+	"Use it when a knowledge lock asks a question. You can open it from the top-left Notes button or by pressing K.\n\n":
+		"当知识锁向你提问时就打开它。点左上角的「笔记」按钮，或者按 K 键。\n\n",
+	"As you progress, more tools may unlock here, such as Evidence, Objectives, Map, or Inventory.\n\n":
+		"随着调查推进，这里还会解锁更多工具：证据、目标、地图、行囊。\n\n",
+	"Parchment Scroll (Study Desk)\n\n":
+		"羊皮卷轴（书桌）\n\n",
+	"Observation:\nEach Ashford room is sealed by a physical key and a knowledge question. The question appears on the door only after the matching key is used.\n\n":
+		"观察：\n阿什福德的每个房间都由一把实体钥匙和一道知识题共同封锁。只有先用对钥匙，门上才会浮现问题。\n\n",
+	"How to Apply It:\nFind the room's key, read the question on its door, then search the room for evidence of the answer.\n\n":
+		"怎么用：\n先找到这个房间的钥匙，读门上的问题，再回房间里找出答案的依据。\n\n",
+	"Bookshelf: The Science of Flame\n\n":
+		"书架：火焰的科学\n\n",
+	"Observation:\nA science volume on the bookshelf explains that a flame cannot keep burning without oxygen from the air.\n\n":
+		"观察：\n书架上的科学书写道：没有空气中的氧气，火焰就无法持续燃烧。\n\n",
+	"Science Concept:\nFire needs oxygen to keep burning. If oxygen is removed or blocked, the flame weakens and goes out.\n\n":
+		"科学概念：\n火焰需要氧气才能持续燃烧。氧气被耗尽或阻断时，火焰会变弱直至熄灭。\n\n",
+	"How to Apply It:\nIf the knowledge lock asks what a flame needs from the air, the answer is oxygen.":
+		"怎么用：\n如果知识锁问「火焰需要空气中的什么」，答案就是氧气。",
+	"No notes collected yet.\n\nInspect the study desk to learn how Ashford's room locks work.":
+		"还没有记下任何笔记。\n\n去调查书桌，先弄明白阿什福德的门锁是怎么运作的。",
+	"--------------------------------\n\n":
+		"--------------------------------\n\n",
 }

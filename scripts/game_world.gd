@@ -834,6 +834,7 @@ func _ready():
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
 		GameState.unlock_all_hubs()
+		_prepare_standalone_tutorial_preview()
 	# Save compatibility: players who read the desk before its map reward was
 	# introduced receive the same portable toolkit on their next hall visit.
 	if GameState.has_story_flag("wake_room_desk_read"):
@@ -2383,6 +2384,32 @@ func update_enemy_chase_state(delta: float) -> void:
 ## watchdog that stands down whenever a cinematic claims to be running is blind
 ## to the only case it exists for. Neither cinematic keeps the Guardian frozen
 ## for more than ~1.5s, so the timeout leaves a wide margin.
+## Running this scene on its own (F6 in the editor) shows the guided first
+## arrival from the top, rather than dropping the designer into a mid-game Hall.
+## Reviewing the opening otherwise means replaying the Wake Room every time.
+##
+## This only runs when the game was not started from the menu, so it cannot
+## affect a real playthrough.
+func _prepare_standalone_tutorial_preview() -> void:
+	GameState.game_started = true
+	GameState.hall_arrival_seen = false
+	for flag: String in [
+		"hall_first_route_started",
+		"hall_first_route_door_reached",
+		"hall_first_route_core_studied",
+		"hall_first_route_complete",
+		"hall_orientation_completed",
+	]:
+		GameState.set_story_flag(flag, false)
+	# The arrival expects a player who came from the Wake Room with its key and
+	# toolkit; without them the route's first door refuses to open.
+	GameState.grant_wake_room_toolkit()
+	GameState.add_key("wake_room_key")
+	GameState.add_key("chemistry_room_key")
+	GameState.return_spawn_id = "wake_room_first_arrival"
+	print("[Shadow Castle] Standalone run: playing the guided first arrival.")
+
+
 func _release_stale_guardian_hold(delta: float) -> void:
 	if (
 		not enemy_chase_started

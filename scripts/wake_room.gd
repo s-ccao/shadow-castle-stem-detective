@@ -1069,7 +1069,7 @@ func create_scroll_ui():
 	# 桌上卷轴只负责本房间的起步规则；地图会在有实际用途时再出现。
 	scroll_continue_button = Button.new()
 	scroll_continue_button.name = "ScrollContinueButton"
-	scroll_continue_button.text = "Close note"
+	scroll_continue_button.text = CaseLocale.line("Close note")
 	scroll_continue_button.position = Vector2(144.0, 672.0)
 	scroll_continue_button.size = Vector2(212.0, 42.0)
 	scroll_continue_button.add_theme_font_size_override("font_size", 14)
@@ -2576,7 +2576,7 @@ func create_knowledge_panel_ui():
 	margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Knowledge Notes"
+	title.text = CaseLocale.line("Knowledge Notes")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color(0.95, 0.78, 0.36, 1.0))
@@ -2664,25 +2664,25 @@ func update_knowledge_panel_text():
 	var text := ""
 
 	if not notes_tutorial_seen:
-		text += "Tutorial: Knowledge Notes\n\n"
-		text += "This tool stores important knowledge you discover while exploring.\n\n"
-		text += "Use it when a knowledge lock asks a question. You can open it from the top-left Notes button or by pressing K.\n\n"
-		text += "As you progress, more tools may unlock here, such as Evidence, Objectives, Map, or Inventory.\n\n"
-		text += "--------------------------------\n\n"
+		text += CaseLocale.line("Tutorial: Knowledge Notes\n\n")
+		text += CaseLocale.line("This tool stores important knowledge you discover while exploring.\n\n")
+		text += CaseLocale.line("Use it when a knowledge lock asks a question. You can open it from the top-left Notes button or by pressing K.\n\n")
+		text += CaseLocale.line("As you progress, more tools may unlock here, such as Evidence, Objectives, Map, or Inventory.\n\n")
+		text += CaseLocale.line("--------------------------------\n\n")
 
 	if desk_briefing_read:
-		text += "Parchment Scroll (Study Desk)\n\n"
-		text += "Observation:\nEach Ashford room is sealed by a physical key and a knowledge question. The question appears on the door only after the matching key is used.\n\n"
-		text += "How to Apply It:\nFind the room's key, read the question on its door, then search the room for evidence of the answer.\n\n"
+		text += CaseLocale.line("Parchment Scroll (Study Desk)\n\n")
+		text += CaseLocale.line("Observation:\nEach Ashford room is sealed by a physical key and a knowledge question. The question appears on the door only after the matching key is used.\n\n")
+		text += CaseLocale.line("How to Apply It:\nFind the room's key, read the question on its door, then search the room for evidence of the answer.\n\n")
 	if first_lock_rule_learned:
 		if desk_briefing_read:
-			text += "--------------------------------\n\n"
-		text += "Bookshelf: The Science of Flame\n\n"
-		text += "Observation:\nA science volume on the bookshelf explains that a flame cannot keep burning without oxygen from the air.\n\n"
-		text += "Science Concept:\nFire needs oxygen to keep burning. If oxygen is removed or blocked, the flame weakens and goes out.\n\n"
-		text += "How to Apply It:\nIf the knowledge lock asks what a flame needs from the air, the answer is oxygen."
+			text += CaseLocale.line("--------------------------------\n\n")
+		text += CaseLocale.line("Bookshelf: The Science of Flame\n\n")
+		text += CaseLocale.line("Observation:\nA science volume on the bookshelf explains that a flame cannot keep burning without oxygen from the air.\n\n")
+		text += CaseLocale.line("Science Concept:\nFire needs oxygen to keep burning. If oxygen is removed or blocked, the flame weakens and goes out.\n\n")
+		text += CaseLocale.line("How to Apply It:\nIf the knowledge lock asks what a flame needs from the air, the answer is oxygen.")
 	if not desk_briefing_read and not first_lock_rule_learned:
-		text += "No notes collected yet.\n\nInspect the study desk to learn how Ashford's room locks work."
+		text += CaseLocale.line("No notes collected yet.\n\nInspect the study desk to learn how Ashford's room locks work.")
 
 	knowledge_label.text = text
 func open_knowledge_panel_from_dialogue():
