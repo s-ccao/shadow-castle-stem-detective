@@ -935,6 +935,12 @@ func _ready():
 	if not GameState.hall_arrival_seen:
 		_restore_hall_arrival_route()
 		if hall_arrival_step == HallArrivalStep.NONE:
+			# Guidance goes up on the frame the player arrives, before the story
+			# beats play over it. Waiting until after the intro, the reveal and
+			# the orientation meant two clicks and a couple of seconds with
+			# nothing on screen telling the player what to do, which reads as a
+			# tutorial that never started.
+			_begin_hall_arrival_route()
 			show_castle_hall_arrival()
 		else:
 			resume_castle_hall_after_return()
@@ -6112,6 +6118,11 @@ func _restore_hall_arrival_route() -> void:
 
 func _begin_hall_arrival_route() -> void:
 	if GameState.hall_arrival_seen:
+		return
+	# Idempotent: the arrival raises this immediately, and the reveal asks for it
+	# again on the way out. Rebuilding the route the second time would move the
+	# Guardian back to its opening mark mid-crossing.
+	if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
 		return
 	_set_hall_arrival_step(HallArrivalStep.REACH_CHEMISTRY_DOOR)
 	_build_hall_tutorial_route()
