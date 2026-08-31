@@ -716,4 +716,86 @@ const LINES: Dictionary = {
 		"材料",
 	"PAPERS":
 		"纸页",
+	"Knowledge Lock:":
+		"知识锁：",
+	"Which of these is a chemical change?":
+		"下面哪一项属于化学变化？",
+	"Which gas do plants absorb from the air to make their food?":
+		"植物从空气中吸收哪种气体来制造养分？",
+	"Which material usually allows electricity to flow most easily?":
+		"哪种材料通常最容易导电？",
+	"Which principle helps estimate elapsed time from a changing process?":
+		"根据一个正在变化的过程推算经过的时间，应当依据哪条原则？",
+	"Which of these is a primary color of light?":
+		"下面哪一种是光的三原色之一？",
+	"Final synthesis lock":
+		"最终综合锁",
+	"Burning paper":
+		"纸张燃烧",
+	"Melting ice":
+		"冰融化",
+	"Breaking glass":
+		"玻璃破碎",
+	"Dissolving sugar":
+		"糖溶解",
+	"Carbon dioxide":
+		"二氧化碳",
+	"Oxygen":
+		"氧气",
+	"Nitrogen":
+		"氮气",
+	"Argon":
+		"氩气",
+	"Metal":
+		"金属",
+	"Rubber":
+		"橡胶",
+	"Dry wood":
+		"干木头",
+	"Glass":
+		"玻璃",
+	"Red":
+		"红",
+	"Yellow":
+		"黄",
+	"Purple":
+		"紫",
+	"Brown":
+		"棕",
+	"Measure a reasonably steady change and compare independent indicators":
+		"测量一个足够稳定的变化量，并比对多个独立线索",
+	"Trust the first visible clue":
+		"相信第一眼看到的线索",
+	"Use the color of one object":
+		"只看某一件物品的颜色",
+	"Assume every process changes at the same rate":
+		"假设所有过程的变化速率都相同",
+	"A new substance forms":
+		"生成了新的物质",
+	"The paper only changes shape":
+		"纸张只是改变了形状",
+	"The ash is the same substance as the paper":
+		"灰烬与纸张是同一种物质",
+	"Heat cannot change matter":
+		"热量无法改变物质",
+	"Photosynthesis":
+		"光合作用",
+	"Condensation":
+		"凝结",
+	"Magnetism":
+		"磁性",
+	"Sound transmission":
+		"声音传播",
+	"Several independent indicators that changed at reasonably steady rates":
+		"多个以足够稳定速率变化的独立线索",
+	"One clock reading by itself":
+		"仅凭一个钟表读数",
+	"A guess based on the first clue":
+		"基于第一条线索的猜测",
+	"Press E to study ":
+		"按 E 研究",
+	"This knowledge has been added to NoteHub.":
+		"这条知识已记入笔记本。",
+	"The color of one object":
+		"某一件物品的颜色",
 }

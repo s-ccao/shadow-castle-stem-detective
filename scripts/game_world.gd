@@ -2976,7 +2976,7 @@ func update_interaction_focus() -> void:
 			if str(item["id"]) == exhibit_id:
 				_set_hall_interaction_focus(
 					current_interaction,
-					str(item["title"]),
+					CaseLocale.line(str(item["title"])),
 					false
 				)
 				return
@@ -3385,7 +3385,9 @@ func update_interaction_prompt() -> void:
 			continue
 		if _is_near_hall_interaction("hall_knowledge:" + exhibit_id):
 			current_interaction = "hall_knowledge:" + exhibit_id
-			interact_label.text = "Press E to study " + str(item["prompt"])
+			interact_label.text = (
+				CaseLocale.line("Press E to study ") + CaseLocale.line(str(item["prompt"]))
+			)
 			interact_label.visible = true
 			return
 
@@ -3666,9 +3668,9 @@ func _inspect_hall_knowledge(exhibit_id: String) -> void:
 		GameState.set_story_flag(collected_flag)
 		if NoteHud != null:
 			NoteHud.add_clue(str(item["note_id"]), {
-				"title": str(item["title"]),
+				"title": CaseLocale.line(str(item["title"])),
 				"icon": "icon_book",
-				"content": str(item["knowledge"]),
+				"content": CaseLocale.line(str(item["knowledge"])),
 				"category": "knowledge",
 			})
 		start_dialogue_pause()
@@ -3677,10 +3679,11 @@ func _inspect_hall_knowledge(exhibit_id: String) -> void:
 		message_panel.visible = true
 		set_dialogue_text(
 			"You",
-			str(item["title"]) + "\n\n" + str(item["knowledge"]) + "\n\n"
-			+ "This knowledge has been added to NoteHub."
+			CaseLocale.line(str(item["title"]))
+			+ "\n\n" + CaseLocale.line(str(item["knowledge"])) + "\n\n"
+			+ CaseLocale.line("This knowledge has been added to NoteHub.")
 		)
-		show_continue_button("Continue", close_message_panel)
+		show_continue_button(CaseLocale.line("Continue"), close_message_panel)
 		return
 
 
@@ -5513,15 +5516,19 @@ func _show_door_question(door_id: String, question: String, options: Array, corr
 	clear_buttons()
 	set_dialogue_speaker("Mrs. Lin")
 	message_panel.visible = true
-	var question_text: String = "Knowledge Lock:\n\n" + question + "\n"
+	# Every knowledge lock passes through here, so translating at this one point
+	# covers the question, the numbered list and the answer buttons together.
+	var question_text: String = (
+		CaseLocale.line("Knowledge Lock:") + "\n\n" + CaseLocale.line(question) + "\n"
+	)
 	for i: int in range(options.size()):
-		question_text += "\n" + str(i + 1) + ". " + str(options[i])
+		question_text += "\n" + str(i + 1) + ". " + CaseLocale.line(str(options[i]))
 	set_dialogue_text("Mrs. Lin", question_text)
 	var option_order: Array[int] = [0, 1, 2, 3]
 	option_order.shuffle()
 	for option_index: int in option_order:
 		add_door_answer_button(
-			str(options[option_index]),
+			CaseLocale.line(str(options[option_index])),
 			option_index == correct_index
 		)
 
