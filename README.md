@@ -4,7 +4,7 @@
 
 ![Godot](https://img.shields.io/badge/Godot-4.7-478cbf?logo=godotengine&logoColor=white)
 ![GDScript](https://img.shields.io/badge/GDScript-51k_lines-355570)
-![Tests](https://img.shields.io/badge/tests-30_headless_suites-3fa46a)
+![Tests](https://img.shields.io/badge/tests-37_headless_suites-3fa46a)
 ![Platform](https://img.shields.io/badge/platform-Web_·_Desktop-8a63d2)
 
 A 2D pixel-art detective game about a blackout at a magical castle. You gather
@@ -115,7 +115,7 @@ Additive colour mixing is what reveals a hidden archive layer.
 
 ## Testing
 
-Gameplay is covered by **30 headless regression suites** that drive the real
+Gameplay is covered by **37 headless regression suites** that drive the real
 scenes rather than mocks — the chase suite instantiates the Hall, runs the
 Guardian, and asserts on what a player would actually experience.
 
@@ -132,7 +132,28 @@ Several suites exist to protect design guarantees that regress silently:
 | `potion_economy_test.gd` | Every potion is reachable from renewable input — it crafts the whole list, refining reagents on demand. |
 | `panel_overflow_test.gd` | No panel draws text outside its own frame, measured against font extents rather than control rects. |
 | `interaction_stops_walk_test.gd` | Interacting always halts a click-move, so the character never walks off on its own. |
+| `developer_mode_test.gd` | The developer clear credits every stage to the room, and stays hidden for normal players. |
 | `room_spatial_audit.gd` | Every interactable is reachable from walkable floor. |
+
+### Developer mode
+
+Reaching a late-game bug used to mean solving eight minigame stages by hand
+first. Pressing **`0`** toggles developer mode from any room; while it is on, each
+minigame panel shows a clear button that settles the game as a full clear.
+
+The room receives exactly the values a real clear sends, so rewards, story
+flags and the checkpoint all fire normally — only the manual solving is
+skipped. The mode is session-only, defaults off, and is never written to a
+save, so the button cannot appear for a player.
+
+[`docs/MINIGAME_ANSWERS.md`](docs/MINIGAME_ANSWERS.md) lists every stage's
+answer. It is generated, not written by hand: each entry is computed from the
+games' own constants and re-verified against their own judging functions, and
+the generator refuses to write the file if any check fails.
+
+```bash
+godot --headless --path . --script tools/generate_minigame_answers.gd
+```
 
 ## Run locally
 
@@ -161,6 +182,7 @@ git clone https://github.com/s-ccao/shadow-castle-stem-detective.git
 - [Project status](docs/PROJECT_STATUS.md) — current phase, implemented flow, acceptance focus.
 - [Development history](docs/DEVELOPMENT_HISTORY.md) — versioned milestones with technical decisions and evidence.
 - [Agent handoff](docs/AGENT_HANDOFF.md) — system map, safeguards, validation flow, next priorities.
+- [Minigame answers](docs/MINIGAME_ANSWERS.md) — every stage of all six minigames with the rule it teaches; generated from the games' own logic and verified against their own judging functions.
 - [Character art pipeline](docs/ART_PIPELINE.md) — the three visual passes, why an early concept was rejected, and how the final sheets were imported.
 
 ## Attribution

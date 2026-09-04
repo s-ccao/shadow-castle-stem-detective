@@ -4,6 +4,48 @@
 
 ## Stage
 
+- **Stage ID:** `DEV-20260902-27`
+- **Stage name:** Developer mode, and a verified answer sheet for all 48 minigame stages
+- **Completed at:** `2026-09-02`
+- **Status:** `complete`
+- **User-visible outcome:** Testing any room meant solving eight stages of a minigame by hand first, so reaching a late-game bug cost more time than diagnosing it. Pressing `0` now toggles developer mode from *every* room (it was wired to F3 inside the Circuit Room only, so it silently did nothing everywhere else — and on macOS F3 is Mission Control, so the game never received it at all), and while it is on each minigame panel grows a "开发：直接通关" button that settles the game as a full clear. The room receives exactly the pair of values a real clear sends, so rewards, story flags and the checkpoint all fire normally — only the manual solving is skipped. A generated answer sheet covers all six minigames.
+
+## What changed
+
+- New `autoload/dev_tools.gd` (`DevTools` autoload): owns the global `0` hotkey and a corner badge. It is a separate autoload rather than a branch inside `GameState` because minigames pause the whole tree — only `PROCESS_MODE_ALWAYS` still receives input, and giving `GameState` that mode would change the pause semantics of its own logic.
+- `scripts/circuit_room.gd`: its local F3 handler is removed. It already subscribes to `state_changed`, so it keeps syncing its collision overlay.
+- `scripts/minigame_shell.gd`: one dev button in the shared shell covers all six games, and any future one. `_on_dev_solve_pressed()` credits every stage before finishing, so `MinigameLauncher` reports `cleared_all=true` with the full stage count.
+- New `tools/generate_minigame_answers.gd` → `docs/MINIGAME_ANSWERS.md`: 94 answers, each computed from the games' own constants and re-verified against their own judging functions. The generator refuses to write the file if any check fails.
+- `docs/MINIGAME_ANSWERS.md`: all 6 games × 8 stages, with the rule each stage teaches.
+- `scripts/game_world.gd`: the Hall-only "DEVELOPER MODE — F3" label is removed. The global badge replaces it, so the key name no longer lives in two places that can drift apart.
+- `scripts/inventory_hud.gd` / `autoload/note_hud.gd`: the feature-unlock banner ("BAG HUB AWAKENED") was still printing English to a Chinese player. Both HUDs now translate at their single display sink rather than at each caller.
+
+## Verification
+
+- `tests/developer_mode_test.gd` (new): the hotkey survives the pause, and for each of the six games the room receives `cleared_all=true` with all 8 stages credited. It also asserts the button is hidden for normal players and appears when the mode is switched on mid-panel.
+- Full suite: **37/37 pass**.
+- The generator's own guard caught a false positive during development: `_picked` is `Array[int]`, so assigning an untyped `Array` was silently dropped and the empty gear train (ratio 1.0, "clockwise") happened to match level 4's target. Level 4 alone "passed" while nothing had been set. The search now builds a typed array and asserts the write landed.
+- Visual: 5-jar stage with a wrong answer at 1024×768 — both footer buttons and every jar measured inside the panel.
+- The hotkey test drives a real `InputEventKey` through the input chain rather than calling `toggle_developer_mode()` directly, so a wrong binding fails here. It also asserts the badge text names the key that is actually bound, and that typing the key into a focused `LineEdit` does not switch the mode.
+- The first version of that test only exercised autoloads plus a bare minigame — no room was ever loaded, so a room script that swallowed the key would have passed. It now instantiates the Hall, Wake Room, Library and Greenhouse and presses the key inside each (4/4 toggle on and back off), which is the environment the player is actually in.
+
+## Known risks
+
+- `_sync_dev_button()` runs on every `GameState.state_changed`, which is emitted often. It only sets a label and a visibility flag, so the cost is negligible, but it is a per-signal callback rather than a one-time setup.
+- Developer mode is session-only and defaults off; it is never written to a save. The clear button is hidden unless the mode is on.
+
+## Investigated, not a code change
+
+- The reported "wrong answer skews the whole layout" is **already fixed on `origin/main` (4251030)**. The local checkout at `/Users/yaleshen/shadow-castle-stem-detective` is stale at `831c522` and lacks `_banner.autowrap_mode` and the `PANEL_SIZE` height raise (560 → 648). Without wrapping the failure Label reports the entire sentence as its minimum width and drags the shared column — jars, title and footer — outside the fixed-width panel, which is exactly the screenshot. That checkout has 10 uncommitted files, so it was left untouched; it needs a pull by its owner.
+
+## Proposed next stage
+
+Re-check the Hall collision shapes the player reported earlier, now that developer mode makes late rooms reachable in seconds.
+
+---
+
+## Stage
+
 - **Stage ID:** `UX-20260815-26`
 - **Stage name:** Switches become hardware, and the Guardian stops standing behind the room
 - **Completed at:** `2026-08-15`
