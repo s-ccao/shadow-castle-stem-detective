@@ -6192,6 +6192,19 @@ func _update_hall_tutorial_chase() -> void:
 	# otherwise leave a live Guardian loose with no protection at all.
 	if enemy.has_method("set_catch_enabled"):
 		enemy.call("set_catch_enabled", false)
+
+	# While a new route is being walked, the rehearsal must not enforce the old
+	# one. The leash exists to keep a first-time player on the taught line, but
+	# the taught line is precisely what is being replaced here: every attempt to
+	# walk the correct path would be dragged back onto the wrong one, which
+	# makes the recorder unusable for the only job it has.
+	if (
+		_hall_route_recorder != null
+		and is_instance_valid(_hall_route_recorder)
+		and not _hall_route_recorder.is_finished()
+	):
+		return
+
 	if hall_tutorial_route.is_empty():
 		return
 

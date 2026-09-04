@@ -26,6 +26,7 @@ func _run() -> void:
 	_check_store_roundtrip()
 	await _check_recorder_captures_a_walk()
 	await _check_tutorial_prefers_the_authored_route()
+	await _check_recording_is_not_dragged_back()
 
 	game_state.set("developer_mode", false)
 	_finish()
@@ -141,6 +142,87 @@ func _check_tutorial_prefers_the_authored_route() -> void:
 	_expect(
 		fallback.size() >= 2,
 		"Without an authored route the Hall still falls back to pathfinding"
+	)
+
+	hall.queue_free()
+	await process_frame
+
+
+## 一条只能沿旧路线走的录制器是没用的：作者每次试图走对的那条路，都会被
+## 牵引回错的那条。这是这个工具能不能用的分水岭，所以单独验。
+func _check_recording_is_not_dragged_back() -> void:
+	HallRouteStore.clear_route()
+	var game_state := root.get_node("GameState")
+	game_state.set("developer_mode", false)
+
+	var packed := load("res://scenes/game_world.tscn") as PackedScene
+	_expect(packed != null, "The Hall scene loads for the leash check")
+	if packed == null:
+		return
+	var hall: Node = packed.instantiate()
+	root.add_child(hall)
+	for _frame: int in range(45):
+		await process_frame
+
+	var walker: Node2D = hall.get("player") as Node2D
+	_expect(walker != null, "The Hall has a player to walk")
+	if walker == null:
+		hall.queue_free()
+		await process_frame
+		return
+
+	# 进场对话、守卫入场特写等任何一个开着，_update_hall_tutorial_chase 都会
+	# 提前返回，牵引根本不会跑——那样下面三条断言会在一个本就不牵引的状态上
+	# 各自恒真，测试全绿而什么都没验。
+	hall.set("dialogue_active", false)
+	hall.set("guardian_entry_sequence_active", false)
+	hall.set("guardian_near_miss_active", false)
+	hall.set("game_over", false)
+	hall.call("_begin_hall_arrival_route")
+	await process_frame
+	var route: Array = hall.get("hall_tutorial_route")
+	_expect(route.size() >= 2, "A tutorial route exists to be leashed to")
+	if route.size() < 2:
+		hall.queue_free()
+		await process_frame
+		return
+
+	var leash: float = float(hall.get("TUTORIAL_ROUTE_LEASH"))
+	var far: Vector2 = (route[0] as Vector2) + Vector2(leash * 2.0, leash * 2.0)
+
+	walker.global_position = far
+	hall.call("_update_hall_tutorial_chase")
+	await process_frame
+	_expect(
+		walker.global_position.distance_to(far) > 1.0,
+		"Without developer mode, leaving the route still returns the player"
+	)
+
+	# 开启开发者模式即进入录制，牵引必须让开。
+	game_state.set("developer_mode", true)
+	hall.call("_sync_hall_route_recorder")
+	await process_frame
+	var recorder = hall.get("_hall_route_recorder")
+	_expect(recorder != null, "Developer mode starts the route recorder")
+
+	walker.global_position = far
+	hall.call("_update_hall_tutorial_chase")
+	await process_frame
+	_expect(
+		walker.global_position.distance_to(far) <= 1.0,
+		"While recording, walking off the old route is not dragged back"
+	)
+
+	# 录完之后牵引要回来，否则正式玩家会失去这条保护。
+	game_state.set("developer_mode", false)
+	hall.call("_sync_hall_route_recorder")
+	await process_frame
+	walker.global_position = far
+	hall.call("_update_hall_tutorial_chase")
+	await process_frame
+	_expect(
+		walker.global_position.distance_to(far) > 1.0,
+		"Leaving developer mode restores the leash for real players"
 	)
 
 	hall.queue_free()
