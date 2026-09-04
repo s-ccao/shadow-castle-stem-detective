@@ -273,8 +273,23 @@ const TEXT: Dictionary = {
 	},
 	"guide.rule_continue": {"en": "I UNDERSTAND", "zh": "我明白了"},
 	"hall.guided_return": {
-		"en": "Not that way — back to the marked route.",
-		"zh": "不是那边 —— 回到标记的路线上。",
+		"en": "Its lantern sweeps over you. You duck back onto the tracks.",
+		"zh": "它的灯光扫过你。你缩回那串脚印上。",
+	},
+	"hall.route_spotted_warning": {
+		"en": "The Guardian's head turns. Off the tracks, you are in the open.",
+		"zh": "守卫回过头来。离开脚印，你就暴露在外面了。",
+	},
+	"hall.route_revealed": {
+		"en": "The vial slips and bursts. Where the vapour settles, footprints "
+			+ "glow — someone crossed this hall before you, and was not caught.",
+		"zh": "药瓶脱手摔碎。药雾落处浮出一串脚印 —— 你之前有人穿过这座大厅，"
+			+ "而且没有被抓住。",
+	},
+	"hall.route_rule": {
+		"en": "Their path is still safe, for now. Stay on it until the "
+			+ "Chemistry door.",
+		"zh": "他走的这条路，此刻还是安全的。踩着它走到化学室门口。",
 	},
 	"hall.guided_shove": {
 		"en": "The Guardian's shoulder throws you aside — it stumbles, and you keep moving.",

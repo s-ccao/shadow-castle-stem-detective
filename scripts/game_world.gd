@@ -723,9 +723,15 @@ const TUTORIAL_WAYPOINT_REACH: float = 96.0
 ## Straying further than this from every waypoint means the player has left the
 ## route, and is returned to the last one they reached.
 const TUTORIAL_ROUTE_LEASH: float = 420.0
+## 踏出踪迹到被看清之间的宽限。给玩家一拍时间自己走回来——规则要能学，
+## 不是只能被惩罚。
+const HALL_ROUTE_EXPOSURE_GRACE: float = 1.1
+## 守卫在踪迹旁徘徊的横向距离。它不在路上，它在路边。
+const HALL_ROUTE_PATROL_OFFSET: float = 190.0
 
 var hall_tutorial_route: Array[Vector2] = []
 var _hall_route_recorder: HallRouteRecorder = null
+var hall_route_exposure: float = 0.0
 var hall_tutorial_reached: int = 0
 ## Where the Guardian stands before the player has walked far enough for the
 ## trailing gap to reach into the route. Without this the clamp put it on
@@ -6173,7 +6179,13 @@ func _hall_tutorial_guardian_position() -> Vector2:
 	# the route, the Guardian waits at the mark it entered on.
 	if index < 0:
 		return hall_tutorial_guardian_origin
-	return hall_tutorial_route[clampi(index, 0, hall_tutorial_route.size() - 1)]
+	var on_route: Vector2 = hall_tutorial_route[
+		clampi(index, 0, hall_tutorial_route.size() - 1)
+	]
+	# 它在踪迹**旁边**走，不在踪迹上。守卫踩着同一串脚印跟在后面，看起来像
+	# 在沿路巡逻，那条路就不再显得是安全的；让开一个身位，脚印才读作"这里
+	# 它走不到"。
+	return on_route + _hall_route_side_offset(index) * HALL_ROUTE_PATROL_OFFSET
 
 
 ## Drive the rehearsal. The Guardian is placed rather than steered, so it can
@@ -6220,8 +6232,8 @@ func _update_hall_tutorial_chase() -> void:
 	var nearest := INF
 	for point: Vector2 in hall_tutorial_route:
 		nearest = minf(nearest, player.global_position.distance_to(point))
-	if nearest > TUTORIAL_ROUTE_LEASH:
-		_return_player_to_route()
+	_tick_hall_route_exposure(nearest > TUTORIAL_ROUTE_LEASH, get_process_delta_time())
+	if hall_route_exposure > 0.0:
 		return
 
 	enemy.global_position = _hall_tutorial_guardian_position()
@@ -6230,6 +6242,13 @@ func _update_hall_tutorial_chase() -> void:
 	GameState.update_guardian_hall_position(enemy.global_position)
 
 
+## 离开踪迹的后果。原来是无声地把玩家挪回去再弹一句提示——那是一条游戏
+## 规则，玩家只能背下来。现在是守卫的目光扫过来：先给一次明确的警告，还站
+## 在外面才被拎回踪迹上。
+##
+## 警告窗口不是心软，是让规则可学：被瞬间惩罚的玩家学到的是"这里有个看不见
+## 的边界"，被先警告的玩家学到的是"药水照亮的地方之外会被看见"——后者是这
+## 段教程真正要教的东西。
 func _return_player_to_route() -> void:
 	var checkpoint := hall_tutorial_checkpoint_position()
 	if player.has_method("cancel_click_movement"):
@@ -6239,6 +6258,33 @@ func _return_player_to_route() -> void:
 		enemy.global_position = _hall_tutorial_guardian_position()
 		GameState.update_guardian_hall_position(enemy.global_position)
 	show_hall_notice(CaseLocale.text("hall.guided_return"))
+
+
+## 玩家离开踪迹后的宽限计时。守卫"注意到"和"看清"之间的那一拍。
+func _tick_hall_route_exposure(off_route: bool, delta: float) -> void:
+	if not off_route:
+		if hall_route_exposure > 0.0:
+			hall_route_exposure = 0.0
+			_set_hall_route_alarm(false)
+		return
+	if hall_route_exposure <= 0.0:
+		_set_hall_route_alarm(true)
+		show_hall_notice(CaseLocale.text("hall.route_spotted_warning"))
+	hall_route_exposure += delta
+	if hall_route_exposure >= HALL_ROUTE_EXPOSURE_GRACE:
+		hall_route_exposure = 0.0
+		_set_hall_route_alarm(false)
+		_return_player_to_route()
+
+
+## 被盯上时守卫转向玩家并亮起来，这样"我被看见了"是看得出来的，
+## 而不是只能从事后被挪回去反推。
+func _set_hall_route_alarm(alarmed: bool) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	enemy.modulate = (
+		Color(1.0, 0.62, 0.58, 1.0) if alarmed else Color(1.0, 1.0, 1.0, 1.0)
+	)
 
 
 func _is_hall_arrival_active() -> bool:
@@ -7044,23 +7090,24 @@ func _create_hall_route_floor_marker(
 	marker.set_meta("route_direction", cardinal_direction)
 	marker.modulate = Color(0.62, 0.82, 1.0, 0.58)
 
-	var glow := Polygon2D.new()
-	glow.polygon = PackedVector2Array([
-		Vector2(-23.0, -16.0), Vector2(10.0, -16.0),
-		Vector2(27.0, 0.0), Vector2(10.0, 16.0),
-		Vector2(-23.0, 16.0), Vector2(-7.0, 0.0),
-	])
-	glow.color = Color(0.10, 0.48, 0.98, 0.22)
-	marker.add_child(glow)
+	# 脚印，不是箭头。箭头是游戏在说"往这边走"；脚印是有人真的走过这里，
+	# 而洒出的药水让它显了形。玩家由此自己得出规则——踩着别人走通的路才
+	# 安全——而不是被告知一条教程路线。
+	var side: float = 1.0 if int(round(position_on_floor.x + position_on_floor.y)) % 2 == 0 else -1.0
+	var halo := Polygon2D.new()
+	halo.polygon = _hall_footprint_polygon(1.55, side)
+	halo.color = Color(0.42, 0.30, 0.86, 0.20)
+	marker.add_child(halo)
 
-	var arrow := Polygon2D.new()
-	arrow.polygon = PackedVector2Array([
-		Vector2(-16.0, -9.0), Vector2(2.0, -9.0),
-		Vector2(17.0, 0.0), Vector2(2.0, 9.0),
-		Vector2(-16.0, 9.0), Vector2(-5.0, 0.0),
-	])
-	arrow.color = Color(0.25, 0.72, 1.0, 0.88)
-	marker.add_child(arrow)
+	var sole := Polygon2D.new()
+	sole.polygon = _hall_footprint_polygon(1.0, side)
+	sole.color = Color(0.68, 0.55, 1.0, 0.82)
+	marker.add_child(sole)
+
+	var toe := Polygon2D.new()
+	toe.polygon = _hall_footprint_toe(side)
+	toe.color = Color(0.80, 0.70, 1.0, 0.88)
+	marker.add_child(toe)
 
 	var core := Polygon2D.new()
 	core.polygon = PackedVector2Array([
@@ -7203,6 +7250,7 @@ func _hall_route_direction(delta: Vector2) -> String:
 
 
 func _show_hall_route_arrival_toast() -> void:
+	_announce_hall_route_reveal()
 	if hall_route_panel == null:
 		return
 	# The panel already carries the task; this short blue flare gives the door
@@ -7656,3 +7704,57 @@ func _on_hall_route_recorded(points: Array[Vector2]) -> void:
 	if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
 		_build_hall_tutorial_route()
 	_refresh_hall_route_ui(false)
+
+
+## 一只脚印的轮廓。左右脚交替，所以要能镜像；scale 让光晕用同一形状放大，
+## 而不是再画一个几乎一样的多边形。
+func _hall_footprint_polygon(scale_by: float, side: float) -> PackedVector2Array:
+	var shape: Array[Vector2] = [
+		Vector2(-13.0, 3.0), Vector2(-9.0, 7.0), Vector2(2.0, 8.0),
+		Vector2(10.0, 5.0), Vector2(13.0, 0.0), Vector2(10.0, -5.0),
+		Vector2(2.0, -7.0), Vector2(-9.0, -5.0), Vector2(-13.0, -1.0),
+	]
+	var points := PackedVector2Array()
+	for point: Vector2 in shape:
+		points.append(Vector2(point.x, point.y * side) * scale_by)
+	return points
+
+
+func _hall_footprint_toe(side: float) -> PackedVector2Array:
+	var shape: Array[Vector2] = [
+		Vector2(11.0, -4.0), Vector2(16.0, -2.0),
+		Vector2(16.0, 2.0), Vector2(11.0, 4.0),
+	]
+	var points := PackedVector2Array()
+	for point: Vector2 in shape:
+		points.append(Vector2(point.x, point.y * side))
+	return points
+
+
+## 踪迹在某一点的侧向。守卫沿这个方向让开一个身位，所以它始终贴着路走，
+## 而不是走在路上。
+func _hall_route_side_offset(index: int) -> Vector2:
+	if hall_tutorial_route.size() < 2:
+		return Vector2.RIGHT
+	var here: int = clampi(index, 0, hall_tutorial_route.size() - 1)
+	var next: int = clampi(here + 1, 0, hall_tutorial_route.size() - 1)
+	if here == next:
+		next = maxi(here - 1, 0)
+	var along: Vector2 = hall_tutorial_route[next] - hall_tutorial_route[here]
+	if along.length() < 0.001:
+		return Vector2.RIGHT
+	return along.normalized().orthogonal()
+
+
+## 踪迹是怎么出现的。规则本身（踩着走安全、离开会被看见）从这两句里就能
+## 推出来，所以后面不必再用一条教程提示去讲它。
+func _announce_hall_route_reveal() -> void:
+	show_hall_notice(CaseLocale.text("hall.route_revealed"))
+	var settle: SceneTreeTimer = get_tree().create_timer(3.4, true, false, true)
+	settle.timeout.connect(_announce_hall_route_rule)
+
+
+func _announce_hall_route_rule() -> void:
+	if not _is_hall_arrival_active():
+		return
+	show_hall_notice(CaseLocale.text("hall.route_rule"))

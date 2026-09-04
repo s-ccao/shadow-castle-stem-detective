@@ -27,6 +27,7 @@ func _run() -> void:
 	await _check_recorder_captures_a_walk()
 	await _check_tutorial_prefers_the_authored_route()
 	await _check_recording_is_not_dragged_back()
+	await _check_leaving_the_tracks_is_seen_not_silent()
 
 	game_state.set("developer_mode", false)
 	_finish()
@@ -191,11 +192,10 @@ func _check_recording_is_not_dragged_back() -> void:
 	var far: Vector2 = (route[0] as Vector2) + Vector2(leash * 2.0, leash * 2.0)
 
 	walker.global_position = far
-	hall.call("_update_hall_tutorial_chase")
-	await process_frame
+	await _hold_off_route(hall, walker, far)
 	_expect(
 		walker.global_position.distance_to(far) > 1.0,
-		"Without developer mode, leaving the route still returns the player"
+		"Without developer mode, staying off the route still returns the player"
 	)
 
 	# 开启开发者模式即进入录制，牵引必须让开。
@@ -206,11 +206,10 @@ func _check_recording_is_not_dragged_back() -> void:
 	_expect(recorder != null, "Developer mode starts the route recorder")
 
 	walker.global_position = far
-	hall.call("_update_hall_tutorial_chase")
-	await process_frame
+	await _hold_off_route(hall, walker, far)
 	_expect(
 		walker.global_position.distance_to(far) <= 1.0,
-		"While recording, walking off the old route is not dragged back"
+		"While recording, walking off the old route is never dragged back"
 	)
 
 	# 录完之后牵引要回来，否则正式玩家会失去这条保护。
@@ -218,8 +217,7 @@ func _check_recording_is_not_dragged_back() -> void:
 	hall.call("_sync_hall_route_recorder")
 	await process_frame
 	walker.global_position = far
-	hall.call("_update_hall_tutorial_chase")
-	await process_frame
+	await _hold_off_route(hall, walker, far)
 	_expect(
 		walker.global_position.distance_to(far) > 1.0,
 		"Leaving developer mode restores the leash for real players"
@@ -227,6 +225,98 @@ func _check_recording_is_not_dragged_back() -> void:
 
 	hall.queue_free()
 	await process_frame
+
+
+## 离开踪迹的规则要能被学会，而不是只能被惩罚：先警告一拍，还站在外面才
+## 拎回去。两头都会坏——宽限设成 0 就退回"看不见的边界"，宽限没上限就等于
+## 没有规则——所以两头都验。
+func _check_leaving_the_tracks_is_seen_not_silent() -> void:
+	var game_state := root.get_node("GameState")
+	game_state.set("developer_mode", false)
+	var packed := load("res://scenes/game_world.tscn") as PackedScene
+	if packed == null:
+		_expect(false, "The Hall scene loads for the exposure check")
+		return
+	var hall: Node = packed.instantiate()
+	root.add_child(hall)
+	for _frame: int in range(45):
+		await process_frame
+
+	hall.set("dialogue_active", false)
+	hall.set("guardian_entry_sequence_active", false)
+	hall.set("guardian_near_miss_active", false)
+	hall.set("game_over", false)
+	hall.call("_begin_hall_arrival_route")
+	await process_frame
+
+	var route: Array = hall.get("hall_tutorial_route")
+	var walker: Node2D = hall.get("player") as Node2D
+	_expect(route.size() >= 2 and walker != null, "A route and a player exist")
+	if route.size() < 2 or walker == null:
+		hall.queue_free()
+		await process_frame
+		return
+
+	var leash: float = float(hall.get("TUTORIAL_ROUTE_LEASH"))
+	var grace: float = float(hall.get("HALL_ROUTE_EXPOSURE_GRACE"))
+	var far: Vector2 = (route[0] as Vector2) + Vector2(leash * 2.0, leash * 2.0)
+
+	# 刚踏出去：只被警告，还站得住。
+	walker.global_position = far
+	hall.call("_tick_hall_route_exposure", true, grace * 0.4)
+	await process_frame
+	_expect(
+		walker.global_position.distance_to(far) <= 1.0,
+		"Stepping off the tracks warns before it moves the player"
+	)
+	_expect(
+		float(hall.get("hall_route_exposure")) > 0.0,
+		"Being off the tracks is tracked as exposure, not ignored"
+	)
+
+	# 自己走回来：暴露归零，不留惩罚。
+	walker.global_position = route[0] as Vector2
+	hall.call("_tick_hall_route_exposure", false, 0.1)
+	await process_frame
+	_expect(
+		is_zero_approx(float(hall.get("hall_route_exposure"))),
+		"Returning to the tracks clears the exposure"
+	)
+
+	# 一直站在外面：才被拎回踪迹。
+	walker.global_position = far
+	hall.call("_tick_hall_route_exposure", true, grace * 0.6)
+	await process_frame
+	hall.call("_tick_hall_route_exposure", true, grace * 0.6)
+	await process_frame
+	_expect(
+		walker.global_position.distance_to(far) > 1.0,
+		"Staying off the tracks past the grace window returns the player"
+	)
+
+	# 守卫在路旁，不在路上——否则脚印看起来就不安全了。
+	var side: Vector2 = hall.call("_hall_route_side_offset", 0)
+	_expect(
+		side.length() > 0.9,
+		"The Guardian has a side to stand on beside the tracks"
+	)
+
+	hall.queue_free()
+	await process_frame
+
+
+## 站在踪迹外不动，直到超过宽限窗口。离开踪迹不再是立刻被拉回——先警告，
+## 还在外面才动你——所以驱动一帧是不够的。
+func _hold_off_route(hall: Node, walker: Node2D, spot: Vector2) -> void:
+	var grace: float = float(hall.get("HALL_ROUTE_EXPOSURE_GRACE"))
+	var elapsed: float = 0.0
+	while elapsed <= grace + 0.4:
+		if walker.global_position.distance_to(spot) > 1.0:
+			return
+		walker.global_position = spot
+		hall.call("_update_hall_tutorial_chase")
+		elapsed += maxf(hall.get_process_delta_time(), 0.016)
+		await process_frame
 
 
 func _expect(condition: bool, description: String) -> void:
