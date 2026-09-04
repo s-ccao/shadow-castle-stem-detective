@@ -47,6 +47,7 @@ var _instruction_label: Label
 var _banner: Label
 var _footer: HBoxContainer
 var _close_button: Button
+var _dev_button: Button
 var _level_index: int = 0
 var _cleared_count: int = 0
 ## 过关特效播放期间为真，用来挡住重复过关。
@@ -148,9 +149,41 @@ func _build_chrome() -> void:
 	_footer.add_theme_constant_override("separation", 10)
 	column.add_child(_footer)
 
+	# 开发者模式下的直接通关键。做在外壳里而不是每个玩法各写一个，是因为
+	# "算通关并收尾" 这一步六个小游戏完全一样，而且外壳这层保证新增玩法
+	# 自动就有这个按钮。
+	_dev_button = make_button("")
+	_dev_button.name = "DevClearButton"
+	_dev_button.pressed.connect(_on_dev_solve_pressed)
+	_footer.add_child(_dev_button)
+
 	_close_button = make_button("Close")
 	_close_button.pressed.connect(_on_close_pressed)
 	_footer.add_child(_close_button)
+
+	if not GameState.state_changed.is_connected(_sync_dev_button):
+		GameState.state_changed.connect(_sync_dev_button)
+	_sync_dev_button()
+
+
+## 开发者模式随时可以开关，按钮要跟着出现或消失，而不是只在面板打开那一刻
+## 判断一次。
+func _sync_dev_button() -> void:
+	if _dev_button == null or not is_instance_valid(_dev_button):
+		return
+	_dev_button.text = _text("DEV: clear", "开发：直接通关")
+	_dev_button.visible = GameState.developer_mode
+
+
+## 直接判定为全关通过并收尾。房间收到的是和正常打通完全相同的一对参数
+## （cleared_all=true、已通关关卡数=总关卡数），所以奖励、剧情标志和存档点
+## 都照常结算 —— 跳过的只是手动解题，后面的进度不受影响。
+func _on_dev_solve_pressed() -> void:
+	if _finished:
+		return
+	_cleared_count = level_count()
+	_level_index = maxi(0, level_count() - 1)
+	_finish(true)
 
 
 func _panel_style() -> StyleBoxFlat:
@@ -228,6 +261,7 @@ func configure(title: String, subtitle: String, tint: Color) -> void:
 	style.border_color = Color(tint.r, tint.g, tint.b, 0.85)
 	_panel.add_theme_stylebox_override("panel", style)
 	_close_button.text = _text("Close", "关闭")
+	_sync_dev_button()
 
 
 func set_instruction(text: String) -> void:

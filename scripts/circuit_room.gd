@@ -267,16 +267,6 @@ func _apply_powered_generator_state() -> void:
 		generator_sprite.modulate = Color(0.78, 1.04, 1.10, 1.0)
 
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if not event is InputEventKey:
-		return
-	var key_event: InputEventKey = event as InputEventKey
-	if key_event.pressed and not key_event.echo and key_event.keycode == KEY_F3:
-		GameState.toggle_developer_mode()
-		_sync_debug_collision_visibility()
-		get_viewport().set_input_as_handled()
-
-
 func _on_debug_state_changed() -> void:
 	_sync_debug_collision_visibility()
 	_evaluate_switch_survey()
@@ -458,7 +448,7 @@ func _process(_delta: float) -> void:
 			"label": "Mechanic",
 			"position": spatial.get_visual_feet(mechanic_npc),
 			"interaction_rect": mechanic_rect,
-			"prompt": "Press E to talk to the Mechanic",
+			"prompt": CaseLocale.line("Press E to talk to the Mechanic"),
 			"prompt_offset": Vector2(0.0, -120.0),
 		}
 	current_interaction = interaction_runtime.refresh(

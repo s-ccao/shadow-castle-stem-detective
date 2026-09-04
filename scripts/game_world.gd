@@ -183,7 +183,6 @@ var camera_target_zoom: Vector2 = (
 )
 
 var wall_visual: Sprite2D
-var developer_mode_label: Label
 var intro_seen := false
 var intro_reviewing_objectives := false
 @onready var player = $player
@@ -877,7 +876,7 @@ func _ready():
 	if not LAYOUT_ALIGNMENT_MODE:
 		build_navigation_grid()
 		build_navigation_lattice()
-	# 正常游玩不显示碰撞调试层；F3 开发者模式仍可手动开启。
+	# 正常游玩不显示碰撞调试层；开发者模式（数字 0）仍可手动开启。
 	get_tree().debug_collisions_hint = GameState.developer_mode
 	# 大厅墙体由 wall_collisions.tscn 提供；玩家移动使用其真实
 	# StaticBody2D/CollisionPolygon2D 做形状查询，不再被粗略网格挡住。
@@ -899,7 +898,6 @@ func _ready():
 	_create_guardian_pressure_fx()
 	create_interaction_focus()
 	create_potion_field_effects()
-	create_developer_mode_label()
 	create_game_over_ui()
 	apply_persistent_visual_state()
 
@@ -1389,7 +1387,7 @@ func update_fog_of_war():
 	if LAYOUT_ALIGNMENT_MODE and DISABLE_FOG_DURING_ALIGNMENT:
 		return
 
-	# 开发者模式（F3）：取消全部阴影，直接看全图。
+	# 开发者模式（数字 0）：取消全部阴影，直接看全图。
 	if GameState.developer_mode:
 		if fog_image != null:
 			fog_image.fill(Color(0.0, 0.0, 0.0, 0.0))
@@ -7562,7 +7560,6 @@ func toggle_developer_mode() -> void:
 	else:
 		camera_target_zoom = GameState.get_room_camera_zoom(GAMEPLAY_CAMERA_ZOOM, DEVELOPER_CAMERA_ZOOM)
 
-	update_developer_mode_label()
 
 	set_developer_markers_visible(
 		GameState.developer_mode
@@ -7603,49 +7600,3 @@ func set_developer_markers_visible(
 			)
 
 			canvas_item.visible = should_show
-func create_developer_mode_label() -> void:
-	if ui_layer == null:
-		return
-
-	developer_mode_label = Label.new()
-	developer_mode_label.name = (
-		"DeveloperModeLabel"
-	)
-
-	developer_mode_label.position = Vector2(
-		730,
-		18
-	)
-
-	developer_mode_label.size = Vector2(
-		270,
-		32
-	)
-
-	developer_mode_label.horizontal_alignment = (
-		HORIZONTAL_ALIGNMENT_RIGHT
-	)
-
-	developer_mode_label.add_theme_font_size_override(
-		"font_size",
-		16
-	)
-
-	ui_layer.add_child(
-		developer_mode_label
-	)
-
-	update_developer_mode_label()
-func update_developer_mode_label() -> void:
-	if developer_mode_label == null:
-		return
-
-	if GameState.developer_mode:
-		developer_mode_label.text = (
-			"DEVELOPER MODE — F3"
-		)
-
-		developer_mode_label.visible = true
-	else:
-		developer_mode_label.text = ""
-		developer_mode_label.visible = false
