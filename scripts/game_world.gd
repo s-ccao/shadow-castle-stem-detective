@@ -725,6 +725,7 @@ const TUTORIAL_WAYPOINT_REACH: float = 96.0
 const TUTORIAL_ROUTE_LEASH: float = 420.0
 
 var hall_tutorial_route: Array[Vector2] = []
+var _hall_route_recorder: HallRouteRecorder = null
 var hall_tutorial_reached: int = 0
 ## Where the Guardian stands before the player has walked far enough for the
 ## trailing gap to reach into the route. Without this the clamp put it on
@@ -830,6 +831,8 @@ func _is_near_hall_interaction(interaction_id: String) -> bool:
 		14.0
 	)
 func _ready():
+	if not GameState.state_changed.is_connected(_on_developer_mode_changed):
+		GameState.state_changed.connect(_on_developer_mode_changed)
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
 		GameState.unlock_all_hubs()
@@ -962,11 +965,6 @@ func _exit_tree() -> void:
 
 func _process(delta: float) -> void:
 	_update_hall_prop_occlusion_layers()
-	if Input.is_action_just_pressed(
-		"toggle_developer_mode"
-	):
-		toggle_developer_mode()
-
 	# 追逐模式计时与敌人启动。
 	if _damage_invincible_timer > 0.0:
 		_damage_invincible_timer -= delta
@@ -6138,7 +6136,7 @@ func _build_hall_tutorial_route() -> void:
 	hall_tutorial_reached = 0
 	if player == null:
 		return
-	var built: Array[Vector2] = _get_hall_route_path(
+	var built: Array[Vector2] = _hall_route_points(
 		player.global_position, CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
 	)
 	if built.size() < 2:
@@ -6773,7 +6771,7 @@ func _refresh_hall_route_trail(route_copy: Dictionary) -> void:
 	if route_copy.is_empty() or player == null or bool(route_copy.get("ui_only", false)):
 		return
 	var target: Vector2 = route_copy.get("target", Vector2.ZERO) as Vector2
-	var path_points: Array[Vector2] = _get_hall_route_path(player.global_position, target)
+	var path_points: Array[Vector2] = _hall_route_points(player.global_position, target)
 	if path_points.size() < 2:
 		push_warning("Could not build first-arrival floor route to: " + str(target))
 		return
@@ -6827,6 +6825,18 @@ func _clear_hall_route_trail() -> void:
 	if hall_route_trail != null and is_instance_valid(hall_route_trail):
 		hall_route_trail.queue_free()
 	hall_route_trail = null
+
+
+## 教程路线的唯一来源。开发者模式下走出来的那条路优先；没录过才回落到 A*。
+##
+## 放在一个函数里，是因为守卫跟的线和玩家看到的路标必须是同一条——分开取
+## 的话，改了一处忘了另一处，玩家会跟着路标走却被判定偏离航道。
+func _hall_route_points(from_position: Vector2, target: Vector2) -> Array[Vector2]:
+	if target.distance_to(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION) <= 96.0:
+		var authored: Array[Vector2] = HallRouteStore.load_route()
+		if authored.size() >= 2:
+			return authored
+	return _get_hall_route_path(from_position, target)
 
 
 func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vector2]:
@@ -7552,8 +7562,9 @@ func resume_castle_hall_after_return() -> void:
 	else:
 		call_deferred("_begin_guardian_entry_sequence", false)
 
-func toggle_developer_mode() -> void:
-	GameState.toggle_developer_mode()
+## 只跟随，不切换：开关归 DevTools，房间再切一次会把同一下按键抵消掉。
+func _on_developer_mode_changed() -> void:
+	_sync_hall_route_recorder()
 
 	if GameState.developer_mode:
 		camera_target_zoom = GameState.get_room_camera_zoom(GAMEPLAY_CAMERA_ZOOM, DEVELOPER_CAMERA_ZOOM)
@@ -7600,3 +7611,35 @@ func set_developer_markers_visible(
 			)
 
 			canvas_item.visible = should_show
+
+
+## 开发者模式一开就开始录路，关掉就丢弃这次录制。
+##
+## 不做成"再按一个键开始录制"：真正要调的是"我走的这条路"，多一个开关就
+## 多一次忘了按的机会，走完一遍才发现没录上。
+func _sync_hall_route_recorder() -> void:
+	if GameState.developer_mode:
+		if _hall_route_recorder != null and is_instance_valid(_hall_route_recorder):
+			return
+		if player == null or not is_instance_valid(player):
+			return
+		_hall_route_recorder = HallRouteRecorder.new()
+		_hall_route_recorder.name = "HallRouteRecorder"
+		add_child(_hall_route_recorder)
+		_hall_route_recorder.route_saved.connect(_on_hall_route_recorded)
+		_hall_route_recorder.setup(player, CHEMISTRY_ROOM_DOOR_FOCUS_POSITION)
+		return
+	if _hall_route_recorder != null and is_instance_valid(_hall_route_recorder):
+		_hall_route_recorder.queue_free()
+	_hall_route_recorder = null
+
+
+## 录完立刻生效：重建教程路线和地面路标，这样不用重启就能看到刚走的那条路
+## 是不是想要的形状。
+func _on_hall_route_recorded(points: Array[Vector2]) -> void:
+	print("[HallRoute] 已保存 %d 个点 -> %s" % [
+		points.size(), HallRouteStore.ROUTE_PATH
+	])
+	if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
+		_build_hall_tutorial_route()
+	_refresh_hall_route_ui(false)

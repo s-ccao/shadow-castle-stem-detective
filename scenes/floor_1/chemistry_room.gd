@@ -153,6 +153,8 @@ var camera_target_zoom: Vector2 = (
 # ============================================================
 
 func _ready() -> void:
+	if not GameState.state_changed.is_connected(_on_developer_mode_changed):
+		GameState.state_changed.connect(_on_developer_mode_changed)
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
 		GameState.unlock_all_hubs()
@@ -211,11 +213,6 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed(
-		"toggle_developer_mode"
-	):
-		toggle_chemistry_developer_mode()
-
 	update_camera_zoom(delta)
 	_update_prop_occlusion_layers()
 
@@ -2742,8 +2739,8 @@ func create_follow_camera() -> void:
 	player.add_child(follow_camera)
 	follow_camera.make_current()
 
-func toggle_chemistry_developer_mode() -> void:
-	GameState.toggle_developer_mode()
+## 只跟随，不切换：开关归 DevTools，房间再切一次会把同一下按键抵消掉。
+func _on_developer_mode_changed() -> void:
 
 	if GameState.developer_mode:
 		camera_target_zoom = (

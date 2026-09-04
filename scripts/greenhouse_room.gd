@@ -321,6 +321,8 @@ var _current_speaker: String = ""
 var _pending_buttons: Array = []
 
 func _ready() -> void:
+	if not GameState.state_changed.is_connected(_on_developer_mode_changed):
+		GameState.state_changed.connect(_on_developer_mode_changed)
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
 	if not GameState.is_game_started():
 		GameState.unlock_all_hubs()
@@ -358,11 +360,6 @@ func _ready() -> void:
 	room_input_enabled = true
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed(
-		"toggle_developer_mode"
-	):
-		toggle_developer_view()
-
 	update_camera_zoom(delta)
 	_update_prop_occlusion_layers()
 	_tick_herb_plot_markers(delta)
@@ -487,9 +484,9 @@ func get_room_world_bounds() -> Rect2:
 	)
 
 
-func toggle_developer_view() -> void:
-	GameState.toggle_developer_mode()
-
+## 房间不再自己切换开发者模式，只跟随它。开关由 DevTools 全局持有，
+## 房间各自轮询按键的话，同一下按键会被切换两次（净效果为零）。
+func _on_developer_mode_changed() -> void:
 	camera_target_zoom = GameState.get_room_camera_zoom(GAMEPLAY_CAMERA_ZOOM, DEVELOPER_CAMERA_ZOOM)
 
 
