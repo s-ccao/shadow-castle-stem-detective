@@ -370,7 +370,6 @@ func _create_category_buttons() -> void:
 		button.name = "Category_" + category_id
 		button.text = CaseLocale.line(str(category["text"]))
 		button.position = CATEGORY_BUTTON_RECTS[category_index].position
-		button.size = CATEGORY_BUTTON_RECTS[category_index].size
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = false
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -391,6 +390,10 @@ func _create_category_buttons() -> void:
 		button.pressed.connect(_on_category_pressed.bind(category_id))
 		category_buttons[category_id] = button
 		category_grid.add_child(button)
+		# Size after the button is in the tree: before it enters, its minimum is
+		# still resolved against the default theme, which rounds the authored
+		# 31px recess up to 32 and leaves the tabs overhanging the painted slots.
+		button.size = CATEGORY_BUTTON_RECTS[category_index].size
 		var count_label := Label.new()
 		count_label.name = "CategoryCount"
 		count_label.position = Vector2(80.0, 4.0)
