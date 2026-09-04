@@ -670,8 +670,9 @@ func _has_stored_items() -> bool:
 
 
 func show_feature_unlock(title_text: String, message_text: String, duration: float = 4.5) -> void:
-	feature_title.text = title_text
-	feature_description.text = message_text
+	# 在出口翻译：解锁提示有多个调用点，逐个改必定漏掉一个。
+	feature_title.text = CaseLocale.line(title_text)
+	feature_description.text = CaseLocale.line(message_text)
 	feature_panel.visible = true
 	if feature_tween != null and feature_tween.is_valid():
 		feature_tween.kill()

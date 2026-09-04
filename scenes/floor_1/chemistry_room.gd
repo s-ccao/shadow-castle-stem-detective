@@ -261,7 +261,7 @@ func update_interaction_prompt() -> void:
 	if _is_near_interaction("exit"):
 		current_interaction = "exit"
 		interact_label.text = (
-			"Press E to return to the Castle Hall"
+			CaseLocale.line("Press E to return to the Castle Hall")
 		)
 		interact_label.visible = true
 		return
@@ -269,7 +269,7 @@ func update_interaction_prompt() -> void:
 	if _is_near_interaction("cabinet"):
 		current_interaction = "cabinet"
 		interact_label.text = (
-			"Press E to inspect the potion cabinet"
+			CaseLocale.line("Press E to inspect the potion cabinet")
 		)
 		interact_label.visible = true
 		return
@@ -279,7 +279,7 @@ func update_interaction_prompt() -> void:
 	if _is_near_interaction("alchemy_table"):
 		current_interaction = "alchemy_table"
 		interact_label.text = (
-			"Press E to inspect the alchemy table"
+			CaseLocale.line("Press E to inspect the alchemy table")
 		)
 		interact_label.visible = true
 		return
@@ -291,11 +291,11 @@ func update_interaction_prompt() -> void:
 			"fake_red_stain"
 		):
 			interact_label.text = (
-				"Press E to review the red stain"
+				CaseLocale.line("Press E to review the red stain")
 			)
 		else:
 			interact_label.text = (
-				"Press E to investigate the red stain"
+				CaseLocale.line("Press E to investigate the red stain")
 			)
 
 		interact_label.visible = true
@@ -304,7 +304,7 @@ func update_interaction_prompt() -> void:
 	if _is_near_interaction("butler"):
 		current_interaction = "butler"
 		interact_label.text = (
-			"Press E to talk to the Butler"
+			CaseLocale.line("Press E to talk to the Butler")
 		)
 		interact_label.visible = true
 
@@ -2162,7 +2162,7 @@ func _create_red_stain_material_strip() -> void:
 
 	var title := Label.new()
 	title.name = "TraceSamplesTitle"
-	title.text = "TRACE SAMPLES"
+	title.text = CaseLocale.line("TRACE SAMPLES")
 	title.position = Vector2(8.0, 6.0)
 	title.size = Vector2(122.0, 18.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2171,9 +2171,9 @@ func _create_red_stain_material_strip() -> void:
 	red_stain_material_strip.add_child(title)
 
 	var samples: Array[Dictionary] = [
-		{"id": "cleaning_powder_sample", "label": "POWDER"},
-		{"id": "indicator_vial_sample", "label": "INDICATOR"},
-		{"id": "broken_glass_sample", "label": "GLASS"},
+		{"id": "cleaning_powder_sample", "label": CaseLocale.line("POWDER")},
+		{"id": "indicator_vial_sample", "label": CaseLocale.line("INDICATOR")},
+		{"id": "broken_glass_sample", "label": CaseLocale.line("GLASS")},
 	]
 	for index: int in range(samples.size()):
 		var sample := samples[index]
@@ -2583,7 +2583,7 @@ func create_exit_marker() -> void:
 
 	add_world_label(
 		marker,
-		"Castle Hall",
+		CaseLocale.line("Castle Hall"),
 		Vector2(-6, -32)
 	)
 

@@ -3208,7 +3208,7 @@ func create_game_ui():
 
 	interact_label = Label.new()
 	interact_label.name = "InteractionHintLabel"
-	interact_label.text = "Press E to investigate"
+	interact_label.text = CaseLocale.line("Press E to investigate")
 	interact_label.position = Vector2(16, 7)
 	interact_label.size = Vector2(
 		maxf(120.0, interaction_hint_size.x - 32.0),
@@ -3405,7 +3405,7 @@ func update_interaction_prompt() -> void:
 			continue
 		if _is_near_hall_interaction(flag_id):
 			current_interaction = flag_id
-			interact_label.text = "Press E to pick up a torn note"
+			interact_label.text = CaseLocale.line("Press E to pick up a torn note")
 			interact_label.visible = true
 			return
 
@@ -3416,7 +3416,7 @@ func update_interaction_prompt() -> void:
 	if not GameState.has_key("library_room_key"):
 		if _is_near_hall_interaction("hidden_library_key"):
 			current_interaction = "hidden_library_key"
-			interact_label.text = "Press E to search the storage rack"
+			interact_label.text = CaseLocale.line("Press E to search the storage rack")
 			interact_label.visible = true
 			return
 
@@ -3425,9 +3425,9 @@ func update_interaction_prompt() -> void:
 	# ========================================================
 
 	var machine_labels: Array[String] = [
-		"Press E to search the tower machine",
-		"Press E to search the engine machine",
-		"Press E to search the workshop machine",
+		CaseLocale.line("Press E to search the tower machine"),
+		CaseLocale.line("Press E to search the engine machine"),
+		CaseLocale.line("Press E to search the workshop machine"),
 	]
 	for machine_index: int in range(FINAL_KEY_MACHINE_PATHS.size()):
 		var station_index: int = machine_index + 1
@@ -3471,11 +3471,11 @@ func update_interaction_prompt() -> void:
 			)
 		elif not GameState.has_story_flag("door_chemistry_unlocked"):
 			interact_label.text = (
-				"Press E to answer the knowledge lock"
+				CaseLocale.line("Press E to answer the knowledge lock")
 			)
 		else:
 			interact_label.text = (
-				"Press E to enter the Chemistry Room"
+				CaseLocale.line("Press E to enter the Chemistry Room")
 			)
 		interact_label.visible = true
 		return
@@ -3488,11 +3488,11 @@ func update_interaction_prompt() -> void:
 			)
 		elif not GameState.has_story_flag("door_greenhouse_unlocked"):
 			interact_label.text = (
-				"Press E to answer the knowledge lock"
+				CaseLocale.line("Press E to answer the knowledge lock")
 			)
 		else:
 			interact_label.text = (
-				"Press E to enter the Greenhouse Room"
+				CaseLocale.line("Press E to enter the Greenhouse Room")
 			)
 		interact_label.visible = true
 		return
@@ -3505,10 +3505,10 @@ func update_interaction_prompt() -> void:
 			)
 		elif not GameState.has_story_flag("door_library_unlocked"):
 			interact_label.text = (
-				"Press E to answer the knowledge lock"
+				CaseLocale.line("Press E to answer the knowledge lock")
 			)
 		else:
-			interact_label.text = "Press E to enter the Library"
+			interact_label.text = CaseLocale.line("Press E to enter the Library")
 		interact_label.visible = true
 		return
 
@@ -3520,10 +3520,10 @@ func update_interaction_prompt() -> void:
 			)
 		elif not GameState.has_story_flag("door_dining_unlocked"):
 			interact_label.text = (
-				"Press E to answer the knowledge lock"
+				CaseLocale.line("Press E to answer the knowledge lock")
 			)
 		else:
-			interact_label.text = "Press E to enter the Dining Hall"
+			interact_label.text = CaseLocale.line("Press E to enter the Dining Hall")
 		interact_label.visible = true
 		return
 
@@ -3535,11 +3535,11 @@ func update_interaction_prompt() -> void:
 			)
 		elif not GameState.has_story_flag("door_final_unlocked"):
 			interact_label.text = (
-				"Press E to answer the knowledge lock"
+				CaseLocale.line("Press E to answer the knowledge lock")
 			)
 		else:
 			interact_label.text = (
-				"Press E to enter the Final Room"
+				CaseLocale.line("Press E to enter the Final Room")
 			)
 		interact_label.visible = true
 		return
@@ -3554,7 +3554,7 @@ func update_interaction_prompt() -> void:
 			if _is_near_hall_interaction("service_wall_door"):
 				current_interaction = "service_wall_door"
 				interact_label.text = (
-					"Press E to unlock the service passage"
+					CaseLocale.line("Press E to unlock the service passage")
 				)
 				interact_label.visible = true
 				return
@@ -3562,19 +3562,19 @@ func update_interaction_prompt() -> void:
 			if not GameState.has_evidence("service_corridor_dark_trail"):
 				if _is_near_hall_interaction("service_dark_trail"):
 					current_interaction = "service_dark_trail"
-					interact_label.text = "Press E to inspect the dark trail"
+					interact_label.text = CaseLocale.line("Press E to inspect the dark trail")
 					interact_label.visible = true
 					return
 			if not GameState.has_evidence("service_corridor_fiber"):
 				if _is_near_hall_interaction("service_violet_fiber"):
 					current_interaction = "service_violet_fiber"
-					interact_label.text = "Press E to inspect the violet fiber"
+					interact_label.text = CaseLocale.line("Press E to inspect the violet fiber")
 					interact_label.visible = true
 					return
 			if not GameState.has_story_flag("service_maintenance_panel_opened"):
 				if _is_near_hall_interaction("service_maintenance_panel"):
 					current_interaction = "service_maintenance_panel"
-					interact_label.text = "Press E to open the maintenance panel"
+					interact_label.text = CaseLocale.line("Press E to open the maintenance panel")
 					interact_label.visible = true
 					return
 
@@ -3585,7 +3585,7 @@ func update_interaction_prompt() -> void:
 	if _is_near_hall_interaction("wake_room_door"):
 		current_interaction = "wake_room_door"
 		interact_label.text = (
-			"Press E to return to the Wake Room"
+			CaseLocale.line("Press E to return to the Wake Room")
 		)
 		interact_label.visible = true
 		return
@@ -3603,11 +3603,11 @@ func update_interaction_prompt() -> void:
 				)
 			elif not GameState.has_story_flag("door_circuit_unlocked"):
 				interact_label.text = (
-					"Press E to answer the knowledge lock"
+					CaseLocale.line("Press E to answer the knowledge lock")
 				)
 			else:
 				interact_label.text = (
-					"Press E to enter the Circuit Room"
+					CaseLocale.line("Press E to enter the Circuit Room")
 				)
 			interact_label.visible = true
 			return
@@ -3767,7 +3767,7 @@ func _collect_hidden_library_key() -> void:
 			"content": "A slim brass key stamped with the library's spiral archive seal, hidden among the jars of the storage rack in the hall's south-east corner. The archive is optional — but it may hold information others wanted buried.",
 			"category": "knowledge",
 		})
-	interact_label.text = "A slim brass key was hidden among the rack's jars. The Library is now open."
+	interact_label.text = CaseLocale.line("A slim brass key was hidden among the rack's jars. The Library is now open.")
 	interact_label.visible = true
 
 
@@ -3961,7 +3961,7 @@ func _collect_corridor_fragment(index: int) -> void:
 					+ "The complete Final Room Key is split into four seals: three in the hall stations and one behind the Service Corridor maintenance panel.",
 				"category": "investigation",
 			})
-	show_continue_button("Close", close_message_panel)
+	show_continue_button(CaseLocale.line("Close"), close_message_panel)
 
 
 func show_not_developed_prompt(room_name: String) -> void:
@@ -3974,7 +3974,7 @@ func show_not_developed_prompt(room_name: String) -> void:
 		room_name
 		+ "\n\nThis room is not developed yet."
 	)
-	show_continue_button("Close", close_message_panel)
+	show_continue_button(CaseLocale.line("Close"), close_message_panel)
 
 
 func show_clue_intro():
@@ -4088,7 +4088,9 @@ func add_dialogue_button(text: String, callback: Callable):
 		_pending_dialogue_buttons.append({"text": text, "callback": callback})
 		return
 	var button = Button.new()
-	button.text = text
+	# Translate here rather than at the ~35 call sites: one of them will always
+	# be missed, and a string with no entry passes through unchanged.
+	button.text = CaseLocale.line(text)
 	button.custom_minimum_size = Vector2(330, 34)
 	button.add_theme_font_size_override("font_size", 15)
 	button.pressed.connect(callback)
@@ -4172,7 +4174,7 @@ func create_evidence_board_ui():
 	layout.add_child(evidence_back_button)
 
 	var close_button = Button.new()
-	close_button.text = "Close"
+	close_button.text = CaseLocale.line("Close")
 	close_button.custom_minimum_size = Vector2(500, 44)
 	close_button.pressed.connect(close_evidence_board)
 	layout.add_child(close_button)
@@ -4822,7 +4824,7 @@ func create_objective_panel_ui():
 	scroll.add_child(objective_detail_label)
 
 	var close_button = Button.new()
-	close_button.text = "Close"
+	close_button.text = CaseLocale.line("Close")
 	close_button.custom_minimum_size = Vector2(460, 44)
 	close_button.pressed.connect(close_objective_panel)
 	layout.add_child(close_button)
@@ -5814,7 +5816,7 @@ func create_knowledge_journal_ui():
 	scroll.add_child(knowledge_list_label)
 
 	var close_button = Button.new()
-	close_button.text = "Close"
+	close_button.text = CaseLocale.line("Close")
 	close_button.custom_minimum_size = Vector2(500, 44)
 	close_button.pressed.connect(close_knowledge_journal)
 	layout.add_child(close_button)
@@ -5991,7 +5993,7 @@ func _split_dialogue_segments(
 func _show_continue_direct(text: String, callback: Callable) -> void:
 	if dialogue_continue_button == null:
 		return
-	dialogue_continue_button.text = text
+	dialogue_continue_button.text = CaseLocale.line(text)
 	dialogue_continue_button.visible = true
 	style_dialogue_button(dialogue_continue_button, false)
 	for connection in dialogue_continue_button.pressed.get_connections():
@@ -6012,7 +6014,7 @@ func show_continue_button(text: String, callback: Callable):
 	if dialogue_continue_button == null:
 		return
 
-	dialogue_continue_button.text = text
+	dialogue_continue_button.text = CaseLocale.line(text)
 	dialogue_continue_button.visible = true
 	style_dialogue_button(dialogue_continue_button, false)
 
@@ -6302,24 +6304,24 @@ func _update_hall_arrival_prompt() -> void:
 	# usable retreat point at every first-arrival step.
 	if _is_near_hall_interaction("wake_room_door"):
 		current_interaction = "wake_room_door"
-		interact_label.text = "Press E to return to the Wake Room"
+		interact_label.text = CaseLocale.line("Press E to return to the Wake Room")
 		interact_label.visible = true
 		return
 	match hall_arrival_step:
 		HallArrivalStep.REACH_CHEMISTRY_DOOR:
 			if _is_near_hall_interaction("arrival_chemistry_door"):
 				current_interaction = "arrival_chemistry_door"
-				interact_label.text = "Press E to inspect the Chemistry Room lock"
+				interact_label.text = CaseLocale.line("Press E to inspect the Chemistry Room lock")
 				interact_label.visible = true
 		HallArrivalStep.STUDY_CHEMISTRY_CORE:
 			if _is_near_hall_interaction("arrival_chemistry_core"):
 				current_interaction = "arrival_chemistry_core"
-				interact_label.text = "Press E to study the active brass core"
+				interact_label.text = CaseLocale.line("Press E to study the active brass core")
 				interact_label.visible = true
 		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
 			if _is_near_hall_interaction("arrival_chemistry_door"):
 				current_interaction = "arrival_chemistry_door"
-				interact_label.text = "Press E to open the Chemistry Room lock"
+				interact_label.text = CaseLocale.line("Press E to open the Chemistry Room lock")
 				interact_label.visible = true
 
 

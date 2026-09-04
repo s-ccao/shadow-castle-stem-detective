@@ -880,8 +880,8 @@ func create_inspect_ui() -> void:
 
 	inspect_confirm_button = Button.new()
 	inspect_confirm_button.name = "InspectConfirmButton"
-	inspect_confirm_button.text = "Continue"
-	# 右下角，加宽到 280 保证 "Approach the knowledge lock" 不裁切。
+	inspect_confirm_button.text = CaseLocale.line("Continue")
+	# 右下角，加宽到 280 保证 CaseLocale.line("Approach the knowledge lock") 不裁切。
 	inspect_confirm_button.position = Vector2(panel_w - 292, panel_h - 62)
 	inspect_confirm_button.size = Vector2(280, 44)
 	inspect_confirm_button.visible = false
@@ -1534,7 +1534,7 @@ func create_ui():
 
 	interact_label = Label.new()
 	interact_label.name = "InteractionHintLabel"
-	interact_label.text = ""
+	interact_label.text = CaseLocale.line("")
 	interact_label.position = Vector2(16, 7)
 	interact_label.size = Vector2(
 		maxf(120.0, interaction_hint_size.x - 32.0),
@@ -2037,10 +2037,10 @@ func update_interaction_prompt():
 	if not pending_mouse_interaction.is_empty():
 		match pending_mouse_interaction:
 			"door":
-				interact_label.text = "Walking to the castle door..."
+				interact_label.text = CaseLocale.line("Walking to the castle door...")
 			_:
 				if pending_mouse_interaction.begins_with("prop:"):
-					interact_label.text = "Walking to the interaction..."
+					interact_label.text = CaseLocale.line("Walking to the interaction...")
 
 		interact_label.visible = true
 		return
@@ -2050,11 +2050,11 @@ func update_interaction_prompt():
 			current_interaction = "door"
 
 			if exit_door_unlocked:
-				interact_label.text = "Click or press E to enter the castle hall"
+				interact_label.text = CaseLocale.line("Click or press E to enter the castle hall")
 			else:
-				interact_label.text = "Click or press E to read the door lock"
+				interact_label.text = CaseLocale.line("Click or press E to read the door lock")
 		else:
-			interact_label.text = "Move closer to inspect the door"
+			interact_label.text = CaseLocale.line("Move closer to inspect the door")
 
 		interact_label.visible = true
 		if not current_interaction.is_empty():
@@ -2065,9 +2065,9 @@ func update_interaction_prompt():
 		if mouse_over_prop.get(id, false):
 			if _is_near_interaction("prop:" + id):
 				current_interaction = "prop:" + id
-				interact_label.text = "Click or press E to inspect " + props[id]["prompt"]
+				interact_label.text = CaseLocale.line("Click or press E to inspect ") + CaseLocale.line(props[id]["prompt"])
 			else:
-				interact_label.text = "Move closer to inspect " + props[id]["prompt"]
+				interact_label.text = CaseLocale.line("Move closer to inspect ") + CaseLocale.line(props[id]["prompt"])
 			interact_label.visible = true
 			if not current_interaction.is_empty():
 				return
@@ -2078,13 +2078,13 @@ func update_interaction_prompt():
 	# hover branches so hovering a prop still wins over merely standing here.
 	if _is_clue_active() and (mouse_over_clue or _is_near_clue()):
 		if not _is_near_clue():
-			interact_label.text = "Move closer to read the candle note"
+			interact_label.text = CaseLocale.line("Move closer to read the candle note")
 		else:
 			current_interaction = "room_clue"
 			interact_label.text = (
-				"Click or press E to read the candle note"
+				CaseLocale.line("Click or press E to read the candle note")
 				if mouse_over_clue
-				else "Press E to read the candle note"
+				else CaseLocale.line("Press E to read the candle note")
 			)
 		interact_label.visible = true
 		if not current_interaction.is_empty():
@@ -2094,9 +2094,9 @@ func update_interaction_prompt():
 		current_interaction = "door"
 
 		if exit_door_unlocked:
-			interact_label.text = "Press E to enter the castle hall"
+			interact_label.text = CaseLocale.line("Press E to enter the castle hall")
 		else:
-			interact_label.text = "Press E to read the door lock"
+			interact_label.text = CaseLocale.line("Press E to read the door lock")
 
 		interact_label.visible = true
 		return
@@ -2106,7 +2106,7 @@ func update_interaction_prompt():
 			continue
 		if _is_near_interaction("prop:" + str(id)):
 			current_interaction = "prop:" + id
-			interact_label.text = "Press E to inspect " + props[id]["prompt"]
+			interact_label.text = CaseLocale.line("Press E to inspect ") + CaseLocale.line(props[id]["prompt"])
 			interact_label.visible = true
 			break
 
@@ -2293,7 +2293,7 @@ func on_first_lock_correct():
 	# a player leaves the first room having learned only "press E on things",
 	# and treats every later knowledge lock as an arbitrary quiz rather than a
 	# question they already hold the answer to.
-	add_dialogue_button("Continue", _show_dual_lock_rule)
+	add_dialogue_button(CaseLocale.line("Continue"), _show_dual_lock_rule)
 
 
 ## The one transferable lesson of the opening: a key opens the door, a question
@@ -2606,7 +2606,7 @@ func create_knowledge_panel_ui():
 	scroll.add_child(knowledge_label)
 
 	var close_button = Button.new()
-	close_button.text = "Close"
+	close_button.text = CaseLocale.line("Close")
 	close_button.custom_minimum_size = Vector2(650, 40)
 	close_button.add_theme_font_size_override("font_size", 16)
 	close_button.pressed.connect(close_knowledge_panel)

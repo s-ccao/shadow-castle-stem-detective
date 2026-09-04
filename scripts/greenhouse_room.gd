@@ -639,7 +639,7 @@ func create_exit_ui() -> void:
 
 	interact_label = Label.new()
 	interact_label.name = "InteractionHintLabel"
-	interact_label.text = "Press E to return to the Castle Hall"
+	interact_label.text = CaseLocale.line("Press E to return to the Castle Hall")
 	interact_label.position = Vector2(16, 7)
 	interact_label.size = Vector2(
 		maxf(120.0, interaction_hint_size.x - 32.0),
@@ -759,7 +759,7 @@ func _render_segment() -> void:
 	if _segment_index < _dialogue_segments.size() - 1:
 		var continue_button := Button.new()
 		continue_button.name = "SegmentContinueButton"
-		continue_button.text = "Continue"
+		continue_button.text = CaseLocale.line("Continue")
 		continue_button.custom_minimum_size = Vector2(0, 38)
 		continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		continue_button.add_theme_font_size_override("font_size", 15)
@@ -909,7 +909,7 @@ func _herb_plot_prompt(plot: Dictionary) -> String:
 			"%s还在长（%d 秒）" % [label, int(ceilf(remaining))]
 		)
 	return _bilingual(
-		"Press E to gather from %s" % label,
+		CaseLocale.line("Press E to gather from %s") % label,
 		"按 E 采集%s" % label
 	)
 
@@ -1049,7 +1049,7 @@ func update_exit_interaction() -> void:
 		and _is_near_interaction("gardener")
 	):
 		current_interaction = "gardener"
-		interact_label.text = "Press E to talk to the Gardener"
+		interact_label.text = CaseLocale.line("Press E to talk to the Gardener")
 		interact_label.visible = true
 		if Input.is_action_just_pressed("interact"):
 			_stop_walking_to_interact()
@@ -1079,7 +1079,7 @@ func update_exit_interaction() -> void:
 		if _is_near_interaction(str(item["name"])):
 			current_interaction = str(item["name"])
 			var item_name: String = str(item["name"])
-			interact_label.text = "Press E to inspect " + str(item["label"])
+			interact_label.text = CaseLocale.line("Press E to inspect ") + CaseLocale.line(str(item["label"]))
 			interact_label.visible = true
 			if Input.is_action_just_pressed("interact"):
 				_stop_walking_to_interact()
@@ -1092,7 +1092,7 @@ func update_exit_interaction() -> void:
 		and _is_near_interaction("exit")
 	):
 		current_interaction = "exit"
-		interact_label.text = "Press E to return to the Castle Hall"
+		interact_label.text = CaseLocale.line("Press E to return to the Castle Hall")
 		interact_label.visible = true
 		if Input.is_action_just_pressed("interact"):
 			_stop_walking_to_interact()
@@ -1112,7 +1112,7 @@ func show_gardener_dialogue() -> void:
 		+ "That explains the repair map on my bench, but it does not explain who carried deep-room traces into my greenhouse."
 	)
 	clear_message_buttons()
-	add_message_button("Continue", close_message_panel)
+	add_message_button(CaseLocale.line("Continue"), close_message_panel)
 
 
 var _inspected_items: Array[String] = []

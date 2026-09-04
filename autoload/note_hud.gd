@@ -94,8 +94,8 @@ func show_feature_unlock(title: String, message: String, duration: float = 4.5) 
 	_feature_sequence += 1
 	if not _unlocked:
 		unlock()
-	feature_title.text = title
-	feature_description.text = message
+	feature_title.text = CaseLocale.line(title)
+	feature_description.text = CaseLocale.line(message)
 	feature_unlock_panel.visible = true
 	feature_ring.visible = true
 	feature_unlock_panel.modulate = Color.WHITE

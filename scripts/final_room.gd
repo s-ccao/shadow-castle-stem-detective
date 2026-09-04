@@ -565,7 +565,7 @@ func create_inspection_overlay() -> void:
 
 	inspection_overlay_close_button = Button.new()
 	inspection_overlay_close_button.name = "CloseInspectionOverlayButton"
-	inspection_overlay_close_button.text = "Close"
+	inspection_overlay_close_button.text = CaseLocale.line("Close")
 	inspection_overlay_close_button.position = Vector2(704, 650)
 	inspection_overlay_close_button.size = Vector2(136, 38)
 	inspection_overlay_close_button.add_theme_font_size_override("font_size", 15)
@@ -628,7 +628,7 @@ func create_final_archive_reader_ui() -> void:
 
 	var title: Label = Label.new()
 	title.name = "ArchiveReaderTitle"
-	title.text = "FINAL ARCHIVE DOCUMENT — LORD ASHFORD RECORD"
+	title.text = CaseLocale.line("FINAL ARCHIVE DOCUMENT — LORD ASHFORD RECORD")
 	title.position = Vector2(80, 22)
 	title.size = Vector2(864, 42)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -648,7 +648,7 @@ func create_final_archive_reader_ui() -> void:
 
 	var description: Label = Label.new()
 	description.name = "ArchiveReaderDescription"
-	description.text = "A post-case record of Ashford's research network, the Knowledge Engine and the hidden archive route."
+	description.text = CaseLocale.line("A post-case record of Ashford's research network, the Knowledge Engine and the hidden archive route.")
 	description.position = Vector2(160, 684)
 	description.size = Vector2(704, 28)
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -658,7 +658,7 @@ func create_final_archive_reader_ui() -> void:
 
 	var close_button: Button = Button.new()
 	close_button.name = "CloseArchiveReaderButton"
-	close_button.text = "Close"
+	close_button.text = CaseLocale.line("Close")
 	close_button.position = Vector2(690, 720)
 	close_button.size = Vector2(130, 32)
 	close_button.pressed.connect(_close_final_archive_document_ui)
@@ -666,7 +666,7 @@ func create_final_archive_reader_ui() -> void:
 
 	var menu_button: Button = Button.new()
 	menu_button.name = "ArchiveReaderMainMenuButton"
-	menu_button.text = "Main Menu"
+	menu_button.text = CaseLocale.line("Main Menu")
 	menu_button.position = Vector2(500, 720)
 	menu_button.size = Vector2(176, 32)
 	menu_button.pressed.connect(_archive_reader_to_main_menu)
@@ -966,7 +966,7 @@ func create_self_dialogue_ui() -> void:
 	speaker_label.name = "SpeakerLabel"
 	speaker_label.position = Vector2(24.0, 12.0)
 	speaker_label.size = Vector2(150.0, 26.0)
-	speaker_label.text = "You"
+	speaker_label.text = CaseLocale.line("You")
 	speaker_label.add_theme_font_size_override("font_size", 16)
 	speaker_label.add_theme_color_override("font_color", Color(0.98, 0.78, 0.38, 1.0))
 	speaker_label.add_theme_color_override("font_outline_color", Color(0.08, 0.03, 0.01, 1.0))
@@ -992,7 +992,7 @@ func create_self_dialogue_ui() -> void:
 	continue_button.name = "ContinueSelfDialogueButton"
 	continue_button.position = Vector2(700.0, 116.0)
 	continue_button.size = Vector2(150.0, 30.0)
-	continue_button.text = "Continue"
+	continue_button.text = CaseLocale.line("Continue")
 	continue_button.focus_mode = Control.FOCUS_NONE
 	continue_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	continue_button.add_theme_font_size_override("font_size", 13)
@@ -1054,8 +1054,8 @@ func update_interaction_prompt() -> void:
 			current_interaction = str(item["name"])
 			if item_message.is_empty():
 				interact_label.text = (
-					"Press E to inspect "
-					+ str(item["label"])
+					CaseLocale.line("Press E to inspect ")
+					+ CaseLocale.line(str(item["label"]))
 				)
 			else:
 				interact_label.text = item_message
@@ -1069,7 +1069,7 @@ func update_interaction_prompt() -> void:
 	var exit_rect := get_interaction_rect("exit")
 	if _is_near_interaction("exit"):
 		current_interaction = "exit"
-		interact_label.text = "Press E to return to the Castle Hall"
+		interact_label.text = CaseLocale.line("Press E to return to the Castle Hall")
 		interaction_hint_panel.visible = true
 		_update_hint_screen_position(Vector2(
 			exit_rect.get_center().x,

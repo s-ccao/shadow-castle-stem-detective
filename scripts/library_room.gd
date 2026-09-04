@@ -560,7 +560,7 @@ func _create_knowledge_shelf_markers() -> void:
 
 		var label := Label.new()
 		label.name = "KnowledgeShelfLabel"
-		label.text = str(shelf_info["marker"])
+		label.text = CaseLocale.line(str(shelf_info["marker"]))
 		label.position = Vector2(-42.0, -11.0)
 		label.size = Vector2(108.0, 22.0)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -623,11 +623,11 @@ func _create_challenge_station_markers() -> void:
 func _challenge_station_label(challenge: String) -> String:
 	match challenge:
 		"red":
-			return "I · SPECTRUM"
+			return CaseLocale.line("I · SPECTRUM")
 		"green":
-			return "II · REFLECTION"
+			return CaseLocale.line("II · REFLECTION")
 		"blue":
-			return "III · ADDITIVE"
+			return CaseLocale.line("III · ADDITIVE")
 	return "LIGHT TEST"
 
 
@@ -1274,7 +1274,7 @@ func _refresh_rgb_filter_caption() -> void:
 		if filter_root != null and bool(filter_root.get_meta("active", false)):
 			active_count += 1
 	rgb_filter_caption.text = (
-		"ARCHIVE LIGHT STABLE"
+		CaseLocale.line("ARCHIVE LIGHT STABLE")
 		if active_count == 3
 		else "FILTER LOCK  ·  %d / 3" % active_count
 	)

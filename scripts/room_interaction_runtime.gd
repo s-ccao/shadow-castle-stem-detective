@@ -123,7 +123,7 @@ func refresh(input_enabled: bool, priority_interaction: Dictionary = {}) -> Stri
 			var item_label := str(item["label"])
 			var prompt := _feedback_text
 			if prompt.is_empty():
-				prompt = "Press E to inspect " + item_label
+				prompt = CaseLocale.line("Press E to inspect ") + CaseLocale.line(item_label)
 			_show_prompt(prompt, _get_item_prompt_anchor(item), ITEM_PROMPT_OFFSET)
 			_show_item_focus(item)
 			return item_name
@@ -137,7 +137,7 @@ func refresh(input_enabled: bool, priority_interaction: Dictionary = {}) -> Stri
 		)
 	):
 		_show_prompt(
-			"Press E to return to the Castle Hall",
+			CaseLocale.line("Press E to return to the Castle Hall"),
 			Vector2(exit_rect.get_center().x, exit_rect.position.y),
 			EXIT_PROMPT_OFFSET
 		)
@@ -166,7 +166,7 @@ func _show_priority_interaction(priority_interaction: Dictionary) -> String:
 	var label := str(priority_interaction.get("label", interaction_id))
 	var position: Vector2 = priority_interaction.get("position", Vector2.ZERO)
 	var interaction_rect: Rect2 = priority_interaction.get("interaction_rect", Rect2())
-	var prompt := str(priority_interaction.get("prompt", "Press E to inspect " + label))
+	var prompt := str(priority_interaction.get("prompt", CaseLocale.line("Press E to inspect ") + label))
 	var offset: Vector2 = priority_interaction.get("prompt_offset", ITEM_PROMPT_OFFSET)
 	if interaction_rect.size.x > 0.0 and interaction_rect.size.y > 0.0:
 		position = Vector2(interaction_rect.get_center().x, interaction_rect.position.y)

@@ -858,4 +858,246 @@ const LINES: Dictionary = {
 		"林女士",
 	"Dr. Lin":
 		"林博士",
+	"Press E to answer the knowledge lock":
+		"按 E 回答知识锁",
+	"Press E to enter the Chemistry Room":
+		"按 E 进入化学室",
+	"Press E to enter the Circuit Room":
+		"按 E 进入线路室",
+	"Press E to enter the Dining Hall":
+		"按 E 进入餐厅",
+	"Press E to enter the Final Room":
+		"按 E 进入终局室",
+	"Press E to enter the Greenhouse Room":
+		"按 E 进入温室",
+	"Press E to enter the Library":
+		"按 E 进入图书馆",
+	"Press E to enter the castle hall":
+		"按 E 进入城堡大厅",
+	"Press E to inspect the Chemistry Room lock":
+		"按 E 检查化学室门锁",
+	"Press E to inspect the alchemy table":
+		"按 E 查看炼金台",
+	"Press E to inspect the dark trail":
+		"按 E 查看暗色拖痕",
+	"Press E to inspect the potion cabinet":
+		"按 E 查看药剂柜",
+	"Press E to inspect the violet fiber":
+		"按 E 查看紫色纤维",
+	"Press E to investigate the red stain":
+		"按 E 调查红色污渍",
+	"Press E to investigate":
+		"按 E 调查",
+	"Press E to open the Chemistry Room lock":
+		"按 E 打开化学室门锁",
+	"Press E to open the maintenance panel":
+		"按 E 打开维修面板",
+	"Press E to pick up a torn note":
+		"按 E 捡起撕落的纸片",
+	"Press E to read the candle note":
+		"按 E 阅读蜡烛笔记",
+	"Press E to read the door lock":
+		"按 E 阅读门锁",
+	"Press E to return to the Castle Hall":
+		"按 E 返回城堡大厅",
+	"Press E to return to the Wake Room":
+		"按 E 返回苏醒室",
+	"Press E to review the red stain":
+		"按 E 重看红色污渍",
+	"Press E to search the engine machine":
+		"按 E 搜查引擎机械",
+	"Press E to search the storage rack":
+		"按 E 搜查储物架",
+	"Press E to search the tower machine":
+		"按 E 搜查塔楼机械",
+	"Press E to search the workshop machine":
+		"按 E 搜查工坊机械",
+	"Press E to study the active brass core":
+		"按 E 研究运转中的黄铜核心",
+	"Press E to talk to the Butler":
+		"按 E 与管家交谈",
+	"Press E to talk to the Gardener":
+		"按 E 与园丁交谈",
+	"Press E to talk to the Mechanic":
+		"按 E 与机械师交谈",
+	"Press E to unlock the service passage":
+		"按 E 解锁服务通道",
+	"Press E to inspect ":
+		"按 E 查看",
+	"KNOWLEDGE III · ADDITIVE":
+		"知识 III · 加色混合",
+	"ARCHIVE LIGHT STABLE":
+		"档案层光路稳定",
+	"FINAL ARCHIVE DOCUMENT — LORD ASHFORD RECORD":
+		"终档文件 —— 阿什福德勋爵记录",
+	"Press E to gather from %s":
+		"按 E 采集 %s",
+	"Click or press E to enter the castle hall":
+		"点击或按 E 进入城堡大厅",
+	"Click or press E to inspect ":
+		"点击或按 E 查看",
+	"Click or press E to read the candle note":
+		"点击或按 E 阅读蜡烛笔记",
+	"Click or press E to read the door lock":
+		"点击或按 E 阅读门锁",
+	"Move closer to inspect ":
+		"靠近以查看",
+	"Move closer to inspect the door":
+		"靠近以查看这扇门",
+	"Move closer to read the candle note":
+		"靠近以阅读蜡烛笔记",
+	"Approach the knowledge lock":
+		"走近知识锁",
+	"the Additive Relay":
+		"加色中继器",
+	"the Ashford analysis table":
+		"阿什福德分析台",
+	"the Chemistry Room knowledge exhibit":
+		"化学室知识展台",
+	"the Circuit Room knowledge exhibit":
+		"线路室知识展台",
+	"the Dining Hall knowledge exhibit":
+		"餐厅知识展台",
+	"the Greenhouse Room knowledge exhibit":
+		"温室知识展台",
+	"the Knowledge Engine":
+		"知识引擎",
+	"the Library knowledge exhibit":
+		"图书馆知识展台",
+	"the Reflection Matrix":
+		"反射矩阵",
+	"the Spectrum Sequencer":
+		"光谱序列器",
+	"the apothecary cabinet":
+		"药剂柜",
+	"the arcane generator":
+		"奥术发电机",
+	"the archive drawers":
+		"档案抽屉",
+	"the banquet table":
+		"宴会长桌",
+	"the barred door":
+		"上闩的门",
+	"the bed":
+		"那张床",
+	"the bookshelf":
+		"书架",
+	"the bottle-scroll":
+		"瓶身卷轴",
+	"the chained book chest":
+		"锁链书箱",
+	"the chained cabinet":
+		"锁链柜",
+	"the chest of books":
+		"书籍箱",
+	"the cluster of pots":
+		"一丛花盆",
+	"the compass cabinet":
+		"罗盘柜",
+	"the detective table":
+		"侦探桌",
+	"the divided storage chest":
+		"分格储物箱",
+	"the drawer bank":
+		"抽屉柜",
+	"the emblem cabinet":
+		"徽记柜",
+	"the empty cobalt lens slot":
+		"空的钴蓝镜片槽",
+	"the empty crimson lens slot":
+		"空的绯红镜片槽",
+	"the empty verdant lens slot":
+		"空的翠绿镜片槽",
+	"the equipment cabinet":
+		"器材柜",
+	"the gardener's workbench":
+		"园丁工作台",
+	"the grandfather clock":
+		"落地钟",
+	"the great stone planter":
+		"巨石花槽",
+	"the greenhouse gate":
+		"温室门",
+	"the hearth":
+		"壁炉",
+	"the hourglass cabinet":
+		"沙漏柜",
+	"the laden sideboard":
+		"堆满的餐边柜",
+	"the leafy potted plant":
+		"枝叶繁茂的盆栽",
+	"the left power switch":
+		"左侧电源开关",
+	"the lens-scroll":
+		"镜片卷轴",
+	"the long herb bed":
+		"长条草药畦",
+	"the master switch":
+		"总闸",
+	"the moonleaf bed":
+		"月叶草畦",
+	"the reinforced additive-light archive":
+		"加固加色光档案柜",
+	"the reinforced archive cabinet":
+		"加固档案柜",
+	"the right power switch":
+		"右侧电源开关",
+	"the ring-lock cabinet":
+		"环锁柜",
+	"the ring-marked cabinet":
+		"环纹柜",
+	"the storage cabinet":
+		"储物柜",
+	"the study desk":
+		"书桌",
+	"the tall wavelength case":
+		"高身波长陈列柜",
+	"the three-tier bookcase":
+		"三层书柜",
+	"the upper book shelf":
+		"上层书架",
+	"the vault cabinet":
+		"保险柜",
+	"the violet reflection cabinet":
+		"紫光反射柜",
+	"the wheel-marked panel":
+		"齿轮纹面板",
+	"the workbench":
+		"工作台",
+	"Close":
+		"关闭",
+	"TRACE SAMPLES":
+		"痕量样本",
+	"POWDER":
+		"粉末",
+	"INDICATOR":
+		"指示剂",
+	"GLASS":
+		"玻璃",
+	"Castle Hall":
+		"城堡大厅",
+	"Continue":
+		"继续",
+	"Main Menu":
+		"主菜单",
+	"KNOWLEDGE I · SPECTRUM":
+		"知识 I · 光谱",
+	"KNOWLEDGE II · REFLECTION":
+		"知识 II · 反射",
+	"I · SPECTRUM":
+		"I · 光谱",
+	"II · REFLECTION":
+		"II · 反射",
+	"III · ADDITIVE":
+		"III · 加色混合",
+	"A post-case record of Ashford's research network, the Knowledge Engine and the hidden archive route.":
+		"结案后的记录：阿什福德的研究网络、知识引擎，以及隐藏的档案通道。",
+	"BAG HUB AWAKENED":
+		"背包已启用",
+	"Your potions and materials are stored in the satchel. Click BAG or press Tab to open it.":
+		"你的药剂和材料都收在背包里。点击「背包」或按 Tab 打开。",
+	"NEW NOTE FEATURE":
+		"笔记已更新",
+	"New clue added. Press K to review.":
+		"新增一条线索。按 K 查看。",
 }
