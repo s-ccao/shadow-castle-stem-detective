@@ -4,6 +4,41 @@
 
 ## Stage
 
+- **Stage ID:** `ROUTE-20260904-28`
+- **Stage name:** The tutorial route is walked by the author, not pathfound
+- **Completed at:** `2026-09-04`
+- **Status:** `complete`
+- **User-visible outcome:** The Hall's floor markers pointed in directions that did not match the openings the player was looking at. The route was pathfound at runtime, and A* only guarantees a line is walkable — it cuts corners against walls, slips around collision the player cannot see, and runs diagonals across open floor. Turning on developer mode now records the walk; reaching the Chemistry door ends it and the tutorial follows that line from then on.
+
+## What changed
+
+- New `scripts/hall_route_store.gd`: reads and writes `data/hall_tutorial_route.json`. Stored as readable JSON with integer coordinates because the route is a design decision that has to be reviewable in a diff, not a binary asset. A malformed file is rejected whole — half a route strands the player mid-crossing and looks like broken pathfinding.
+- New `scripts/hall_route_recorder.gd`: samples the walk every 48px (half the marker spacing, so corners survive), draws it live above the fog, and finishes on the door itself rather than wherever the walk stopped. There is deliberately no separate "start recording" key: the thing being authored is the walk, and a second switch is one more chance to finish the lap and find nothing was captured.
+- `scripts/game_world.gd`: `_hall_route_points()` is now the single source for both the Guardian's line and the player's floor markers. They were already meant to be the same line but were read through two separate calls, so a change to one could leave the player following markers the leash counted as leaving the route.
+- `scripts/game_world.gd`, `scripts/greenhouse_room.gd`, `scenes/floor_1/chemistry_room.gd`: these three each polled the `toggle_developer_mode` input action in `_process`, still bound to F3. After the hotkey moved to `0` they kept their own zoom and marker state while `GameState` had already flipped. They now follow `GameState.state_changed` rather than switching it themselves, which also avoids the double-toggle that would cancel the keypress out.
+
+## Verification
+
+- `tests/hall_route_authoring_test.gd` (new): a deliberately non-straight walk is captured as 23 points with its corners intact, finishes on the door, round-trips through the file, and — the assertion that matters most — the Hall actually reads its tutorial line from the authored route. Saving a file nothing consumes is the easiest failure here to miss. It also asserts the A* fallback still works with no file present, so a fresh checkout is not left without guidance.
+- Full suite: **38/38 pass**, in this worktree and in the maintainer's checkout.
+
+## Known risks
+
+- The recorder writes to `res://`, which is read-only in an exported build. It is a developer tool gated behind developer mode, so it never runs for a player, but the authored JSON must be committed to ship.
+- New `class_name` scripts do not resolve until the editor rebuilds its class cache. A checkout that pulls this change must reopen the project (or run `--headless --editor --quit`) before the route tooling loads.
+
+## Correction to the previous report
+
+The earlier claim that the maintainer's checkout timed out under editor contention was wrong. `timeout` does not exist on macOS, so those runs never started; the same mistake made a full-suite run report 38 failures that had not executed. Suite commands no longer use it.
+
+## Proposed next stage
+
+Walk and commit the real Hall route, then re-check the Guardian's trailing distance against the authored line rather than the pathfound one.
+
+---
+
+## Stage
+
 - **Stage ID:** `DEV-20260902-27`
 - **Stage name:** Developer mode, and a verified answer sheet for all 48 minigame stages
 - **Completed at:** `2026-09-02`

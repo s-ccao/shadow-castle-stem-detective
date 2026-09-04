@@ -4,7 +4,7 @@
 
 ![Godot](https://img.shields.io/badge/Godot-4.7-478cbf?logo=godotengine&logoColor=white)
 ![GDScript](https://img.shields.io/badge/GDScript-51k_lines-355570)
-![Tests](https://img.shields.io/badge/tests-37_headless_suites-3fa46a)
+![Tests](https://img.shields.io/badge/tests-38_headless_suites-3fa46a)
 ![Platform](https://img.shields.io/badge/platform-Web_·_Desktop-8a63d2)
 
 A 2D pixel-art detective game about a blackout at a magical castle. You gather
@@ -115,7 +115,7 @@ Additive colour mixing is what reveals a hidden archive layer.
 
 ## Testing
 
-Gameplay is covered by **37 headless regression suites** that drive the real
+Gameplay is covered by **38 headless regression suites** that drive the real
 scenes rather than mocks — the chase suite instantiates the Hall, runs the
 Guardian, and asserts on what a player would actually experience.
 
@@ -133,6 +133,7 @@ Several suites exist to protect design guarantees that regress silently:
 | `panel_overflow_test.gd` | No panel draws text outside its own frame, measured against font extents rather than control rects. |
 | `interaction_stops_walk_test.gd` | Interacting always halts a click-move, so the character never walks off on its own. |
 | `developer_mode_test.gd` | The developer clear credits every stage to the room, and stays hidden for normal players. |
+| `hall_route_authoring_test.gd` | The tutorial follows the route the author walked, and still falls back to pathfinding without one. |
 | `room_spatial_audit.gd` | Every interactable is reachable from walkable floor. |
 
 ### Developer mode
@@ -145,6 +146,11 @@ The room receives exactly the values a real clear sends, so rewards, story
 flags and the checkpoint all fire normally — only the manual solving is
 skipped. The mode is session-only, defaults off, and is never written to a
 save, so the button cannot appear for a player.
+
+Turning developer mode on inside the Hall also records the walk. Reaching
+the Chemistry door writes it to `data/hall_tutorial_route.json`, and the
+tutorial follows that line instead of a pathfound one — a taught route is a
+design decision, not a pathfinding result.
 
 [`docs/MINIGAME_ANSWERS.md`](docs/MINIGAME_ANSWERS.md) lists every stage's
 answer. It is generated, not written by hand: each entry is computed from the
