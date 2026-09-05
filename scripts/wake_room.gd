@@ -2157,7 +2157,7 @@ func show_room_unsearched_hint(missing: Array[String]) -> void:
 	for item: String in missing:
 		lines += "\n  ·  " + item
 	show_dialogue(
-		"Mrs. Lin",
+		"You",
 		CaseLocale.text("wake.unclaimed.body") + "\n" + lines
 	)
 	reset_dialogue_scrolls()
@@ -2179,7 +2179,7 @@ func show_desk_first_hint() -> void:
 	start_dialogue_pause()
 	clear_buttons()
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "Before you test the lock, read the note on the study desk. It explains the rule that governs every sealed room in Ashford Castle.")
+	show_dialogue("You", "Before I try the lock — the note on the study desk. It explains the rule every sealed room in this castle runs on.")
 	reset_dialogue_scrolls()
 	add_dialogue_button("Inspect the desk", close_message_panel)
 
@@ -2190,7 +2190,7 @@ func show_door_locked_hint():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "The brass key wakes the lock, and one question appears:\n\n\"What does a flame need from the air to keep burning?\"\n\nDo not guess. The bookshelf in this room holds the answer.")
+	show_dialogue("You", "The brass key wakes the lock, and one question appears:\n\n\"What does a flame need from the air to keep burning?\"\n\nDo not guess. The bookshelf in this room holds the answer.")
 	reset_dialogue_scrolls()
 	add_dialogue_button("Search the bookshelf", close_message_panel)
 
@@ -2199,7 +2199,7 @@ func show_locked_door_intro():
 	start_dialogue_pause()
 	clear_buttons()
 
-	show_dialogue("Mrs. Lin", "The exit door glows with a faint purple light.\n\nA question appears on the lock:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is recorded in the bookshelf's science volume.")
+	show_dialogue("You", "The exit door glows with a faint purple light.\n\nA question appears on the lock:\n\n\"What does a flame need from the air to keep burning?\"\n\nThe answer is recorded in the bookshelf's science volume.")
 	reset_dialogue_scrolls()
 	add_dialogue_button("I'll search the room.", close_message_panel)
 
@@ -2251,7 +2251,7 @@ func _on_door_puzzle_answered(is_correct: bool):
 		start_dialogue_pause()
 		clear_buttons()
 		_show_dialogue(message_panel)
-		show_dialogue("Mrs. Lin", "The lock still glows. Whenever you are ready, approach the door again and answer its question.")
+		show_dialogue("You", "The lock is still glowing. When I am ready, back to the door to answer it.")
 		reset_dialogue_scrolls()
 		add_dialogue_button("OK", close_message_panel)
 
@@ -2286,7 +2286,7 @@ func on_first_lock_correct():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "Correct.\n\nMrs. Lin:\nYes. Fire needs oxygen from the air. The knowledge lock recognized the answer.\n\nThe door unlocks with a heavy click.")
+	show_dialogue("You", "Correct.\n\nYou:\nYes. Fire needs oxygen from the air. The knowledge lock recognized the answer.\n\nThe door unlocks with a heavy click.")
 	reset_dialogue_scrolls()
 
 	# Name the rule the moment the player has just lived it. Without this beat
@@ -2320,8 +2320,8 @@ func _offer_leave_or_stay() -> void:
 	clear_buttons()
 	_show_dialogue(message_panel)
 	show_dialogue(
-		"Mrs. Lin",
-		"You can enter the castle hall now, or stay here and review the room first."
+		"You",
+		"I can go through to the castle hall now, or look this room over once more first."
 	)
 	reset_dialogue_scrolls()
 	add_dialogue_button("Stay in this room", close_message_panel)
@@ -2337,7 +2337,7 @@ func on_first_lock_wrong():
 	clear_buttons()
 
 	_show_dialogue(message_panel)
-	show_dialogue("Mrs. Lin", "Not quite.\n\nMrs. Lin:\nThink back to the science book on the bookshelf. It explains what a flame needs from the air to keep burning.\n\nYou can try again, review your notes, or take more time to think.")
+	show_dialogue("You", "Not quite.\n\nYou:\nThink back to the science book on the bookshelf. It explains what a flame needs from the air to keep burning.\n\nYou can try again, review your notes, or take more time to think.")
 	add_dialogue_button("Try Again", show_first_door_question)
 	add_dialogue_button("Review Notes", open_knowledge_panel_from_dialogue)
 	add_dialogue_button("Let me think", close_message_panel)

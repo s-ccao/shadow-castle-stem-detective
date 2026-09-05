@@ -3334,7 +3334,7 @@ func create_game_ui():
 	dialogue_continue_button.visible = false
 	dialogue_action_row.add_child(dialogue_continue_button)
 
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	apply_dialogue_visual_style()
 	create_evidence_board_ui()
 	create_knowledge_journal_ui()
@@ -3791,10 +3791,10 @@ func _open_service_wall_door() -> void:
 	GameState.set_story_flag("service_wall_door_open")
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"The Service Corridor Key fits the hidden lock. The wall panel slides back, revealing a narrow passage behind the hall.\n\n"
 		+ "The chase has gone quiet, but the silence feels worse than the footsteps. Whatever happened in this castle passed through here."
 	)
@@ -3805,10 +3805,10 @@ func _investigate_service_dark_trail() -> void:
 	GameState.add_evidence("service_corridor_dark_trail")
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"A dark trail begins at the passage door and ends beside the maintenance panel.\n\n"
 		+ "It is not a pool of blood: the edges contain violet grit and a sharp chemical smell. Something heavy was dragged through here after the blackout — equipment from the workshop."
 	)
@@ -3825,10 +3825,10 @@ func _investigate_service_fiber() -> void:
 	GameState.add_evidence("service_corridor_fiber")
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"A violet thread is caught on the copper pipe.\n\n"
 		+ "It matches the distinctive insulating weave identified on the Circuit Room maintenance gloves and cable wraps. A short strand of copper-colored repair thread is caught in the same material. It may have come from previously repaired maintenance gear, but it does not identify one worker by itself. The person who used this passage carried equipment from the workshop."
 	)
@@ -3847,10 +3847,10 @@ func _investigate_service_panel() -> void:
 	GameState.set_story_flag("service_maintenance_panel_opened")
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"Behind the panel is a hand-drawn route: Dining Hall → service passage → Final Room. One line is circled twice: the gate will not open without the reassembled key.\n\n"
 		+ "A fourth machine fragment is wedged behind the panel — the physical Access / Route seal, the final piece of the Final Room Key."
 	)
@@ -3988,20 +3988,20 @@ func show_not_developed_prompt(room_name: String) -> void:
 func show_clue_intro():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
-	set_dialogue_text("Mrs. Lin", "This red liquid looks like blood at first glance, but a good detective never relies on color alone.\n\nWhat do you think caused the red color?")
+	set_dialogue_text("You", "This red liquid looks like blood at first glance. But colour alone proves nothing — I know that much.\n\nSo what actually made it red?")
 
 	add_dialogue_button("I think I know.", show_red_stain_question)
-	add_dialogue_button("I'm not sure. Please explain.", explain_red_stain_without_reward)
+	add_dialogue_button("Not yet. Work it through.", explain_red_stain_without_reward)
 
 
 func show_red_stain_question():
 	clear_buttons()
 
 	set_dialogue_text(
-		"Mrs. Lin",
-		"Question:\nWhat most likely caused the red color?\n\nUse what you observed. A good detective does not rely on color alone."
+		"You",
+		"Question:\nWhat most likely caused the red color?\n\nGo by what I actually observed. Colour alone proves nothing."
 	)
 
 	add_answer_button("A. Real blood exposed to oxygen", false)
@@ -4028,7 +4028,7 @@ func on_red_stain_correct():
 	award_reputation(10)
 
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "Correct.\n\nExcellent reasoning. The red color is likely caused by an indicator reacting with a basic cleaning substance. This means the stain may have been staged, not left by the victim.\n\nEvidence added: Fake Red Stain")
+	set_dialogue_text("You", "Correct.\n\nExcellent reasoning. The red color is likely caused by an indicator reacting with a basic cleaning substance. This means the stain may have been staged, not left by the victim.\n\nEvidence added: Fake Red Stain")
 
 	collect_red_stain_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4036,7 +4036,7 @@ func on_red_stain_correct():
 
 func on_red_stain_wrong():
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "Not quite.\n\nThe important clue is not just the color. If an indicator solution mixes with a basic cleaner, it can turn red or pink. This stain may be fake.\n\nEvidence added: Fake Red Stain")
+	set_dialogue_text("You", "Not quite.\n\nThe important clue is not just the color. If an indicator solution mixes with a basic cleaner, it can turn red or pink. This stain may be fake.\n\nEvidence added: Fake Red Stain")
 
 	collect_red_stain_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4044,7 +4044,7 @@ func on_red_stain_wrong():
 
 func explain_red_stain_without_reward():
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "That's okay. A good detective knows when to ask for help.\n\nThe red color may come from an indicator solution reacting with a basic cleaner. So this does not prove it is blood. Someone may have staged the crime scene.\n\nEvidence added: Fake Red Stain")
+	set_dialogue_text("You", "That's okay. A good detective knows when to ask for help.\n\nThe red color may come from an indicator solution reacting with a basic cleaner. So this does not prove it is blood. Someone may have staged the crime scene.\n\nEvidence added: Fake Red Stain")
 
 	collect_red_stain_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4272,9 +4272,9 @@ func show_butler_dialogue():
 	message_panel.visible = true
 
 	if evidence_items.has("fake_red_stain"):
-		set_dialogue_text("Butler", "I already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nMrs. Lin:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue.")
+		set_dialogue_text("Butler", "I already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nYou:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue.")
 	else:
-		set_dialogue_text("Butler", "I was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms.\n\nMrs. Lin:\nThat explains why many paths require scientific reasoning. We should collect physical evidence before making any accusation.")
+		set_dialogue_text("Butler", "I was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms.\n\nYou:\nThat explains why many paths require scientific reasoning. We should collect physical evidence before making any accusation.")
 
 	show_continue_button("Continue", close_message_panel)
 func create_pollen_clue():
@@ -4311,19 +4311,19 @@ func create_gardener_npc():
 func show_pollen_intro():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
-	set_dialogue_text("Mrs. Lin", "There is yellow pollen on the door handle. That may not look important, but pollen can connect a person to a specific place.\n\nWhat do you think this clue tells us?")
+	set_dialogue_text("You", "Yellow pollen on the door handle. Easy to walk past — but pollen ties a person to a particular place.\n\nSo what does this one tell me?")
 
 	add_dialogue_button("I think I know.", show_pollen_question)
-	add_dialogue_button("I'm not sure. Please explain.", explain_pollen_without_reward)
+	add_dialogue_button("Not yet. Work it through.", explain_pollen_without_reward)
 
 
 func show_pollen_question():
 	clear_buttons()
 
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"Question:\nWhat is the best scientific use of this pollen evidence?\n\nThink about how small traces can connect a suspect to a specific place."
 	)
 
@@ -4345,7 +4345,7 @@ func on_pollen_correct():
 	award_reputation(10)
 
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "Correct.\n\nGood reasoning. Pollen grains can help identify where someone has been, especially if the pollen matches a plant from a specific room such as the greenhouse.\n\nEvidence added: Greenhouse Pollen")
+	set_dialogue_text("You", "Correct.\n\nGood reasoning. Pollen grains can help identify where someone has been, especially if the pollen matches a plant from a specific room such as the greenhouse.\n\nEvidence added: Greenhouse Pollen")
 
 	collect_pollen_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4353,7 +4353,7 @@ func on_pollen_correct():
 
 func on_pollen_wrong():
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "Not quite.\n\nPollen can act like biological trace evidence. If it matches a plant from the greenhouse, it may show that someone recently came from there.\n\nEvidence added: Greenhouse Pollen")
+	set_dialogue_text("You", "Not quite.\n\nPollen can act like biological trace evidence. If it matches a plant from the greenhouse, it may show that someone recently came from there.\n\nEvidence added: Greenhouse Pollen")
 
 	collect_pollen_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4361,7 +4361,7 @@ func on_pollen_wrong():
 
 func explain_pollen_without_reward():
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "That's okay. Pollen is useful because different plants can produce different pollen patterns. If we match this pollen to the greenhouse, it can connect a suspect to that location.\n\nEvidence added: Greenhouse Pollen")
+	set_dialogue_text("You", "That's okay. Pollen is useful because different plants can produce different pollen patterns. If we match this pollen to the greenhouse, it can connect a suspect to that location.\n\nEvidence added: Greenhouse Pollen")
 
 	collect_pollen_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4392,7 +4392,7 @@ func show_gardener_dialogue():
 	message_panel.visible = true
 
 	if evidence_items.has("greenhouse_pollen"):
-		set_dialogue_text("Gardener", "Pollen? Of course there is pollen in a castle with a greenhouse. That does not prove I did anything.\n\nMrs. Lin:\nHe is right that pollen alone is not proof. But if it appears on a locked door handle, it may show that someone from the greenhouse touched it recently.")
+		set_dialogue_text("Gardener", "Pollen? Of course there is pollen in a castle with a greenhouse. That does not prove I did anything.\n\nYou:\nHe is right that pollen alone is not proof. But if it appears on a locked door handle, it may show that someone from the greenhouse touched it recently.")
 	else:
 		set_dialogue_text("Gardener", "I was working near the greenhouse earlier. I did not enter the locked rooms.\n\nWe should look for biological trace evidence before deciding whether that is true.")
 
@@ -4433,19 +4433,19 @@ func create_mechanic_npc():
 func show_circuit_intro():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
-	set_dialogue_text("Mrs. Lin", "The wall panel has burn marks, and the lights went out right before the chase began.\n\nThis may not be an accident. What do you think caused the blackout?")
+	set_dialogue_text("You", "Burn marks on the wall panel, and the lights failed right before the chase started.\n\nThat is not coincidence. So what cut the power?")
 
 	add_dialogue_button("I think I know.", show_circuit_question)
-	add_dialogue_button("I'm not sure. Please explain.", explain_circuit_without_reward)
+	add_dialogue_button("Not yet. Work it through.", explain_circuit_without_reward)
 
 
 func show_circuit_question():
 	clear_buttons()
 
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"Question:\nWhat is the best explanation for the burned circuit panel?\n\nUse the burn marks and blackout as evidence."
 	)
 
@@ -4468,7 +4468,7 @@ func on_circuit_correct():
 	award_reputation(10)
 
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "Correct.\n\nExactly. A short circuit can allow too much current to flow, producing heat and burn marks. This suggests the blackout may have been caused deliberately.\n\nEvidence added: Deliberate Short Circuit")
+	set_dialogue_text("You", "Correct.\n\nExactly. A short circuit can allow too much current to flow, producing heat and burn marks. This suggests the blackout may have been caused deliberately.\n\nEvidence added: Deliberate Short Circuit")
 
 	collect_circuit_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4476,7 +4476,7 @@ func on_circuit_correct():
 
 func on_circuit_wrong():
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "Not quite.\n\nThe burn marks suggest excess current and heat. A short circuit could explain the sudden blackout, which means someone may have caused it on purpose.\n\nEvidence added: Deliberate Short Circuit")
+	set_dialogue_text("You", "Not quite.\n\nThe burn marks suggest excess current and heat. A short circuit could explain the sudden blackout, which means someone may have caused it on purpose.\n\nEvidence added: Deliberate Short Circuit")
 
 	collect_circuit_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4484,7 +4484,7 @@ func on_circuit_wrong():
 
 func explain_circuit_without_reward():
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", "A short circuit creates a path with very low resistance. That can cause a large current, heat, and burn marks.\n\nSo the blackout may not be accidental. Someone may have used the circuit panel to create confusion.\n\nEvidence added: Deliberate Short Circuit")
+	set_dialogue_text("You", "A short circuit creates a path with very low resistance. That can cause a large current, heat, and burn marks.\n\nSo the blackout may not be accidental. Someone may have used the circuit panel to create confusion.\n\nEvidence added: Deliberate Short Circuit")
 
 	collect_circuit_evidence()
 	show_continue_button("Continue", close_message_panel)
@@ -4515,9 +4515,9 @@ func show_mechanic_dialogue():
 	message_panel.visible = true
 
 	if evidence_items.has("deliberate_short_circuit"):
-		set_dialogue_text("Mechanic", "A short circuit? I maintain the castle wiring, but anyone could have damaged that panel.\n\nMrs. Lin:\nMaybe. But the burn pattern suggests the blackout was triggered intentionally. Someone who understands circuits would know exactly where to interfere.")
+		set_dialogue_text("Mechanic", "A short circuit? I maintain the castle wiring, but anyone could have damaged that panel.\n\nYou:\nMaybe. But the burn pattern suggests the blackout was triggered intentionally. Someone who understands circuits would know exactly where to interfere.")
 	else:
-		set_dialogue_text("Mechanic", "The lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nMrs. Lin:\nMaybe, but we should inspect the circuit panel before accepting that explanation.")
+		set_dialogue_text("Mechanic", "The lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nYou:\nMaybe, but we should inspect the circuit panel before accepting that explanation.")
 
 	show_continue_button("Continue", close_message_panel)
 func get_evidence_title(evidence_id: String) -> String:
@@ -4591,15 +4591,15 @@ func has_all_evidence() -> bool:
 func show_final_deduction():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 
 	if not has_all_evidence():
-		set_dialogue_text("Mrs. Lin", "Not yet. We still need enough evidence before making a final accusation.\n\n" + get_evidence_progress_text())
+		set_dialogue_text("You", "Not yet. We still need enough evidence before making a final accusation.\n\n" + get_evidence_progress_text())
 		add_dialogue_button("Continue", close_message_panel)
 		return
 
-	set_dialogue_text("Mrs. Lin", "We have three major pieces of evidence now:\n\n1. The red stain may have been staged.\n2. The pollen links someone to the greenhouse area.\n3. The blackout was likely caused by a deliberate short circuit.\n\nWho do you accuse?")
+	set_dialogue_text("You", "We have three major pieces of evidence now:\n\n1. The red stain may have been staged.\n2. The pollen links someone to the greenhouse area.\n3. The blackout was likely caused by a deliberate short circuit.\n\nWho do you accuse?")
 
 	add_final_suspect_button("Butler", "butler")
 	add_final_suspect_button("Gardener", "gardener")
@@ -4653,7 +4653,7 @@ func show_victory_ending():
 		enemy.set_physics_process(false)
 
 	message_panel.visible = true
-	message_label.text = "CASE SOLVED\n\nYou accused the Mechanic.\n\nMrs. Lin:\nCorrect. The strongest clue is the deliberate short circuit. The blackout gave the murderer time to move through the castle while everyone else was confused.\n\nThe staged red stain and greenhouse trace evidence were distractions, but together they helped reveal how the crime scene was manipulated.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
+	message_label.text = "CASE SOLVED\n\nYou accused the Mechanic.\n\nYou:\nCorrect. The strongest clue is the deliberate short circuit. The blackout gave the murderer time to move through the castle while everyone else was confused.\n\nThe staged red stain and greenhouse trace evidence were distractions, but together they helped reveal how the crime scene was manipulated.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
 
 
 func show_wrong_accusation_ending(suspect_id: String):
@@ -4667,7 +4667,7 @@ func show_wrong_accusation_ending(suspect_id: String):
 	var suspect_name = suspect_id.capitalize()
 
 	message_panel.visible = true
-	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nMrs. Lin:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
+	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nYou:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
 func restart_current_game():
 	# Retry 只重载当前场景；玩家保留实时调查进度。
 	var current_path: String = "res://scenes/game_world.tscn"
@@ -5475,11 +5475,11 @@ func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable)
 	if not GameState.has_key(key_id):
 		start_dialogue_pause()
 		clear_buttons()
-		set_dialogue_speaker("Mrs. Lin")
+		set_dialogue_speaker("You")
 		message_panel.visible = true
 		set_dialogue_text(
-			"Mrs. Lin",
-			"The lock is dormant — a physical key is required before the question will appear.\n\nSearch the rooms you have already explored."
+			"You",
+			"The lock is dormant. It wants a physical key before it will even ask its question.\n\nSomething in the rooms I have already been through."
 		)
 		show_continue_button("Continue", close_message_panel)
 		return
@@ -5509,10 +5509,10 @@ func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable)
 			room_label = "Library"
 		start_dialogue_pause()
 		clear_buttons()
-		set_dialogue_speaker("Mrs. Lin")
+		set_dialogue_speaker("You")
 		message_panel.visible = true
 		set_dialogue_text(
-			"Mrs. Lin",
+			"You",
 			"The key fits, but the knowledge lock is still sealed.\n\n"
 			+ "Study the " + room_label + " Knowledge exhibit in Castle Hall and save it to NoteHub before answering this question."
 		)
@@ -5530,10 +5530,10 @@ func _show_final_synthesis_question() -> void:
 	var step: Dictionary = FINAL_SYNTHESIS_QUESTIONS[_final_synthesis_index]
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"Final Synthesis Lock — Question %d/%d:\n\n%s" % [
 			_final_synthesis_index + 1,
 			FINAL_SYNTHESIS_QUESTIONS.size(),
@@ -5564,7 +5564,7 @@ func _on_final_synthesis_correct() -> void:
 	award_reputation(5)
 	clear_buttons()
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"The final lock accepts the chain of knowledge.\n\n"
 		+ "Matter, life, energy, and the passage of time all point to one connected investigation.\n\n"
 		+ "The Final Room door is open."
@@ -5575,8 +5575,8 @@ func _on_final_synthesis_correct() -> void:
 func _show_final_synthesis_wrong() -> void:
 	clear_buttons()
 	set_dialogue_text(
-		"Mrs. Lin",
-		"That answer does not fit the evidence you have learned.\n\n"
+		"You",
+		"That answer does not fit the evidence I have.\n\n"
 		+ "Review the corresponding room Knowledge note and try again."
 	)
 	var retry_button: Button = Button.new()
@@ -5592,7 +5592,7 @@ func _show_door_question(door_id: String, question: String, options: Array, corr
 	_door_question_target = door_id
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
 	# Every knowledge lock passes through here, so translating at this one point
 	# covers the question, the numbered list and the answer buttons together.
@@ -5601,7 +5601,7 @@ func _show_door_question(door_id: String, question: String, options: Array, corr
 	)
 	for i: int in range(options.size()):
 		question_text += "\n" + str(i + 1) + ". " + CaseLocale.line(str(options[i]))
-	set_dialogue_text("Mrs. Lin", question_text)
+	set_dialogue_text("You", question_text)
 	var option_order: Array[int] = [0, 1, 2, 3]
 	option_order.shuffle()
 	for option_index: int in option_order:
@@ -5647,8 +5647,8 @@ func _on_door_question_correct() -> void:
 		"final":
 			GameState.set_story_flag("door_final_unlocked")
 	set_dialogue_text(
-		"Mrs. Lin",
-		"Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened."
+		"You",
+		"Correct.\n\nThe knowledge lock takes it.\n\nThe door is open."
 	)
 	show_continue_button("Continue", close_message_panel)
 
@@ -5659,7 +5659,7 @@ func _on_door_question_wrong() -> void:
 		return
 	clear_buttons()
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"Not quite.\n\nThe lock remains sealed. Think about the science behind the question and try again."
 	)
 	var retry_button := Button.new()
@@ -5720,7 +5720,7 @@ func create_circuit_learning_note():
 func show_circuit_learning_note():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	GameState.set_learned_circuit_rule(true)
 	learned_circuit_rule = true
 
@@ -5729,16 +5729,16 @@ func show_circuit_learning_note():
 		circuit_note_node.color = Color(0.55, 0.52, 0.25, 0.75)
 
 	message_panel.visible = true
-	set_dialogue_text("Mrs. Lin", "\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nMrs. Lin:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases.")
+	set_dialogue_text("You", "\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nYou:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases.")
 
 	update_objective_text()
 	show_continue_button("Continue", close_message_panel)
 func show_circuit_door_hint():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
-	set_dialogue_text("Mrs. Lin", "This lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer.")
+	set_dialogue_text("You", "This lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer.")
 
 	show_continue_button("Continue", close_message_panel)
 func show_intro_dialogue():
@@ -5748,9 +5748,9 @@ func show_intro_dialogue():
 	intro_seen = true
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
+	set_dialogue_speaker("You")
 	message_panel.visible = true
-	set_dialogue_text("Mrs. Lin", "Detective, you are inside Shadow Castle.\n\nThis castle once belonged to Lord Ashford, a scholar who believed knowledge was the only true key.\n\nHe designed many doors as knowledge locks. They do not open with ordinary keys. They open when someone understands the question written on them.")
+	set_dialogue_text("You", "So this is Shadow Castle.\n\nIt belonged to Lord Ashford — a scholar who held that knowledge was the only real key.\n\nHe built his doors as knowledge locks. No ordinary key opens them. They open for whoever understands the question written on them.")
 
 	show_continue_button("Continue", show_intro_dialogue_page_two)
 func open_objectives_from_intro():
@@ -5763,7 +5763,7 @@ func show_intro_dialogue_page_two():
 	clear_buttons()
 
 	set_dialogue_text(
-		"Mrs. Lin",
+		"You",
 		"Tonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\n" +
 		"This castle is not a normal building. Lord Ashford, the former owner, believed that knowledge was the only true key. He designed many doors as knowledge locks. They do not open with ordinary keys. They open only when someone understands the question written on them.\n\n" +
 		"That means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\n" +
@@ -6405,8 +6405,8 @@ func _try_hall_arrival_interaction() -> void:
 func _show_hall_chemistry_door_lock() -> void:
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_speaker("Mrs. Lin")
-	set_dialogue_text("Mrs. Lin", CaseLocale.text("hall.chemistry_door_locked"))
+	set_dialogue_speaker("You")
+	set_dialogue_text("You", CaseLocale.text("hall.chemistry_door_locked"))
 	show_continue_button("FOLLOW THE PULSE", _advance_to_hall_chemistry_core)
 
 
@@ -7274,7 +7274,7 @@ func _on_case_locale_changed(_language: String) -> void:
 func show_castle_hall_arrival():
 	start_dialogue_pause()
 	clear_buttons()
-	set_dialogue_text("Mrs. Lin", CaseLocale.text("hall.arrival_body"))
+	set_dialogue_text("You", CaseLocale.text("hall.arrival_body"))
 	show_continue_button(
 		CaseLocale.text("hall.arrival_continue"),
 		start_investigation_from_intro

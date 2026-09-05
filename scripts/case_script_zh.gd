@@ -217,16 +217,16 @@ const LINES: Dictionary = {
 		"\n\n这个房间还没有做完。",
 	"This lock uses an electrical rule, but we have not confirmed the rule yet.\n\nLook nearby for a maintenance note or circuit clue before forcing an answer.":
 		"这道锁用的是一条电学规则，但我们还没把它确认下来。\n\n先在附近找找维修笔记或电路线索，别急着硬答。",
-	"The lock is dormant — a physical key is required before the question will appear.\n\nSearch the rooms you have already explored.":
-		"锁还睡着——得先有实体钥匙，问题才会浮现。\n\n回你已经走过的房间里找找。",
+	"The lock is dormant. It wants a physical key before it will even ask its question.\n\nSomething in the rooms I have already been through.":
+		"锁是暗的。它要先拿到一把实体钥匙，才肯把问题亮出来。\n\n东西就在我已经走过的那些房间里。",
 	"The fourth fragment locks into place. The Final Room Key is complete.":
 		"第四块碎片扣了进去。终局档案室钥匙，完整了。",
 	"The dark trail contains violet grit and a chemical smell. Something heavy was dragged from the workshop through the service passage.":
 		"那道暗痕里混着紫色颗粒，还带着化学品的气味。有重物被人从工坊一路拖过服务通道。",
 
 	# ---------- 大厅：三段调查问答 ----------
-	"This red liquid looks like blood at first glance, but a good detective never relies on color alone.\n\nWhat do you think caused the red color?":
-		"这摊红色液体乍看像血，可一个好侦探从不只凭颜色下判断。\n\n你觉得，这个红是怎么来的？",
+	"This red liquid looks like blood at first glance. But colour alone proves nothing — I know that much.\n\nSo what actually made it red?":
+		"这摊红色液体乍看像血。可光凭颜色什么也证明不了 —— 这点我还是清楚的。\n\n那到底是什么让它变红的？",
 	"Question:\nWhat most likely caused the red color?\n\nUse what you observed. A good detective does not rely on color alone.":
 		"问题：\n这个红色最可能是什么造成的？\n\n用你亲眼观察到的东西。好侦探不会只看颜色。",
 	"Correct.\n\nExcellent reasoning. The red color is likely caused by an indicator reacting with a basic cleaning substance. This means the stain may have been staged, not left by the victim.\n\nEvidence added: Fake Red Stain":
@@ -235,8 +235,8 @@ const LINES: Dictionary = {
 		"还差一点。\n\n关键的线索不只是颜色。指示剂溶液一旦混进碱性清洁剂，就会变红或变粉。这摊污渍很可能是假的。\n\n已加入证物：伪造的红色污渍",
 	"That's okay. A good detective knows when to ask for help.\n\nThe red color may come from an indicator solution reacting with a basic cleaner. So this does not prove it is blood. Someone may have staged the crime scene.\n\nEvidence added: Fake Red Stain":
 		"没问题。知道什么时候该开口求助，本身就是好侦探的一部分。\n\n这个红可能来自指示剂与碱性清洁剂的反应——所以它证明不了那是血。有人可能布置过这个现场。\n\n已加入证物：伪造的红色污渍",
-	"There is yellow pollen on the door handle. That may not look important, but pollen can connect a person to a specific place.\n\nWhat do you think this clue tells us?":
-		"门把手上有黄色花粉。这东西看着不起眼，但花粉能把一个人和一个特定的地方连起来。\n\n你觉得这条线索说明了什么？",
+	"Yellow pollen on the door handle. Easy to walk past — but pollen ties a person to a particular place.\n\nSo what does this one tell me?":
+		"门把手上有黄色花粉。很容易一眼扫过去 —— 可花粉能把一个人和某个特定的地方绑在一起。\n\n那这一条告诉了我什么？",
 	"Question:\nWhat is the best scientific use of this pollen evidence?\n\nThink about how small traces can connect a suspect to a specific place.":
 		"问题：\n这份花粉证据，科学上最好的用法是什么？\n\n想一想：微量痕迹是怎么把嫌疑人和某个具体地点联系起来的。",
 	"Correct.\n\nGood reasoning. Pollen grains can help identify where someone has been, especially if the pollen matches a plant from a specific room such as the greenhouse.\n\nEvidence added: Greenhouse Pollen":
@@ -245,8 +245,8 @@ const LINES: Dictionary = {
 		"还差一点。\n\n花粉可以充当生物微量物证。如果它能对上温室里的某种植物，就可能说明有人刚从那边过来。\n\n已加入证物：温室花粉",
 	"That's okay. Pollen is useful because different plants can produce different pollen patterns. If we match this pollen to the greenhouse, it can connect a suspect to that location.\n\nEvidence added: Greenhouse Pollen":
 		"没关系。花粉之所以有用，是因为不同植物产出的花粉形态各不相同。只要把这份花粉和温室对上，就能把嫌疑人和那个地点连起来。\n\n已加入证物：温室花粉",
-	"The wall panel has burn marks, and the lights went out right before the chase began.\n\nThis may not be an accident. What do you think caused the blackout?":
-		"墙板上有灼烧痕迹，而灯正是在追逐开始前一刻灭的。\n\n这未必是意外。你觉得停电是什么造成的？",
+	"Burn marks on the wall panel, and the lights failed right before the chase started.\n\nThat is not coincidence. So what cut the power?":
+		"墙板上有灼痕，而灯是在追逐开始前一刻灭的。\n\n这不是巧合。那到底是什么切断了电？",
 	"Question:\nWhat is the best explanation for the burned circuit panel?\n\nUse the burn marks and blackout as evidence.":
 		"问题：\n烧焦的电路板，最合理的解释是什么？\n\n把灼痕和停电这两件事当作证据一起用。",
 	"Correct.\n\nExactly. A short circuit can allow too much current to flow, producing heat and burn marks. This suggests the blackout may have been caused deliberately.\n\nEvidence added: Deliberate Short Circuit":
@@ -257,8 +257,8 @@ const LINES: Dictionary = {
 		"短路会形成一条电阻极低的通路，因而可能产生很大的电流、热量和灼痕。\n\n所以这场停电未必是意外。有人可能借着电路板制造了混乱。\n\n已加入证物：人为制造的短路",
 
 	# ---------- 大厅：叙事与关键节点 ----------
-	"Detective, you are inside Shadow Castle.\n\nThis castle once belonged to Lord Ashford, a scholar who believed knowledge was the only true key.\n\nHe designed many doors as knowledge locks. They do not open with ordinary keys. They open when someone understands the question written on them.":
-		"侦探，你现在就在影堡里。\n\n这座城堡曾属于阿什福德勋爵——一位学者，他坚信知识是唯一真正的钥匙。\n\n他把许多扇门设计成了知识锁。它们不认普通钥匙，只认「有人真的弄懂了」这件事。",
+	"So this is Shadow Castle.\n\nIt belonged to Lord Ashford — a scholar who held that knowledge was the only real key.\n\nHe built his doors as knowledge locks. No ordinary key opens them. They open for whoever understands the question written on them.":
+		"原来这就是暗影城堡。\n\n它属于阿什福德勋爵 —— 一位坚信知识才是唯一真钥匙的学者。\n\n他把门都做成了知识锁。普通钥匙打不开，只对读懂门上问题的人开。",
 	"Tonight, a crime scene has been staged inside Shadow Castle, and the murderer is still moving through the halls.\n\nThis castle is not a normal building. Lord Ashford, the former owner, believed that knowledge was the only true key. He designed many doors as knowledge locks. They do not open with ordinary keys. They open only when someone understands the question written on them.\n\nThat means you should not guess randomly. Look around first. Read notes, inspect strange objects, talk to suspects, and pay attention to scientific clues. The answer to a locked door is usually hidden somewhere nearby.\n\nYour investigation has three goals:\n\n1. Explore the castle safely.\n2. Learn from clues and use STEM knowledge to open locked paths.\n3. Collect evidence, question suspects, and identify the real culprit.\n\nUse the Evidence Board to review evidence. Use the Knowledge Journal to review concepts you have learned. Use Mission Objectives when you are unsure what to do next.\n\nControls:\nWASD - Move\nE - Interact\nB - Evidence Board\nK - Knowledge Journal\nO - Mission Objectives\nR - Restart\nM - Main Menu":
 		"今夜，影堡里有人布置了一处犯罪现场，而凶手仍在厅堂之间走动。\n\n这不是一座寻常的建筑。前主人阿什福德勋爵相信，知识是唯一真正的钥匙。他把许多扇门做成了知识锁：它们不认普通钥匙，只有当有人真的读懂了门上那个问题，它们才会开。\n\n所以，不要瞎猜。先四处看看：读笔记，检查那些不对劲的东西，找嫌疑人谈话，留意科学线索。一扇锁着的门，答案通常就藏在离它不远的地方。\n\n你这次调查有三个目标：\n\n1. 安全地探索这座城堡。\n2. 从线索里学到东西，用 STEM 知识打开被锁住的路。\n3. 收集证据、询问嫌疑人，找出真正的凶手。\n\n用证物板复查证据，用知识日志复习学过的概念；不确定下一步做什么时，看任务目标。\n\n操作：\nWASD - 移动\nE - 交互\nB - 证物板\nK - 知识日志\nO - 任务目标\nR - 重新开始\nM - 主菜单",
 	"We have three major pieces of evidence now:\n\n1. The red stain may have been staged.\n2. The pollen links someone to the greenhouse area.\n3. The blackout was likely caused by a deliberate short circuit.\n\nWho do you accuse?":
@@ -363,20 +363,20 @@ const LINES: Dictionary = {
 		"[center][b]密封档案 I —— 私人侍应附录[/b][/center]\n\n服务台账下面藏着一封信，记录了管家多年前因一起安全事故被降职的事。机械办公室给了他一条恢复身份的路：一字不差地执行一次紧急隔离令，不许多问。\n\n那道命令承诺，林博士会被安全地护在阿什福德分析台的力场之后。管家后来写下的字条，末尾是颤抖的一行：[color=#4a306d]「装置是我操作的。我以为我在保护她。」[/color]\n\n这解释了他承受的压力和他做过的事。但它没有指出——命令是谁写的。",
 	"\"The clock is a distraction. Follow the heat, the ash, and the service route. If the lights fail, do not trust the first person who claims to have been trapped. Someone knows I am following the route now. I can hear movement behind the wall. If you find this note, do not follow just because I did. Of course, you probably will.\"":
 		"「钟是用来分散注意力的。跟着热度、跟着灰烬、跟着服务通道走。如果灯灭了，别去相信第一个声称自己被困住的人。有人已经察觉我在走这条路了，我能听见墙后有动静。如果你找到这张纸条，别只因为我走过就跟着走。——当然，你多半还是会走的。」",
-	"\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nMrs. Lin:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases.":
-		"「电流一大，这道电路锁就会过热。提高电阻可以把电流降下来。绝对不要跳过电阻器。」\n\n林女士：\n这张纸条给了我们要的规则。电流太大时，加大电阻就能把它压下来。\n\n已掌握概念：电阻增大，电流减小。",
-	"A short circuit? I maintain the castle wiring, but anyone could have damaged that panel.\n\nMrs. Lin:\nMaybe. But the burn pattern suggests the blackout was triggered intentionally. Someone who understands circuits would know exactly where to interfere.":
-		"短路？城堡的线路是我在维护，可那块板子谁都可能弄坏。\n\n林女士：\n也许吧。但那个灼烧形态说明停电是被人触发的。懂电路的人，才知道该往哪儿下手。",
-	"I already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nMrs. Lin:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue.":
-		"我说过了，我只擦了走廊。那摊红渍跟我没关系。\n\n林女士：\n有意思。那摊污渍可能牵涉到碱性清洁物质。能拿到清洁用品的人，正好能解释这条线索的一部分。",
-	"I was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms.\n\nMrs. Lin:\nThat explains why many paths require scientific reasoning. We should collect physical evidence before making any accusation.":
-		"我只是在擦走廊。这座城堡一向古怪。阿什福德勋爵到处都装了那种知识锁——门上、柜子上，连旧储藏间都有。\n\n林女士：\n这就解释了为什么很多路都要靠科学推理才走得通。在指认任何人之前，我们得先拿到实物证据。",
+	"\"The circuit lock overheats when current becomes too high. Increase resistance to reduce current flow. Never bypass the resistor.\"\n\nYou:\nThis note gives us the rule we need. If current is too high, increasing resistance can reduce it.\n\nConcept learned: Current decreases when resistance increases.":
+		"「电流一大，这道电路锁就会过热。提高电阻可以把电流降下来。绝对不要跳过电阻器。」\n\n你：\n这张纸条给了我们要的规则。电流太大时，加大电阻就能把它压下来。\n\n已掌握概念：电阻增大，电流减小。",
+	"A short circuit? I maintain the castle wiring, but anyone could have damaged that panel.\n\nYou:\nMaybe. But the burn pattern suggests the blackout was triggered intentionally. Someone who understands circuits would know exactly where to interfere.":
+		"短路？城堡的线路是我在维护，可那块板子谁都可能弄坏。\n\n你：\n也许吧。但那个灼烧形态说明停电是被人触发的。懂电路的人，才知道该往哪儿下手。",
+	"I already told you, I only cleaned the hallway. That red stain has nothing to do with me.\n\nYou:\nInteresting. The stain may involve a basic cleaning substance. Someone with access to cleaning supplies could explain part of this clue.":
+		"我说过了，我只擦了走廊。那摊红渍跟我没关系。\n\n你：\n有意思。那摊污渍可能牵涉到碱性清洁物质。能拿到清洁用品的人，正好能解释这条线索的一部分。",
+	"I was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms.\n\nYou:\nThat explains why many paths require scientific reasoning. We should collect physical evidence before making any accusation.":
+		"我只是在擦走廊。这座城堡一向古怪。阿什福德勋爵到处都装了那种知识锁——门上、柜子上，连旧储藏间都有。\n\n你：\n这就解释了为什么很多路都要靠科学推理才走得通。在指认任何人之前，我们得先拿到实物证据。",
 	"I was working near the greenhouse earlier. I did not enter the locked rooms.\n\nWe should look for biological trace evidence before deciding whether that is true.":
 		"我先前在温室附近干活。上锁的房间我没进过。\n\n在断定这话真假之前，我们该先去找生物微量物证。",
-	"Pollen? Of course there is pollen in a castle with a greenhouse. That does not prove I did anything.\n\nMrs. Lin:\nHe is right that pollen alone is not proof. But if it appears on a locked door handle, it may show that someone from the greenhouse touched it recently.":
-		"花粉？一座带温室的城堡里当然有花粉。这证明不了我做过什么。\n\n林女士：\n单靠花粉不足以定案，这一点他说得没错。但如果花粉出现在一扇上锁的门把手上，那就可能说明：不久前有从温室来的人碰过它。",
-	"The lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nMrs. Lin:\nMaybe, but we should inspect the circuit panel before accepting that explanation.":
-		"这城堡的灯三天两头就灭。旧线路、旧墙、旧毛病。\n\n林女士：\n也许吧。但在接受这个说法之前，我们该先去看看那块电路板。",
+	"Pollen? Of course there is pollen in a castle with a greenhouse. That does not prove I did anything.\n\nYou:\nHe is right that pollen alone is not proof. But if it appears on a locked door handle, it may show that someone from the greenhouse touched it recently.":
+		"花粉？一座带温室的城堡里当然有花粉。这证明不了我做过什么。\n\n你：\n单靠花粉不足以定案，这一点他说得没错。但如果花粉出现在一扇上锁的门把手上，那就可能说明：不久前有从温室来的人碰过它。",
+	"The lights in this castle fail all the time. Old wiring, old walls, old problems.\n\nYou:\nMaybe, but we should inspect the circuit panel before accepting that explanation.":
+		"这城堡的灯三天两头就灭。旧线路、旧墙、旧毛病。\n\n你：\n也许吧。但在接受这个说法之前，我们该先去看看那块电路板。",
 
 	# ---------- 终局档案室 ----------
 	"Final Archive Document — Lord Ashford Record":
@@ -560,12 +560,12 @@ const LINES: Dictionary = {
 		"林博士的大厅残图",
 
 	# ---------- 知识锁与合成锁的通用提示 ----------
-	"Correct.\n\nThe knowledge lock accepts your answer.\n\nDoor opened.":
-		"答对了。\n\n知识锁接受了你的答案。\n\n门开了。",
+	"Correct.\n\nThe knowledge lock takes it.\n\nThe door is open.":
+		"答对了。\n\n知识锁认了这个答案。\n\n门开了。",
 	"Not quite.\n\nThe lock remains sealed. Think about the science behind the question and try again.":
 		"还差一点。\n\n锁没有开。想一想这道题背后的科学原理，再试一次。",
-	"That answer does not fit the evidence you have learned.\n\nReview the corresponding room Knowledge note and try again.":
-		"这个答案跟你掌握的证据对不上。\n\n回去复习对应房间的知识笔记，再试一次。",
+	"That answer does not fit the evidence I have.\n\nBack to that room's Knowledge note, then try again.":
+		"这个答案和我手上的证据对不上。\n\n回去看那个房间的知识笔记，再来一次。",
 	"Final Synthesis Lock — Question %d/%d:\n\n%s":
 		"最终合成锁 —— 第 %d/%d 题：\n\n%s",
 	"Question terminal locked. Study and file '%s' at the marked knowledge shelf first.":
@@ -1100,4 +1100,14 @@ const LINES: Dictionary = {
 		"笔记已更新",
 	"New clue added. Press K to review.":
 		"新增一条线索。按 K 查看。",
+	"Question: What most likely caused the red color?\n\nGo by what I actually observed. Colour alone proves nothing.":
+		"问题：最可能是什么让它变红的？\n\n按我实际看到的来。光凭颜色什么也证明不了。",
+	"Before I try the lock — the note on the study desk. It explains the rule every sealed room in this castle runs on.":
+		"在试这把锁之前 —— 先看书桌上那张字条。这座城堡里每一间封死的房间都按它写的规矩运作。",
+	"The lock is still glowing. When I am ready, back to the door to answer it.":
+		"锁还亮着。等我想好了，再回到门前回答它。",
+	"I can go through to the castle hall now, or look this room over once more first.":
+		"我可以现在就进城堡大厅，也可以再把这个房间过一遍。",
+	"Not yet. Work it through.":
+		"还不确定。从头理一遍。",
 }
