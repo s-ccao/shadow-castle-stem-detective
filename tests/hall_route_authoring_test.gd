@@ -10,6 +10,9 @@ extends SceneTree
 ## 而且教程和地面路标真的改用了它（只存不用是最容易发生也最难发现的失败）。
 
 var failures: Array[String] = []
+var _shipped_digest_at_start: String = ""
+
+const TEST_ROUTE_PATH: String = "user://test_hall_route.json"
 
 
 func _initialize() -> void:
@@ -17,6 +20,10 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# 绝不碰发行文件：这条路线是人走出来的，删掉要重录几分钟，而删掉之后
+	# 回归依旧是绿的——最贵的那种失败。
+	_shipped_digest_at_start = _shipped_route_digest()
+	HallRouteStore.use_test_path(TEST_ROUTE_PATH)
 	var game_state := root.get_node("GameState")
 	game_state.set("_loading_save", true)
 	game_state.call("reset_new_game")
@@ -47,7 +54,7 @@ func _check_store_roundtrip() -> void:
 	_expect(matched, "Recorded points come back at the coordinates they were saved at")
 
 	# 半条路比没有路更糟：玩家被引到一半然后卡住，而且看起来像寻路坏了。
-	var file := FileAccess.open(HallRouteStore.ROUTE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(TEST_ROUTE_PATH, FileAccess.WRITE)
 	file.store_string("{\"points\": [[1, 2], [3]]}")
 	file.close()
 	_expect(
@@ -319,6 +326,13 @@ func _hold_off_route(hall: Node, walker: Node2D, spot: Vector2) -> void:
 		await process_frame
 
 
+## 发行路线文件的指纹。不存在也是一种状态，要能和"被删掉了"区分开。
+func _shipped_route_digest() -> String:
+	if not FileAccess.file_exists(HallRouteStore.ROUTE_PATH):
+		return "<absent>"
+	return FileAccess.get_file_as_string(HallRouteStore.ROUTE_PATH).sha256_text()
+
+
 func _expect(condition: bool, description: String) -> void:
 	if condition:
 		print("PASS: " + description)
@@ -329,6 +343,14 @@ func _expect(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	HallRouteStore.clear_route()
+	HallRouteStore.clear_test_path()
+	# 这条断言是给这个测试自己看的：它曾经写在发行路径上，跑一次回归就把
+	# 作者刚走出来的路线删了，而回归照样全绿。所以收尾时必须确认发行文件
+	# 和进来时一模一样。
+	_expect(
+		_shipped_route_digest() == _shipped_digest_at_start,
+		"The test left the shipped route untouched"
+	)
 	if failures.is_empty():
 		print("hall_route_authoring_test: PASS")
 		quit(0)

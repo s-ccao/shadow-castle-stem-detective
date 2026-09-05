@@ -15,29 +15,50 @@ extends RefCounted
 
 const ROUTE_PATH: String = "res://data/hall_tutorial_route.json"
 
+## 测试用的改写路径。
+##
+## 这条路线是人走出来的，重录一次要几分钟；而测试要验存/读/删就必须写文件。
+## 早先测试直接用 ROUTE_PATH，于是跑一次回归就把作者刚录好的路线删掉了 ——
+## 数据没了，而且回归还是绿的，因为测试本来就是这么写的。
+## 现在读写一律走 _active_path()，测试指向 user://，物理上够不到发行文件。
+static var _override_path: String = ""
+
+
+static func use_test_path(path: String) -> void:
+	_override_path = path
+
+
+static func clear_test_path() -> void:
+	_override_path = ""
+
+
+static func _active_path() -> String:
+	return _override_path if not _override_path.is_empty() else ROUTE_PATH
+
 
 static func has_route() -> bool:
-	return FileAccess.file_exists(ROUTE_PATH)
+	return FileAccess.file_exists(_active_path())
 
 
 ## 读出这条路。任何一步不对就返回空数组，让调用方回落到 A*——
 ## 半条路比没有路更糟：玩家会被引到一半然后卡住。
 static func load_route() -> Array[Vector2]:
 	var points: Array[Vector2] = []
-	if not FileAccess.file_exists(ROUTE_PATH):
+	var path := _active_path()
+	if not FileAccess.file_exists(path):
 		return points
-	var file := FileAccess.open(ROUTE_PATH, FileAccess.READ)
+	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return points
 	var raw: String = file.get_as_text()
 	file.close()
 	var parsed: Variant = JSON.parse_string(raw)
 	if not (parsed is Dictionary):
-		push_warning("Hall route file is not an object: " + ROUTE_PATH)
+		push_warning("Hall route file is not an object: " + path)
 		return points
 	var listed: Variant = (parsed as Dictionary).get("points", [])
 	if not (listed is Array):
-		push_warning("Hall route file has no points array: " + ROUTE_PATH)
+		push_warning("Hall route file has no points array: " + path)
 		return points
 	for entry: Variant in listed as Array:
 		if not (entry is Array) or (entry as Array).size() != 2:
@@ -55,7 +76,7 @@ static func save_route(points: Array[Vector2]) -> bool:
 	if points.size() < 2:
 		return false
 	DirAccess.make_dir_recursive_absolute(
-		ProjectSettings.globalize_path(ROUTE_PATH).get_base_dir()
+		ProjectSettings.globalize_path(_active_path()).get_base_dir()
 	)
 	var listed: Array = []
 	for point: Vector2 in points:
@@ -67,9 +88,9 @@ static func save_route(points: Array[Vector2]) -> bool:
 			+ "Regenerate with the in-game route recorder, not by hand.",
 		"points": listed,
 	}
-	var file := FileAccess.open(ROUTE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(_active_path(), FileAccess.WRITE)
 	if file == null:
-		push_warning("Could not write the Hall route to: " + ROUTE_PATH)
+		push_warning("Could not write the Hall route to: " + _active_path())
 		return false
 	file.store_string(JSON.stringify(payload, "\t"))
 	file.close()
@@ -77,5 +98,5 @@ static func save_route(points: Array[Vector2]) -> bool:
 
 
 static func clear_route() -> void:
-	if FileAccess.file_exists(ROUTE_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(ROUTE_PATH))
+	if FileAccess.file_exists(_active_path()):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(_active_path()))

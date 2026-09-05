@@ -716,8 +716,14 @@ enum HallArrivalStep {
 ## enough to read as distant pursuit; by the final segment it is close enough to
 ## be frightening. That is the escalation, and because it is expressed in
 ## waypoints rather than speed, it stays survivable at any pace.
-const TUTORIAL_TRAIL_START: int = 9
-const TUTORIAL_TRAIL_END: int = 4
+## 守卫落后玩家多远（沿路线的**像素**距离，不是航点个数）。
+##
+## 原来这里数的是航点。航点间距取决于路线是怎么生成的：A* 排出来的十个点
+## 相隔约 236px，而人走出来的四十八个点只相隔 48px —— 同样"落后四个航点"，
+## 前者是 950px，后者只有 192px，于是换一条更密的路线就等于把守卫贴到脸上。
+## 距离是设计意图，航点是实现细节，所以这里存的必须是距离。
+const TUTORIAL_TRAIL_START_DISTANCE: float = 900.0
+const TUTORIAL_TRAIL_END_DISTANCE: float = 420.0
 ## How near a waypoint counts as reaching it.
 const TUTORIAL_WAYPOINT_REACH: float = 96.0
 ## Straying further than this from every waypoint means the player has left the
@@ -6171,10 +6177,12 @@ func _hall_tutorial_guardian_position() -> Vector2:
 	var progress := (
 		float(hall_tutorial_reached) / float(maxi(hall_tutorial_route.size() - 1, 1))
 	)
-	var trail := int(round(lerpf(
-		float(TUTORIAL_TRAIL_START), float(TUTORIAL_TRAIL_END), clampf(progress, 0.0, 1.0)
-	)))
-	var index := hall_tutorial_reached - trail
+	var trail := lerpf(
+		TUTORIAL_TRAIL_START_DISTANCE,
+		TUTORIAL_TRAIL_END_DISTANCE,
+		clampf(progress, 0.0, 1.0)
+	)
+	var index := _hall_route_index_behind(hall_tutorial_reached, trail)
 	# Until the player has walked far enough for the trailing gap to reach into
 	# the route, the Guardian waits at the mark it entered on.
 	if index < 0:
@@ -7758,3 +7766,18 @@ func _announce_hall_route_rule() -> void:
 	if not _is_hall_arrival_active():
 		return
 	show_hall_notice(CaseLocale.text("hall.route_rule"))
+
+
+## 从某个航点沿路线往回退指定像素距离，返回落到的航点下标。
+## 退不够远（路线还没那么长）就返回 -1，让守卫留在入场点。
+func _hall_route_index_behind(from_index: int, distance: float) -> int:
+	var walked: float = 0.0
+	var index: int = clampi(from_index, 0, hall_tutorial_route.size() - 1)
+	while index > 0 and walked < distance:
+		walked += hall_tutorial_route[index].distance_to(
+			hall_tutorial_route[index - 1]
+		)
+		index -= 1
+	if walked < distance:
+		return -1
+	return index
