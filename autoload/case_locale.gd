@@ -305,14 +305,14 @@ const TEXT: Dictionary = {
 		"zh": "化学室的门在你们之间合上了。暂时。",
 	},
 	"hall.arrival_body": {
-		"en": "The brass lock shuts behind you. Castle Hall lies silent beneath violet glass.\n\nA blue signal pulses in the north wing. Follow it.",
-		"zh": "黄铜锁在你身后合拢。紫色玻璃下，城堡大厅一片寂静。\n\n北翼传来一道蓝色脉冲。跟上它。",
+		"en": "The brass lock shuts behind you. Castle Hall lies silent beneath violet glass.\n\nThe vial you were holding is gone from your hand, and the floor is glowing where it fell.",
+		"zh": "黄铜锁在你身后合拢。紫色玻璃下，城堡大厅一片寂静。\n\n你手里的药瓶没了，地上它摔碎的地方正在发光。",
 	},
-	"hall.arrival_continue": {"en": "FOLLOW THE BLUE SIGNAL", "zh": "跟随蓝色讯号"},
+	"hall.arrival_continue": {"en": "FOLLOW THE FOOTPRINTS", "zh": "跟着脚印走"},
 	"hall.route_step_1_title": {"en": "HALL ROUTE  ·  1 / 3", "zh": "大厅路线  ·  1 / 3"},
 	"hall.route_step_1_body": {
-		"en": "Reach the Chemistry Room door in the north wing.",
-		"zh": "前往北翼的化学室门。",
+		"en": "Follow the footprints to the Chemistry Room door. Step off them and you are in the open.",
+		"zh": "踩着脚印走到化学室门口。离开脚印，你就暴露了。",
 	},
 	"hall.route_step_2_title": {"en": "HALL ROUTE  ·  2 / 3", "zh": "大厅路线  ·  2 / 3"},
 	"hall.route_step_2_body": {
@@ -324,7 +324,7 @@ const TEXT: Dictionary = {
 		"en": "Return to the Chemistry Room and answer its lock.",
 		"zh": "返回化学室，回答门锁提出的问题。",
 	},
-	"hall.route_compass": {"en": "BLUE FLOOR MARKERS  ·  {direction}", "zh": "蓝色地面路标  ·  {direction}"},
+	"hall.route_compass": {"en": "GLOWING FOOTPRINTS  ·  {direction}", "zh": "发光的脚印  ·  {direction}"},
 	"hall.direction_north": {"en": "NORTH", "zh": "北方"},
 	"hall.direction_south": {"en": "SOUTH", "zh": "南方"},
 	"hall.direction_east": {"en": "EAST", "zh": "东方"},
