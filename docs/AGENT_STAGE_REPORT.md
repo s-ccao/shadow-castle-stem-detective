@@ -4,6 +4,84 @@
 
 ## Stage
 
+- **Stage ID:** `RESEARCH-20260901-02`
+- **Stage name:** Measuring redundant guidance in the shipped hint system, and removing it without a model
+- **Completed at:** `2026-09-01`
+- **Status:** `complete (Weeks 1-2 of 10 — no language model involved, by design)`
+- **User-visible outcome:** **None.** No gameplay flow, scene, autoload or shipped script was modified. This stage establishes a measured baseline for a research question about the game itself: the shipped NPC hint system branches only on evidence and never on knowledge, so it re-teaches concepts the player has already been taught. Across 72 reachable game states the shipped system delivers a redundant hint **25% of the time**; a deterministic, knowledge-aware selector reduces that to **0%**.
+
+## What changed
+
+- New `docs/ADAPTIVE_HINTS_AUDIT.md` — Day 1 state audit. Every id traced to a source line: 19 evidence ids, 79 story flags, 11 concepts, the three NPC dialogue branches, and the room order.
+- New `docs/ADAPTIVE_HINTS_PLAN.md` — research questions, four conditions, metrics, schedule.
+- New `docs/ADAPTIVE_HINTS_LESSONS.md` — nine measurement bugs from a prototype that was built and then discarded during this stage.
+- New `scripts/adaptive_hint_data.gd` — concept map, the six shipped hints quoted verbatim, and three newly authored knowledge-conditioned hints kept in a separate table.
+- New `scripts/adaptive_hint_selector.gd` — Condition A (replicates shipped branching) and Condition B (deterministic, knowledge-aware).
+- New `tests/adaptive_hint_baseline_test.gd` — 20-scenario table, both conditions, `RedundantHintRate` and `RepetitionRate`, plus a drift guard.
+- **Nothing is wired into gameplay.** The selector is read only by the harness. `export_presets.cfg` is unmodified.
+
+## Verification
+
+- `godot --headless --script tests/adaptive_hint_baseline_test.gd` → **PASS**.
+- `--headless --editor --quit` parse: **exit 0**. `tools/check_static.py`: **0 problems**. `git diff --check`: **clean**.
+- The harness includes a **drift guard**: Condition A reproduces the shipped branch logic, so the test asserts that `game_world.gd` still branches on `fake_red_stain` / `greenhouse_pollen` / `deliberate_short_circuit` and still contains all six shipped lines verbatim. If the dialogue is edited, the baseline fails loudly instead of silently measuring a system that no longer exists.
+- The harness also includes a **reachability validator** (`AdaptiveHintData.REACHABILITY_RULES`), which encodes where the game really sets each piece of state and rejects any scenario describing a save file no player can produce.
+
+### Results
+
+| set | metric | A static | B adaptive |
+|---|---|---|---|
+| 20 hand-written states | RedundantHintRate | 20.0% | **0.0%** |
+| 20 hand-written states | RepetitionRate | 40.0% | 20.0% |
+| 20 hand-written states | Coverage | 100.0% | **100.0%** |
+| 20 hand-written states | RelevantHintRate | 55.0% | **100.0%** |
+| 20 hand-written states | StateViolationRate | 0.0% | **0.0%** |
+| 72 synthetic states | RedundantHintRate | **25.0%** | **0.0%** |
+| 72 synthetic states | RepetitionRate | **47.2%** | **45.8%** |
+
+**Coverage is the load-bearing control.** Both conditions speak in every state, so B's redundancy gain is real rather than bought with silence — the obvious way to score 0% redundancy is to say nothing, and this rules it out.
+
+**The 100% relevance figure is a consistency check, not a result.** The same author wrote the `VALID_HINTS` annotations and then changed the selector until it matched them. It becomes evidence only under independent annotation or playtest data, and neither exists yet. This caveat is recorded in the plan alongside the number, not buried.
+
+**The repetition claim has moved three times** — 40→20% on 20 states, 47.2→41.7% on 72, and 47.2→45.8% after the Rule 2 fix. Redundancy has held at 25→0% throughout. Repetition is the weak claim and is labelled as such.
+
+### One measured iteration, with its cost
+
+Printing the four relevance misses showed a single pattern: every one was a state where the player had demonstrated a concept, a line written for that concept existed, and the selector delivered a generic line anyway. The cause was that Rule 2 was gated on the shipped line being *redundant*, and a generic line teaches nothing so is never redundant — anti-redundancy had been implemented as a proxy for adaptivity, and the proxy was strictly narrower than the goal.
+
+Removing that gate took relevance 80% → 100%, and made repetition **worse** on the synthetic sweep (41.7% → 45.8%). Preferring the targeted line more often means delivering the same targeted line more often. The regression is reported rather than buried.
+
+### Three self-corrections in this stage
+
+1. **Nearly half the hand-written scenarios were unreachable.** The validator failed **16 times across 9 of 20** on first run — library concepts held without `door_library_unlocked`, `current_resistance` without `door_circuit_unlocked`. The metrics did not move once fixed, because the missing flags feed no hint condition; the correction was necessary for validity, not for the numbers.
+2. **An audit explanation was wrong.** An earlier draft claimed `fake_red_stain` and `greenhouse_pollen` are reachable only via `evidence_items.has(...)`. They are in fact granted by `GameState.add_evidence()` in `collect_red_stain_evidence()` (`game_world.gd:4044`) and `collect_pollen_evidence()` (`:4359`) — with the argument on a following line, which a single-line regex misses. Re-running all extractions multiline-aware confirmed the counts (19 / 79 / 1) were right; the explanation was not.
+3. **A Mechanic redundancy claim was withdrawn** after verification, and a second hypothesis proved unreachable (`circuit_room.gd:609-610`). The corrected ceiling is **one of six shipped lines**.
+
+### Two audit findings that changed the design
+
+1. **Knowledge is split across two stores.** Only `current_resistance` reaches `GameState.knowledge_items`; the library's three concepts are recorded as story flags by `library_room.gd:740`. A selector reading `knowledge_items` alone would see one concept out of eleven.
+2. **`fake_red_stain` and `greenhouse_pollen` are reachable only via `evidence_items.has(...)`**, never `GameState.has_evidence(...)`. A first extraction pass missed both — and they are the two ids the Butler and Gardener actually branch on.
+
+### A claim this stage withdrew
+
+An earlier draft of the audit listed the Mechanic's hint as redundant once `current_resistance` is known. **It is not.** Neither Mechanic line explains resistance; the line that does belongs to Mrs. Lin. A second hypothesis — that a player could hold `blackout_deliberate` without `deliberate_short_circuit` — is unreachable, because `circuit_room.gd:609-610` sets both on adjacent lines.
+
+The corrected ceiling is **one of six shipped lines**, and it is reported as such.
+
+## Risks / follow-up
+
+- **The honest ceiling is small.** Condition A's 20% is driven by a single shipped line. Condition B reaches 0% using **three hints authored by this project** — the game ships no knowledge-conditioned hint at all. This is declared new content and is reported separately; it must never be described as pre-existing behaviour.
+- **20 desk-written scenarios.** Growing to 50 from playtest traces is the next task.
+- **A prototype was built and discarded this stage.** A Python harness giving NPCs generated dialogue accumulated nine measurement bugs, three rated critical by independent review. Two are worth flagging to the maintainer: a fix was **reported as complete while the bug was still active**, and a scaling result **had already been written into a summary before review showed it was an artifact of a single accidental word collision**. Both are recorded in `docs/ADAPTIVE_HINTS_LESSONS.md`. The prototype's code was deleted rather than repaired, because its design (free generation scored by string matching) is superseded by hint selection driven by real game state.
+- **No learning-outcome claim is made.** Reducing redundant guidance is a hint-quality result. The game's paper still correctly states that learning outcomes have not been evaluated.
+- **Maintainer decision:** whether the three authored hints should become real game content. They are currently experiment-only and reach no player.
+
+---
+
+# Previous stage (still unpublished)
+
+## Stage
+
 - **Stage ID:** `UX-20260815-26`
 - **Stage name:** Switches become hardware, and the Guardian stops standing behind the room
 - **Completed at:** `2026-08-15`
@@ -477,3 +555,71 @@ Risks: human first-time playtest remains required; adaptive BGM is not part of t
 GitHub proposal: publish as separate commit `feat: stage the Circuit power restoration milestone` after UX-20260814-13.
 Requested Codex action: review and publish this versioned stage
 ```
+
+---
+
+## Stage — Matched catalogue, Condition A-4, held-out v2 (implementation)
+
+**Date:** 2026-09-08 · **Status:** complete, pre-annotation
+
+### Files changed
+
+Gameplay files changed: **none.** The only tracked modification is this report.
+
+| File | Change |
+|---|---|
+| `scripts/adaptive_hint_data.gd` | Catalogue rebuilt to the frozen 11 hints: `SHIPPED_HINTS` → `LEGACY_GROUNDED_HINTS` (6) + `AUTHORED_HINTS` (5). Hard `requires_concept` gates removed; `preferred_when_demonstrated` added. |
+| `scripts/adaptive_hint_selector.gd` | `select_condition_a()` implements frozen A-4. `select_static()` retained, marked superseded. Condition B rewritten for soft preferences and made state-pure. |
+| `scripts/player_knowledge_model.gd` | Added `state_in()` / `is_demonstrated_in()` pure accessors so redundancy can be judged on a state dict without the GameState autoload. |
+| `tests/matched_catalogue_test.gd` | **New.** 10 check groups over the catalogue, A-4 and metric semantics. |
+| `tests/player_knowledge_model_test.gd` | Butler assertions updated: the rewritten line no longer requires `dual_lock_rule_taught`. |
+| `tests/heldout_reachability_test.gd` | Retargeted to v2; added room-semantics and Butler-challenge checks. |
+| `tests/adaptive_hint_baseline_test.gd` | Marked superseded; drift detector retargeted; dev ground truth preserved but disabled; relevance now prints `N/A` instead of `-100.0%`. |
+| `tools/generate_heldout_v2.py` | **New.** v1 generator plus room semantics and mechanical reachability repairs. |
+| `tools/render_annotation_worksheet.py` | **New.** Renders the blind worksheet by parsing the catalogue. Imports no selector. |
+| `docs/heldout/heldout_v2_scenarios.json` | **New.** 48 states, unannotated. |
+| `docs/heldout/ANNOTATION_WORKSHEET_heldout-v2.md` | **New.** Blind worksheet, 6 batches of 8. |
+| `docs/EVALUATION_PROTOCOL.md` | v1 marked `PRE-EVALUATION SUPERSEDED`; §5b `RedundantWhenTeachable`; §9b catalogue + A-4. |
+
+### Gameplay effect
+
+None. Every artifact is additive and outside the shipped code paths. No save
+format, scene, or gameplay script was touched.
+
+### Validation
+
+| Command | Result |
+|---|---|
+| `matched_catalogue_test.gd` | PASS |
+| `player_knowledge_model_test.gd` | PASS |
+| `heldout_reachability_test.gd` | PASS — 48/48 reachable |
+| `adaptive_hint_baseline_test.gd` | PASS |
+| `--headless --editor --path . --quit` | clean |
+| `tools/check_static.py` | 136 scripts, 0 problems |
+| `git diff --check` | clean |
+
+Fault injection was used to prove the new suite discriminates: three deliberate
+faults (gardener tier-3 swap, A-4 reading a PKM flag, tier-2 swallowing tier-1)
+were each caught, and the restored file passes.
+
+### Hashes
+
+- heldout-v1 SHA-256 `a60cee98…` — **unchanged**, byte-identical
+- heldout-v2 SHA-256 `a55b2080…`
+- heldout-v2 state fingerprint `e1979c1a…`
+- `annotations_present: false` · `selector_was_run: false`
+
+### Known risks
+
+1. Redundancy is measurable over only 2 of 11 hints, so the overall
+   `RedundantHintRate` denominator is diluted. `RedundantWhenTeachable` is
+   reported beside it.
+2. Each NPC now sits in a different room, so cross-NPC comparison is confounded
+   by room content. Reporting is within-NPC; macro-average is secondary.
+3. Under A-4, `h_gardener_no_evidence` and `h_mechanic_no_evidence` are
+   unreachable for Condition A. Accepted; both stay available to B and C.
+
+### Proposed next stage
+
+Human annotation of heldout-v2 ground truth, batch by batch. No selector may run
+until annotation is frozen.

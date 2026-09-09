@@ -1,0 +1,1775 @@
+{
+  "protocol_version": "heldout-v1",
+  "generated_by": "tools/generate_heldout_v1.py",
+  "deterministic": true,
+  "selector_was_run": false,
+  "annotations_present": false,
+  "scenario_count": 48,
+  "state_fingerprint_sha256": "1648a508ef41dca62f4eed5028069617d65bc7beddca11435ea1000c015c615a",
+  "notes": [
+    "State only. No ground truth, no selector output, no expected results.",
+    "candidate_hints lists every hint declared for that NPC in the static catalogue. It is not a prediction and was not produced by a selector.",
+    "valid_hints / annotation_rationale / ambiguity_note are intentionally empty and must be filled by the human annotator."
+  ],
+  "scenarios": [
+    {
+      "id": "h_chem_both_stain_circuit_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "chem_both",
+      "stage_summary": "Both chemistry checks completed.",
+      "evidence_set": "stain_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "butler_challenge_complete",
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_butler_stain_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "chem_butler",
+      "stage_summary": "Passed the Butler's test; indicator reaction demonstrated.",
+      "evidence_set": "stain",
+      "knowledge_items": [],
+      "story_flags": [
+        "butler_challenge_complete",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_intro_all_three_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "chem_intro",
+      "stage_summary": "Read Mrs. Lin's lab note; nothing demonstrated yet.",
+      "evidence_set": "all_three",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_intro_none_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "chem_intro",
+      "stage_summary": "Read Mrs. Lin's lab note; nothing demonstrated yet.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_intro_short_circuit_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "chem_intro",
+      "stage_summary": "Read Mrs. Lin's lab note; nothing demonstrated yet.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_intro_stain_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "chem_intro",
+      "stage_summary": "Read Mrs. Lin's lab note; nothing demonstrated yet.",
+      "evidence_set": "stain_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_intro_stain_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "chem_intro",
+      "stage_summary": "Read Mrs. Lin's lab note; nothing demonstrated yet.",
+      "evidence_set": "stain",
+      "knowledge_items": [],
+      "story_flags": [
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_intro_stain_pollen_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "chem_intro",
+      "stage_summary": "Read Mrs. Lin's lab note; nothing demonstrated yet.",
+      "evidence_set": "stain_pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_sorted_none_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "chem_sorted",
+      "stage_summary": "Cleared the sample tray; classification demonstrated.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_sorted_pollen_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "chem_sorted",
+      "stage_summary": "Cleared the sample tray; classification demonstrated.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_sorted_pollen_circuit_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "chem_sorted",
+      "stage_summary": "Cleared the sample tray; classification demonstrated.",
+      "evidence_set": "pollen_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_sorted_pollen_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "chem_sorted",
+      "stage_summary": "Cleared the sample tray; classification demonstrated.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_sorted_short_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "chem_sorted",
+      "stage_summary": "Cleared the sample tray; classification demonstrated.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_chem_sorted_stain_circuit_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "chem_sorted",
+      "stage_summary": "Cleared the sample tray; classification demonstrated.",
+      "evidence_set": "stain_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_change_sorted",
+        "dual_lock_rule_taught",
+        "mrs_lin_lab_note_seen"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "DEMONSTRATED",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_all_benches_none_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_all_benches",
+      "stage_summary": "All three benches cleared; power restored.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_power_restored",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_all_benches_pollen_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "circuit_all_benches",
+      "stage_summary": "All three benches cleared; power restored.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_power_restored",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_all_benches_pollen_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_all_benches",
+      "stage_summary": "All three benches cleared; power restored.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_power_restored",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_all_benches_short_circuit_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "circuit_all_benches",
+      "stage_summary": "All three benches cleared; power restored.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_power_restored",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_one_bench_all_three_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_one_bench",
+      "stage_summary": "Cleared Junction Bench I only; continuity demonstrated.",
+      "evidence_set": "all_three",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_one_bench_none_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_one_bench",
+      "stage_summary": "Cleared Junction Bench I only; continuity demonstrated.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_one_bench_pollen_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "circuit_one_bench",
+      "stage_summary": "Cleared Junction Bench I only; continuity demonstrated.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_one_bench_pollen_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "circuit_one_bench",
+      "stage_summary": "Cleared Junction Bench I only; continuity demonstrated.",
+      "evidence_set": "pollen_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_regulation_none_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_regulation",
+      "stage_summary": "Cleared Bench II; regulation demonstrated, fault isolation not.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_regulation_pollen_circuit_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "circuit_regulation",
+      "stage_summary": "Cleared Bench II; regulation demonstrated, fault isolation not.",
+      "evidence_set": "pollen_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_regulation_stain_pollen_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_regulation",
+      "stage_summary": "Cleared Bench II; regulation demonstrated, fault isolation not.",
+      "evidence_set": "stain_pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_studied_none_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "circuit_studied",
+      "stage_summary": "Studied the repair map on site; no bench cleared.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_studied_none_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_studied",
+      "stage_summary": "Studied the repair map on site; no bench cleared.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_circuit_studied_short_circuit_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "circuit_studied",
+      "stage_summary": "Studied the repair map on site; no bench cleared.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "circuit_repair_map_studied",
+        "door_circuit_unlocked",
+        "dual_lock_rule_taught"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "circuit_fault_isolation": "LEARNING"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_additive_filed_reflection_solved_none_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_additive_filed_reflection_solved",
+      "stage_summary": "Additive filed but unsolved; reflection filed and solved.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_additive_filed_reflection_solved_pollen_circuit_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "library_additive_filed_reflection_solved",
+      "stage_summary": "Additive filed but unsolved; reflection filed and solved.",
+      "evidence_set": "pollen_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_additive_filed_reflection_solved_stain_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_additive_filed_reflection_solved",
+      "stage_summary": "Additive filed but unsolved; reflection filed and solved.",
+      "evidence_set": "stain",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_all_filed_none_solved_none_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "library_all_filed_none_solved",
+      "stage_summary": "All three records filed; no challenge solved yet.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_reflection_knowledge_learned",
+        "library_rgb_puzzle_solved",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "LEARNING",
+        "reflection": "LEARNING",
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_all_filed_none_solved_short_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_all_filed_none_solved",
+      "stage_summary": "All three records filed; no challenge solved yet.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_reflection_knowledge_learned",
+        "library_rgb_puzzle_solved",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "LEARNING",
+        "reflection": "LEARNING",
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_all_filed_none_solved_short_circuit_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "library_all_filed_none_solved",
+      "stage_summary": "All three records filed; no challenge solved yet.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_reflection_knowledge_learned",
+        "library_rgb_puzzle_solved",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "LEARNING",
+        "reflection": "LEARNING",
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_all_solved_all_three_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "library_all_solved",
+      "stage_summary": "All three library concepts filed and all three solved.",
+      "evidence_set": "all_three",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "library_green_filter_earned",
+        "library_red_filter_earned",
+        "library_reflection_knowledge_learned",
+        "library_rgb_puzzle_solved",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "DEMONSTRATED",
+        "reflection": "DEMONSTRATED",
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_all_solved_pollen_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_all_solved",
+      "stage_summary": "All three library concepts filed and all three solved.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "library_green_filter_earned",
+        "library_red_filter_earned",
+        "library_reflection_knowledge_learned",
+        "library_rgb_puzzle_solved",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "DEMONSTRATED",
+        "reflection": "DEMONSTRATED",
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_all_solved_stain_pollen_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "library_all_solved",
+      "stage_summary": "All three library concepts filed and all three solved.",
+      "evidence_set": "stain_pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "library_green_filter_earned",
+        "library_red_filter_earned",
+        "library_reflection_knowledge_learned",
+        "library_rgb_puzzle_solved",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "DEMONSTRATED",
+        "reflection": "DEMONSTRATED",
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_filed_none_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "library_reflection_filed",
+      "stage_summary": "Filed the reflection record; challenge not attempted.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "LEARNING",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_filed_stain_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_reflection_filed",
+      "stage_summary": "Filed the reflection record; challenge not attempted.",
+      "evidence_set": "stain",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "LEARNING",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_filed_stain_pollen_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_reflection_filed",
+      "stage_summary": "Filed the reflection record; challenge not attempted.",
+      "evidence_set": "stain_pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "LEARNING",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_solved_none_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_reflection_solved",
+      "stage_summary": "Solved the reflection challenge; green filter recovered.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_solved_pollen_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "library_reflection_solved",
+      "stage_summary": "Solved the reflection challenge; green filter recovered.",
+      "evidence_set": "pollen",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_solved_pollen_circuit_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "library_reflection_solved",
+      "stage_summary": "Solved the reflection challenge; green filter recovered.",
+      "evidence_set": "pollen_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_reflection_solved_stain_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_reflection_solved",
+      "stage_summary": "Solved the reflection challenge; green filter recovered.",
+      "evidence_set": "stain_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_spectrum_filed_pollen_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_spectrum_filed",
+      "stage_summary": "Filed the spectrum record only; challenge not attempted.",
+      "evidence_set": "pollen_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "LEARNING",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_spectrum_filed_short_circuit_butler",
+      "npc": "butler",
+      "room": "castle_hall",
+      "stage": "library_spectrum_filed",
+      "stage_summary": "Filed the spectrum record only; challenge not attempted.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "LEARNING",
+        "reflection": "UNSEEN",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_two_filed_one_solved_none_mechanic",
+      "npc": "mechanic",
+      "room": "castle_hall",
+      "stage": "library_two_filed_one_solved",
+      "stage_summary": "Spectrum and reflection filed; only spectrum solved.",
+      "evidence_set": "none",
+      "knowledge_items": [],
+      "story_flags": [
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_red_filter_earned",
+        "library_reflection_knowledge_learned",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "DEMONSTRATED",
+        "reflection": "LEARNING",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_knows_resistance"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    },
+    {
+      "id": "h_library_two_filed_one_solved_short_circuit_gardener",
+      "npc": "gardener",
+      "room": "castle_hall",
+      "stage": "library_two_filed_one_solved",
+      "stage_summary": "Spectrum and reflection filed; only spectrum solved.",
+      "evidence_set": "short_circuit",
+      "knowledge_items": [],
+      "story_flags": [
+        "blackout_deliberate",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "library_red_filter_earned",
+        "library_reflection_knowledge_learned",
+        "library_spectrum_knowledge_learned"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit"
+      ],
+      "pkm_states": {
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "spectrum": "DEMONSTRATED",
+        "reflection": "LEARNING",
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN"
+      },
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_knows_reflection"
+      ],
+      "valid_hints": [],
+      "annotation_rationale": "",
+      "ambiguity_note": ""
+    }
+  ]
+}
