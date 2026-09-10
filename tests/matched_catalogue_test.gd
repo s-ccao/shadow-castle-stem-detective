@@ -43,6 +43,34 @@ func _run() -> void:
 
 	var cat: Dictionary = Data.all_hints()
 
+	# --- 0. Structural gate. -------------------------------------------------
+	# Later sections index the catalogue directly. If an entry is missing, those
+	# lookups raise before quit() is reached and the SceneTree never exits, so
+	# the process hangs instead of failing -- a hang in CI is worse than a
+	# failure, because it looks like an infrastructure problem. Bail out
+	# cleanly and immediately instead.
+	var required_ids := [
+		"h_butler_no_evidence", "h_butler_stain", "h_butler_knows_rule",
+		"h_gardener_no_evidence", "h_gardener_pollen", "h_gardener_leaf_colour",
+		"h_gardener_knows_reflection", "h_mechanic_no_evidence",
+		"h_mechanic_short_circuit", "h_mechanic_series_basics",
+		"h_mechanic_knows_resistance",
+	]
+	var missing_ids: Array[String] = []
+	for hint_id: String in required_ids:
+		if not cat.has(hint_id):
+			missing_ids.append(hint_id)
+	if not missing_ids.is_empty() or cat.size() != required_ids.size():
+		print("matched_catalogue_test: FAIL (catalogue structure)")
+		print("  - expected %d hints, found %d" % [required_ids.size(), cat.size()])
+		if not missing_ids.is_empty():
+			print("  - missing: " + ", ".join(missing_ids))
+		for hint_id2: String in cat:
+			if not required_ids.has(hint_id2):
+				print("  - unexpected: " + hint_id2)
+		quit(1)
+		return
+
 	# --- 1. Exactly 11 hints, with the frozen per-NPC split. ---
 	_check("catalogue size", cat.size(), 11)
 	var per_npc: Dictionary = {}
@@ -227,6 +255,102 @@ func _run() -> void:
 			"h_butler_no_evidence", _state([], ["dual_lock_rule_taught"])
 		)
 	)
+
+	# --- 9b. EXACT hard metadata for all 11 hints, pinned. ---
+	# Previously only some hints had their prerequisites asserted, so a typo in
+	# an unpinned hint passed silently. Every hint is now pinned exactly.
+	var expected_meta := {
+		"h_butler_no_evidence": {
+			"npc": "butler", "re": [], "rea": ["fake_red_stain"], "rsf": [],
+			"teaches": ["dual_lock_rule"], "soft": [],
+		},
+		"h_butler_stain": {
+			"npc": "butler", "re": ["fake_red_stain"], "rea": [], "rsf": [],
+			"teaches": [], "soft": [],
+		},
+		"h_butler_knows_rule": {
+			"npc": "butler", "re": [], "rea": ["fake_red_stain"], "rsf": [],
+			"teaches": [], "soft": ["indicator_reaction"],
+		},
+		"h_gardener_no_evidence": {
+			"npc": "gardener", "re": [], "rea": ["greenhouse_pollen"], "rsf": [],
+			"teaches": [], "soft": [],
+		},
+		"h_gardener_pollen": {
+			"npc": "gardener", "re": ["greenhouse_pollen"], "rea": [], "rsf": [],
+			"teaches": [], "soft": [],
+		},
+		"h_gardener_leaf_colour": {
+			"npc": "gardener", "re": [], "rea": [], "rsf": [],
+			"teaches": ["reflection"], "soft": [],
+		},
+		"h_gardener_knows_reflection": {
+			"npc": "gardener", "re": [], "rea": ["greenhouse_pollen"], "rsf": [],
+			"teaches": [], "soft": ["reflection"],
+		},
+		"h_mechanic_no_evidence": {
+			"npc": "mechanic", "re": [], "rea": ["deliberate_short_circuit"],
+			"rsf": [], "teaches": [], "soft": [],
+		},
+		"h_mechanic_short_circuit": {
+			"npc": "mechanic", "re": ["deliberate_short_circuit"], "rea": [],
+			"rsf": [], "teaches": [], "soft": [],
+		},
+		"h_mechanic_series_basics": {
+			"npc": "mechanic", "re": [], "rea": [], "rsf": [],
+			"teaches": ["circuit_continuity"], "soft": [],
+		},
+		"h_mechanic_knows_resistance": {
+			"npc": "mechanic", "re": [], "rea": ["deliberate_short_circuit"],
+			"rsf": [], "teaches": [], "soft": ["circuit_fault_isolation"],
+		},
+	}
+	for hint_id: String in expected_meta:
+		if not cat.has(hint_id):
+			failures.append("catalogue is missing '%s'" % hint_id)
+			continue
+		var spec := cat[hint_id] as Dictionary
+		var want := expected_meta[hint_id] as Dictionary
+		_check("%s npc" % hint_id, str(spec.get("npc", "")), str(want["npc"]))
+		_check("%s requires_evidence" % hint_id,
+			spec.get("requires_evidence", []), want["re"])
+		_check("%s requires_evidence_absent" % hint_id,
+			spec.get("requires_evidence_absent", []), want["rea"])
+		_check("%s requires_story_flags" % hint_id,
+			spec.get("requires_story_flags", []), want["rsf"])
+		_check("%s teaches" % hint_id, spec.get("teaches", []), want["teaches"])
+		_check("%s preferred_when_demonstrated" % hint_id,
+			spec.get("preferred_when_demonstrated", []), want["soft"])
+	for hint_id: String in cat:
+		if not expected_meta.has(hint_id):
+			failures.append("catalogue has unpinned hint '%s'" % hint_id)
+
+	# --- 9c. Every prerequisite id must exist in the shipped source. ---
+	# Checked against the real game files rather than a hand-listed set, so a
+	# typo cannot pass and the check cannot drift out of date silently.
+	var sources := ""
+	for path: String in [
+		"res://scripts/game_world.gd",
+		"res://scenes/floor_1/chemistry_room.gd",
+		"res://scripts/greenhouse_room.gd",
+		"res://scripts/circuit_room.gd",
+		"res://scripts/library_room.gd",
+		"res://scripts/map_hud.gd",
+		"res://autoload/game_state.gd",
+	]:
+		sources += FileAccess.get_file_as_string(path)
+	_ok("could not read shipped sources for id validation", sources.length() > 10000)
+	for hint_id: String in cat:
+		var spec2 := cat[hint_id] as Dictionary
+		for field: String in [
+			"requires_evidence", "requires_evidence_absent", "requires_story_flags"
+		]:
+			for prereq_id: String in spec2.get(field, []):
+				_ok(
+					"hint '%s' %s references unknown id '%s'"
+						% [hint_id, field, prereq_id],
+					sources.contains('"' + prereq_id + '"')
+				)
 
 	# --- 10. Held-out v1 preserved; v2 carries no ground truth. ---
 	var v1 := FileAccess.get_file_as_string(

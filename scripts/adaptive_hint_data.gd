@@ -97,10 +97,18 @@ const LEGACY_GROUNDED_HINTS: Dictionary = {
 	},
 	"h_butler_stain": {
 		"npc": "butler",
-		"source": "legacy_grounded",
+		## PREMISE-NORMALIZED. The shipped line opened "I already told you, I
+		## only cleaned the hallway." Its only hard prerequisite is holding
+		## fake_red_stain, and four chronologically valid Butler states hold that
+		## evidence with no prior Butler conversation (butler_challenge_given
+		## absent). "I already told you" therefore asserted a conversation that
+		## had not happened. Only that clause was removed; the investigative
+		## claim is unchanged.
+		"source": "legacy_derived_premise_normalized",
+		"original_text": "I already told you, I only cleaned the hallway. That red stain has nothing to do with me.",
 		"requires_evidence": ["fake_red_stain"],
 		"teaches": [],
-		"text": "I already told you, I only cleaned the hallway. That red stain has nothing to do with me.",
+		"text": "I was only cleaning the hallway. That red stain has nothing to do with me.",
 	},
 	"h_gardener_no_evidence": {
 		"npc": "gardener",

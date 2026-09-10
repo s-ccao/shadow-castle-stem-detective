@@ -425,7 +425,10 @@ func _check_shipped_logic_unchanged() -> void:
 	# transcription in adaptive_hint_data.gd is no longer faithful.
 	for hint_id: String in DataScript.LEGACY_GROUNDED_HINTS:
 		var hint := DataScript.LEGACY_GROUNDED_HINTS[hint_id] as Dictionary
-		var quoted := str(hint["text"])
+		# A premise-normalized hint no longer matches the shipped wording by
+		# design, so the drift check compares the recorded original instead.
+		# Dropping it from the check entirely would silently lose the detector.
+		var quoted := str(hint.get("original_text", hint["text"]))
 		if not source.contains(quoted):
 			failures.append(
 				"Transcription drift: legacy text for %s is no longer in game_world.gd."

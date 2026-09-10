@@ -28,7 +28,7 @@
 |---|---|---|---|---|---|---|---|
 | `h_butler_knows_rule` | butler | authored | — | — | `fake_red_stain` | — | `indicator_reaction` |
 | `h_butler_no_evidence` | butler | legacy_grounded | `dual_lock_rule` | — | `fake_red_stain` | — | — |
-| `h_butler_stain` | butler | legacy_grounded | — | `fake_red_stain` | — | — | — |
+| `h_butler_stain` | butler | legacy_derived_premise_normalized | — | `fake_red_stain` | — | — | — |
 | `h_gardener_knows_reflection` | gardener | authored | — | — | `greenhouse_pollen` | — | `reflection` |
 | `h_gardener_leaf_colour` | gardener | authored | `reflection` | — | — | — | — |
 | `h_gardener_no_evidence` | gardener | legacy_grounded | — | — | `greenhouse_pollen` | — | — |
@@ -52,7 +52,7 @@
 
 - **`h_butler_knows_rule`** — "I heard glass break in this room, followed by quick, heavy footsteps heading toward the greenhouse wing."
 - **`h_butler_no_evidence`** — "I was only cleaning the hallway. This castle has always been strange. Lord Ashford built those knowledge locks everywhere. Doors, cabinets, even old storage rooms."
-- **`h_butler_stain`** — "I already told you, I only cleaned the hallway. That red stain has nothing to do with me."
+- **`h_butler_stain`** — "I was only cleaning the hallway. That red stain has nothing to do with me."
 - **`h_gardener_knows_reflection`** — "That dark pollen is the wrong kind for anything I grow here. Something carried deep-room traces onto my tools."
 - **`h_gardener_leaf_colour`** — "You want to know why my beds look the way they do? A healthy leaf takes in the red and blue light and throws the green back at you. What reaches your eye is the light it did not keep."
 - **`h_gardener_no_evidence`** — "I was working near the greenhouse earlier. I did not enter the locked rooms."

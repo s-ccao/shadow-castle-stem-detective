@@ -247,6 +247,49 @@ Strict order, to reduce selector-informed annotation bias:
 `candidate_hints` lists every hint declared for that NPC in the static
 catalogue. It is **not** a prediction and was not produced by any selector.
 
+### 8b. Annotation rubric — FROZEN before annotation begins
+
+These definitions are frozen. They exist so two annotators, or the same
+annotator on different days, resolve the same scenario the same way.
+
+**State-only judgment.** Do not assume a specific player question. Judge whether
+the hint provides meaningful guidance in the **complete current player state**.
+
+**Eligibility is necessary, not sufficient.** A satisfied hard prerequisite
+never establishes relevance on its own.
+
+**Multiple answers.** More than one hint may be recorded in `valid_hints`.
+**NONE is a valid answer** when no hint provides meaningful help.
+
+**Conversational premise.** If a hint presupposes a prior conversation, action,
+lesson, or event that the complete scenario state does not support, treat that
+hint as **not relevant**.
+
+**Directional guidance.** Do **not** assume that holding one evidence item from
+a room means the whole room or direction is exhausted. Directional guidance
+loses relevance only when the specific investigative target or information it
+points toward has already been reached, completed, or is already known from the
+scenario state.
+
+**Cross-room / late-game staleness.** A hint is not relevant merely because it
+is thematically appropriate to the current room. If the player has already
+completed or demonstrated the information the hint provides, and the hint adds
+no meaningful investigative value, it may be stale or redundant.
+
+**Teaching.** New teaching content is not automatically relevant. Teaching
+content for a concept already DEMONSTRATED may be redundant.
+
+**Self-defence.** An NPC defending themselves is not automatically relevant. It
+must provide meaningful information in the current investigation state.
+
+**Ambiguity anchors.**
+
+| Level | Meaning |
+|---|---|
+| **LOW** | One interpretation is clearly supported; alternatives are ineligible or clearly weaker. |
+| **MEDIUM** | More than one interpretation is plausible, but the annotation decision remains reasonably stable. |
+| **HIGH** | Multiple labels are genuinely defensible, or missing conversational context materially affects the judgment. |
+
 ## 9. Freeze procedure
 
 - **Deterministic ids** — `h_<stage>_<evidence>_<npc>`, no RNG anywhere
@@ -297,6 +340,29 @@ Rules of record include:
 - `butler_challenge_complete` implies `fake_red_stain` (Butler branch 2 blocks the test)
 - every `circuit_bench_*_cleared` implies `circuit_repair_map_studied`
 - every `library_*_filter_earned` implies its `library_*_knowledge_learned`
+
+### Premise normalization — `h_butler_stain`
+
+One catalogue text was changed before annotation. The shipped line read:
+
+> "I already told you, I only cleaned the hallway. That red stain has nothing to
+> do with me."
+
+Its only hard prerequisite is holding `fake_red_stain`, and **four**
+chronologically valid Butler states hold that evidence with no prior Butler
+conversation (`butler_challenge_given` absent). The opening clause therefore
+asserted a conversation that had not happened. The frozen text is:
+
+> "I was only cleaning the hallway. That red stain has nothing to do with me."
+
+Only the false conversational premise was removed; the investigative claim is
+unchanged. The hint's `source` is now
+`legacy_derived_premise_normalized` rather than `legacy_grounded`, and the
+original wording is retained in the catalogue as `original_text` so the
+transcription drift detector still compares against the shipped string. It is
+**not** verbatim legacy text and must not be described as such.
+
+All three conditions receive this identical text.
 
 ### Accepted structural asymmetry
 
