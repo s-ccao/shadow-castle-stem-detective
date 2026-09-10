@@ -148,6 +148,9 @@ def render(data: dict, hints: dict[str, dict]) -> str:
             )
             out.append(f"- **Story flags:** {cell(entry['story_flags'])}")
             out.append(f"- **Candidate hints:** {cell(entry['candidate_hints'])}")
+            wit = entry.get("witness_path", [])
+            if wit:
+                out.append("- **Witness path:** " + " → ".join(wit))
             out.append("")
             out.append("| Field | Value |")
             out.append("|---|---|")

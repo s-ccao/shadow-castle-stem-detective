@@ -1,6 +1,51 @@
 # Evaluation protocol — adaptive NPC guidance
 
-**Status:** frozen by the project owner. Protocol version **`heldout-v2`**.
+**Status:** frozen by the project owner. Protocol version **`heldout-v3`**.
+
+> ### heldout-v2 — `PRE-EVALUATION SUPERSEDED — chronological reachability failure`
+>
+> heldout-v2 is retired **before any evaluation**, and preserved byte-identical
+> together with its freeze commit and tag. **No held-out selector was ever run
+> against it.** Annotation had begun but reached only 14 of 48 scenarios; those
+> labels are historical provenance and were **not** carried into v3.
+>
+> **What went wrong.** v2 was frozen before the game's chronology was fully
+> modelled. Its generator validated *state invariants* — whether flags
+> contradicted one another — but never modelled the **physical-key progression
+> chain**. A later audit found that every room requires both a key and a
+> knowledge-lock answer, and that the keys chain strictly:
+>
+> ```
+> Wake --> Chemistry --> Greenhouse --> Circuit --> Dining      (Library off-chain)
+> ```
+>
+> Each room hands out the *next* room's key: `chemistry_room_key`
+> (`wake_room.gd:1009`), `greenhouse_room_key` from the Chemistry potion cabinet
+> (`chemistry_room.gd:395`), `circuit_room_key` only after **all seven**
+> Greenhouse features are inspected (`greenhouse_room.gd:1339`). Because the
+> Greenhouse workbench returns before `_mark_inspected` (`:1292`), it cannot
+> count as inspected until its parchment commits — which grants
+> `greenhouse_pollen`. **Circuit access therefore implies the pollen.**
+>
+> Applying the audited chain to v2 showed **44 of 48 states unreachable** by any
+> real player, and the same rule table now rejects **48/48** v2 states.
+>
+> **How v3 differs.** v3 is not a patched v2. Its generator walks a legal
+> gameplay witness path from a new game, applies only interactions whose
+> prerequisites the path has already satisfied, and derives the state from the
+> path. Chronology is a property of construction, not a post-hoc filter. Each
+> scenario carries its `witness_path`.
+>
+> | | heldout-v2 | heldout-v3 |
+> |---|---|---|
+> | Construction | state vectors, then validated | witness path, then derived |
+> | Chronology rules | 10 invariant rules | 16 chronology rules, each source-cited |
+> | Chronologically reachable | 4 / 48 | 48 / 48 |
+> | File SHA-256 | `a55b2080…` | `dc093e98…` |
+> | Annotated | 14 of 48 (historical) | no |
+> | Selector run | no | no |
+>
+> heldout-v1 (`a60cee98…`) and heldout-v2 (`a55b2080…`) remain **unchanged**.
 
 > ### heldout-v1 — `PRE-EVALUATION SUPERSEDED`
 >
@@ -208,31 +253,75 @@ catalogue. It is **not** a prediction and was not produced by any selector.
 - **Sorted serialisation** — scenarios sorted by id; JSON with sorted keys
 - **State fingerprint** — SHA-256 over state fields only, excluding annotations,
   so the state set can be verified independently of the ground truth
-- **Protocol version** — `heldout-v2` recorded in the file
-- **Regeneration** — `python3 tools/generate_heldout_v2.py` reproduces the file
+- **Protocol version** — `heldout-v3` recorded in the file
+- **Regeneration** — `python3 tools/generate_heldout_v3.py` reproduces the file
   byte-for-byte; `python3 tools/render_annotation_worksheet.py <json>` reproduces
   the worksheet, parsing the catalogue rather than duplicating it
 
-Current state fingerprint (`heldout-v2`):
+Current state fingerprint (`heldout-v3`):
 
 ```
-e1979c1a75a83326f58770a86b937150c9381ed7b96333b8640fbe4dc0fd0404
+1b934b73123561d0e88daf14bfc8044dba0e72781f3a7a8192095c939a961c5d
 ```
 
-File SHA-256 (`heldout-v2`):
+File SHA-256 (`heldout-v3`):
 
 ```
-a55b208005c87c370f34b86386125423e3c1b90e8fe017f956dd39937b77fd45
+dc093e987571d58bd22186c0ea15356df2354c29e99bca4386d1c3063754cd78
 ```
 
-Superseded `heldout-v1` fingerprint, retained for provenance:
+Superseded fingerprints, retained for provenance:
 
 ```
-1648a508ef41dca62f4eed5028069617d65bc7beddca11435ea1000c015c615a
+heldout-v2  e1979c1a75a83326f58770a86b937150c9381ed7b96333b8640fbe4dc0fd0404
+heldout-v1  1648a508ef41dca62f4eed5028069617d65bc7beddca11435ea1000c015c615a
 ```
 
 A second fingerprint covering scenarios **plus** annotations will be recorded
 once the annotator supplies ground truth.
+
+## 9c. Chronological reachability (heldout-v3)
+
+v3 states are generated from gameplay witness paths, and validated by 16
+source-cited chronology rules in `tests/heldout_v3_chronology_test.gd`. Each
+rule is fault-injected on every run: the test builds a state that triggers the
+rule, removes one consequence, and requires detection. A rule that cannot fail
+would prove nothing.
+
+Rules of record include:
+
+- `fake_red_stain` implies `door_chemistry_unlocked`
+- `greenhouse_pollen` implies `door_greenhouse_unlocked` and `chemistry_cabinet_secret_found`
+- **`door_circuit_unlocked` implies `greenhouse_pollen`** (the key chain)
+- `deliberate_short_circuit` and `blackout_deliberate` imply each other
+- `butler_challenge_complete` implies `fake_red_stain` (Butler branch 2 blocks the test)
+- every `circuit_bench_*_cleared` implies `circuit_repair_map_studied`
+- every `library_*_filter_earned` implies its `library_*_knowledge_learned`
+
+### Accepted structural asymmetry
+
+The reachable state space is **not** symmetric, and is not forced to be.
+
+- **Mechanic Tier 3 is impossible.** Circuit access requires the greenhouse
+  survey, which forces `greenhouse_pollen`, so a Mechanic state holding no major
+  evidence does not exist -- 0 of 55,080 candidates. Under A-4,
+  `h_mechanic_series_basics` is therefore **structurally unreachable for
+  Condition A**. This is a property of the shipped game's progression, not a
+  defect, and no extra discriminator was added to make the hint appear.
+- **Butler Tier 2/3 can never have `indicator_reaction` DEMONSTRATED**, because
+  the Butler withholds his comprehension check until `fake_red_stain` is held
+  (`chemistry_room.gd:1484`), which is Tier 1 by definition.
+
+`h_mechanic_series_basics` remains in the shared catalogue. A deterministic
+policy never selecting a catalogue item is a **selector-policy property**, not a
+content-access restriction: B and C still receive it.
+
+**Reporting constraint.** Condition A's Mechanic arm has no teaching-redundancy
+sensitivity signal, and none was manufactured. Conclusions about redundancy
+reduction must not be generalised across every NPC or every PKM concept unless
+the data supports it. `RedundantWhenTeachable` always reports numerator and
+denominator, and an empty denominator is reported as
+`N/A (0 teaching hints delivered)` -- never zero percent.
 
 ## 9b. Frozen matched catalogue and Condition A-4
 
