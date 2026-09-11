@@ -781,3 +781,177 @@ not PKM concepts and never enter redundancy analysis.
 held-out JSON is byte-identical (`a60cee98…`) and all 48 scenario blocks in the
 worksheet are unchanged. Only the worksheet's hint-reference table gained a
 "Requires story flag (context)" column.
+
+---
+
+## 12. Held-out v4 — prospective evaluation plan
+
+**Frozen before v4 exists.** At the time this section was written there was no v4
+scenario artifact, no v4 annotation, and no v4 result. Generation is specified in
+`docs/HELDOUT_V4_GENERATION_SPEC.md`; this section fixes how v4 will be *scored*,
+so that the analysis plan predates the data.
+
+### 12.1 Two strata, never merged
+
+| Stratum | n | Role |
+| --- | --- | --- |
+| CORE | 48 (16 per NPC) | **Primary confirmatory** analysis |
+| STRESS | 24 (8 per NPC) | **Preregistered secondary** robustness / boundary analysis |
+
+CORE and STRESS are reported separately and are **never combined into a single
+headline metric**. No composite score is created.
+
+### 12.2 `RelevantHintRate` is unchanged from v3
+
+The primary metric keeps its §5 definition exactly:
+
+```
+relevant    = selected hint id is non-empty AND selected hint id ∈ HUMAN VALID_HINTS
+numerator   = relevant selections
+denominator = all attempted scenarios
+```
+
+**SILENCE is never relevant** — including on a scenario whose human label is
+`NONE`. §6 continues to govern: silence is a relevance failure, lowers
+`Coverage`, and is never removed from the denominator.
+
+This was deliberately *not* amended for v4. Amending it would have changed the
+meaning of the closed v3 headline number, the frozen Condition C specification
+(`docs/CONDITION_C_SPEC.md` §B.7, which states that C cannot improve its score by
+abstaining), and the symmetry of the metric across conditions — and it would have
+done so asymmetrically, since only Condition C can abstain at all. The question
+that amendment was reaching for is answered instead by a new, separate, clearly
+secondary metric (§12.4).
+
+### 12.3 Metrics carried forward unchanged
+
+`Coverage`, `StateViolationRate`, `RedundantHintRate` (primary) and
+`RedundantWhenTeachable` (secondary) keep their §5 and §5b definitions.
+Numerator and denominator are always reported. A teaching denominator of 0 is
+reported as exactly `N/A (0 teaching hints delivered)`.
+
+### 12.4 New v4 secondary metrics
+
+These are **new prospective v4 outcomes**. They were **not** part of the closed
+v3 analysis and must never be presented as though they were.
+
+**`AppropriateActionRate` — SECONDARY.**
+
+```
+correct_action        = (delivered AND selected hint ∈ VALID_HINTS)
+                        OR (silence AND VALID_HINTS is empty)
+AppropriateActionRate = correct actions / all attempted scenarios
+```
+
+It separates two questions `RelevantHintRate` deliberately fuses: whether a
+delivered hint was relevant, and whether delivering anything was the right call.
+`RelevantHintRate` answers the first and remains primary.
+
+**`CorrectSilenceRate` — DESCRIPTIVE ONLY.**
+
+```
+numerator   = NONE-labelled scenarios on which the selector chose SILENCE
+denominator = NONE-labelled scenarios
+```
+
+Reported as `N/A (0 NONE scenarios)` when the denominator is 0. It is **not**
+merged into `RelevantHintRate` and carries no preregistered inferential test.
+
+### 12.5 Inferential plan (CORE)
+
+A, B and C see the same scenarios, so relevance comparisons are **paired**.
+
+**PRIMARY — `RelevantHintRate`.** Three preregistered pairwise comparisons:
+A vs B, A vs C, B vs C, each by **exact McNemar** on discordant pairs. Report per
+comparison: each condition's numerator and denominator, the absolute
+percentage-point difference, the discordant counts `b` and `c`, the exact
+p-value, and the direction of the effect.
+
+**SECONDARY — `AppropriateActionRate`.** The same three paired exact McNemar
+comparisons with the same reporting, labelled SECONDARY wherever they appear.
+
+**Multiplicity.** These three comparisons are the complete preregistered family.
+Unadjusted exact p-values are the primary reporting; Holm-adjusted values across
+the family of three are reported alongside. Any significance claim must state
+which it uses.
+
+**Sparse data.** No p-value is reported without its discordant counts, and a
+comparison with `b + c < 5` carries an explicit low-information caveat. This is a
+reporting requirement, not a rule for suppressing results. No significance is
+claimed from redundancy metrics when denominators are sparse.
+
+**Everything else is exploratory.** `Coverage`, `StateViolationRate`,
+`RedundantHintRate` and `RedundantWhenTeachable` are reported descriptively,
+numerator and denominator first. Any inferential analysis beyond the comparisons
+named above — including anything computed on STRESS — is labelled
+secondary/exploratory.
+
+The exact test lives in `tools/mcnemar_exact.py`, committed and self-tested
+alongside this section, so the analysis code predates the data.
+
+### 12.6 v3 is not recomputed
+
+The closed v3 artifacts are not altered, and v3 is **not** recomputed under
+`AppropriateActionRate` as part of the primary study.
+
+It may be noted analytically that Conditions A and B produced **zero** silent
+scenarios on v3, so their closed `RelevantHintRate` figures would be unchanged
+under an abstention-aware reading. That is an observation about arithmetic, not a
+result. **No retroactive v3 headline metric is created.**
+
+### 12.7 Order of operations
+
+Frozen; each step completes before the next begins.
+
+1. Generate v4 under the generation spec; run the chronology test, the canonical
+   PKM test and the spec checker; commit and tag. The scenario set is immutable
+   from that moment.
+2. **Human annotation** — after the scenario set is frozen, before any condition
+   runs. Per scenario: `VALID_HINTS`, rationale, ambiguity LOW / MEDIUM / HIGH.
+   `NONE` remains allowed. The annotator must not see Condition A, B or C output;
+   at this point none exists. Commit and tag; immutable from that moment.
+3. Run A, B and C on the frozen, annotated set — **once**.
+4. Score and report under §12.1–§12.6.
+
+The **frozen annotation rubric in §8b remains authoritative.** It may be revised
+only on discovery of a true contradiction with v4 state representation, and any
+such revision must be committed with its justification *before* annotation
+begins. It must not be revised after viewing v4 scenarios merely because
+annotation proves difficult.
+
+### 12.8 Condition C run discipline
+
+- exactly **one** primary C inference per scenario;
+- a fresh subprocess per scenario, no conversation persistence;
+- the frozen schema retry only — a transport retry is **not** a new model sample;
+- no rerun because a decision looks bad; no manual correction; no prompt edits;
+  no model substitution; no selection among responses;
+- **no repeated runs of C to choose a favourable result.**
+
+Every scenario logs: the **requested** model `claude-opus-5`; the **resolved**
+model from the Claude Code envelope; the raw response; the parsed decision; the
+retry count; the transport attempt count; the candidate ids offered; the
+canonical PKM; the prompt hash; and the C freeze tag
+`condition-c-pre-v4-freeze-v2`.
+
+A transport failure aborts the run rather than recording an abstention — an
+outage scored as SILENCE would be a fabricated data point.
+
+### 12.9 Catalogue note — no hint currently declares a story-flag prerequisite
+
+The design note above records `h_butler_knows_rule` moving from
+`requires_concept: ["dual_lock_rule"]` to
+`requires_story_flags: ["dual_lock_rule_taught"]`. That hint has since been
+**re-authored** with an evidence-grounded line (*"I heard glass break in this
+room…"*, `chemistry_room.gd:1514-1516`), which removed the false premise the gate
+existed to guard, and the gate was removed with it.
+
+As of this section, **no hint in the catalogue declares `requires_story_flags` or
+`requires_concept`.** The mechanism remains implemented and tested in
+`AdaptiveHintData.state_violations()` and `AdaptiveHintSelector`; it simply has no
+current user. The design note is left unedited as a record of a decision made at
+the time; this note records the present state.
+
+The consequence for v4 is stated in the generation spec §5.8: hard eligibility is
+a function of `evidence_items` alone, so hard-eligible candidate count is
+collinear with own-evidence-present within each NPC.

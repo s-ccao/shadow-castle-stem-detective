@@ -87,11 +87,15 @@
     },
     "evaluation_protocol": {
       "path": "docs/EVALUATION_PROTOCOL.md",
-      "sha256": "1a211f6b27ac69d9fba8b0b0cb0ee669f85996faee734b2725e5797982b451c8"
+      "sha256": "1a211f6b27ac69d9fba8b0b0cb0ee669f85996faee734b2725e5797982b451c8",
+      "frozen_prefix_bytes": 38198,
+      "note": "Append-only pin, not a whole-file pin. The protocol is a living document that must keep growing: the heldout-v4 evaluation plan was appended as §12 after this freeze, and later phases will append more. The hash above covers the first 38198 bytes, which are byte-for-byte the protocol as it stood at condition-c-pre-v4-freeze-v2 (§1 through §11, ending with the heldout-v3 closure). A single edited or deleted byte before that offset fails this check; anything appended after it does not. Condition C reads no protocol text at run time, so appending to it cannot change what C does."
     },
     "freeze_checker": {
       "path": "tools/check_condition_c_freeze.py",
-      "sha256": "bc1e53c22c9d004e3c48baa0c4734c19484d87a981dab813f33eea51d58cfd3b"
+      "sha256": "3325dbce19effff95c91fac9a9b78a846124255219227fd9344f71dad1fb19f4",
+      "previous_sha256": "bc1e53c22c9d004e3c48baa0c4734c19484d87a981dab813f33eea51d58cfd3b",
+      "note": "Changed once since condition-c-pre-v4-freeze-v2, at the heldout-v4 specification freeze, in exactly one function: check_hashes now honours an optional frozen_prefix_bytes key. Entries without that key are verified byte-for-byte as before, so every hash that mattered to Condition C is checked exactly as it was. The one entry that uses it, evaluation_protocol, is deliberately a weaker claim than a whole-file hash -- a prefix rather than the file -- because the protocol must keep growing; in exchange it also fails on truncation, which a whole-file mismatch could not distinguish from an ordinary edit. The previous hash is recorded above and the version it names is recoverable from the tag, so this amendment is legible without git and cannot be mistaken for a silent weakening."
     }
   },
   "unchanged_since_heldout_v3_evaluation": {

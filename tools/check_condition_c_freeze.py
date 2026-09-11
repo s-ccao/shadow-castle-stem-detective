@@ -69,10 +69,28 @@ def check_hashes(manifest: dict, problems: list[str]) -> int:
             if not path.exists():
                 problems.append(f"{section}.{role}: {entry['path']} is missing")
                 continue
-            actual = sha256(path)
+            data = path.read_bytes()
+
+            # An entry may pin a frozen prefix instead of the whole file, for a
+            # document that is expected to keep growing after this freeze. The
+            # claim is then narrower but still exact: everything written before
+            # the freeze is unchanged, and the growth is append-only.
+            limit = entry.get("frozen_prefix_bytes")
+            if limit is not None:
+                if len(data) < limit:
+                    problems.append(
+                        f"{section}.{role}: {entry['path']} is {len(data)} bytes, "
+                        f"shorter than its {limit}-byte frozen prefix; content "
+                        f"that existed at the freeze has been deleted"
+                    )
+                    continue
+                data = data[:limit]
+
+            actual = hashlib.sha256(data).hexdigest()
             if actual != entry["sha256"]:
+                scope = f" (first {limit} bytes)" if limit is not None else ""
                 problems.append(
-                    f"{section}.{role}: {entry['path']}\n"
+                    f"{section}.{role}: {entry['path']}{scope}\n"
                     f"    manifest {entry['sha256']}\n"
                     f"    on disk  {actual}"
                 )
