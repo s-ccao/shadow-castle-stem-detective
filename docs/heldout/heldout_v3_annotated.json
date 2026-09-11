@@ -1,0 +1,3089 @@
+{
+  "ambiguity_counts": {
+    "HIGH": 0,
+    "LOW": 39,
+    "MEDIUM": 9
+  },
+  "annotated_from": {
+    "commit": "65cd6ed7d0cd052f813cadcd1016e708bce250e7",
+    "file": "docs/heldout/heldout_v3_scenarios.json",
+    "file_sha256": "dc093e987571d58bd22186c0ea15356df2354c29e99bca4386d1c3063754cd78",
+    "tag": "heldout-v3-pre-annotation"
+  },
+  "annotation_count": 48,
+  "annotation_fingerprint_sha256": "fbf9c16ed31a0fc58e9cd754bb2df7e77ad1e0f8ab40b3ea76db3ce8d704381a",
+  "annotation_method": "human blind relevance annotation",
+  "annotations_present": true,
+  "deterministic": true,
+  "generated_by": "tools/materialize_heldout_v3_annotations.py",
+  "none_scenario_ids": [
+    "v3_circu_butler_dfg_dem_libl_17",
+    "v3_circu_butler_dg_uns_libn_13",
+    "v3_circu_butler_fg_dem_libd_19",
+    "v3_circu_butler_fg_lea_libd_14",
+    "v3_circu_butler_g_lea_libd_14",
+    "v3_green_butler_g_uns_libn_06"
+  ],
+  "notes": [
+    "Every state is derived from a legal gameplay witness path, not generated and then repaired.",
+    "witness_path lists the state-changing steps that produce the state, in chronological order.",
+    "candidate_hints lists every hint declared for that NPC in the static catalogue. It is not a prediction and was not produced by a selector.",
+    "valid_hints / annotation_rationale / ambiguity_note carry the human ground truth. A scenario is annotated when its rationale and ambiguity are both non-empty; an empty valid_hints array alongside them is the NONE label, not a missing annotation.",
+    "No selector has been run against these states. Conditions A, B and C remain unobserved on heldout-v3."
+  ],
+  "protocol_version": "heldout-v3",
+  "scenario_count": 48,
+  "scenarios": [
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Player holds fake_red_stain; the hint directly responds to that evidence and explains the Butler's relationship to it.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "id": "v3_chemi_butler_f_dem_libl_08",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "chemistry",
+      "story_flags": [
+        "butler_challenge_complete",
+        "butler_challenge_given",
+        "door_chemistry_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_butler_stain"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: first words with the Butler (test issued)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Chemistry: answer the Butler's stain question correctly",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 1; direct evidence-specific Butler response.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "id": "v3_chemi_butler_f_uns_libn_03",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "chemistry",
+      "story_flags": [
+        "door_chemistry_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected"
+      ],
+      "valid_hints": [
+        "h_butler_stain"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: examine and record the red stain",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "No fake_red_stain is held. The background response has some value, while the glass-breaking/heavy-footsteps clue gives a stronger new direction toward the Greenhouse.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [],
+      "id": "v3_chemi_butler_none_lea_libd_08",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "chemistry",
+      "story_flags": [
+        "door_chemistry_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Library: read the additive shelf",
+        "Library: solve the Additive Relay",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "Same relevance structure as Scenario 3; the player's demonstrated reflection knowledge does not materially change these Butler hints.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [],
+      "id": "v3_chemi_butler_none_lea_libd_08_2",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "chemistry",
+      "story_flags": [
+        "door_chemistry_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Library: read the reflection shelf",
+        "Library: solve the Reflection Matrix",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "Same relevance structure as Scenarios 3\u20134; demonstrated spectrum knowledge does not materially change these Butler hints.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [],
+      "id": "v3_chemi_butler_none_lea_libd_08_3",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "DEMONSTRATED"
+      },
+      "room": "chemistry_room",
+      "stage": "chemistry",
+      "story_flags": [
+        "door_chemistry_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_library_collected",
+        "library_red_filter_earned",
+        "library_spectrum_knowledge_learned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Library: read the spectrum shelf",
+        "Library: solve the Spectrum challenge",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "The player has progressed through Greenhouse and into Circuit; the stain denial no longer provides enough new investigative value and is stale.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_butler_dfg_dem_libl_17",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "LEARNING",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "butler_challenge_complete",
+        "butler_challenge_given",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned"
+      ],
+      "valid_hints": [],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: first words with the Butler (test issued)",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Chemistry: answer the Butler's stain question correctly",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Circuit: clear the continuity bench",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The generic Butler background and Greenhouse-direction clue provide no meaningful new guidance after the player has already completed the Greenhouse direction and progressed into Circuit.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_butler_dg_uns_libn_13",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected"
+      ],
+      "valid_hints": [],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "The Butler stain denial is still state-eligible but adds no meaningful new information after the related challenge and later progression.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_butler_fg_dem_libd_19",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "circuit",
+      "story_flags": [
+        "butler_challenge_complete",
+        "butler_challenge_given",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: first words with the Butler (test issued)",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Chemistry: answer the Butler's stain question correctly",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Circuit: clear the regulator bench",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The player has already progressed to Circuit; repeating the Butler stain denial provides no useful new direction or knowledge.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_butler_fg_lea_libd_14",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The generic Butler background is not useful at this late state, and the Greenhouse-direction clue is already stale.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_butler_g_lea_libd_14",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response directly addresses held greenhouse_pollen and explains the Gardener's position. The reflection teaching is redundant because reflection is already DEMONSTRATED.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_dfg_dem_libd_14",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "The pollen response addresses evidence. Reflection is UNSEEN, so the leaf-colour explanation provides new, non-redundant teaching even though the player has already visited the Greenhouse.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_dfg_uns_libn_13",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response remains directly relevant to held evidence. The reflection teaching is redundant because reflection is DEMONSTRATED.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_fg_dem_libd_13",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response addresses evidence. Reflection is only LEARNING, so applying it to leaf colour provides useful contextual reinforcement rather than redundant teaching.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_fg_lea_libl_14",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response directly explains held evidence; reflection teaching is redundant because reflection is DEMONSTRATED.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_g_dem_libd_13",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 15.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_g_dem_libd_14",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "butler_challenge_given",
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: first words with the Butler (test issued)",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "The pollen response is directly relevant. Although reflection is already DEMONSTRATED, applying it in the Greenhouse can reinforce transfer to a new context; it is still redundant under the predefined redundancy metric.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_g_dem_libd_14_2",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "DEMONSTRATED",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "chemistry_change_sorted",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: complete the sample-tray sorting",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen defence is no longer useful this late in progression. Reflection is still LEARNING, so leaf-colour teaching remains useful and non-redundant.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_gardener_g_lea_libd_18",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_leaf_colour"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Circuit: clear the regulator bench",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The hint directly responds to deliberate_short_circuit and explains the Mechanic's suspicion. Series-basics teaching is redundant because circuit_continuity is DEMONSTRATED.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dfg_dem_libd_16",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Circuit: clear the continuity bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "One hint directly addresses the short-circuit evidence; the other provides timely circuit-continuity teaching while the concept is still LEARNING.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dfg_lea_libl_14",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "LEARNING",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 20.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dfg_lea_libl_14_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "This is the first recorded Mechanic interaction after obtaining deliberate_short_circuit, so the evidence-specific response remains useful. Series basics are redundant after all three Circuit checks.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dg_dem_libd_18",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Circuit: clear the regulator bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 22.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dg_dem_libd_18_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Circuit: clear the regulator bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The Mechanic response explains the short-circuit evidence, while circuit_continuity is only LEARNING, so the teaching hint is timely.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dg_lea_libd_15",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The short-circuit response provides investigation-specific explanation and series basics provide useful teaching while continuity is still LEARNING.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_dg_lea_libd_15_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "blackout_deliberate",
+        "chemistry_cabinet_secret_found",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: workbench journal (deliberate short circuit)",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "With no deliberate_short_circuit evidence, the old-wiring explanation is a reasonable response to the blackout. Other eligible hints are less appropriate to the current need.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_fg_dem_libn_12",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_diagnostic_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the diagnostic (master switch) bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The old-wiring explanation reasonably addresses the blackout, while the maintenance-route hint adds useful concrete investigative direction. Series basics are redundant because continuity is DEMONSTRATED.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_fg_dem_libn_12_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_bench_regulator_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Circuit: clear the regulator bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The three hints respectively provide a reasonable explanation, timely non-redundant teaching while continuity is LEARNING, and a concrete new investigation direction.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_fg_lea_libd_14",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 28.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_fg_lea_libd_14_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The old-wiring explanation remains reasonable and the maintenance-route clue adds investigation value. Series basics are redundant because continuity is DEMONSTRATED.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_g_dem_libd_15",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 30.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_g_dem_libd_15_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenarios 30\u201331.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_g_dem_libd_15_3",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "DEMONSTRATED"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "circuit_bench_continuity_cleared",
+        "circuit_repair_map_studied",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_red_filter_earned",
+        "library_spectrum_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the spectrum shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Spectrum challenge",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Circuit: study the repair blueprint on site",
+        "Circuit: clear the continuity bench",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "At initial Circuit entry, the old-wiring explanation is reasonable and continuity is UNSEEN, making series-basics teaching timely. The fault-isolation clue is premature.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_g_uns_libd_13",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Same decision basis as Scenario 33.",
+      "candidate_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_circu_mechanic_g_uns_libd_13_2",
+      "knowledge_items": [],
+      "npc": "mechanic",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "stage": "circuit",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_circuit_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "greenhouse_circuit_key_found",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_circuit_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Greenhouse: inspect all 7 features (Circuit Room Key)",
+        "Hall: study the circuit exhibit",
+        "Hall: answer the Circuit knowledge lock",
+        "Return to circuit_room and talk to the mechanic"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The stain response remains a reasonable evidence-specific explanation of the Butler's relationship to fake_red_stain.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "id": "v3_green_butler_f_dem_libd_12",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "butler_challenge_complete",
+        "butler_challenge_given",
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned"
+      ],
+      "valid_hints": [
+        "h_butler_stain"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: first words with the Butler (test issued)",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Chemistry: answer the Butler's stain question correctly",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The player holds fake_red_stain and has no earlier Butler conversation in this witness path; the hint directly addresses the evidence and helps explain his suspicion.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "id": "v3_green_butler_f_lea_libd_11",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [
+        "h_butler_stain"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "Earlier live Butler interactions do not deliver this specific normalized stain-denial hint, so it still provides a new evidence-specific explanation rather than merely repeating the same statement.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_butler_fg_dem_libl_11",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "butler_challenge_complete",
+        "butler_challenge_given",
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_butler_stain"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: first words with the Butler (test issued)",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Chemistry: answer the Butler's stain question correctly",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The player holds fake_red_stain and the path shows no earlier Butler conversation; the hint is a direct and reasonable evidence-specific explanation.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_butler_fg_lea_libd_11",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [
+        "h_butler_stain"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Chemistry: examine and record the red stain",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The player has already entered the Greenhouse and obtained greenhouse_pollen. The Butler background is generic and the Greenhouse-direction clue no longer adds enough useful value.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_butler_g_uns_libn_06",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected"
+      ],
+      "valid_hints": [],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The player has not yet entered the Greenhouse and holds no evidence; the glass-breaking/heavy-footsteps clue gives a concrete and timely next investigation direction.",
+      "candidate_hints": [
+        "h_butler_no_evidence",
+        "h_butler_stain",
+        "h_butler_knows_rule"
+      ],
+      "evidence_items": [],
+      "id": "v3_green_butler_none_lea_libd_11",
+      "knowledge_items": [],
+      "npc": "butler",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "mrs_lin_lab_note_seen"
+      ],
+      "valid_hints": [
+        "h_butler_knows_rule"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: read Mrs. Lin's lab note",
+        "Library: read the additive shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to chemistry_room and talk to the butler"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "The three hints provide a reasonable self-explanation, contextual reflection reinforcement, and a concrete new dark-pollen/deep-room clue. Leaf-colour teaching is redundant under the predefined metric because reflection is already DEMONSTRATED.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "id": "v3_green_gardener_f_dem_libd_10",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The hints provide self-explanation, new non-redundant reflection teaching while reflection is UNSEEN, and a concrete investigative clue. The unsatisfied soft preference does not invalidate the clue.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "id": "v3_green_gardener_f_uns_libn_06",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected"
+      ],
+      "valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response directly addresses newly obtained greenhouse_pollen. Reflection teaching is less relevant because reflection is already DEMONSTRATED.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_gardener_fg_dem_libd_10",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response explains current evidence, while reflection is only LEARNING, so leaf-colour teaching is timely and non-redundant.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_gardener_fg_lea_libl_09",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Chemistry: examine and record the red stain",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "fake_red_stain does not materially affect the Gardener decision. The pollen response directly addresses current evidence; reflection teaching is redundant because reflection is DEMONSTRATED.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_gardener_g_dem_libd_10",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "The pollen response directly addresses current evidence and reflection is still LEARNING, so the teaching hint remains useful and non-redundant.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "id": "v3_green_gardener_g_lea_libd_11",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Greenhouse: workbench parchment (dark pollen evidence)",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "MEDIUM",
+      "annotation_rationale": "All three are relevant. The dark-pollen/deep-room clue is strongest because it provides concrete new investigative direction before greenhouse_pollen is collected. Reflection teaching can still provide contextual reinforcement despite being redundant under the predefined metric.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [],
+      "id": "v3_green_gardener_none_dem_libd_10",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_green_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Reflection Matrix",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    },
+    {
+      "ambiguity_note": "LOW",
+      "annotation_rationale": "All three are relevant. Reflection is still LEARNING, so leaf-colour teaching is non-redundant. The dark-pollen clue remains useful, but its priority is lower than in Scenario 47 because its preferred_when_demonstrated condition is not yet satisfied.",
+      "candidate_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "evidence_items": [],
+      "id": "v3_green_gardener_none_lea_libd_11",
+      "knowledge_items": [],
+      "npc": "gardener",
+      "pkm_states": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "stage": "greenhouse",
+      "story_flags": [
+        "chemistry_cabinet_secret_found",
+        "door_chemistry_unlocked",
+        "door_greenhouse_unlocked",
+        "door_library_unlocked",
+        "dual_lock_rule_taught",
+        "hall_knowledge_chemistry_room_collected",
+        "hall_knowledge_greenhouse_room_collected",
+        "hall_knowledge_library_collected",
+        "library_additive_knowledge_learned",
+        "library_blue_filter_earned",
+        "library_reflection_knowledge_learned"
+      ],
+      "valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "witness_path": [
+        "New game",
+        "Wake Room: read the briefing, take the Chemistry Room Key",
+        "Hall: study the chemistry exhibit",
+        "Hall: find the Library key and study the library exhibit",
+        "Hall: answer the Chemistry knowledge lock",
+        "Hall: answer the Library knowledge lock",
+        "Chemistry: open the potion cabinet (Greenhouse Key)",
+        "Library: read the additive shelf",
+        "Library: read the reflection shelf",
+        "Hall: study the greenhouse exhibit",
+        "Library: solve the Additive Relay",
+        "Hall: answer the Greenhouse knowledge lock",
+        "Return to greenhouse_room and talk to the gardener"
+      ]
+    }
+  ],
+  "selector_was_run": false,
+  "state_fingerprint_sha256": "1b934b73123561d0e88daf14bfc8044dba0e72781f3a7a8192095c939a961c5d"
+}

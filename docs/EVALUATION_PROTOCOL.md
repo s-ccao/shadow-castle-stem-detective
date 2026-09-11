@@ -320,8 +320,45 @@ heldout-v2  e1979c1a75a83326f58770a86b937150c9381ed7b96333b8640fbe4dc0fd0404
 heldout-v1  1648a508ef41dca62f4eed5028069617d65bc7beddca11435ea1000c015c615a
 ```
 
-A second fingerprint covering scenarios **plus** annotations will be recorded
-once the annotator supplies ground truth.
+### 9b. Annotation freeze (`heldout-v3-post-annotation`)
+
+Ground truth was supplied by human blind relevance annotation for all 48
+scenarios and materialized into `docs/heldout/heldout_v3_annotated.json`, an
+annotated copy. The pre-annotation file is **not** modified: `heldout-v3` stays
+byte-identical at `dc093e98…`, `annotations_present: false`, so the state set
+remains verifiable without reference to the labels.
+
+Annotation-only fingerprint — SHA-256 over scenario id, `valid_hints`,
+`annotation_rationale` and `ambiguity_note` alone, in file id order, so the
+labels can be verified without re-hashing the states:
+
+```
+fbf9c16ed31a0fc58e9cd754bb2df7e77ad1e0f8ab40b3ea76db3ce8d704381a
+```
+
+Annotated file SHA-256:
+
+```
+9d7285c794b824753af3f6a221cef3bc754bc542fe9d0cae52cb2cd09644dc9e
+```
+
+Ambiguity: 39 LOW, 9 MEDIUM, 0 HIGH. Six scenarios carry the **NONE** label —
+ordinals 6, 7, 8, 9, 10 and 39, all Butler. Under section 8b NONE is a real
+annotation, so an empty `valid_hints` array is only readable as ground truth
+alongside a non-empty rationale and ambiguity level; both are required of every
+scenario, which is what separates an annotated NONE from an unfilled blank.
+
+- **Regeneration** — `python3 tools/materialize_heldout_v3_annotations.py`
+  reproduces the annotated file byte-for-byte, and refuses to run at all unless
+  the pre-annotation source still hashes to the frozen value
+- **Validation** — `python3 tools/check_heldout_v3_annotations.py` re-derives
+  every claim above from the files on disk. It is a separate program from the
+  materializer on purpose: the tool that writes ground truth should not be the
+  only one that vouches for it
+
+No selector has been run against heldout-v3. Both files carry
+`selector_was_run: false`, and neither tool above imports a selector, calls a
+scoring function, or consults Condition A / B / C logic.
 
 ## 9c. Chronological reachability (heldout-v3)
 
