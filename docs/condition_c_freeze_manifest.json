@@ -1,16 +1,18 @@
 {
-  "freeze": "condition-c-pre-v4-freeze",
+  "freeze": "condition-c-pre-v4-freeze-v2",
+  "supersedes": "condition-c-pre-v4-freeze",
+  "amendment": "Transport only. The Anthropic Messages API path was replaced by a company-broker-authenticated isolated one-shot Claude Code subprocess, because the Messages API required separately billed credentials this project does not have. No research semantics changed: the prompt template, candidate derivation, validation gates, retry budgets and SILENCE policy are byte-identical to the original freeze, which is why spec_version is still condition-c-v1. The original tag remains in place and config/condition_c_model_v1.json was superseded rather than edited; its hash below is the same value the original manifest recorded.",
   "frozen_before": "heldout-v4 generation",
   "spec_version": "condition-c-v1",
   "prompt_template_version": "condition-c-v1",
-  "config_version": "condition-c-model-v1",
+  "config_version": "condition-c-model-v2",
   "condition_c_has_been_run_on_heldout_v3": false,
   "condition_c_has_a_score": false,
   "note": "Condition C is frozen BEFORE the holdout it will be scored on exists. It has never been run on heldout-v3, on any scenario in it, or on any state derived from one. Its confirmatory evaluation uses a new holdout generated only after this freeze.",
   "required_hashes": {
     "c_specification": {
       "path": "docs/CONDITION_C_SPEC.md",
-      "sha256": "d75cb52d01cbd09e7377d077f4968802ad4b0fb4cddf78cf491c95f1a76f5621"
+      "sha256": "39dc32e6c1182ed515470fcce94713875913932d5a2ee4db4d04beb79bc477eb"
     },
     "prompt_template": {
       "path": "prompts/condition_c_selector_v1.txt",
@@ -18,11 +20,16 @@
     },
     "c_implementation": {
       "path": "scripts/condition_c_selector.gd",
-      "sha256": "9481e90e3b21fee8f261e736f8b43162465a918caf9058848daae027ff40b823"
+      "sha256": "f2cab2d0d3c9bb204724bd9ffe94301744fc81eff77bf0c3c6752279208f7e2d"
+    },
+    "model_transport_invocation": {
+      "path": "tools/condition_c_claude_invoke.sh",
+      "sha256": "c8ab07a1bec297adab89fc159273a766f1987efad73121cfe0f2d6b48af7229e",
+      "note": "The exact frozen command line. Every isolation flag Condition C relies on is in this file; check_condition_c_freeze.py cross-checks it against the config's transport block."
     },
     "model_configuration": {
-      "path": "config/condition_c_model_v1.json",
-      "sha256": "122d938e4eaa35577e5794d4cd7ddecd01ccd680d3b6817f7cb7fc8fa3ebf066"
+      "path": "config/condition_c_model_v2.json",
+      "sha256": "9889a63f56b7d0e8416217aed106948274ed73558039201b32b81380c256be1e"
     },
     "shared_catalogue": {
       "path": "scripts/adaptive_hint_data.gd",
@@ -34,13 +41,33 @@
     }
   },
   "supporting_hashes": {
-    "model_transport": {
+    "model_transport_client": {
       "path": "scripts/condition_c_client.gd",
-      "sha256": "a5afc0d20d0a97f7813cfb64c0db3cb0f8ca93dba0a4005531d15d1810377ad9"
+      "sha256": "d9071a9a8321f777a05c4c3c309f7b2ab244d90f74a55ec8d08f1a586bb5b107"
+    },
+    "superseded_model_configuration": {
+      "path": "config/condition_c_model_v1.json",
+      "sha256": "122d938e4eaa35577e5794d4cd7ddecd01ccd680d3b6817f7cb7fc8fa3ebf066",
+      "note": "The Messages API config of the original freeze. Unused by the current transport and retained unedited. This hash is identical to the one tagged condition-c-pre-v4-freeze, which is the evidence that the amendment superseded it rather than rewriting it."
     },
     "contract_tests": {
       "path": "tests/condition_c_selector_test.gd",
-      "sha256": "882f2c31e1760ea5a01f3cb0f9e1d0e7939b3c3acbbba372b20135af4adedbb1"
+      "sha256": "018736a1fd34029b59a1179a5799a08bbc0882a00f8486db99196d581ff07aca"
+    },
+    "transport_tests": {
+      "path": "tests/condition_c_transport_test.gd",
+      "sha256": "7941f3f1b5275a57ccdde1f7b7e6241614f01c5c54601650711d3aec59a30102",
+      "note": "Offline. Runs the real wrapper against a fake claude binary that records argv, environment, cwd and stdin."
+    },
+    "isolation_canary": {
+      "path": "tests/condition_c_isolation_canary.sh",
+      "sha256": "8cc07d12d959301862b2b53ab5e5afdf95e57cf332511b15624beb57d0e0182c",
+      "note": "Live. Asks the model what it can see, with freshly minted random bait planted where the CLI would look. Includes a negative control that must leak."
+    },
+    "live_smoke": {
+      "path": "tools/condition_c_live_smoke.gd",
+      "sha256": "15f3b255a543ffabb2adfb91e5afd5b03a75ac12c219a81f9e6df5eab7e548ee",
+      "note": "Live, one invented scenario, scores nothing and tunes nothing. Not part of the default battery."
     },
     "canonical_pkm_serializer": {
       "path": "tools/pkm_reference.py",
@@ -64,11 +91,11 @@
     },
     "freeze_checker": {
       "path": "tools/check_condition_c_freeze.py",
-      "sha256": "d534c901a176a7ab08a28868e32acb92f7a0529c380d1f58f684d34b98f02d87"
+      "sha256": "bc1e53c22c9d004e3c48baa0c4734c19484d87a981dab813f33eea51d58cfd3b"
     }
   },
   "unchanged_since_heldout_v3_evaluation": {
-    "note": "These are the frozen artifacts of the CLOSED heldout-v3 experiment. This freeze did not touch them. The hashes below are the same values check_heldout_v3_evaluation_integrity.py verifies.",
+    "note": "These are the frozen artifacts of the CLOSED heldout-v3 experiment. Neither this freeze nor the transport amendment touched them. The hashes below are the same values check_heldout_v3_evaluation_integrity.py verifies.",
     "condition_a_and_b_selector": {
       "path": "scripts/adaptive_hint_selector.gd",
       "sha256": "c4a2c31201143fde1616e97f8bec5544ccb775c1f0b3605c1fc8d89fea3a8cb2"
@@ -83,13 +110,13 @@
     }
   },
   "model_configuration": {
-    "provider": "anthropic",
-    "api": "messages",
+    "provider": "claude-code-cli",
+    "api": "cli-print-json",
     "model": "claude-opus-5",
-    "temperature": 0,
+    "temperature": null,
     "top_p": null,
     "top_k": null,
-    "max_tokens": 256,
+    "max_tokens": null,
     "seed": null,
     "stop_sequences": [],
     "samples_per_scenario": 1,
@@ -105,17 +132,41 @@
       ],
       "on_exhausted": "ABORT_RUN"
     },
+    "sampling_is_controllable": false,
+    "sampling_note": "The Claude Code CLI exposes no temperature, top_p, top_k, max_tokens or seed flag. Every one of these is null because nothing is sent, not because a default was chosen. Condition C is LESS controllable under this transport than it was under the Messages API, where temperature 0 was available. That is a real cost of the amendment and is recorded rather than smoothed over.",
     "determinism_claimed": false,
-    "determinism_note": "The Messages API exposes no seed parameter. Temperature 0 reduces variance but does not guarantee reproducibility. Condition C is NOT a deterministic condition; Conditions A and B are. Every raw response is logged verbatim so a diverging rerun is visible."
+    "determinism_note": "No sampling parameter can be set and no seed exists, so repeated runs on identical input may differ. Condition C is NOT a deterministic condition; Conditions A and B are. Every raw response is logged verbatim so a diverging rerun is visible."
+  },
+  "transport": {
+    "kind": "isolated-claude-code-subprocess",
+    "authentication": "company-managed Claude Code broker (ANTHROPIC_AUTH_TOKEN + loopback ANTHROPIC_BASE_URL)",
+    "claude_code_version_at_freeze": "2.1.258",
+    "personal_api_key_used": false,
+    "direct_anthropic_endpoint_used": false,
+    "api_fallback_exists": false,
+    "process_per_scenario": 1,
+    "conversation_persistence": "none",
+    "isolation_principle": "Authentication must not imply semantic context inheritance. The subprocess inherits the broker credential and nothing else.",
+    "model_sees": [
+      "the frozen Condition C system/task prompt",
+      "the single current scenario payload",
+      "the hard-eligible candidate hints for that scenario"
+    ],
+    "known_injected_context": "Under --print the CLI injects a system reminder stating the current date. It is not suppressible from the command line, carries no repository, benchmark or conversation content, and no prompt in this protocol refers to a date. Recorded rather than omitted.",
+    "isolation_verified_behaviourally": "At its root command this CLI silently tolerates unknown options, so flag acceptance is not evidence of isolation. The live canary asks the model what it can see, with bait planted; the offline transport suite captures what the child process actually received."
   },
   "verification_at_freeze": {
     "tests/condition_c_selector_test.gd": "PASS; 7 of 7 fault injections detected",
+    "tests/condition_c_transport_test.gd": "PASS; 12 tests, offline; 8 of 8 fault injections detected",
+    "tests/condition_c_isolation_canary.sh": "PASS; live; 0 of 5 baits leaked under isolation, 5 of 5 leaked with isolation removed, 0 transcripts persisted",
+    "agent_context_inheritance_probe": "PASS; live, manual. A token minted only inside the calling agent's conversation -- never written to disk, never passed to the subprocess -- did not come back. The model reported prior_conversation false, parent_task_visible false, and listed its context sources as the system prompt, the currentDate system-reminder, and the request. Manual rather than a suite entry because committing the token to a file would destroy the property being tested.",
+    "tools/condition_c_live_smoke.gd": "PASS; live; one invented scenario, 1 subprocess, 0 schema retries, resolved claude-opus-5; nothing scored, nothing tuned",
     "tests/pkm_serialization_canonical_test.gd": "PASS; 5 datasets, 3664 concept assertions; 2 of 2 fault injections detected",
     "tools/verify_condition_b_documentation.gd": "PASS; 263168 states compared; 5 of 5 fault injections detected",
     "tests/matched_catalogue_test.gd": "PASS",
     "tools/check_heldout_v3_evaluation_integrity.py": "PASS; Condition C not run",
     "tools/check_heldout_v3_annotations.py": "PASS",
-    "tools/check_condition_c_freeze.py": "PASS; 17 hashes recomputed; 4 of 4 fault injections detected"
+    "tools/check_condition_c_freeze.py": "PASS; 22 hashes recomputed; 6 of 6 fault injections detected"
   },
-  "self_check": "tools/check_condition_c_freeze.py recomputes every hash above. This manifest cannot contain its own hash; the tag condition-c-pre-v4-freeze is what fixes it."
+  "self_check": "tools/check_condition_c_freeze.py recomputes every hash above and cross-checks the transport block against the wrapper that implements it. This manifest cannot contain its own hash; the tag condition-c-pre-v4-freeze-v2 is what fixes it."
 }

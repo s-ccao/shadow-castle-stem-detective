@@ -703,19 +703,16 @@ func _test_structural_isolation_from_a_and_b() -> void:
 	_check("frozen template path", C.TEMPLATE_PATH,
 		"res://prompts/condition_c_selector_v1.txt")
 	_check("frozen config path", C.CONFIG_PATH,
-		"res://config/condition_c_model_v1.json")
+		"res://config/condition_c_model_v2.json")
 	_ok("the frozen template exists", FileAccess.file_exists(C.TEMPLATE_PATH))
 	_ok("the frozen config exists", FileAccess.file_exists(C.CONFIG_PATH))
 
 
 func _test_frozen_configuration() -> void:
 	var config: Dictionary = C.load_config()
-	_check("provider", str(config.get("provider", "")), "anthropic")
+	_check("provider", str(config.get("provider", "")), "claude-code-cli")
+	_check("api", str(config.get("api", "")), "cli-print-json")
 	_check("model", str(config.get("model", "")), "claude-opus-5")
-	_check("temperature", float(config.get("temperature", -1)), 0.0)
-	_check("top_p omitted", config.get("top_p"), null)
-	_check("max_tokens", int(config.get("max_tokens", 0)), 256)
-	_check("seed unsupported", config.get("seed"), null)
 	_check("samples per scenario", int(config.get("samples_per_scenario", 0)), 1)
 	_check("schema retries",
 		int((config.get("schema_retry", {}) as Dictionary).get("max_retries", -1)), 1)
@@ -728,16 +725,51 @@ func _test_frozen_configuration() -> void:
 	_check("config names the frozen template",
 		str(config.get("prompt_template", "")), "prompts/condition_c_selector_v1.txt")
 
-	# The request body must come from the config, not from defaults in the client.
-	var body := Client.Anthropic.build_body(
-		{"system": "S", "user": "U"}, config
+	# Sampling parameters are recorded as null and MUST stay null. The CLI
+	# transport exposes no flag for any of them, so a number here would be a
+	# claim the harness cannot honour -- a setting written down and never sent.
+	# This is the one capability the transport change cost, and the config is
+	# required to say so rather than carry a comforting leftover from v1.
+	for uncontrollable: String in [
+		"temperature", "top_p", "top_k", "max_tokens", "seed",
+	]:
+		_check("'%s' is not controllable through this transport" % uncontrollable,
+			config.get(uncontrollable), null)
+	_ok("the config explains the lost sampling control",
+		(config.get("notes", {}) as Dictionary).has(
+			"sampling_parameters_are_no_longer_controllable"))
+
+	# The argv handed to the wrapper must come from the config, and must carry
+	# NOTHING ELSE. Two prompt paths and a model identifier: no scenario id, no
+	# ordinal, no benchmark name, no repository path. A leak cannot be fixed by
+	# the wrapper if the wrapper was handed the secret.
+	var arguments := Client.ClaudeCodeCLI.build_arguments(
+		"/tmp/sys.txt", "/tmp/usr.txt", config
 	)
-	_check("body model", str(body["model"]), "claude-opus-5")
-	_check("body temperature", float(body["temperature"]), 0.0)
-	_check("body max_tokens", int(body["max_tokens"]), 256)
-	_ok("a null top_p is omitted, not transmitted", not body.has("top_p"))
-	_ok("a null top_k is omitted, not transmitted", not body.has("top_k"))
-	_check("body carries exactly one user message", (body["messages"] as Array).size(), 1)
+	_check("the wrapper takes exactly three arguments", arguments.size(), 3)
+	_check("argument 1 is the system prompt file", arguments[0], "/tmp/sys.txt")
+	_check("argument 2 is the user prompt file", arguments[1], "/tmp/usr.txt")
+	_check("argument 3 is the frozen model", arguments[2], "claude-opus-5")
+
+	# The reply is read out of the CLI's JSON envelope, and a CLI-reported error
+	# is transport, not a badly formed answer -- scoring an outage as an
+	# abstention would fabricate a data point.
+	var good := Client.ClaudeCodeCLI.parse_envelope(
+		'{"is_error": false, "result": "REPLY", "modelUsage":'
+		+ ' {"claude-opus-5": {"canonicalModel": "claude-opus-5"}}}'
+	)
+	_ok("a success envelope parses", bool(good["ok"]))
+	_check("the reply is the envelope's result", str(good["text"]), "REPLY")
+	_check("the resolved model is read back",
+		Client.ClaudeCodeCLI.resolved_model(good["envelope"]), "claude-opus-5")
+	for bad: String in [
+		'{"is_error": true, "subtype": "error_during_execution", "result": "x"}',
+		'{"subtype": "success"}',
+		'not json at all',
+	]:
+		var parsed := Client.ClaudeCodeCLI.parse_envelope(bad)
+		_ok("a broken envelope is refused", not bool(parsed["ok"]))
+		_ok("a broken envelope counts as transport", bool(parsed["transport_error"]))
 
 
 func _test_reproducibility_record() -> void:
@@ -804,7 +836,9 @@ func _run() -> void:
 		print("  catalogue: the shared 11; eligibility: Data.state_violations")
 		print("  PKM: derived through PlayerKnowledgeModel, never read from a file")
 		print("  output: catalogue id or SILENCE; fallback: SILENCE, never A or B")
-		print("  model: claude-opus-5, temperature 0, n=1, one schema retry\n")
+		print("  model: claude-opus-5 via an isolated one-shot Claude Code")
+		print("         subprocess; sampling is not controllable, so determinism")
+		print("         is NOT claimed. n=1, one schema retry.\n")
 		print("condition_c_selector_test: PASS")
 		quit(0)
 	else:

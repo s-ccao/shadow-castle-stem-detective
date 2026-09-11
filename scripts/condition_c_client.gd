@@ -75,114 +75,150 @@ class Stub extends RefCounted:
 		}
 
 
-## Anthropic Messages API client.
+## Isolated Claude Code subprocess client -- the ONLY live transport Condition C
+## has.
 ##
-## Deliberately thin: it turns a rendered request plus the frozen model config
-## into a request body, posts it, and returns the first text block. Every
-## sampling parameter comes from the config file -- nothing is defaulted here, so
-## the frozen configuration cannot be silently overridden by this code.
+## Every call spawns a FRESH one-shot `claude --print` process through the frozen
+## wrapper `tools/condition_c_claude_invoke.sh`, which carries the isolation
+## flags and the billing gates. Nothing is carried between calls: no session, no
+## conversation, no working directory, no environment. Scenario N cannot reach
+## scenario N+1, because there is no object between them that could hold it.
 ##
-## `build_body` is separated from the network call so the request construction is
-## unit-testable offline. The suite tests `build_body`; the POST itself is not
-## exercised by tests and is not used anywhere in this freeze.
-class Anthropic extends RefCounted:
-	const ENDPOINT := "https://api.anthropic.com/v1/messages"
-	const API_VERSION := "2023-06-01"
+## The exact flag list deliberately lives in the wrapper, not here. It is one
+## reviewable artifact with one hash, and GDScript is a poor place to hide a
+## security-relevant argument. This class only chooses the model, hands over two
+## prompt files, and interprets the exit code.
+##
+## THERE IS NO API FALLBACK. This file contains no HTTP client, no endpoint and
+## no key lookup; when the company broker is unreachable the wrapper exits
+## non-zero and that becomes a transport error, which under the frozen policy
+## aborts the run rather than being recorded as an abstention. A silent retreat
+## to a directly billed endpoint is not a behaviour that exists to be disabled --
+## the code to do it is absent, which `condition_c_transport_test` asserts.
+class ClaudeCodeCLI extends RefCounted:
+	const WRAPPER_PATH := "res://tools/condition_c_claude_invoke.sh"
+
+	## Wrapper exit codes. Every non-zero code is a TRANSPORT failure, never a
+	## schema failure: the model did not answer badly, it was never reached.
+	const ERROR_BY_EXIT := {
+		3: "SUBSCRIPTION_TRANSPORT_UNAVAILABLE",
+		4: "DIRECT_API_REFUSED",
+		5: "CLAUDE_CLI_NOT_FOUND",
+		6: "CLAUDE_CLI_FAILED",
+		7: "CONDITION_C_TIMEOUT",
+	}
 
 	var config: Dictionary
-	var api_key: String
+	var wrapper: String
+	## How many subprocesses this client has spawned. One per scenario attempt;
+	## a test reads it to prove invocations are not being reused.
+	var invocations: int = 0
+	## The last CLI JSON envelope, kept so the run log can record the model
+	## identity the CLI actually resolved rather than the one we asked for.
+	var last_envelope: Dictionary = {}
 
-	func _init(model_config: Dictionary, key: String = "") -> void:
+	func _init(model_config: Dictionary, wrapper_override: String = "") -> void:
 		config = model_config
-		api_key = key if not key.is_empty() else OS.get_environment("ANTHROPIC_API_KEY")
+		wrapper = wrapper_override if not wrapper_override.is_empty() \
+			else ProjectSettings.globalize_path(WRAPPER_PATH)
 
-	## Request body from the rendered prompt and the FROZEN config.
+	## The argv handed to the frozen wrapper: two prompt files and the model.
 	##
-	## Null-valued sampling parameters are omitted rather than sent as null: the
-	## config records `top_p: null` to mean "this knob is not turned", and
-	## transmitting an explicit null would be a different request.
-	static func build_body(request: Dictionary, config: Dictionary) -> Dictionary:
-		var body := {
-			"model": str(config.get("model", "")),
-			"max_tokens": int(config.get("max_tokens", 256)),
-			"temperature": float(config.get("temperature", 0)),
-			"system": str(request.get("system", "")),
-			"messages": [
-				{"role": "user", "content": str(request.get("user", ""))},
-			],
-		}
-		for key: String in ["top_p", "top_k"]:
-			if config.get(key) != null:
-				body[key] = config[key]
-		var stops: Array = config.get("stop_sequences", [])
-		if not stops.is_empty():
-			body["stop_sequences"] = stops
-		return body
-
-	func complete(request: Dictionary) -> Dictionary:
-		if api_key.is_empty():
-			return {"ok": false, "text": "", "error": "ANTHROPIC_API_KEY is unset",
-				"transport_error": true}
-
-		var http := HTTPClient.new()
-		var body := JSON.stringify(build_body(request, config))
-		var headers := PackedStringArray([
-			"content-type: application/json",
-			"anthropic-version: %s" % API_VERSION,
-			"x-api-key: %s" % api_key,
+	## Separated from the call so the invocation is unit-testable offline. Note
+	## what is NOT here: no scenario id, no ordinal, no benchmark name, no
+	## repository path, no git metadata. The wrapper cannot leak an identifier it
+	## was never given.
+	static func build_arguments(
+		system_path: String, user_path: String, config: Dictionary
+	) -> PackedStringArray:
+		return PackedStringArray([
+			system_path, user_path, str(config.get("model", "")),
 		])
 
-		var result := _post(http, body, headers)
-		if not bool(result["ok"]):
-			return result
-
-		var parsed: Variant = JSON.parse_string(str(result["text"]))
+	## Pull the model's reply out of the CLI's `--output-format json` envelope.
+	##
+	## `is_error` is the CLI's own signal that the turn failed; it is treated as
+	## transport, not as a malformed answer, because a refused or errored turn is
+	## not the model choosing badly.
+	static func parse_envelope(raw: String) -> Dictionary:
+		var parsed: Variant = JSON.parse_string(raw.strip_edges())
 		if typeof(parsed) != TYPE_DICTIONARY:
-			return {"ok": false, "text": str(result["text"]),
-				"error": "response was not a JSON object", "transport_error": true}
-		var payload := parsed as Dictionary
-		if payload.has("error"):
-			return {"ok": false, "text": str(result["text"]),
-				"error": str(payload["error"]), "transport_error": true}
-		var content: Array = payload.get("content", [])
-		for block_variant: Variant in content:
-			var block := block_variant as Dictionary
-			if str(block.get("type", "")) == "text":
-				return {"ok": true, "text": str(block.get("text", "")),
-					"error": "", "transport_error": false}
-		return {"ok": false, "text": str(result["text"]),
-			"error": "response carried no text block", "transport_error": true}
+			return {"ok": false, "text": "", "envelope": {},
+				"error": "the CLI did not emit a JSON envelope",
+				"transport_error": true}
+		var envelope := parsed as Dictionary
+		if bool(envelope.get("is_error", false)):
+			return {"ok": false, "text": str(envelope.get("result", "")),
+				"envelope": envelope,
+				"error": "the CLI reported is_error: %s"
+					% str(envelope.get("subtype", "")),
+				"transport_error": true}
+		if not envelope.has("result"):
+			return {"ok": false, "text": "", "envelope": envelope,
+				"error": "the CLI envelope carried no `result`",
+				"transport_error": true}
+		return {"ok": true, "text": str(envelope["result"]), "envelope": envelope,
+			"error": "", "transport_error": false}
 
-	func _post(
-		http: HTTPClient, body: String, headers: PackedStringArray
-	) -> Dictionary:
-		var err := http.connect_to_host("api.anthropic.com", 443)
-		if err != OK:
-			return {"ok": false, "text": "", "error": "connect failed: %d" % err,
-				"transport_error": true}
-		while http.get_status() == HTTPClient.STATUS_CONNECTING \
-				or http.get_status() == HTTPClient.STATUS_RESOLVING:
-			http.poll()
-			OS.delay_msec(20)
-		if http.get_status() != HTTPClient.STATUS_CONNECTED:
-			return {"ok": false, "text": "", "error": "not connected",
+	## The model identity the CLI actually billed, read back from the envelope.
+	## Empty when the envelope did not report one.
+	static func resolved_model(envelope: Dictionary) -> String:
+		var usage: Dictionary = envelope.get("modelUsage", {})
+		for name: String in usage:
+			return str((usage[name] as Dictionary).get("canonicalModel", name))
+		return ""
+
+	func complete(request: Dictionary) -> Dictionary:
+		invocations += 1
+		last_envelope = {}
+
+		## Prompt files live under `user://`, which is outside the repository.
+		## The subprocess is handed these two paths and nothing else, so no
+		## repository or benchmark path is ever an argument.
+		var token := "%d_%d" % [Time.get_ticks_usec(), randi()]
+		var system_path := "user://condition_c_sys_%s.txt" % token
+		var user_path := "user://condition_c_usr_%s.txt" % token
+		if not _write(system_path, str(request.get("system", ""))) \
+				or not _write(user_path, str(request.get("user", ""))):
+			return {"ok": false, "text": "", "error": "could not stage prompt files",
 				"transport_error": true}
 
-		err = http.request(HTTPClient.METHOD_POST, "/v1/messages", headers, body)
-		if err != OK:
-			return {"ok": false, "text": "", "error": "request failed: %d" % err,
-				"transport_error": true}
-		while http.get_status() == HTTPClient.STATUS_REQUESTING:
-			http.poll()
-			OS.delay_msec(20)
+		var arguments := build_arguments(
+			ProjectSettings.globalize_path(system_path),
+			ProjectSettings.globalize_path(user_path),
+			config
+		)
+		var output: Array = []
+		var exit_code := OS.execute(wrapper, arguments, output, false)
 
-		var chunks := PackedByteArray()
-		while http.get_status() == HTTPClient.STATUS_BODY:
-			http.poll()
-			chunks.append_array(http.read_response_body_chunk())
-		var code := http.get_response_code()
-		var text := chunks.get_string_from_utf8()
-		if code < 200 or code >= 300:
-			return {"ok": false, "text": text, "error": "HTTP %d" % code,
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(system_path))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(user_path))
+
+		if exit_code < 0:
+			return {"ok": false, "text": "",
+				"error": "SUBSCRIPTION_TRANSPORT_UNAVAILABLE: could not start %s"
+					% wrapper,
 				"transport_error": true}
-		return {"ok": true, "text": text, "error": "", "transport_error": false}
+		if exit_code != 0:
+			return {"ok": false, "text": "",
+				"error": str(ERROR_BY_EXIT.get(exit_code,
+					"CLAUDE_CLI_FAILED: exit %d" % exit_code)),
+				"transport_error": true}
+
+		var result := parse_envelope("\n".join(PackedStringArray(output)))
+		last_envelope = result.get("envelope", {})
+		return {
+			"ok": bool(result["ok"]),
+			"text": str(result["text"]),
+			"error": str(result["error"]),
+			"transport_error": bool(result["transport_error"]),
+			"resolved_model": resolved_model(last_envelope),
+		}
+
+	func _write(path: String, contents: String) -> bool:
+		var handle := FileAccess.open(path, FileAccess.WRITE)
+		if handle == null:
+			return false
+		handle.store_string(contents)
+		handle.close()
+		return true

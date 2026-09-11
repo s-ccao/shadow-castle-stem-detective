@@ -3,7 +3,18 @@
 **Status: FROZEN.** This document was written and frozen *before* the holdout
 Condition C will be scored on (`heldout-v4`) was generated. Its hashes and the
 hashes of every asset it names are recorded in
-`docs/condition_c_freeze_manifest.json` and tagged `condition-c-pre-v4-freeze`.
+`docs/condition_c_freeze_manifest.json` and tagged `condition-c-pre-v4-freeze-v2`.
+
+**Amended once, before any holdout existed.** The original freeze
+(`condition-c-pre-v4-freeze`, still present and unmoved) reached the model over
+the Anthropic Messages API. That transport was replaced by the
+company-broker-authenticated subprocess described in §E, because the Messages
+API path required separately billed credentials this project does not have. The
+amendment is confined to §E, §D.4 and §G: **no research semantics changed.** The
+prompt template, the candidate derivation, the validation gates, the retry
+budgets and the SILENCE policy are byte-identical to the original freeze, and
+`spec_version` is unchanged at `condition-c-v1` for that reason. Both freezes
+predate `heldout-v4`; neither has been scored.
 
 Condition C has **no score**. It has never been run on `heldout-v3`, on any
 scenario in it, or on any state derived from one. Its confirmatory evaluation
@@ -56,10 +67,13 @@ default and by the absence of the call site. See §D.6 and the test suite.
 |---|---|
 | this specification | `docs/CONDITION_C_SPEC.md` |
 | implementation | `scripts/condition_c_selector.gd` |
-| model transport | `scripts/condition_c_client.gd` |
+| model transport (client) | `scripts/condition_c_client.gd` |
+| model transport (invocation) | `tools/condition_c_claude_invoke.sh` |
 | prompt template | `prompts/condition_c_selector_v1.txt` |
-| model configuration | `config/condition_c_model_v1.json` |
+| model configuration | `config/condition_c_model_v2.json` |
 | contract tests | `tests/condition_c_selector_test.gd` |
+| transport tests (offline) | `tests/condition_c_transport_test.gd` |
+| isolation canary (live) | `tests/condition_c_isolation_canary.sh` |
 | freeze manifest (hashes) | `docs/condition_c_freeze_manifest.json` |
 | freeze checker | `tools/check_condition_c_freeze.py` |
 | shared catalogue (unchanged, read-only) | `scripts/adaptive_hint_data.gd` |
@@ -337,7 +351,7 @@ makes the suite fail.
 
 ### D.3 Retry policy
 
-**Exactly one schema retry.** Frozen in `config/condition_c_model_v1.json` as
+**Exactly one schema retry.** Frozen in `config/condition_c_model_v2.json` as
 `schema_retry.max_retries = 1`.
 
 The retry prompt is the `RETRY_NOTE` block of the frozen template, appended to
@@ -367,7 +381,24 @@ an outage be scored as an abstention — a fabricated data point.
 | failure kind | budget | on exhaustion |
 |---|---|---|
 | **schema** — call succeeded, answer unusable (malformed, invalid id, ineligible id, refusal, empty completion) | 1 retry | **SILENCE**, `fallback_used = true` |
-| **transport** — network, connection, 5xx, no text block | 2 retries, backoff `[2, 8]`s | **ABORT_RUN**, `aborted = true`, `silence = false` |
+| **transport** — the subprocess never produced a usable envelope (§E.0) | 2 retries, backoff `[2, 8]`s | **ABORT_RUN**, `aborted = true`, `silence = false` |
+
+Under the subprocess transport, "transport failure" is any non-zero exit from
+`tools/condition_c_claude_invoke.sh`, or a zero exit whose envelope carries
+`is_error` or no result text:
+
+| exit | meaning |
+|---|---|
+| 3 | `SUBSCRIPTION_TRANSPORT_UNAVAILABLE` — no company broker credential |
+| 4 | `DIRECT_API_REFUSED` — the call would have gone to Anthropic directly |
+| 5 | `CLAUDE_CLI_NOT_FOUND` |
+| 6 | `CLAUDE_CLI_FAILED` — the CLI exited non-zero |
+| 7 | `CONDITION_C_TIMEOUT` — no reply within 120s |
+
+Exits 3 and 4 are the fail-closed gates of §E.0.3. They abort the run. They are
+**not** retried into an alternative endpoint and are **not** scored as silence: a
+run that could not reach the sanctioned transport is an incomplete run, not a run
+in which the model declined to speak.
 
 A transport failure never consumes the schema retry. An aborted scenario is not
 scored as silence; it is not scored at all, and a run containing one is not a
@@ -404,31 +435,206 @@ are present in the prose, so the grep cannot pass by inspecting an empty string.
 
 ---
 
-## E. MODEL CONFIGURATION
+## E. MODEL CONFIGURATION AND TRANSPORT
 
-Frozen in `config/condition_c_model_v1.json`, version `condition-c-model-v1`.
+Frozen in `config/condition_c_model_v2.json`, version `condition-c-model-v2`.
 Nothing in the client code supplies a default that could override it.
+
+### E.0 How the model is reached
+
+C invokes the model as an **isolated one-shot Claude Code subprocess**,
+authenticated by the **company-managed Claude Code broker**. It opens no HTTP
+connection to Anthropic and holds no API key; `scripts/condition_c_client.gd`
+contains no HTTP client, no endpoint URL and no key lookup at all.
+
+Authentication and semantic context are separate things, and this transport
+keeps them separate. **Being authenticated as this user must not mean being
+handed this user's repository, instructions, history or tools.** The broker
+credential is the one thing the subprocess inherits.
+
+The exact invocation lives in `tools/condition_c_claude_invoke.sh` — a hashed,
+reviewable artifact rather than a string built at runtime inside the client:
+
+```sh
+env -i \
+	PATH=/usr/bin:/bin \
+	HOME="$SANDBOX/home" \
+	TMPDIR="$SANDBOX/tmp" \
+	ANTHROPIC_AUTH_TOKEN="$ANTHROPIC_AUTH_TOKEN" \
+	ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL" \
+	CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
+	"$CLAUDE_BIN" \
+		--print \
+		--model "$MODEL" \
+		--output-format json \
+		--no-session-persistence \
+		--tools "" \
+		--strict-mcp-config \
+		--safe-mode \
+		--restricted \
+		--setting-sources "" \
+		--disable-slash-commands \
+		--system-prompt "$SYSTEM_PROMPT" \
+		< "$USR_FILE"
+```
+
+The system prompt is passed **by value**, the user prompt on **stdin**. Neither
+is passed as a path, so the argument vector of the model process contains no
+filesystem location, no scenario identity and no per-scenario content: it is
+byte-identical from one scenario to the next. Prompt files exist on the harness
+side of the boundary and are never named to the child.
+
+#### E.0.1 What each isolation flag removes
+
+| flag | what it removes |
+|---|---|
+| `--print` | interactivity; one shot, then exit |
+| `--model <id>` | alias resolution; the model identity is explicit |
+| `--output-format json` | prose scraping; a machine-readable envelope |
+| `--no-session-persistence` | any transcript on disk, and anything resumable |
+| `--tools ""` | every tool: no file reads, no shell, no search |
+| `--strict-mcp-config` | every MCP server not named on the command line — and none is |
+| `--safe-mode` | `CLAUDE.md`, skills, plugins, hooks, subagents |
+| `--restricted` | user, project and local settings files |
+| `--setting-sources ""` | every remaining setting source |
+| `--disable-slash-commands` | skills reachable by name |
+
+Verified against `claude --help` for version **2.1.258**, the version pinned in
+the config. `--bare` is deliberately **not** used: its own help text states that
+under it "Anthropic auth is strictly `ANTHROPIC_API_KEY` or `apiKeyHelper`" —
+the separately billed path this project forbids. Stronger-sounding isolation
+that forces the wrong billing path is not stronger isolation.
+
+> **Flag acceptance is not evidence.** At its root command this CLI silently
+> tolerates unknown options: `claude --not-a-real-flag --version` exits 0. A
+> misspelled isolation flag would therefore be accepted in silence and isolate
+> nothing. None of the claims above rest on the CLI accepting these words; they
+> rest on the behavioural canary of §E.0.5.
+
+#### E.0.2 Environment and working directory
+
+The child's environment is built **from nothing** with `env -i` and receives
+exactly six variables: `PATH`, `HOME`, `TMPDIR`, `ANTHROPIC_AUTH_TOKEN`,
+`ANTHROPIC_BASE_URL`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`. Everything
+else in the harness environment — `ANTHROPIC_API_KEY` if one exists, every
+agent-session variable, every path, every git variable — is dropped by
+construction rather than by enumeration. There is no deny-list to keep current.
+
+`HOME` and the working directory are freshly created empty directories under
+`mktemp -d`, destroyed on exit. The child is `cd`-ed into the empty working
+directory before launch. So even if a future CLI version narrowed what
+`--safe-mode` covers, there is no repository, no `CLAUDE.md`, no settings file
+and no MCP config anywhere it would look.
+
+#### E.0.3 Fail closed, never fall back
+
+Two gates run before the CLI is located, and both abort:
+
+- **no `ANTHROPIC_AUTH_TOKEN`** → exit 3, `SUBSCRIPTION_TRANSPORT_UNAVAILABLE`;
+- **`ANTHROPIC_BASE_URL` unset, or pointing at `api.anthropic.com`** → exit 4,
+  `DIRECT_API_REFUSED`.
+
+> **There is no API fallback.** If the company broker is unavailable, C returns
+> a transport failure and the run aborts (§D.4). It does not retry against
+> `api.anthropic.com`, and no code path in the client or the wrapper can reach
+> it. An unset base URL is treated as a refusal precisely because the CLI's own
+> default would be the direct endpoint.
+
+#### E.0.4 One process per scenario
+
+Each scenario is a **fresh process** with a fresh sandbox. Nothing is carried
+between scenarios: no session, no transcript, no cache, no working directory.
+Scenario *n+1* cannot be influenced by scenario *n*, and the order of the
+holdout cannot affect the answers. A 120-second watchdog bounds each call
+(exit 7).
+
+#### E.0.5 How the isolation is verified
+
+Structurally and behaviourally, because neither alone is sufficient:
+
+| claim | offline (`tests/condition_c_transport_test.gd`) | live (`tests/condition_c_isolation_canary.sh`) |
+|---|---|---|
+| flags reach the CLI | argv captured from a fake `claude` | — |
+| environment is sanitized | env captured; a planted `ANTHROPIC_API_KEY` canary is absent while the broker token is present | — |
+| working directory is empty | `ls -a` captured from the child | — |
+| no repository path, benchmark id, annotation or A/B output crosses | argv and stdin scanned | — |
+| tools are off, files unreadable | — | the model is asked, with bait planted |
+| `CLAUDE.md`, settings, MCP unreadable | — | bait planted in all four locations |
+| no agent conversation inherited | no transcript path in argv, env or stdin | a token existing **only** in the calling agent's conversation, never written to disk, does not come back |
+| no transcript persisted | — | child `HOME` scanned after the call |
+| fail-closed gates fire | exits 3/4/5/6 asserted | — |
+
+The canary plants **freshly minted random tokens** — never a v3 value, an
+annotation, an A/B output or any real secret — in a repository-like file, a
+project `CLAUDE.md`, a user `CLAUDE.md`, an `.mcp.json` and a `settings.json`,
+then asks the model to report every `CANARY-` string it can find. It refuses to
+be vacuous twice over: a control token inside the prompt must come back (proving
+the model answered at all), and a **negative control** repeats the run with
+isolation removed and must leak (proving the bait was findable). A drift guard
+diffs the canary's flag list against the wrapper's as sets, so a flag added to or
+removed from the wrapper fails the suite rather than silently un-testing it.
+
+At freeze: the isolated run leaked **0 of 5** baits, reported no tools, no file
+access, an empty working directory and no prior conversation, and left 0
+transcripts. The negative control leaked **5 of 5** with 21 tools available.
+
+The agent-inheritance row is checked differently, because the thing that must not
+leak cannot be planted on disk without ceasing to be what it is. A token was
+minted **inside the calling agent's conversation only** — never written to a
+file, never passed to the subprocess, never named in the invocation — and the
+isolated model was asked to describe the context it had been given. It reported
+`prior_conversation: false`, `parent_task_visible: false`, and the token did not
+appear. This is a manual probe rather than a suite entry, for the same reason:
+committing it to a file would destroy the property it tests.
+
+#### E.0.6 What the model actually sees
+
+Only three things: the frozen system/task prompt, the single current scenario
+payload, and that scenario's hard-eligible candidates.
+
+One honest caveat: under `--print` the CLI injects a system reminder stating the
+current date. It is not suppressible from the command line. It carries no
+repository, benchmark or conversation content, and no prompt in this protocol
+refers to a date — but it is context C did not author, and it is recorded here
+rather than omitted.
+
+That caveat is not an inference. Asked to enumerate its context sources, the
+isolated model listed exactly three — the system prompt, "system-reminder
+context block with currentDate", and the request itself — and named the date
+string as the only identifier it had received beyond the control token. The
+documented exception is the whole of the exception.
+
+### E.1 Parameters
 
 | parameter | value | why |
 |---|---|---|
-| provider | `anthropic` | |
-| API | `messages` | |
-| model | `claude-opus-5` | C exists to answer "given a knowledge model, what does an LLM add over deterministic rules?" The fair test is the strongest selector, not the cheapest. A smaller-model variant is a separate condition with its own frozen config and its own holdout. |
-| temperature | `0` | Lowest variance the provider exposes. A small discrete answer space gains nothing from sampling diversity and loses signal to noise. |
-| top_p | `null` — **omitted from the request** | Redundant at temperature 0, and sending both is ambiguous across providers. `null` means the parameter is not transmitted, not that a default is chosen. |
-| top_k | `null` — omitted | as top_p |
-| max output tokens | `256` | The required output is one identifier and one short sentence — well under 100 tokens. A bound on runaway output, not a budget. A truncated reply is a schema failure and is retried, never salvaged. |
-| seed | **not available** | The Messages API exposes no seed parameter. |
-| stop sequences | `[]` | |
+| provider | `claude-code-cli` | §E.0 |
+| API | `cli-print-json` | `--print --output-format json` |
+| model | `claude-opus-5` | C exists to answer "given a knowledge model, what does an LLM add over deterministic rules?" The fair test is the strongest selector, not the cheapest. A smaller-model variant is a separate condition with its own frozen config and its own holdout. Confirmed at freeze from the envelope's `modelUsage`, which reports `canonicalModel: claude-opus-5`. |
+| temperature | `null` — **not controllable** | The CLI exposes no sampling flag. `null` records that nothing is sent, not that a value was chosen. |
+| top_p | `null` — not controllable | as temperature |
+| top_k | `null` — not controllable | as temperature |
+| max output tokens | `null` — not controllable | The CLI exposes no output-token flag. The envelope reports a 64000-token ceiling; the required output is well under 100 tokens. An over-long reply is a schema failure and is retried, never salvaged. |
+| seed | **not available** | No seed parameter exists on this transport, as none existed on the previous one. |
+| stop sequences | `[]` | none sent |
 | samples per scenario | `1` | Self-consistency voting over *k* samples is a different condition with a different failure profile, and choosing *k* after seeing results would be tuning. |
 | schema retries | `1` → SILENCE | §D.3 |
 | transport retries | `2`, backoff `[2, 8]`s → ABORT_RUN | §D.4 |
+| timeout | `120`s per call | §E.0.4 |
 
-### E.1 Determinism is NOT claimed
+**C is less controllable under this transport than it was under the Messages
+API**, and that is a real cost of the amendment, not a detail. Temperature 0 is
+no longer available. This is recorded rather than smoothed over because it
+weakens nothing about C's *isolation* and everything about C's *repeatability*,
+and a reader scoring C is entitled to know which.
 
-Temperature 0 reduces variance; it does not guarantee reproducibility, and the
-API offers no seed. **Condition C is not a deterministic condition.** Conditions
-A and B are.
+### E.2 Determinism is NOT claimed
+
+**Condition C is not a deterministic condition.** Conditions A and B are.
+
+No sampling parameter can be set on this transport and no seed exists, so
+repeated runs on identical input may differ. Nothing in this document should be
+read as a claim that the model's output is reproducible.
 
 This is stated rather than glossed because it changes how C's results may be
 read. The run log records every raw response verbatim (§F) so that a rerun which
@@ -436,11 +642,13 @@ diverges is *visible* rather than silently averaged away. This is a limitation o
 the condition, not a defect in the harness, and it belongs in the limitations
 section of any report that scores C.
 
-### E.2 Changing any of this
+### E.3 Changing any of this
 
-Any change to the model, sampling parameters, prompt template, or retry policy
-produces a **new config version and a new spec version**, never an in-place edit.
-A run may only cite the version whose hash it logged.
+Any change to the model, the transport, the prompt template, or the retry policy
+produces a **new config version and a new freeze tag**, never an in-place edit.
+A run may only cite the version whose hash it logged. This amendment is itself an
+instance of that rule: `condition_c_model_v1.json` was not edited, it was
+superseded, and it remains on disk byte-identical under the original tag.
 
 ---
 
@@ -452,7 +660,7 @@ Every `select()` call returns a record containing:
 |---|---|
 | `condition`, `spec_version` | `C LLM + PKM adaptive selector`, `condition-c-v1` |
 | `model`, `provider` | from the frozen config |
-| `temperature`, `max_tokens`, `samples_per_scenario` | from the frozen config |
+| `temperature`, `max_tokens`, `samples_per_scenario` | from the frozen config; the first two are `null` under this transport (§E.1) and are still logged, so a record cannot be mistaken for one made under the Messages API |
 | `prompt_template_version` | `condition-c-v1` |
 | `prompt_template_sha256` | sha256 of the template file as loaded |
 | `rendered_prompt_sha256` | sha256 of system + user as actually sent |
@@ -469,6 +677,15 @@ Every `select()` call returns a record containing:
 `rendered_system` / `rendered_user` are logged only when `log_full_prompts` is
 set, so full prompts are opt-in rather than bloating every record.
 
+`model` above is the identifier **requested**. The envelope returned by this
+transport also reports the model the broker actually **resolved** (its
+`modelUsage` key), which the client exposes as `last_envelope` but which
+`select()` does not currently copy into the record. Requested and resolved were
+identical at freeze — both `claude-opus-5` — and the decision path was left
+byte-identical rather than edited for a field the freeze does not require.
+Copying it in is the one improvement this transport plainly wants, and it belongs
+in the next config version, not in this one.
+
 ### F.1 No ground truth in the log
 
 The record contains no human label, no other condition's output, and no benchmark
@@ -482,7 +699,7 @@ before scoring is prohibited.
 
 `tests/condition_c_selector_test.gd` — **PASS**. No model is called: every
 response is scripted through `ConditionCClient.Stub`, so the suite is offline,
-deterministic, needs no API key, and exercises the real selector rather than a
+deterministic, needs no credential, and exercises the real selector rather than a
 rehearsal of it. No held-out scenario is read; every state is constructed inline.
 
 Covered: only hard-eligible hints supplied (and no eligible hint withheld); no
@@ -517,19 +734,66 @@ and the previously unreachable branch (a refusal or empty completion, which is a
 model-side failure and must spend the schema budget rather than the transport
 budget) is now exercised directly.
 
+### The transport
+
+`tests/condition_c_transport_test.gd` — **PASS**, offline. It runs the *real*
+wrapper against a fake `claude` binary that records its argv, environment,
+working directory and stdin, so every claim in §E.0 is checked against what the
+child process actually received rather than against what the script appears to
+say. Twelve tests: wrapper structure; environment sanitization; isolation flags
+reaching the CLI; an empty working directory; no forbidden material crossing the
+boundary, checked at both the client→wrapper and wrapper→CLI edges; a fresh
+process per scenario; the fail-closed gates; no API fallback; the decision
+contract; player-facing text authored, never generated; canonical PKM; and the
+canary suite present.
+
+**Eight mutants, all eight detected.** One of them was a genuine blind spot found
+this way: a mutant that made the client pass a repository path as a fourth
+argument went undetected at first, because the wrapper ignores `$4` and so
+nothing reached the fake CLI. The leak was real and the test could not see it.
+The fix was to check the client→wrapper edge directly — exactly three arguments,
+none containing a repository path — rather than only the edge downstream of it.
+
+`tests/condition_c_isolation_canary.sh` — **PASS**, live, two calls. The
+behavioural half of §E.0.5: 0 of 5 baits leaked under isolation, 5 of 5 leaked
+with isolation removed, 0 transcripts persisted, control canary returned.
+
+`tools/condition_c_live_smoke.gd` — **PASS**, live, one call, one invented
+scenario that appears in no holdout. The whole path end to end: candidates →
+canonical PKM → frozen prompt → isolated subprocess → parse → eligibility
+re-check → validated decision (`h_butler_stain`, 0 schema retries, 1 subprocess,
+4242 ms, `canonicalModel: claude-opus-5`). **Nothing was scored and nothing was
+tuned.** There is no ground truth for an invented scenario and none was
+consulted; the output was used to confirm that the plumbing carries a decision,
+and for nothing else.
+
 ### The freeze itself
 
-`tools/check_condition_c_freeze.py` — **PASS**. It recomputes all 17 hashes in
+`tools/check_condition_c_freeze.py` — **PASS**. It recomputes all 22 hashes in
 `docs/condition_c_freeze_manifest.json` and additionally checks that the spec,
 template and config agree on their version strings, that the manifest's reported
-sampling parameters are the ones the config actually holds, that the
-implementation names the frozen template and config paths, and that neither
-Condition C source calls Condition A or B. A manifest of hashes is worth what
-checking it costs.
+parameters are the ones the config actually holds, that the implementation names
+the frozen template and config paths, and that neither Condition C source calls
+Condition A or B.
 
-Fault-injected four ways — a byte appended to the spec, a bumped
-`SPEC_VERSION`, an inserted `select_condition_a(...)` call, and a manifest
-temperature disagreeing with the config. All four detected; every file restored
+It also cross-checks the transport, because a config block that *describes* an
+isolated invocation is a claim about a shell script it does not control: every
+flag the config advertises must really be in the wrapper's invocation, every
+allowlisted variable must really be passed and nothing else may be, both
+fail-closed gates must be present, the client must contain no HTTP or API-key
+path, no sampling parameter may hold a value the transport cannot send, and the
+manifest's transport summary must agree with the config it summarises. A
+manifest of hashes is worth what checking it costs.
+
+One of those 22 hashes is `config/condition_c_model_v1.json`, the superseded
+Messages API config. It is unused, and it is hashed anyway: the value matching
+the one recorded under `condition-c-pre-v4-freeze` is the evidence that the
+amendment superseded the original config rather than rewriting it.
+
+Fault-injected six ways — a byte appended to the spec, a bumped `SPEC_VERSION`,
+an inserted `select_condition_a(...)` call, a manifest parameter disagreeing with
+the config, an isolation flag deleted from the wrapper, and `ANTHROPIC_API_KEY`
+added to the wrapper's environment block. All six detected; every file restored
 byte-identical afterwards.
 
 ### The closed experiment is untouched

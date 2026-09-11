@@ -1,0 +1,82 @@
+{
+  "config_version": "condition-c-model-v2",
+  "frozen": true,
+  "frozen_before": "heldout-v4 generation",
+
+  "provider": "claude-code-cli",
+  "api": "cli-print-json",
+  "model": "claude-opus-5",
+
+  "temperature": null,
+  "top_p": null,
+  "top_k": null,
+  "max_tokens": null,
+  "seed": null,
+  "stop_sequences": [],
+
+  "samples_per_scenario": 1,
+
+  "transport": {
+    "kind": "isolated-claude-code-subprocess",
+    "wrapper": "tools/condition_c_claude_invoke.sh",
+    "executable_source": "CONDITION_C_CLAUDE_BIN, else CLAUDE_CODE_EXECPATH, else `claude` on PATH",
+    "claude_code_version_at_freeze": "2.1.258",
+    "authentication": "company-managed Claude Code broker: ANTHROPIC_AUTH_TOKEN with a loopback ANTHROPIC_BASE_URL",
+    "personal_api_key_used": false,
+    "direct_anthropic_endpoint_used": false,
+    "flags": [
+      "--print",
+      "--model claude-opus-5",
+      "--output-format json",
+      "--no-session-persistence",
+      "--tools \"\"",
+      "--strict-mcp-config",
+      "--safe-mode",
+      "--restricted",
+      "--setting-sources \"\"",
+      "--disable-slash-commands",
+      "--system-prompt <frozen SYSTEM block>"
+    ],
+    "bare_mode_rejected": "--bare is the strongest isolation switch this CLI offers and is deliberately NOT used: its own help text states that under --bare 'Anthropic auth is strictly ANTHROPIC_API_KEY or apiKeyHelper', which is exactly the separately billed path this experiment forbids.",
+    "environment_allowlist": [
+      "PATH", "HOME", "TMPDIR",
+      "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL",
+      "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"
+    ],
+    "environment_construction": "env -i; the child environment is built from nothing, so ANTHROPIC_API_KEY and every agent-session variable are absent by construction rather than by deletion",
+    "working_directory": "a fresh mktemp -d per invocation, containing no repository material",
+    "home_directory": "a fresh empty HOME per invocation, so no user-level CLAUDE.md, settings file or plugin is discoverable",
+    "input_mechanism": "SYSTEM block via --system-prompt; USER block on stdin",
+    "output_mechanism": "single JSON envelope on stdout; the reply is the `result` field",
+    "timeout_seconds": 120,
+    "process_per_scenario": 1,
+    "conversation_persistence": "none"
+  },
+
+  "schema_retry": {
+    "max_retries": 1,
+    "retry_prompt": "prompts/condition_c_selector_v1.txt :: RETRY_NOTE",
+    "on_exhausted": "SILENCE"
+  },
+
+  "transport_retry": {
+    "max_retries": 2,
+    "backoff_seconds": [2, 8],
+    "on_exhausted": "ABORT_RUN"
+  },
+
+  "prompt_template": "prompts/condition_c_selector_v1.txt",
+  "prompt_template_version": "condition-c-v1",
+
+  "notes": {
+    "transport_change": "v1 of this config posted directly to the Anthropic Messages API. v2 runs an isolated one-shot Claude Code subprocess authenticated by the company broker. The research semantics are unchanged: the same frozen prompt, the same catalogue, the same hard-eligibility filter, the same validation gates, the same retry policy. Only the wire between the harness and the model changed.",
+    "sampling_parameters_are_no_longer_controllable": "This is the one substantive consequence of the transport change and it is recorded rather than hidden. `claude --help` for version 2.1.258 exposes no --temperature, --top-p, --top-k, --max-tokens, --seed or --stop-sequences flag. Under v1 these were set explicitly (temperature 0, max_tokens 256); under v2 they cannot be set at all and are therefore recorded as null, meaning 'not controllable through this transport', NOT 'defaulted to something we chose'. Condition C now runs at whatever sampling policy Claude Code applies.",
+    "determinism": "NOT claimed, and less claimable than under v1. v1 could at least pin temperature to 0; v2 cannot pin anything. Every raw response is logged verbatim so a diverging rerun is visible rather than silently averaged away. Conditions A and B remain deterministic; C does not, and no comparison may assume otherwise.",
+    "max_tokens": "No longer enforceable at the transport. The envelope reports the CLI's own maxOutputTokens (64000 at freeze time), far above anything this task needs. A truncated or overlong reply is still a schema failure and is still retried once, never salvaged, so the validation behaviour that mattered is unchanged.",
+    "samples_per_scenario": "1. Unchanged from v1. Self-consistency voting over k samples would be a different condition with a different failure profile, and choosing k after seeing results would be tuning.",
+    "schema_retry": "Exactly one retry, unchanged from v1. The retry addresses output FORMAT only and never hints at a preferred answer; its wording is frozen in the template's RETRY_NOTE block.",
+    "transport_retry": "A broker outage is not a model decision. It is retried up to twice and, if still failing, ABORTS THE RUN rather than being recorded as SILENCE — a transport error scored as an abstention would be a fabricated data point. Every wrapper exit code except 0 is classified as transport, never as schema.",
+    "no_api_fallback": "There is no fallback to api.anthropic.com and no code path that reads ANTHROPIC_API_KEY. The wrapper refuses to run if ANTHROPIC_BASE_URL is unset or points at api.anthropic.com, because in either case the broker would be bypassed. Absence is asserted structurally by condition_c_transport_test and by tools/check_condition_c_freeze.py.",
+    "model_choice": "claude-opus-5, unchanged from v1, and verified to be explicitly selectable through this transport: the CLI envelope reports canonicalModel 'claude-opus-5'. It was never substituted for availability or cost reasons."
+  }
+}

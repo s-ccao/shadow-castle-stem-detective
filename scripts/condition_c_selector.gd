@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## Frozen specification: docs/CONDITION_C_SPEC.md
 ## Frozen prompt:        prompts/condition_c_selector_v1.txt
-## Frozen model config:  config/condition_c_model_v1.json
+## Frozen model config:  config/condition_c_model_v2.json
 ##
 ## C selects; it does not write. It is shown the same 11 authored hints as
 ## Conditions A and B, filtered by the same hard-prerequisite predicate, and must
@@ -43,7 +43,7 @@ const ClientScript := preload("res://scripts/condition_c_client.gd")
 
 const SPEC_VERSION := "condition-c-v1"
 const TEMPLATE_PATH := "res://prompts/condition_c_selector_v1.txt"
-const CONFIG_PATH := "res://config/condition_c_model_v1.json"
+const CONFIG_PATH := "res://config/condition_c_model_v2.json"
 
 const DECISION_SILENCE := "SILENCE"
 
