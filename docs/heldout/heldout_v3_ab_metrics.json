@@ -1,0 +1,461 @@
+{
+  "annotation_fingerprint_sha256": "fbf9c16ed31a0fc58e9cd754bb2df7e77ad1e0f8ab40b3ea76db3ce8d704381a",
+  "by_npc": {
+    "butler": {
+      "A": {
+        "counts": {
+          "attempted": 16,
+          "delivered": 16,
+          "irrelevant_ordinals": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            39,
+            40
+          ],
+          "redundant": 0,
+          "redundant_ordinals": [],
+          "relevant": 9,
+          "silent": 0,
+          "silent_ordinals": [],
+          "teaching_delivered": 0,
+          "teaching_redundant": 0,
+          "violation_ordinals": [],
+          "violations": 0
+        },
+        "rates": {
+          "Coverage": {
+            "denominator": 16,
+            "numerator": 16,
+            "rate": 1.0
+          },
+          "RedundantHintRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "RedundantWhenTeachable": {
+            "denominator": 0,
+            "numerator": 0,
+            "rate": null,
+            "report": "N/A (0 teaching hints delivered)"
+          },
+          "RelevantHintRate": {
+            "denominator": 16,
+            "numerator": 9,
+            "rate": 0.5625
+          },
+          "StateViolationRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "B": {
+        "counts": {
+          "attempted": 16,
+          "delivered": 16,
+          "irrelevant_ordinals": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            39,
+            40
+          ],
+          "redundant": 0,
+          "redundant_ordinals": [],
+          "relevant": 9,
+          "silent": 0,
+          "silent_ordinals": [],
+          "teaching_delivered": 0,
+          "teaching_redundant": 0,
+          "violation_ordinals": [],
+          "violations": 0
+        },
+        "rates": {
+          "Coverage": {
+            "denominator": 16,
+            "numerator": 16,
+            "rate": 1.0
+          },
+          "RedundantHintRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "RedundantWhenTeachable": {
+            "denominator": 0,
+            "numerator": 0,
+            "rate": null,
+            "report": "N/A (0 teaching hints delivered)"
+          },
+          "RelevantHintRate": {
+            "denominator": 16,
+            "numerator": 9,
+            "rate": 0.5625
+          },
+          "StateViolationRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    },
+    "gardener": {
+      "A": {
+        "counts": {
+          "attempted": 16,
+          "delivered": 16,
+          "irrelevant_ordinals": [
+            18
+          ],
+          "redundant": 1,
+          "redundant_ordinals": [
+            47
+          ],
+          "relevant": 15,
+          "silent": 0,
+          "silent_ordinals": [],
+          "teaching_delivered": 2,
+          "teaching_redundant": 1,
+          "violation_ordinals": [],
+          "violations": 0
+        },
+        "rates": {
+          "Coverage": {
+            "denominator": 16,
+            "numerator": 16,
+            "rate": 1.0
+          },
+          "RedundantHintRate": {
+            "denominator": 16,
+            "numerator": 1,
+            "rate": 0.0625
+          },
+          "RedundantWhenTeachable": {
+            "denominator": 2,
+            "numerator": 1,
+            "rate": 0.5,
+            "report": "1/2"
+          },
+          "RelevantHintRate": {
+            "denominator": 16,
+            "numerator": 15,
+            "rate": 0.9375
+          },
+          "StateViolationRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "B": {
+        "counts": {
+          "attempted": 16,
+          "delivered": 16,
+          "irrelevant_ordinals": [
+            18
+          ],
+          "redundant": 0,
+          "redundant_ordinals": [],
+          "relevant": 15,
+          "silent": 0,
+          "silent_ordinals": [],
+          "teaching_delivered": 1,
+          "teaching_redundant": 0,
+          "violation_ordinals": [],
+          "violations": 0
+        },
+        "rates": {
+          "Coverage": {
+            "denominator": 16,
+            "numerator": 16,
+            "rate": 1.0
+          },
+          "RedundantHintRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "RedundantWhenTeachable": {
+            "denominator": 1,
+            "numerator": 0,
+            "rate": 0.0,
+            "report": "0/1"
+          },
+          "RelevantHintRate": {
+            "denominator": 16,
+            "numerator": 15,
+            "rate": 0.9375
+          },
+          "StateViolationRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    },
+    "mechanic": {
+      "A": {
+        "counts": {
+          "attempted": 16,
+          "delivered": 16,
+          "irrelevant_ordinals": [
+            26,
+            33,
+            34
+          ],
+          "redundant": 0,
+          "redundant_ordinals": [],
+          "relevant": 13,
+          "silent": 0,
+          "silent_ordinals": [],
+          "teaching_delivered": 0,
+          "teaching_redundant": 0,
+          "violation_ordinals": [],
+          "violations": 0
+        },
+        "rates": {
+          "Coverage": {
+            "denominator": 16,
+            "numerator": 16,
+            "rate": 1.0
+          },
+          "RedundantHintRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "RedundantWhenTeachable": {
+            "denominator": 0,
+            "numerator": 0,
+            "rate": null,
+            "report": "N/A (0 teaching hints delivered)"
+          },
+          "RelevantHintRate": {
+            "denominator": 16,
+            "numerator": 13,
+            "rate": 0.8125
+          },
+          "StateViolationRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "B": {
+        "counts": {
+          "attempted": 16,
+          "delivered": 16,
+          "irrelevant_ordinals": [
+            26,
+            33,
+            34
+          ],
+          "redundant": 0,
+          "redundant_ordinals": [],
+          "relevant": 13,
+          "silent": 0,
+          "silent_ordinals": [],
+          "teaching_delivered": 0,
+          "teaching_redundant": 0,
+          "violation_ordinals": [],
+          "violations": 0
+        },
+        "rates": {
+          "Coverage": {
+            "denominator": 16,
+            "numerator": 16,
+            "rate": 1.0
+          },
+          "RedundantHintRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "RedundantWhenTeachable": {
+            "denominator": 0,
+            "numerator": 0,
+            "rate": null,
+            "report": "N/A (0 teaching hints delivered)"
+          },
+          "RelevantHintRate": {
+            "denominator": 16,
+            "numerator": 13,
+            "rate": 0.8125
+          },
+          "StateViolationRate": {
+            "denominator": 16,
+            "numerator": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    }
+  },
+  "catalogue_order": [
+    "h_butler_no_evidence",
+    "h_butler_stain",
+    "h_gardener_no_evidence",
+    "h_gardener_pollen",
+    "h_mechanic_no_evidence",
+    "h_mechanic_short_circuit",
+    "h_butler_knows_rule",
+    "h_gardener_leaf_colour",
+    "h_gardener_knows_reflection",
+    "h_mechanic_series_basics",
+    "h_mechanic_knows_resistance"
+  ],
+  "condition_c_run": false,
+  "conditions_run": [
+    "A",
+    "B"
+  ],
+  "divergent_scenarios": [
+    {
+      "A": "h_gardener_leaf_colour",
+      "B": "h_gardener_knows_reflection",
+      "human_valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "npc": "gardener",
+      "ordinal": 47,
+      "scenario_id": "v3_green_gardener_none_dem_libd_10"
+    }
+  ],
+  "overall": {
+    "A": {
+      "counts": {
+        "attempted": 48,
+        "delivered": 48,
+        "irrelevant_ordinals": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          18,
+          26,
+          33,
+          34,
+          39,
+          40
+        ],
+        "redundant": 1,
+        "redundant_ordinals": [
+          47
+        ],
+        "relevant": 37,
+        "silent": 0,
+        "silent_ordinals": [],
+        "teaching_delivered": 2,
+        "teaching_redundant": 1,
+        "violation_ordinals": [],
+        "violations": 0
+      },
+      "rates": {
+        "Coverage": {
+          "denominator": 48,
+          "numerator": 48,
+          "rate": 1.0
+        },
+        "RedundantHintRate": {
+          "denominator": 48,
+          "numerator": 1,
+          "rate": 0.0208333333333333
+        },
+        "RedundantWhenTeachable": {
+          "denominator": 2,
+          "numerator": 1,
+          "rate": 0.5,
+          "report": "1/2"
+        },
+        "RelevantHintRate": {
+          "denominator": 48,
+          "numerator": 37,
+          "rate": 0.770833333333333
+        },
+        "StateViolationRate": {
+          "denominator": 48,
+          "numerator": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "B": {
+      "counts": {
+        "attempted": 48,
+        "delivered": 48,
+        "irrelevant_ordinals": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          18,
+          26,
+          33,
+          34,
+          39,
+          40
+        ],
+        "redundant": 0,
+        "redundant_ordinals": [],
+        "relevant": 37,
+        "silent": 0,
+        "silent_ordinals": [],
+        "teaching_delivered": 1,
+        "teaching_redundant": 0,
+        "violation_ordinals": [],
+        "violations": 0
+      },
+      "rates": {
+        "Coverage": {
+          "denominator": 48,
+          "numerator": 48,
+          "rate": 1.0
+        },
+        "RedundantHintRate": {
+          "denominator": 48,
+          "numerator": 0,
+          "rate": 0.0
+        },
+        "RedundantWhenTeachable": {
+          "denominator": 1,
+          "numerator": 0,
+          "rate": 0.0,
+          "report": "0/1"
+        },
+        "RelevantHintRate": {
+          "denominator": 48,
+          "numerator": 37,
+          "rate": 0.770833333333333
+        },
+        "StateViolationRate": {
+          "denominator": 48,
+          "numerator": 0,
+          "rate": 0.0
+        }
+      }
+    }
+  },
+  "protocol_version": "heldout-v3",
+  "selector_sha256": {
+    "scripts/adaptive_hint_data.gd": "a957ef713b4f80f9e4a423d8e950aa29b0dd55819caa4b0a7ea59ccec78e2036",
+    "scripts/adaptive_hint_selector.gd": "c4a2c31201143fde1616e97f8bec5544ccb775c1f0b3605c1fc8d89fea3a8cb2",
+    "scripts/player_knowledge_model.gd": "55ffe8bedb654813959a357d2ce427c068ea57ec37d9c76b50291eb40cd65cac"
+  },
+  "source_artifact": "res://docs/heldout/heldout_v3_annotated.json",
+  "source_artifact_sha256": "9d7285c794b824753af3f6a221cef3bc754bc542fe9d0cae52cb2cd09644dc9e"
+}

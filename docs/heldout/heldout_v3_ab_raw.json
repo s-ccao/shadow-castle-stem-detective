@@ -1,0 +1,2931 @@
+{
+  "condition_c_run": false,
+  "conditions_run": [
+    "A",
+    "B"
+  ],
+  "protocol_version": "heldout-v3",
+  "scenario_count": 48,
+  "scenarios": [
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_stain"
+      ],
+      "npc": "butler",
+      "ordinal": 1,
+      "pkm_states_derived": {
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_chemi_butler_f_dem_libl_08",
+      "stage": "chemistry"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_stain"
+      ],
+      "npc": "butler",
+      "ordinal": 2,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_chemi_butler_f_uns_libn_03",
+      "stage": "chemistry"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "tier": 3,
+          "why": "holds none of the three major evidence items"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "npc": "butler",
+      "ordinal": 3,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_chemi_butler_none_lea_libd_08",
+      "stage": "chemistry"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "tier": 3,
+          "why": "holds none of the three major evidence items"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "npc": "butler",
+      "ordinal": 4,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_chemi_butler_none_lea_libd_08_2",
+      "stage": "chemistry"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "tier": 3,
+          "why": "holds none of the three major evidence items"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "npc": "butler",
+      "ordinal": 5,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "DEMONSTRATED"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_chemi_butler_none_lea_libd_08_3",
+      "stage": "chemistry"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [],
+      "npc": "butler",
+      "ordinal": 6,
+      "pkm_states_derived": {
+        "additive": "LEARNING",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_circu_butler_dfg_dem_libl_17",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_knows_rule",
+          "tier": 2,
+          "why": "own evidence 'fake_red_stain' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_knows_rule",
+        "selected_hint_id": "h_butler_knows_rule",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_knows_rule",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_knows_rule",
+        "selected_hint_id": "h_butler_knows_rule",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [],
+      "npc": "butler",
+      "ordinal": 7,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_circu_butler_dg_uns_libn_13",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [],
+      "npc": "butler",
+      "ordinal": 8,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_circu_butler_fg_dem_libd_19",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [],
+      "npc": "butler",
+      "ordinal": 9,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_circu_butler_fg_lea_libd_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_knows_rule",
+          "tier": 2,
+          "why": "own evidence 'fake_red_stain' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_knows_rule",
+        "selected_hint_id": "h_butler_knows_rule",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_knows_rule",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_knows_rule",
+        "selected_hint_id": "h_butler_knows_rule",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [],
+      "npc": "butler",
+      "ordinal": 10,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_circu_butler_g_lea_libd_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "npc": "gardener",
+      "ordinal": 11,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_dfg_dem_libd_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "npc": "gardener",
+      "ordinal": 12,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_dfg_uns_libn_13",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "npc": "gardener",
+      "ordinal": 13,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_fg_dem_libd_13",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "npc": "gardener",
+      "ordinal": 14,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_fg_lea_libl_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "npc": "gardener",
+      "ordinal": 15,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_g_dem_libd_13",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "npc": "gardener",
+      "ordinal": 16,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_g_dem_libd_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "npc": "gardener",
+      "ordinal": 17,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "DEMONSTRATED",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_g_dem_libd_14_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_leaf_colour"
+      ],
+      "npc": "gardener",
+      "ordinal": 18,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_circu_gardener_g_lea_libd_18",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit"
+      ],
+      "npc": "mechanic",
+      "ordinal": 19,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dfg_dem_libd_16",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "npc": "mechanic",
+      "ordinal": 20,
+      "pkm_states_derived": {
+        "additive": "LEARNING",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dfg_lea_libl_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "npc": "mechanic",
+      "ordinal": 21,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dfg_lea_libl_14_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit"
+      ],
+      "npc": "mechanic",
+      "ordinal": 22,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dg_dem_libd_18",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit"
+      ],
+      "npc": "mechanic",
+      "ordinal": 23,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dg_dem_libd_18_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "npc": "mechanic",
+      "ordinal": 24,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dg_lea_libd_15",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "tier": 1,
+          "why": "holds own major evidence 'deliberate_short_circuit'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_short_circuit",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_short_circuit",
+        "selected_hint_id": "h_mechanic_short_circuit",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "deliberate_short_circuit",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_short_circuit",
+        "h_mechanic_series_basics"
+      ],
+      "npc": "mechanic",
+      "ordinal": 25,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_dg_lea_libd_15_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 2,
+          "why": "soft preference satisfied: h_mechanic_knows_resistance is preferred when [\"circuit_fault_isolation\"] DEMONSTRATED"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence"
+      ],
+      "npc": "mechanic",
+      "ordinal": 26,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "DEMONSTRATED",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_fg_dem_libn_12",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "npc": "mechanic",
+      "ordinal": 27,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "DEMONSTRATED",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_fg_dem_libn_12_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "npc": "mechanic",
+      "ordinal": 28,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_fg_lea_libd_14",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "npc": "mechanic",
+      "ordinal": 29,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "LEARNING",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_fg_lea_libd_14_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "npc": "mechanic",
+      "ordinal": 30,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_g_dem_libd_15",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "npc": "mechanic",
+      "ordinal": 31,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_g_dem_libd_15_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_knows_resistance"
+      ],
+      "npc": "mechanic",
+      "ordinal": 32,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "DEMONSTRATED",
+        "circuit_fault_isolation": "LEARNING",
+        "circuit_regulation": "LEARNING",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "DEMONSTRATED"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_g_dem_libd_15_3",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics"
+      ],
+      "npc": "mechanic",
+      "ordinal": 33,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_g_uns_libd_13",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "tier": 2,
+          "why": "own evidence 'deliberate_short_circuit' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_mechanic_knows_resistance",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_mechanic_knows_resistance",
+        "selected_hint_id": "h_mechanic_knows_resistance",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics",
+        "h_mechanic_knows_resistance"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_mechanic_no_evidence",
+        "h_mechanic_series_basics"
+      ],
+      "npc": "mechanic",
+      "ordinal": 34,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "circuit_room",
+      "scenario_id": "v3_circu_mechanic_g_uns_libd_13_2",
+      "stage": "circuit"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_stain"
+      ],
+      "npc": "butler",
+      "ordinal": 35,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_green_butler_f_dem_libd_12",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_stain"
+      ],
+      "npc": "butler",
+      "ordinal": 36,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_green_butler_f_lea_libd_11",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_stain"
+      ],
+      "npc": "butler",
+      "ordinal": 37,
+      "pkm_states_derived": {
+        "additive": "LEARNING",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "DEMONSTRATED",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_green_butler_fg_dem_libl_11",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "tier": 1,
+          "why": "holds own major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_stain",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_butler_stain",
+        "selected_hint_id": "h_butler_stain",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_stain"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_stain"
+      ],
+      "npc": "butler",
+      "ordinal": 38,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_green_butler_fg_lea_libd_11",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_knows_rule",
+          "tier": 2,
+          "why": "own evidence 'fake_red_stain' absent; holds other major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_knows_rule",
+        "selected_hint_id": "h_butler_knows_rule",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_knows_rule",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_knows_rule",
+        "selected_hint_id": "h_butler_knows_rule",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [],
+      "npc": "butler",
+      "ordinal": 39,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_green_butler_g_uns_libn_06",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "tier": 3,
+          "why": "holds none of the three major evidence items"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_butler_no_evidence",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": false,
+        "selected": "h_butler_no_evidence",
+        "selected_hint_id": "h_butler_no_evidence",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [],
+      "hard_eligible_hints": [
+        "h_butler_no_evidence",
+        "h_butler_knows_rule"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_butler_knows_rule"
+      ],
+      "npc": "butler",
+      "ordinal": 40,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "LEARNING",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "chemistry_room",
+      "scenario_id": "v3_green_butler_none_lea_libd_11",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_knows_reflection",
+          "tier": 2,
+          "why": "own evidence 'greenhouse_pollen' absent; holds other major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_knows_reflection",
+        "selected_hint_id": "h_gardener_knows_reflection",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_knows_reflection",
+          "rule": 2,
+          "why": "soft preference satisfied: h_gardener_knows_reflection is preferred when [\"reflection\"] DEMONSTRATED"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_knows_reflection",
+        "selected_hint_id": "h_gardener_knows_reflection",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "npc": "gardener",
+      "ordinal": 41,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_f_dem_libd_10",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_knows_reflection",
+          "tier": 2,
+          "why": "own evidence 'greenhouse_pollen' absent; holds other major evidence 'fake_red_stain'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_knows_reflection",
+        "selected_hint_id": "h_gardener_knows_reflection",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_knows_reflection",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_knows_reflection",
+        "selected_hint_id": "h_gardener_knows_reflection",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "npc": "gardener",
+      "ordinal": 42,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "UNSEEN",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_f_uns_libn_06",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "npc": "gardener",
+      "ordinal": 43,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_fg_dem_libd_10",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "fake_red_stain",
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "npc": "gardener",
+      "ordinal": 44,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "LEARNING",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_fg_lea_libl_09",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen"
+      ],
+      "npc": "gardener",
+      "ordinal": 45,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_g_dem_libd_10",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "tier": 1,
+          "why": "holds own major evidence 'greenhouse_pollen'"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_pollen",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_pollen",
+        "selected_hint_id": "h_gardener_pollen",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [
+        "greenhouse_pollen"
+      ],
+      "hard_eligible_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_pollen",
+        "h_gardener_leaf_colour"
+      ],
+      "npc": "gardener",
+      "ordinal": 46,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_g_lea_libd_11",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_leaf_colour",
+          "tier": 3,
+          "why": "holds none of the three major evidence items"
+        },
+        "redundant": true,
+        "relevant": true,
+        "selected": "h_gardener_leaf_colour",
+        "selected_hint_id": "h_gardener_leaf_colour",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": true
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_knows_reflection",
+          "rule": 2,
+          "why": "soft preference satisfied: h_gardener_knows_reflection is preferred when [\"reflection\"] DEMONSTRATED"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_knows_reflection",
+        "selected_hint_id": "h_gardener_knows_reflection",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": false
+      },
+      "evidence_items": [],
+      "hard_eligible_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "human_ambiguity": "MEDIUM",
+      "human_valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "npc": "gardener",
+      "ordinal": 47,
+      "pkm_states_derived": {
+        "additive": "UNSEEN",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "DEMONSTRATED",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_none_dem_libd_10",
+      "stage": "greenhouse"
+    },
+    {
+      "A": {
+        "condition": "A-4 Evidence-depth Static Baseline",
+        "decision_trace": {
+          "predicted": "h_gardener_leaf_colour",
+          "tier": 3,
+          "why": "holds none of the three major evidence items"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_leaf_colour",
+        "selected_hint_id": "h_gardener_leaf_colour",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": true
+      },
+      "B": {
+        "condition": "B PKM-aware deterministic selector",
+        "decision_trace": {
+          "predicted": "h_gardener_leaf_colour",
+          "rule": 4,
+          "why": "no soft preference satisfied and A-4 fallback is not redundant"
+        },
+        "redundant": false,
+        "relevant": true,
+        "selected": "h_gardener_leaf_colour",
+        "selected_hint_id": "h_gardener_leaf_colour",
+        "silence": false,
+        "state_violation": false,
+        "state_violation_detail": [],
+        "teaches_pkm_concept": true
+      },
+      "evidence_items": [],
+      "hard_eligible_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "human_ambiguity": "LOW",
+      "human_valid_hints": [
+        "h_gardener_no_evidence",
+        "h_gardener_leaf_colour",
+        "h_gardener_knows_reflection"
+      ],
+      "npc": "gardener",
+      "ordinal": 48,
+      "pkm_states_derived": {
+        "additive": "DEMONSTRATED",
+        "circuit_continuity": "UNSEEN",
+        "circuit_fault_isolation": "UNSEEN",
+        "circuit_regulation": "UNSEEN",
+        "indicator_reaction": "UNSEEN",
+        "physical_chemical_change": "UNSEEN",
+        "reflection": "LEARNING",
+        "spectrum": "UNSEEN"
+      },
+      "room": "greenhouse_room",
+      "scenario_id": "v3_green_gardener_none_lea_libd_11",
+      "stage": "greenhouse"
+    }
+  ],
+  "source_artifact_sha256": "9d7285c794b824753af3f6a221cef3bc754bc542fe9d0cae52cb2cd09644dc9e"
+}
