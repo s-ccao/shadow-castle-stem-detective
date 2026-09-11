@@ -1,0 +1,1443 @@
+{
+  "artifact": "docs/heldout/heldout_v4_scenarios.json",
+  "artifact_sha256": "1bb1535f64168fe4c5e6fe767aabe841761d5bc248a2e17234d29942c3a0a23d",
+  "candidates": {
+    "excluded_from_pool": 48,
+    "exclusion_digest": "27ae5ddb750dec4c04ee3338f239ef44cd242b5f919747356c1297706eb32ecf",
+    "exclusion_set_size": 96,
+    "exclusion_sources": {
+      "docs/heldout/heldout_v2_scenarios.json": 48,
+      "docs/heldout/heldout_v3_scenarios.json": 48
+    },
+    "initial": 55080,
+    "per_npc": {
+      "butler": 19440,
+      "gardener": 18792,
+      "mechanic": 16848
+    },
+    "surviving": 55032,
+    "surviving_per_npc": {
+      "butler": 19424,
+      "gardener": 18776,
+      "mechanic": 16832
+    }
+  },
+  "catalogue_sha256": "a957ef713b4f80f9e4a423d8e950aa29b0dd55819caa4b0a7ea59ccec78e2036",
+  "contamination": {
+    "castle_hall_partition_holds": true,
+    "exclusion_intersection_with_pool": 48,
+    "exclusion_intersection_with_selection": 0,
+    "v4_rooms": [
+      "chemistry_room",
+      "circuit_room",
+      "greenhouse_room"
+    ]
+  },
+  "core": {
+    "bucket_quotas": {
+      "butler": {
+        "extra_slot": "late",
+        "populations": {
+          "early": 557,
+          "late": 9934,
+          "middle": 8925
+        },
+        "quota": {
+          "early": 5,
+          "late": 6,
+          "middle": 5
+        }
+      },
+      "gardener": {
+        "extra_slot": "middle",
+        "populations": {
+          "early": 615,
+          "late": 7346,
+          "middle": 10807
+        },
+        "quota": {
+          "early": 5,
+          "late": 5,
+          "middle": 6
+        }
+      },
+      "mechanic": {
+        "extra_slot": "middle",
+        "populations": {
+          "early": 740,
+          "late": 2896,
+          "middle": 13188
+        },
+        "quota": {
+          "early": 5,
+          "late": 5,
+          "middle": 6
+        }
+      }
+    },
+    "feature_coverage": {
+      "butler": {
+        "associated_concept_states": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "destination_reached": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "eligible_count": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "evidence_shape": {
+          "complete": true,
+          "covered": 6,
+          "reachable": 6
+        },
+        "other_major_count": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "own_evidence": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "pkm_profile": {
+          "complete": false,
+          "covered": 16,
+          "reachable": 45
+        },
+        "prior_npc_interaction": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "progression_bucket": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "room_investigation_complete": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "shape_x_associated": {
+          "complete": true,
+          "covered": 12,
+          "reachable": 12
+        },
+        "stage": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        }
+      },
+      "gardener": {
+        "associated_concept_states": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "destination_reached": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "eligible_count": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "evidence_shape": {
+          "complete": true,
+          "covered": 5,
+          "reachable": 5
+        },
+        "other_major_count": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "own_evidence": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "pkm_profile": {
+          "complete": false,
+          "covered": 16,
+          "reachable": 45
+        },
+        "prior_npc_interaction": {
+          "complete": true,
+          "covered": 1,
+          "reachable": 1
+        },
+        "progression_bucket": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "room_investigation_complete": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "shape_x_associated": {
+          "complete": true,
+          "covered": 15,
+          "reachable": 15
+        },
+        "stage": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        }
+      },
+      "mechanic": {
+        "associated_concept_states": {
+          "complete": true,
+          "covered": 5,
+          "reachable": 5
+        },
+        "destination_reached": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "eligible_count": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "evidence_shape": {
+          "complete": true,
+          "covered": 4,
+          "reachable": 4
+        },
+        "other_major_count": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "own_evidence": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "pkm_profile": {
+          "complete": false,
+          "covered": 16,
+          "reachable": 45
+        },
+        "prior_npc_interaction": {
+          "complete": true,
+          "covered": 1,
+          "reachable": 1
+        },
+        "progression_bucket": {
+          "complete": true,
+          "covered": 3,
+          "reachable": 3
+        },
+        "room_investigation_complete": {
+          "complete": true,
+          "covered": 2,
+          "reachable": 2
+        },
+        "shape_x_associated": {
+          "complete": false,
+          "covered": 16,
+          "reachable": 20
+        },
+        "stage": {
+          "complete": true,
+          "covered": 1,
+          "reachable": 1
+        }
+      }
+    },
+    "trace": {
+      "butler": [
+        {
+          "bucket": "early",
+          "candidates_considered": 557,
+          "chose": "86cde63c197ff434b9c2a8528b890569d6b6e1e6afd6f5ab76e700458183b8fb",
+          "coverage_gain": 12,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('UNSEEN',)",
+            "destination_reached=False",
+            "eligible_count=2",
+            "evidence_shape=(False, 0)",
+            "other_major_count=0",
+            "own_evidence=False",
+            "pkm_profile=(7, 0, 1)",
+            "prior_npc_interaction=False",
+            "progression_bucket=early",
+            "room_investigation_complete=False",
+            "shape_x_associated=(False, 0, ('UNSEEN',))",
+            "stage=chemistry"
+          ],
+          "slot": 1,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 557,
+          "why": "largest coverage gain (12 new feature-value pairs) among 557 early candidates; 557 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 8925,
+          "chose": "3e64f6adffa1d11674f305d2a06de8f6f50af3b5a39f456bead5066651d52ffe",
+          "coverage_gain": 12,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('DEMONSTRATED',)",
+            "destination_reached=True",
+            "eligible_count=1",
+            "evidence_shape=(True, 1)",
+            "other_major_count=1",
+            "own_evidence=True",
+            "pkm_profile=(6, 0, 2)",
+            "prior_npc_interaction=True",
+            "progression_bucket=middle",
+            "room_investigation_complete=True",
+            "shape_x_associated=(True, 1, ('DEMONSTRATED',))",
+            "stage=circuit"
+          ],
+          "slot": 2,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 83,
+          "why": "largest coverage gain (12 new feature-value pairs) among 8925 middle candidates; 83 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 9934,
+          "chose": "009ce711cc5385d357dca2fd2cf973a8455d3a5da87792c72638c2b21317dd37",
+          "coverage_gain": 6,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('LEARNING',)",
+            "evidence_shape=(True, 2)",
+            "other_major_count=2",
+            "pkm_profile=(1, 4, 3)",
+            "progression_bucket=late",
+            "shape_x_associated=(True, 2, ('LEARNING',))"
+          ],
+          "slot": 3,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 2592,
+          "why": "largest coverage gain (6 new feature-value pairs) among 9934 late candidates; 2592 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 556,
+          "chose": "f6690b73868d2110f9c7a3f6b0051fd017cacd987434a64afefeae710b531e15",
+          "coverage_gain": 4,
+          "coverage_reset": false,
+          "newly_covered": [
+            "evidence_shape=(True, 0)",
+            "pkm_profile=(7, 1, 0)",
+            "shape_x_associated=(True, 0, ('LEARNING',))",
+            "stage=greenhouse"
+          ],
+          "slot": 4,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 57,
+          "why": "largest coverage gain (4 new feature-value pairs) among 556 early candidates; 57 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 8924,
+          "chose": "039614df42291acd89b14f7c7861ac616ebca2d55c495cec5184fa2ffe36cb59",
+          "coverage_gain": 3,
+          "coverage_reset": false,
+          "newly_covered": [
+            "evidence_shape=(False, 1)",
+            "pkm_profile=(6, 1, 1)",
+            "shape_x_associated=(False, 1, ('UNSEEN',))"
+          ],
+          "slot": 5,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3551,
+          "why": "largest coverage gain (3 new feature-value pairs) among 8924 middle candidates; 3551 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 9933,
+          "chose": "00e0352e5f3476d10cfd605ba51751244d7c7d73f33874d68e4fc1d59685bfb1",
+          "coverage_gain": 3,
+          "coverage_reset": false,
+          "newly_covered": [
+            "evidence_shape=(False, 2)",
+            "pkm_profile=(2, 3, 3)",
+            "shape_x_associated=(False, 2, ('UNSEEN',))"
+          ],
+          "slot": 6,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1157,
+          "why": "largest coverage gain (3 new feature-value pairs) among 9933 late candidates; 1157 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 555,
+          "chose": "e3d2fc98e1ede041b34b8e5deac8a437d1d59d0e8b86704253783520c2ab7037",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(6, 2, 0)",
+            "shape_x_associated=(False, 0, ('LEARNING',))"
+          ],
+          "slot": 7,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 154,
+          "why": "largest coverage gain (2 new feature-value pairs) among 555 early candidates; 154 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 8923,
+          "chose": "15a2a921ec4a9e7b03df281285d21bce51da13f1cb39a859b0092e3a55cd0a46",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(5, 3, 0)",
+            "shape_x_associated=(True, 1, ('LEARNING',))"
+          ],
+          "slot": 8,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3465,
+          "why": "largest coverage gain (2 new feature-value pairs) among 8923 middle candidates; 3465 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 9932,
+          "chose": "01d24eac078d881072fe1c2d4faba73a34ce6a049197bf6affb0512f2a5a2ec2",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(2, 4, 2)",
+            "shape_x_associated=(True, 2, ('DEMONSTRATED',))"
+          ],
+          "slot": 9,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3244,
+          "why": "largest coverage gain (2 new feature-value pairs) among 9932 late candidates; 3244 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 554,
+          "chose": "1ea775146bddce250956570e23ee584be671555086b807b82db52238c3cbaf24",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(5, 2, 1)",
+            "shape_x_associated=(True, 0, ('DEMONSTRATED',))"
+          ],
+          "slot": 10,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 40,
+          "why": "largest coverage gain (2 new feature-value pairs) among 554 early candidates; 40 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 8922,
+          "chose": "347c9742459820fe136144718e9f6db27ab36cf5bbf656db461f133e7f75a7f3",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(4, 4, 0)",
+            "shape_x_associated=(False, 1, ('LEARNING',))"
+          ],
+          "slot": 11,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1082,
+          "why": "largest coverage gain (2 new feature-value pairs) among 8922 middle candidates; 1082 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 9931,
+          "chose": "031747fa9e2507f1e0ecddc5afb905a355c0f25a9bd07c2ab54ff2ba17378912",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(1, 3, 4)",
+            "shape_x_associated=(False, 2, ('LEARNING',))"
+          ],
+          "slot": 12,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 646,
+          "why": "largest coverage gain (2 new feature-value pairs) among 9931 late candidates; 646 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 553,
+          "chose": "a901f44e4d8a94c6647dd4d1698a4d894ce62d1f50a957ad10d95b8394e252e3",
+          "coverage_gain": 1,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(8, 0, 0)"
+          ],
+          "slot": 13,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 220,
+          "why": "largest coverage gain (1 new feature-value pairs) among 553 early candidates; 220 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 8921,
+          "chose": "0887a73f81158a6ec80318b6133fd0b8088508d0581277f55ccd574db028510e",
+          "coverage_gain": 1,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(3, 3, 2)"
+          ],
+          "slot": 14,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 5917,
+          "why": "largest coverage gain (1 new feature-value pairs) among 8921 middle candidates; 5917 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 9930,
+          "chose": "013e905e82eeef6cbfe3e4dff0ed36132385aad0301e271463140ae80e6f1a7d",
+          "coverage_gain": 1,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(2, 1, 5)"
+          ],
+          "slot": 15,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 6693,
+          "why": "largest coverage gain (1 new feature-value pairs) among 9930 late candidates; 6693 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 9929,
+          "chose": "01cefa7950b33333c9afc451405ef2e8fb7d9e808a0ffa35d3573670d1a9e2ec",
+          "coverage_gain": 1,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(1, 5, 2)"
+          ],
+          "slot": 16,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 6166,
+          "why": "largest coverage gain (1 new feature-value pairs) among 9929 late candidates; 6166 tied, resolved by the \u00a79 tie-break"
+        }
+      ],
+      "gardener": [
+        {
+          "bucket": "early",
+          "candidates_considered": 615,
+          "chose": "7fc788728aa65fbb6bfccfbcfad79bf9a1a1bfbb0cc52f5c509993c0bdde144d",
+          "coverage_gain": 12,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('UNSEEN',)",
+            "destination_reached=False",
+            "eligible_count=2",
+            "evidence_shape=(True, 0)",
+            "other_major_count=0",
+            "own_evidence=True",
+            "pkm_profile=(8, 0, 0)",
+            "prior_npc_interaction=False",
+            "progression_bucket=early",
+            "room_investigation_complete=False",
+            "shape_x_associated=(True, 0, ('UNSEEN',))",
+            "stage=greenhouse"
+          ],
+          "slot": 1,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 615,
+          "why": "largest coverage gain (12 new feature-value pairs) among 615 early candidates; 615 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 10807,
+          "chose": "338fec7cd7d40f0620e02cf8390f376074470e0edacb3f029d25af1c9c56d820",
+          "coverage_gain": 9,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('LEARNING',)",
+            "destination_reached=True",
+            "evidence_shape=(True, 1)",
+            "other_major_count=1",
+            "pkm_profile=(6, 2, 0)",
+            "progression_bucket=middle",
+            "room_investigation_complete=True",
+            "shape_x_associated=(True, 1, ('LEARNING',))",
+            "stage=circuit"
+          ],
+          "slot": 2,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3928,
+          "why": "largest coverage gain (9 new feature-value pairs) among 10807 middle candidates; 3928 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 7346,
+          "chose": "0052923ce2ad577d608c69e830a9d66e4ea4b2a58a2a52779bacb76f8fdd17e7",
+          "coverage_gain": 6,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('DEMONSTRATED',)",
+            "evidence_shape=(True, 2)",
+            "other_major_count=2",
+            "pkm_profile=(1, 3, 4)",
+            "progression_bucket=late",
+            "shape_x_associated=(True, 2, ('DEMONSTRATED',))"
+          ],
+          "slot": 3,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1476,
+          "why": "largest coverage gain (6 new feature-value pairs) among 7346 late candidates; 1476 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 614,
+          "chose": "dac6d6e24129380e0bc11be6ae6b59d737f7f225225ee47a3acf5cfa3d711ce3",
+          "coverage_gain": 5,
+          "coverage_reset": false,
+          "newly_covered": [
+            "eligible_count=3",
+            "evidence_shape=(False, 0)",
+            "own_evidence=False",
+            "pkm_profile=(7, 0, 1)",
+            "shape_x_associated=(False, 0, ('UNSEEN',))"
+          ],
+          "slot": 4,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 266,
+          "why": "largest coverage gain (5 new feature-value pairs) among 614 early candidates; 266 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 10806,
+          "chose": "0063d122f853daaa1596a9b08b240d735b87ea3df32b3d7458dc403dd109ecf9",
+          "coverage_gain": 3,
+          "coverage_reset": false,
+          "newly_covered": [
+            "evidence_shape=(False, 1)",
+            "pkm_profile=(5, 1, 2)",
+            "shape_x_associated=(False, 1, ('UNSEEN',))"
+          ],
+          "slot": 5,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 298,
+          "why": "largest coverage gain (3 new feature-value pairs) among 10806 middle candidates; 298 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 7345,
+          "chose": "00d0d5226c94bc39efb5fc3552de738a048cc9fb81ab47a8a320075b2b6f6776",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(2, 1, 5)",
+            "shape_x_associated=(True, 1, ('DEMONSTRATED',))"
+          ],
+          "slot": 6,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3927,
+          "why": "largest coverage gain (2 new feature-value pairs) among 7345 late candidates; 3927 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 613,
+          "chose": "e0874d76fdb1243ad056ad72e558fb32b5d08b38f0b6a8e5450c6e5e7825c072",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(7, 1, 0)",
+            "shape_x_associated=(True, 1, ('UNSEEN',))"
+          ],
+          "slot": 7,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 257,
+          "why": "largest coverage gain (2 new feature-value pairs) among 613 early candidates; 257 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 10805,
+          "chose": "28470d4051ef2ba054c5cd9c7502ce059d4c7f486ff91bc157f5b336dcf7ea3d",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(6, 1, 1)",
+            "shape_x_associated=(True, 2, ('UNSEEN',))"
+          ],
+          "slot": 8,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3384,
+          "why": "largest coverage gain (2 new feature-value pairs) among 10805 middle candidates; 3384 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 7344,
+          "chose": "01117e0e6ffffdd1c67c01e0e621644623536460bbb74422ec9841c119153862",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(1, 4, 3)",
+            "shape_x_associated=(True, 2, ('LEARNING',))"
+          ],
+          "slot": 9,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1291,
+          "why": "largest coverage gain (2 new feature-value pairs) among 7344 late candidates; 1291 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 612,
+          "chose": "d914d64caea09fe8ec1ea828d7aa0038501264b3944e47e70a917b0395c0574d",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(5, 3, 0)",
+            "shape_x_associated=(False, 0, ('LEARNING',))"
+          ],
+          "slot": 10,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 148,
+          "why": "largest coverage gain (2 new feature-value pairs) among 612 early candidates; 148 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 10804,
+          "chose": "061776b886928f893acf92b3355bbce4f24504771004395c0a621fd6f02c858f",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(3, 4, 1)",
+            "shape_x_associated=(False, 1, ('LEARNING',))"
+          ],
+          "slot": 11,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1558,
+          "why": "largest coverage gain (2 new feature-value pairs) among 10804 middle candidates; 1558 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 7343,
+          "chose": "00bae708bb54b5f0446ede975c96269491adfb303b32a044f3027e385222e03c",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(0, 3, 5)",
+            "shape_x_associated=(True, 0, ('DEMONSTRATED',))"
+          ],
+          "slot": 12,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 315,
+          "why": "largest coverage gain (2 new feature-value pairs) among 7343 late candidates; 315 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 611,
+          "chose": "72da5f6336db1af8945906461294d4130de6f1a47f83a83419aca9ae64e3d4e9",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(5, 2, 1)",
+            "shape_x_associated=(False, 0, ('DEMONSTRATED',))"
+          ],
+          "slot": 13,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 55,
+          "why": "largest coverage gain (2 new feature-value pairs) among 611 early candidates; 55 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 10803,
+          "chose": "0b8bc0435e3faeb36fa08a044bfd0ef69c5559683078ea0440248f5641ed6259",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(4, 3, 1)",
+            "shape_x_associated=(False, 1, ('DEMONSTRATED',))"
+          ],
+          "slot": 14,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 775,
+          "why": "largest coverage gain (2 new feature-value pairs) among 10803 middle candidates; 775 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 7342,
+          "chose": "080bd949386844a3f9d41dc56970127ac057cb510b2649c17b98dea5973620f1",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(0, 5, 3)",
+            "shape_x_associated=(True, 0, ('LEARNING',))"
+          ],
+          "slot": 15,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 76,
+          "why": "largest coverage gain (2 new feature-value pairs) among 7342 late candidates; 76 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 10802,
+          "chose": "046652e0d8db126751e35dce18c0fd2996f5a4afbba6aa273318de78bea89e19",
+          "coverage_gain": 1,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(4, 2, 2)"
+          ],
+          "slot": 16,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 7766,
+          "why": "largest coverage gain (1 new feature-value pairs) among 10802 middle candidates; 7766 tied, resolved by the \u00a79 tie-break"
+        }
+      ],
+      "mechanic": [
+        {
+          "bucket": "early",
+          "candidates_considered": 740,
+          "chose": "049b402848409fbcf02713244b86188be9b52a18f9c7dc91ef61a816a44842d4",
+          "coverage_gain": 12,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('UNSEEN', 'UNSEEN')",
+            "destination_reached=False",
+            "eligible_count=3",
+            "evidence_shape=(False, 2)",
+            "other_major_count=2",
+            "own_evidence=False",
+            "pkm_profile=(7, 1, 0)",
+            "prior_npc_interaction=False",
+            "progression_bucket=early",
+            "room_investigation_complete=False",
+            "shape_x_associated=(False, 2, ('UNSEEN', 'UNSEEN'))",
+            "stage=circuit"
+          ],
+          "slot": 1,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 740,
+          "why": "largest coverage gain (12 new feature-value pairs) among 740 early candidates; 740 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 13188,
+          "chose": "51d1a221e852d0f53ead55437db835178a9ae6fd3dccb57f1b8b017b112847c9",
+          "coverage_gain": 10,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('DEMONSTRATED', 'DEMONSTRATED')",
+            "destination_reached=True",
+            "eligible_count=2",
+            "evidence_shape=(True, 1)",
+            "other_major_count=1",
+            "own_evidence=True",
+            "pkm_profile=(5, 0, 3)",
+            "progression_bucket=middle",
+            "room_investigation_complete=True",
+            "shape_x_associated=(True, 1, ('DEMONSTRATED', 'DEMONSTRATED'))"
+          ],
+          "slot": 2,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 155,
+          "why": "largest coverage gain (10 new feature-value pairs) among 13188 middle candidates; 155 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 2896,
+          "chose": "01aed61858695110d317e2a278285a8d95e39d83fafcaca49a84fed793bea606",
+          "coverage_gain": 5,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('DEMONSTRATED', 'LEARNING')",
+            "evidence_shape=(True, 2)",
+            "pkm_profile=(1, 2, 5)",
+            "progression_bucket=late",
+            "shape_x_associated=(True, 2, ('DEMONSTRATED', 'LEARNING'))"
+          ],
+          "slot": 3,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 852,
+          "why": "largest coverage gain (5 new feature-value pairs) among 2896 late candidates; 852 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 739,
+          "chose": "0db0590ee2f22f80e4a8f708e02d2eeb57ecab551e237969c2d605a03afd0439",
+          "coverage_gain": 4,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('LEARNING', 'LEARNING')",
+            "evidence_shape=(False, 1)",
+            "pkm_profile=(4, 3, 1)",
+            "shape_x_associated=(False, 1, ('LEARNING', 'LEARNING'))"
+          ],
+          "slot": 4,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 138,
+          "why": "largest coverage gain (4 new feature-value pairs) among 739 early candidates; 138 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 13187,
+          "chose": "093023560c5db0a7d6e32b93598cb578599bcafe9e3e5b2bd8a242d24712ac84",
+          "coverage_gain": 3,
+          "coverage_reset": false,
+          "newly_covered": [
+            "associated_concept_states=('LEARNING', 'DEMONSTRATED')",
+            "pkm_profile=(4, 1, 3)",
+            "shape_x_associated=(False, 2, ('LEARNING', 'DEMONSTRATED'))"
+          ],
+          "slot": 5,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 4007,
+          "why": "largest coverage gain (3 new feature-value pairs) among 13187 middle candidates; 4007 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 2895,
+          "chose": "03a73d7d3c6b7f7a5f2cbb34d8f89a21e913d38c2bf11787209b8d016d0bf4a6",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(0, 4, 4)",
+            "shape_x_associated=(False, 2, ('DEMONSTRATED', 'DEMONSTRATED'))"
+          ],
+          "slot": 6,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1864,
+          "why": "largest coverage gain (2 new feature-value pairs) among 2895 late candidates; 1864 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 738,
+          "chose": "76c4afd338a7489268416f793aae5215c61ae15d515e345873a1c57d81701812",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(8, 0, 0)",
+            "shape_x_associated=(False, 1, ('UNSEEN', 'UNSEEN'))"
+          ],
+          "slot": 7,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 421,
+          "why": "largest coverage gain (2 new feature-value pairs) among 738 early candidates; 421 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 13186,
+          "chose": "00cdc393b847ab5846763bedbea1dcd9301f5efd89eba2e1d804d3aaa3b1913b",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(2, 5, 1)",
+            "shape_x_associated=(False, 2, ('LEARNING', 'LEARNING'))"
+          ],
+          "slot": 8,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 7582,
+          "why": "largest coverage gain (2 new feature-value pairs) among 13186 middle candidates; 7582 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 2894,
+          "chose": "157e4622e120a62796190528ec413fe4ed8af1e2469cafabc6d7ba2779c3b86e",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(0, 3, 5)",
+            "shape_x_associated=(False, 2, ('DEMONSTRATED', 'LEARNING'))"
+          ],
+          "slot": 9,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 1187,
+          "why": "largest coverage gain (2 new feature-value pairs) among 2894 late candidates; 1187 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 737,
+          "chose": "73b454424f71a4858135b989905261a45b7e4583a7fa7f1babddd529aa69a1a8",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(5, 2, 1)",
+            "shape_x_associated=(False, 1, ('DEMONSTRATED', 'LEARNING'))"
+          ],
+          "slot": 10,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 264,
+          "why": "largest coverage gain (2 new feature-value pairs) among 737 early candidates; 264 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 13185,
+          "chose": "05a2be701c940b5debba218c8d236777347bf7cb57d153acf97c8fa728318c19",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(3, 4, 1)",
+            "shape_x_associated=(True, 2, ('LEARNING', 'LEARNING'))"
+          ],
+          "slot": 11,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 5578,
+          "why": "largest coverage gain (2 new feature-value pairs) among 13185 middle candidates; 5578 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 2893,
+          "chose": "0075272611796a223f691a1e98b3dda64d6c0e22ffbf0e645abe3a3a821400a5",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(1, 3, 4)",
+            "shape_x_associated=(True, 2, ('DEMONSTRATED', 'DEMONSTRATED'))"
+          ],
+          "slot": 12,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 822,
+          "why": "largest coverage gain (2 new feature-value pairs) among 2893 late candidates; 822 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "early",
+          "candidates_considered": 736,
+          "chose": "1594cf2138b5aa0841a24dabcdc58320aa08d053477784f26e69b58ba197412f",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(7, 0, 1)",
+            "shape_x_associated=(True, 1, ('UNSEEN', 'UNSEEN'))"
+          ],
+          "slot": 13,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 174,
+          "why": "largest coverage gain (2 new feature-value pairs) among 736 early candidates; 174 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 13184,
+          "chose": "08ec59c71446ce83b289e794b32d91baa60cef18c87e86f5a7f7dacdc1a2cd45",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(3, 3, 2)",
+            "shape_x_associated=(True, 2, ('LEARNING', 'DEMONSTRATED'))"
+          ],
+          "slot": 14,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 3545,
+          "why": "largest coverage gain (2 new feature-value pairs) among 13184 middle candidates; 3545 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "late",
+          "candidates_considered": 2892,
+          "chose": "01e7a96ddec54f669b4e6f53d21c8945cac22c2d30faddab83b56f85922f6c74",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(3, 1, 4)",
+            "shape_x_associated=(True, 2, ('UNSEEN', 'UNSEEN'))"
+          ],
+          "slot": 15,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 52,
+          "why": "largest coverage gain (2 new feature-value pairs) among 2892 late candidates; 52 tied, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bucket": "middle",
+          "candidates_considered": 13183,
+          "chose": "025c6c1e4425e97ad1fab749b6e8eb443073b23a0bdfc700fdd908cae5b32628",
+          "coverage_gain": 2,
+          "coverage_reset": false,
+          "newly_covered": [
+            "pkm_profile=(4, 2, 2)",
+            "shape_x_associated=(False, 1, ('LEARNING', 'DEMONSTRATED'))"
+          ],
+          "slot": 16,
+          "tie_break_applied": true,
+          "tied_at_max_gain": 2098,
+          "why": "largest coverage gain (2 new feature-value pairs) among 13183 middle candidates; 2098 tied, resolved by the \u00a79 tie-break"
+        }
+      ]
+    }
+  },
+  "forbidden_symbol_scan": {
+    "scanner_self_test": "passed",
+    "symbols_checked": [
+      "select_condition_a",
+      "select_adaptive",
+      "adaptive_hint_selector",
+      "CONDITION_A_TIERS",
+      "condition_c_selector",
+      "condition_c_client"
+    ],
+    "violations": []
+  },
+  "generated_by": "tools/generate_heldout_v4.py",
+  "generator_sha256": "0afcbaa624b8c6eea33beab9beda433ce2958fbf1ba5858ed9f9ae7124cbab10",
+  "integrity": {
+    "annotations_present": false,
+    "condition_a_called": false,
+    "condition_b_called": false,
+    "condition_c_called": false,
+    "llm_called": false,
+    "relevance_labels_present": false,
+    "selector_was_run": false
+  },
+  "notes": [
+    "This audit records WHY the deterministic procedure chose each state, in structural terms only. It contains no judgement about hint relevance, and no condition was consulted to produce it."
+  ],
+  "pkm_model_sha256": "55ffe8bedb654813959a357d2ce427c068ea57ec37d9c76b50291eb40cd65cac",
+  "pkm_validation": {
+    "godot_cross_check": "tests/pkm_serialization_canonical_test.gd",
+    "python_recomputation": "72/72 states re-derived, all identical"
+  },
+  "progression_model_sha256": "94402567c646ea4227a76883b45cae4bb2d2d546a71ffdeb0d5b39fde9866ee8",
+  "published_tables_recomputed": {
+    "bucket_populations_match_spec_5_4": true,
+    "eligible_collinearity_matches_spec_5_8": true,
+    "reachable_values": {
+      "butler": {
+        "associated_concept_states": 3,
+        "destination_reached": 2,
+        "eligible_count": 2,
+        "evidence_shape": 6,
+        "other_major_count": 3,
+        "own_evidence": 2,
+        "pkm_profile": 45,
+        "prior_npc_interaction": 2,
+        "progression_bucket": 3,
+        "room_investigation_complete": 2,
+        "shape_x_associated": 12,
+        "stage": 3
+      },
+      "gardener": {
+        "associated_concept_states": 3,
+        "destination_reached": 2,
+        "eligible_count": 2,
+        "evidence_shape": 5,
+        "other_major_count": 3,
+        "own_evidence": 2,
+        "pkm_profile": 45,
+        "prior_npc_interaction": 1,
+        "progression_bucket": 3,
+        "room_investigation_complete": 2,
+        "shape_x_associated": 15,
+        "stage": 2
+      },
+      "mechanic": {
+        "associated_concept_states": 5,
+        "destination_reached": 2,
+        "eligible_count": 2,
+        "evidence_shape": 4,
+        "other_major_count": 2,
+        "own_evidence": 2,
+        "pkm_profile": 45,
+        "prior_npc_interaction": 1,
+        "progression_bucket": 3,
+        "room_investigation_complete": 2,
+        "shape_x_associated": 20,
+        "stage": 1
+      }
+    }
+  },
+  "selection_order": [
+    "STRESS",
+    "CORE"
+  ],
+  "spec_checker_sha256": "4b1811f95c6005f0a4aad8d3e8e92335b06f3381b055cfee369344b064301ec2",
+  "spec_sha256": "d7fecb28254b06f998a67615cb0dc77ddcf3dbd2ed4655d7cbeb74910b8feda4",
+  "stress": {
+    "bin_populations_full_pool": {
+      "butler": {
+        "B1_very_early": 1,
+        "B2_very_late": 1,
+        "B3_max_candidates_pref_active": 0,
+        "B4_associated_demonstrated": 6480,
+        "B5_associated_learning": 9720,
+        "B6_no_own_evidence_plain": 6480,
+        "B7_evidence_after_progression": 783,
+        "B8_destination_reached": 6480
+      },
+      "gardener": {
+        "B1_very_early": 1,
+        "B2_very_late": 1,
+        "B3_max_candidates_pref_active": 216,
+        "B4_associated_demonstrated": 6264,
+        "B5_associated_learning": 6264,
+        "B6_no_own_evidence_plain": 432,
+        "B7_evidence_after_progression": 17496,
+        "B8_destination_reached": 17496
+      },
+      "mechanic": {
+        "B1_very_early": 1,
+        "B2_very_late": 1,
+        "B3_max_candidates_pref_active": 5184,
+        "B4_associated_demonstrated": 12960,
+        "B5_associated_learning": 2592,
+        "B6_no_own_evidence_plain": 3240,
+        "B7_evidence_after_progression": 648,
+        "B8_destination_reached": 5184
+      }
+    },
+    "empty_bins": {
+      "butler": [
+        "B3_max_candidates_pref_active"
+      ],
+      "gardener": [],
+      "mechanic": []
+    },
+    "trace": {
+      "butler": [
+        {
+          "bin": "B1_very_early",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 1,
+          "chose": "e439c5971b5237940c7b812399cc0d0b40879b9bb92ee13aaeea73d2dd362c3a",
+          "load_tied_contenders": 1,
+          "tie_break_applied": false,
+          "why": "highest boundary load (2/8) among 1 candidates in B1_very_early"
+        },
+        {
+          "bin": "B2_very_late",
+          "bin_empty": false,
+          "boundary_load": 4,
+          "candidates_in_bin": 1,
+          "chose": "286fb32c654c8b3c5ce693b5f0c631489384e14657ba390a4ee775ce786aac2f",
+          "load_tied_contenders": 1,
+          "tie_break_applied": false,
+          "why": "highest boundary load (4/8) among 1 candidates in B2_very_late"
+        },
+        {
+          "bin": "B3_max_candidates_pref_active",
+          "bin_empty": true,
+          "boundary_load": 3,
+          "candidates_in_bin": 0,
+          "chose": "02e51bc4e28b853750280484fef07641e9bcc8402728ac219de541f081fe6cd1",
+          "load_tied_contenders": 782,
+          "tie_break_applied": true,
+          "why": "bin B3_max_candidates_pref_active had no remaining candidate; filled from the boundary-load ranking over the NPC's remaining pool (spec \u00a77.5)"
+        },
+        {
+          "bin": "B4_associated_demonstrated",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 6473,
+          "chose": "943202c66a40ecb4cd2de64761c8110ee0d58f69e05a2c02af5a4829bc3947c7",
+          "load_tied_contenders": 781,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 6473 candidates in B4_associated_demonstrated; 781 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B5_associated_learning",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 9711,
+          "chose": "9705357e0071105e923c5e6f4fb552309b0cd703cf647d0c48288468c0e8e4ad",
+          "load_tied_contenders": 3235,
+          "tie_break_applied": true,
+          "why": "highest boundary load (2/8) among 9711 candidates in B5_associated_learning; 3235 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B6_no_own_evidence_plain",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 6471,
+          "chose": "74c92840257fdf87a941e93ba5f7601a41cb3032c13582549efdde548f164566",
+          "load_tied_contenders": 3234,
+          "tie_break_applied": true,
+          "why": "highest boundary load (2/8) among 6471 candidates in B6_no_own_evidence_plain; 3234 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B7_evidence_after_progression",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 780,
+          "chose": "d0ae3f1ff8a8a5839110637bf28f7810f55b47ea4bbca80b61e16c2722310dbe",
+          "load_tied_contenders": 780,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 780 candidates in B7_evidence_after_progression; 780 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B8_destination_reached",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 6471,
+          "chose": "b71fe427513342b7c909c563eb58a0bccca38e98eafa23f1ac5d9d97b7448499",
+          "load_tied_contenders": 779,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 6471 candidates in B8_destination_reached; 779 tied on load, resolved by the \u00a79 tie-break"
+        }
+      ],
+      "gardener": [
+        {
+          "bin": "B1_very_early",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 1,
+          "chose": "858e6fb6b6f985e4884a6b640d0189a1992b4bc8131964a1548970f0a5ec096e",
+          "load_tied_contenders": 1,
+          "tie_break_applied": false,
+          "why": "highest boundary load (2/8) among 1 candidates in B1_very_early"
+        },
+        {
+          "bin": "B2_very_late",
+          "bin_empty": false,
+          "boundary_load": 4,
+          "candidates_in_bin": 1,
+          "chose": "b41d92c49c77fce38da7d4bbfdb7f8b130020d7715cbffef4983136a0f13f670",
+          "load_tied_contenders": 1,
+          "tie_break_applied": false,
+          "why": "highest boundary load (4/8) among 1 candidates in B2_very_late"
+        },
+        {
+          "bin": "B3_max_candidates_pref_active",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 214,
+          "chose": "1b258b8cc283d9186317f7e77bb8697b9991f6b568d91456d82c5490c87fdb78",
+          "load_tied_contenders": 214,
+          "tie_break_applied": true,
+          "why": "highest boundary load (2/8) among 214 candidates in B3_max_candidates_pref_active; 214 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B4_associated_demonstrated",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 6253,
+          "chose": "aaf0f84d5df1f95b26724bd34e285a7aea099632cc91fcfe1584d78ad807d6cb",
+          "load_tied_contenders": 5826,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 6253 candidates in B4_associated_demonstrated; 5826 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B5_associated_learning",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 6259,
+          "chose": "ba044687bd6bb7e3821b659a5c4d64bf0452ac2bc885b05da0a49fc5e393e54f",
+          "load_tied_contenders": 5830,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 6259 candidates in B5_associated_learning; 5830 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B6_no_own_evidence_plain",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 429,
+          "chose": "5b9e5dc7d3c4da92935b17b47449fd09e8384e85b05bfee96091b5ecb092815c",
+          "load_tied_contenders": 215,
+          "tie_break_applied": true,
+          "why": "highest boundary load (2/8) among 429 candidates in B6_no_own_evidence_plain; 215 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B7_evidence_after_progression",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 17485,
+          "chose": "56fe5782393a34cc77ba41b7e8e5f399650d80eb2be4e3f65452bb70532ebf4b",
+          "load_tied_contenders": 11654,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 17485 candidates in B7_evidence_after_progression; 11654 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B8_destination_reached",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 17484,
+          "chose": "092241c93662aaf7be4dee52c0cbd2c7bc5e8258fab8cd2b58b11477a4d99d5a",
+          "load_tied_contenders": 11653,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 17484 candidates in B8_destination_reached; 11653 tied on load, resolved by the \u00a79 tie-break"
+        }
+      ],
+      "mechanic": [
+        {
+          "bin": "B1_very_early",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 1,
+          "chose": "fbaf8fafc22d117d9be1f872450e06714793425d30457d7205743cba35a23ae8",
+          "load_tied_contenders": 1,
+          "tie_break_applied": false,
+          "why": "highest boundary load (2/8) among 1 candidates in B1_very_early"
+        },
+        {
+          "bin": "B2_very_late",
+          "bin_empty": false,
+          "boundary_load": 4,
+          "candidates_in_bin": 1,
+          "chose": "d0517ec173db9c4e717e9e380796f6087a974029014d67c71596478f9ce6489e",
+          "load_tied_contenders": 1,
+          "tie_break_applied": false,
+          "why": "highest boundary load (4/8) among 1 candidates in B2_very_late"
+        },
+        {
+          "bin": "B3_max_candidates_pref_active",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 5183,
+          "chose": "35f3a3106fa40b3d9fa16f382f1fbfecd894ad80d115685ba77de92059b11707",
+          "load_tied_contenders": 2592,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 5183 candidates in B3_max_candidates_pref_active; 2592 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B4_associated_demonstrated",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 12950,
+          "chose": "dae888d6abc8bbbf0acb3efbbe36541f9811a655b4f9328550fa54d746eac4c5",
+          "load_tied_contenders": 3238,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 12950 candidates in B4_associated_demonstrated; 3238 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B5_associated_learning",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 2586,
+          "chose": "718e77d865ac9e687f085591427a8cd2ee5899eda91c4af8dbe43ce582557f12",
+          "load_tied_contenders": 1294,
+          "tie_break_applied": true,
+          "why": "highest boundary load (2/8) among 2586 candidates in B5_associated_learning; 1294 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B6_no_own_evidence_plain",
+          "bin_empty": false,
+          "boundary_load": 2,
+          "candidates_in_bin": 3230,
+          "chose": "3dc27d67efe7bb23ff7b9d11f34eef23ccb2973cd453eb4e8f8947ff52df6473",
+          "load_tied_contenders": 2585,
+          "tie_break_applied": true,
+          "why": "highest boundary load (2/8) among 3230 candidates in B6_no_own_evidence_plain; 2585 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B7_evidence_after_progression",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 647,
+          "chose": "86068c87221e52f1654efd23dda765e68aa300b154d766495054ee67b8e73812",
+          "load_tied_contenders": 647,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 647 candidates in B7_evidence_after_progression; 647 tied on load, resolved by the \u00a79 tie-break"
+        },
+        {
+          "bin": "B8_destination_reached",
+          "bin_empty": false,
+          "boundary_load": 3,
+          "candidates_in_bin": 5180,
+          "chose": "0a6bb87f50e90b83fe84b72324f23b640dd7f176014cb96f64c622a2d957c29a",
+          "load_tied_contenders": 3236,
+          "tie_break_applied": true,
+          "why": "highest boundary load (3/8) among 5180 candidates in B8_destination_reached; 3236 tied on load, resolved by the \u00a79 tie-break"
+        }
+      ]
+    }
+  },
+  "version": "heldout-v4-generation-audit"
+}

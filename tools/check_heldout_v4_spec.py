@@ -46,6 +46,12 @@ REPO = Path(__file__).resolve().parents[1]
 SPEC = REPO / "docs" / "HELDOUT_V4_GENERATION_SPEC.md"
 PROTOCOL = REPO / "docs" / "EVALUATION_PROTOCOL.md"
 CSPEC = REPO / "docs" / "CONDITION_C_SPEC.md"
+GENERATOR = REPO / "tools" / "generate_heldout_v4.py"
+V4_JSON = REPO / "docs" / "heldout" / "heldout_v4_scenarios.json"
+V4_AUDIT = REPO / "docs" / "heldout" / "heldout_v4_generation_audit.json"
+
+sys.path.insert(0, str(REPO / "tools"))
+import pkm_reference  # noqa: E402
 
 NPCS = ("butler", "gardener", "mechanic")
 
@@ -162,9 +168,6 @@ def load_world() -> dict:
 
     files = {rel: (REPO / rel).read_bytes() for rel in pins if (REPO / rel).exists()}
 
-    sys.path.insert(0, str(REPO / "tools"))
-    import pkm_reference  # noqa: E402
-
     chrono = (REPO / "tests" / "heldout_v3_chronology_test.gd").read_text()
 
     exclusion: set[str] = set()
@@ -211,6 +214,10 @@ def load_world() -> dict:
         "generator_source": None,
         "v4_artifacts": sorted(
             p.name for p in (REPO / "docs" / "heldout").glob("*v4*")),
+        "v4_artifact_bytes": V4_JSON.read_bytes() if V4_JSON.exists() else None,
+        "v4_audit_text": V4_AUDIT.read_text() if V4_AUDIT.exists() else None,
+        "generator_bytes": GENERATOR.read_bytes() if GENERATOR.exists() else None,
+        "spec_bytes": SPEC.read_bytes(),
     }
 
 
@@ -638,9 +645,66 @@ def check_protocol_append_only(w, problems) -> None:
             f"section must be appended, not woven into the closed v3 protocol")
 
 
+def check_v4_matches_audit(w, problems) -> None:
+    """The generated benchmark, its audit, its generator and this spec agree."""
+    if w["v4_artifact_bytes"] is None:
+        problems.append("v4 artifacts exist but heldout_v4_scenarios.json does not")
+        return
+    if w["v4_audit_text"] is None:
+        problems.append("the v4 scenario set exists with no generation audit; "
+                        "how it was produced is unverifiable")
+        return
+
+    audit = json.loads(w["v4_audit_text"])
+    if audit.get("artifact_sha256") != sha256_bytes(w["v4_artifact_bytes"]):
+        problems.append("heldout_v4_scenarios.json does not hash to the value "
+                        "pinned in its own generation audit")
+    if audit.get("spec_sha256") != sha256_bytes(w["spec_bytes"]):
+        problems.append("the v4 audit was produced from a different version of "
+                        "this specification")
+    if w["generator_bytes"] is None:
+        problems.append("tools/generate_heldout_v4.py is gone; the benchmark "
+                        "cannot be reproduced")
+    elif audit.get("generator_sha256") != sha256_bytes(w["generator_bytes"]):
+        problems.append("tools/generate_heldout_v4.py has changed since it "
+                        "generated the benchmark")
+
+    doc = json.loads(w["v4_artifact_bytes"])
+    if doc.get("selector_was_run") is not False:
+        problems.append("the v4 scenario set no longer records selector_was_run false")
+    if doc.get("annotations_present") is not False:
+        problems.append("the v4 scenario set no longer records annotations_present false")
+    if doc.get("pkm_serialization") != pkm_reference.CANONICAL_MARKER_VALUE:
+        problems.append("the v4 scenario set does not declare canonical PKM")
+    labelled = [s["id"] for s in doc.get("scenarios", [])
+                if s.get("valid_hints") or s.get("annotation") is not None]
+    if labelled:
+        problems.append(f"{len(labelled)} v4 scenarios already carry a label, "
+                        f"beginning with {labelled[0]}")
+
+
 def check_no_v4_yet(w, problems) -> None:
-    if w["v4_artifacts"]:
-        problems.append(f"a v4 artifact already exists: {w['v4_artifacts']}")
+    """v4 either does not exist yet, or is exactly what the frozen generator made.
+
+    Until generation the assertion is simply that no v4 artifact exists: a
+    specification cannot have been tuned to a benchmark that was not there, and
+    that remains permanently checkable at `heldout-v4-generation-pre-freeze`.
+
+    Spec §15 step 1 then requires this checker to pass AT generation time, so an
+    unconditional "no v4 exists" would make the frozen order of operations
+    impossible to satisfy. Once the benchmark is on disk the same purpose is
+    served by a stronger claim, checked below: it hashes to the value its own
+    generation audit pinned, that audit was produced from this specification by
+    the generator still on disk, and not one scenario carries a label.
+    """
+    names = w["v4_artifacts"]
+    if names:
+        expected = {"heldout_v4_scenarios.json", "heldout_v4_generation_audit.json"}
+        unexpected = sorted(set(names) - expected)
+        if unexpected:
+            problems.append(f"unexpected v4 artifacts: {unexpected}")
+        check_v4_matches_audit(w, problems)
+
     for rel in ("docs/heldout/heldout_v3_ab_metrics.json",
                 "docs/heldout/heldout_v3_ab_raw.json"):
         doc = json.loads(w["files"][rel])
@@ -653,6 +717,42 @@ def check_no_v4_yet(w, problems) -> None:
 
 # --------------------------------------------------------------------------
 # fault injection
+
+
+def _v4_present(doc=None, audit=None, scenario=None, extra=None,
+                drop_audit=False, drop_generator=False):
+    """Install a consistent generated-v4 world, then break exactly one thing.
+
+    Built rather than read, so these faults can be exercised before v4 exists
+    and still exercise the post-generation branch.
+    """
+
+    def mutate(w):
+        body = {"selector_was_run": False, "annotations_present": False,
+                "pkm_serialization": pkm_reference.CANONICAL_MARKER_VALUE,
+                "scenarios": [{"id": "v4_core_butler_01", "valid_hints": [],
+                               "annotation": None}]}
+        body.update(doc or {})
+        body["scenarios"][0].update(scenario or {})
+        blob = json.dumps(body).encode()
+
+        gen = w["generator_bytes"] or b"placeholder generator\n"
+        book = {"artifact_sha256": sha256_bytes(blob),
+                "spec_sha256": sha256_bytes(w["spec_bytes"]),
+                "generator_sha256": sha256_bytes(gen)}
+        book.update(audit or {})
+
+        names = ["heldout_v4_generation_audit.json", "heldout_v4_scenarios.json"]
+        if drop_audit:
+            names.remove("heldout_v4_generation_audit.json")
+        if extra:
+            names.append(extra)
+        w["v4_artifacts"] = sorted(names)
+        w["v4_artifact_bytes"] = blob
+        w["v4_audit_text"] = None if drop_audit else json.dumps(book)
+        w["generator_bytes"] = None if drop_generator else gen
+
+    return mutate
 
 
 def _fault_cases():
@@ -756,8 +856,26 @@ def _fault_cases():
         ("generator calls the selector", check_generator_integrity,
          lambda w: w.__setitem__("generator_source",
                                  "import x\nh = select_condition_a(npc, state)\n")),
-        ("a v4 artifact exists", check_no_v4_yet,
-         lambda w: w["v4_artifacts"].append("heldout_v4_scenarios.json")),
+        ("a v4 artifact exists with no audit", check_no_v4_yet,
+         _v4_present(drop_audit=True)),
+        ("v4 does not match its audit", check_no_v4_yet,
+         _v4_present(audit={"artifact_sha256": "0" * 64})),
+        ("v4 audit came from another spec", check_no_v4_yet,
+         _v4_present(audit={"spec_sha256": "0" * 64})),
+        ("v4 generator changed after generation", check_no_v4_yet,
+         _v4_present(audit={"generator_sha256": "0" * 64})),
+        ("v4 generator deleted after generation", check_no_v4_yet,
+         _v4_present(drop_generator=True)),
+        ("a v4 scenario is already labelled", check_no_v4_yet,
+         _v4_present(scenario={"valid_hints": ["chem_indicator_intro"]})),
+        ("v4 records that a selector was run", check_no_v4_yet,
+         _v4_present(doc={"selector_was_run": True})),
+        ("v4 records that annotations are present", check_no_v4_yet,
+         _v4_present(doc={"annotations_present": True})),
+        ("v4 is not canonically serialized", check_no_v4_yet,
+         _v4_present(doc={"pkm_serialization": "legacy"})),
+        ("a stray v4 artifact appears", check_no_v4_yet,
+         _v4_present(extra="heldout_v4_scenarios_backup.json")),
         ("C recorded as run on v3", check_no_v4_yet,
          lambda w: w["files"].__setitem__(
              "docs/heldout/heldout_v3_ab_metrics.json",
