@@ -1,0 +1,121 @@
+{
+  "freeze": "condition-c-pre-v4-freeze",
+  "frozen_before": "heldout-v4 generation",
+  "spec_version": "condition-c-v1",
+  "prompt_template_version": "condition-c-v1",
+  "config_version": "condition-c-model-v1",
+  "condition_c_has_been_run_on_heldout_v3": false,
+  "condition_c_has_a_score": false,
+  "note": "Condition C is frozen BEFORE the holdout it will be scored on exists. It has never been run on heldout-v3, on any scenario in it, or on any state derived from one. Its confirmatory evaluation uses a new holdout generated only after this freeze.",
+  "required_hashes": {
+    "c_specification": {
+      "path": "docs/CONDITION_C_SPEC.md",
+      "sha256": "d75cb52d01cbd09e7377d077f4968802ad4b0fb4cddf78cf491c95f1a76f5621"
+    },
+    "prompt_template": {
+      "path": "prompts/condition_c_selector_v1.txt",
+      "sha256": "c4848c52329d625efef4b4cd2b237787d02c5e2e1e015cc195aa6ff3976a9d93"
+    },
+    "c_implementation": {
+      "path": "scripts/condition_c_selector.gd",
+      "sha256": "9481e90e3b21fee8f261e736f8b43162465a918caf9058848daae027ff40b823"
+    },
+    "model_configuration": {
+      "path": "config/condition_c_model_v1.json",
+      "sha256": "122d938e4eaa35577e5794d4cd7ddecd01ccd680d3b6817f7cb7fc8fa3ebf066"
+    },
+    "shared_catalogue": {
+      "path": "scripts/adaptive_hint_data.gd",
+      "sha256": "a957ef713b4f80f9e4a423d8e950aa29b0dd55819caa4b0a7ea59ccec78e2036"
+    },
+    "pkm_implementation": {
+      "path": "scripts/player_knowledge_model.gd",
+      "sha256": "55ffe8bedb654813959a357d2ce427c068ea57ec37d9c76b50291eb40cd65cac"
+    }
+  },
+  "supporting_hashes": {
+    "model_transport": {
+      "path": "scripts/condition_c_client.gd",
+      "sha256": "a5afc0d20d0a97f7813cfb64c0db3cb0f8ca93dba0a4005531d15d1810377ad9"
+    },
+    "contract_tests": {
+      "path": "tests/condition_c_selector_test.gd",
+      "sha256": "882f2c31e1760ea5a01f3cb0f9e1d0e7939b3c3acbbba372b20135af4adedbb1"
+    },
+    "canonical_pkm_serializer": {
+      "path": "tools/pkm_reference.py",
+      "sha256": "e585b01e7ea05159dcc8c58f0ee14fb1c2ea4963a833746a9dd4691d3533db60"
+    },
+    "canonical_pkm_fixture": {
+      "path": "docs/heldout/pkm_reference_fixture.json",
+      "sha256": "1d76e0affd589b8fc1e3820faf11d5c6dad02084f13004bff5113118b0507592"
+    },
+    "canonical_pkm_test": {
+      "path": "tests/pkm_serialization_canonical_test.gd",
+      "sha256": "bdb71799a9951e5e9595f1785669891862640597cddfbd75d107fb90c0f1358c"
+    },
+    "condition_b_documentation_verifier": {
+      "path": "tools/verify_condition_b_documentation.gd",
+      "sha256": "061728aa518ca3f9e2b31fa603f715b2e09aac1ef91f059cf363b271b539bfb8"
+    },
+    "evaluation_protocol": {
+      "path": "docs/EVALUATION_PROTOCOL.md",
+      "sha256": "1a211f6b27ac69d9fba8b0b0cb0ee669f85996faee734b2725e5797982b451c8"
+    },
+    "freeze_checker": {
+      "path": "tools/check_condition_c_freeze.py",
+      "sha256": "d534c901a176a7ab08a28868e32acb92f7a0529c380d1f58f684d34b98f02d87"
+    }
+  },
+  "unchanged_since_heldout_v3_evaluation": {
+    "note": "These are the frozen artifacts of the CLOSED heldout-v3 experiment. This freeze did not touch them. The hashes below are the same values check_heldout_v3_evaluation_integrity.py verifies.",
+    "condition_a_and_b_selector": {
+      "path": "scripts/adaptive_hint_selector.gd",
+      "sha256": "c4a2c31201143fde1616e97f8bec5544ccb775c1f0b3605c1fc8d89fea3a8cb2"
+    },
+    "shared_catalogue": {
+      "path": "scripts/adaptive_hint_data.gd",
+      "sha256": "a957ef713b4f80f9e4a423d8e950aa29b0dd55819caa4b0a7ea59ccec78e2036"
+    },
+    "pkm_implementation": {
+      "path": "scripts/player_knowledge_model.gd",
+      "sha256": "55ffe8bedb654813959a357d2ce427c068ea57ec37d9c76b50291eb40cd65cac"
+    }
+  },
+  "model_configuration": {
+    "provider": "anthropic",
+    "api": "messages",
+    "model": "claude-opus-5",
+    "temperature": 0,
+    "top_p": null,
+    "top_k": null,
+    "max_tokens": 256,
+    "seed": null,
+    "stop_sequences": [],
+    "samples_per_scenario": 1,
+    "schema_retry": {
+      "max_retries": 1,
+      "on_exhausted": "SILENCE"
+    },
+    "transport_retry": {
+      "max_retries": 2,
+      "backoff_seconds": [
+        2,
+        8
+      ],
+      "on_exhausted": "ABORT_RUN"
+    },
+    "determinism_claimed": false,
+    "determinism_note": "The Messages API exposes no seed parameter. Temperature 0 reduces variance but does not guarantee reproducibility. Condition C is NOT a deterministic condition; Conditions A and B are. Every raw response is logged verbatim so a diverging rerun is visible."
+  },
+  "verification_at_freeze": {
+    "tests/condition_c_selector_test.gd": "PASS; 7 of 7 fault injections detected",
+    "tests/pkm_serialization_canonical_test.gd": "PASS; 5 datasets, 3664 concept assertions; 2 of 2 fault injections detected",
+    "tools/verify_condition_b_documentation.gd": "PASS; 263168 states compared; 5 of 5 fault injections detected",
+    "tests/matched_catalogue_test.gd": "PASS",
+    "tools/check_heldout_v3_evaluation_integrity.py": "PASS; Condition C not run",
+    "tools/check_heldout_v3_annotations.py": "PASS",
+    "tools/check_condition_c_freeze.py": "PASS; 17 hashes recomputed; 4 of 4 fault injections detected"
+  },
+  "self_check": "tools/check_condition_c_freeze.py recomputes every hash above. This manifest cannot contain its own hash; the tag condition-c-pre-v4-freeze is what fixes it."
+}

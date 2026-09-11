@@ -426,7 +426,7 @@ the data supports it. `RedundantWhenTeachable` always reports numerator and
 denominator, and an empty denominator is reported as
 `N/A (0 teaching hints delivered)` -- never zero percent.
 
-## 9b. Frozen matched catalogue and Condition A-4
+## 9b. Frozen matched catalogue, Condition A-4 and Condition B
 
 ### The catalogue is shared, not per-condition
 
@@ -486,6 +486,179 @@ remain available to B and C.
 **Foundational teaching is not the generic fallback.** The `*_no_evidence` hints
 are deliberately retained. Collapsing them into the foundational hints would
 manufacture redundant teaching behaviour by construction.
+
+### Condition B — PKM-aware deterministic selector (frozen)
+
+**Documentation only.** This subsection was written *after* the heldout-v3 A/B
+evaluation, and it changes nothing. It is a transcription of
+`AdaptiveHintSelector.select_adaptive` as frozen at `heldout-v3-pre-annotation`
+(`scripts/adaptive_hint_selector.gd`, sha256
+`c4a2c31201143fde1616e97f8bec5544ccb775c1f0b3605c1fc8d89fea3a8cb2`), recorded
+here because Condition C must be specified against B's *actual* behaviour rather
+than against an informal memory of it.
+
+The transcription is machine-checked, not asserted:
+`tools/verify_condition_b_documentation.gd` reimplements B from the wording below
+and compares it to the real selector over an exhaustive enumeration of every
+state that can change B's answer. Prose that drifts from the code fails that
+check.
+
+#### 1. Eligibility (hard prerequisites)
+
+B builds a candidate list by walking the shared catalogue and keeping a hint iff
+**all** of the following hold:
+
+| Check | Field | Condition |
+|---|---|---|
+| Ownership | `npc` | equals the NPC being spoken to, compared as an exact string |
+| Evidence present | `requires_evidence` | every listed item is in `evidence_items` |
+| Evidence absent | `requires_evidence_absent` | no listed item is in `evidence_items` |
+| Story context | `requires_story_flags` | every listed flag is in `story_flags` |
+
+Nothing else gates eligibility. In particular:
+
+* **`preferred_when_demonstrated` is never consulted here.** It cannot add or
+  remove a candidate. It is a soft preference and only Rule 2 reads it.
+* **B's filter does not read `requires_concept`.**
+  `AdaptiveHintData.state_violations()` — the catalogue's authoritative hard
+  prerequisite checker, and the one the metrics use for `StateViolationRate` —
+  *does*. The two predicates therefore coincide only while no hint declares a
+  `requires_concept`. **No hint in the frozen 11 declares one**, which is why
+  they are the same predicate in practice. The A/B harness asserts this rather
+  than assuming it, and any future hint that declares `requires_concept` breaks
+  the equivalence and must be treated as a protocol change.
+* Candidates are appended in **catalogue declaration order** (see Rule 5).
+
+#### 2. Rule order
+
+B is a four-step cascade and returns from the first step that fires:
+
+```
+Rule 1  filter the catalogue to hard-eligible hints for this NPC
+Rule 2  return the first eligible hint whose soft preference is satisfied
+Rule 3  if the A-4 fallback is redundant, return the first eligible,
+        non-fallback, non-redundant alternative
+Rule 4  return the A-4 fallback
+```
+
+#### 3. Soft-preference behaviour (Rule 2 — the PKM treatment)
+
+Walking the eligible list in catalogue order, B returns the **first** hint for
+which both:
+
+1. `preferred_when_demonstrated` is **non-empty** — a hint that omits the field
+   can never win Rule 2; and
+2. **every** concept it names is `DEMONSTRATED`, evaluated by
+   `PlayerKnowledgeModel.is_demonstrated_in(concept, knowledge_items,
+   story_flags, evidence_items)`.
+
+Only `DEMONSTRATED` satisfies the test. `UNSEEN` and `LEARNING` do not, and
+neither does `ASSISTED` (which PKM v1 leaves unreachable). The test is
+conjunctive over the list; all three hints that carry the field name exactly one
+concept, so in the frozen catalogue the distinction is not exercised.
+
+Rule 2 is **unconditional on redundancy and on the fallback**: it does not check
+whether its winner is redundant, and it does not look at what A-4 would have
+said. In the frozen catalogue all three soft-preferred hints declare
+`"teaches": []`, so a Rule 2 winner is never redundant — but that is a property
+of the catalogue, not a guard inside B.
+
+| Hint | Preferred when DEMONSTRATED |
+|---|---|
+| `h_butler_knows_rule` | `indicator_reaction` |
+| `h_gardener_knows_reflection` | `reflection` |
+| `h_mechanic_knows_resistance` | `circuit_fault_isolation` |
+
+#### 4. Redundancy behaviour (Rule 3)
+
+A hint is **redundant** iff its `teaches` set is non-empty and every concept in
+it is `DEMONSTRATED`. Consequently:
+
+* `"teaches": []` → **never** redundant, however much the player knows.
+* A hint naming a concept outside PKM v1 → never redundant, because such a
+  concept can never reach `DEMONSTRATED`. This is why `h_butler_no_evidence`
+  (`teaches: ["dual_lock_rule"]`) is never redundant and the Butler contributes
+  no teaching-redundancy signal.
+* A hint id absent from the catalogue → never redundant.
+
+Rule 3 tests redundancy on **one** hint: the A-4 fallback. If the fallback is
+*not* redundant, Rule 3 does not fire at all and B delivers the fallback even if
+some other eligible hint would also have been fine. If the fallback **is**
+redundant, B returns the first hint in catalogue order that is (a) eligible,
+(b) not the fallback, and (c) not itself redundant. If no such hint exists, Rule
+3 falls through and **Rule 4 delivers the redundant fallback anyway** — B has no
+"stay silent rather than repeat myself" branch.
+
+#### 5. Tie-breaking
+
+Every scan — the eligibility walk, the Rule 2 search, the Rule 3 search — iterates
+the catalogue `Dictionary` and therefore runs in **declaration order**, which
+GDScript preserves. Ties are resolved by position in this list and by nothing
+else:
+
+```
+1  h_butler_no_evidence          7  h_butler_knows_rule
+2  h_butler_stain                8  h_gardener_leaf_colour
+3  h_gardener_no_evidence        9  h_gardener_knows_reflection
+4  h_gardener_pollen            10  h_mechanic_series_basics
+5  h_mechanic_no_evidence       11  h_mechanic_knows_resistance
+6  h_mechanic_short_circuit
+```
+
+Reordering the catalogue source would change B's output on states where more
+than one hint satisfies a rule. The order is part of the frozen behaviour.
+
+#### 6. Fallback (Rule 4)
+
+The fallback is `select_condition_a(npc, state)` — the Condition A-4 tier choice,
+byte-for-byte the same function A uses. It is computed **before** the eligibility
+walk, on every call, whether or not it is used.
+
+B does **not** re-check the fallback against the hard prerequisites. Under the
+frozen catalogue it never needs to: every A-4 tier choice is hard-eligible in
+exactly the states that select it, because each tier's hint requires the presence
+or absence of precisely the evidence item that tier keys on, and no hint in the
+catalogue declares `requires_story_flags`.
+
+| Tier | Selected when | Hint | Hard prerequisite | Eligible? |
+|---|---|---|---|---|
+| 1 | own evidence held | `h_*_stain` / `_pollen` / `_short_circuit` | requires that item | yes |
+| 2 | own absent, other major held | `h_*_knows_*` | requires own item absent | yes |
+| 3 | no major evidence | `h_butler_no_evidence` | requires `fake_red_stain` absent | yes |
+| 3 | no major evidence | `h_gardener_leaf_colour`, `h_mechanic_series_basics` | none declared | yes |
+
+This is a **property of the catalogue, not a guarantee in B's code.** A future
+hint whose tier assignment and prerequisites disagree would let B emit a
+state-ineligible hint. `StateViolationRate` is the metric that would catch it.
+
+#### 7. Silence behaviour
+
+**B has no silence rule.** Rules 2 and 3 return catalogue ids; Rule 4 returns the
+A-4 fallback, which is non-empty for every NPC in `CONDITION_A_TIERS`. B returns
+the empty string in exactly one circumstance: the NPC is not `butler`, `gardener`
+or `mechanic`, in which case `select_condition_a` returns `""`, the eligible list
+is empty (no hint claims that NPC), and Rules 2 and 3 cannot fire.
+
+For the three evaluated NPCs, B's `Coverage` is therefore **48/48 by
+construction**, and its silence count is structurally zero. Under §6 of this
+protocol a silence is scored as not-relevant, so B can never gain from
+abstaining — it has no way to abstain. A condition that *can* abstain (such as C)
+is not comparable to B on `Coverage` without saying so.
+
+#### 8. Statelessness and what B cannot see
+
+`select_adaptive` accepts a third parameter, `recent_hint_ids`, for call-site
+compatibility. **It is never read.** B holds no state between calls, so scenario
+order cannot change its output and the evaluation is invariant to the order rows
+are processed.
+
+B reads exactly three fields of the state dictionary — `evidence_items`,
+`story_flags`, `knowledge_items` — and reaches PKM only through
+`is_demonstrated_in`. It never reads a serialized `pkm_states` block (see §4),
+never sees a scenario id, ordinal, room or stage, never sees human labels, and
+never sees Condition A's recorded output — it recomputes the A-4 choice itself.
+`knowledge_items` is forwarded to PKM but PKM v1 never reads it; it is dead
+state.
 
 ### Reporting structure
 

@@ -1,0 +1,45 @@
+{
+  "config_version": "condition-c-model-v1",
+  "frozen": true,
+  "frozen_before": "heldout-v4 generation",
+
+  "provider": "anthropic",
+  "api": "messages",
+  "model": "claude-opus-5",
+
+  "temperature": 0,
+  "top_p": null,
+  "top_k": null,
+  "max_tokens": 256,
+  "seed": null,
+  "stop_sequences": [],
+
+  "samples_per_scenario": 1,
+
+  "schema_retry": {
+    "max_retries": 1,
+    "retry_prompt": "prompts/condition_c_selector_v1.txt :: RETRY_NOTE",
+    "on_exhausted": "SILENCE"
+  },
+
+  "transport_retry": {
+    "max_retries": 2,
+    "backoff_seconds": [2, 8],
+    "on_exhausted": "ABORT_RUN"
+  },
+
+  "prompt_template": "prompts/condition_c_selector_v1.txt",
+  "prompt_template_version": "condition-c-v1",
+
+  "notes": {
+    "temperature": "0 is the lowest-variance setting the provider exposes. This is a selection task with a small discrete answer space; sampling diversity has no value here and would only add noise to a 48-scenario benchmark.",
+    "top_p": "Deliberately not sent. With temperature 0 nucleus sampling is redundant, and sending both is ambiguous across providers. `null` means the parameter is omitted from the request, not that a default is chosen.",
+    "top_k": "Deliberately not sent, for the same reason as top_p.",
+    "max_tokens": "256. The required output is one JSON object holding an identifier and one short sentence; the longest identifier plus a generous reason is well under 100 tokens. The cap is a bound on runaway output, not a budget the model is expected to use. A truncated response is a schema failure and is retried, never salvaged.",
+    "seed": "The Anthropic Messages API exposes no seed parameter. Determinism is therefore NOT claimed for Condition C, which is the honest position and is why the run log records every raw response verbatim: a rerun that diverges must be visible, not silently averaged away. This is a stated limitation of Condition C, not a defect in the harness.",
+    "samples_per_scenario": "1. Self-consistency voting over k samples would be a different condition with a different failure profile, and choosing k after seeing results would be tuning. If a voting variant is ever evaluated it gets its own frozen config version and its own holdout.",
+    "schema_retry": "Exactly one retry. The retry addresses output FORMAT only and never hints at a preferred answer; its wording is frozen in the template's RETRY_NOTE block. One retry is enough to recover a stray code fence or a truncated object without becoming an iterative repair loop that quietly searches for an acceptable answer.",
+    "transport_retry": "A network or 5xx failure is not a model decision. It is retried up to twice and, if still failing, ABORTS THE RUN rather than being recorded as SILENCE — a transport error scored as an abstention would be a fabricated data point.",
+    "model_choice": "claude-opus-5 is the most capable model available. Condition C exists to answer 'given a knowledge model, what does an LLM add over deterministic rules?', so the fair test is the strongest selector, not the cheapest. A smaller-model variant is a separate condition requiring its own frozen config and its own holdout."
+  }
+}
