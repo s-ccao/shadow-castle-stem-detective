@@ -1,0 +1,118 @@
+{
+  "composite_score": "none. Systems are not ranked by an invented overall score.",
+  "conditions": {
+    "A": "A-4 Evidence-depth Static Baseline (frozen)",
+    "B": "PKM-aware deterministic selector (frozen)",
+    "C": "LLM + PKM selector, condition-c-v1 (frozen)"
+  },
+  "evaluated_freeze": "heldout-v4-post-annotation",
+  "freeze": "heldout-v4-evaluation",
+  "frozen_inputs": {
+    "annotated_holdout": {
+      "path": "docs/heldout/heldout_v4_annotated.json",
+      "sha256": "cd8d9e06d9c2bfd0035e19ec6962af7c6ac377693b17c5d410d9037a9b55b13c"
+    },
+    "condition_ab_selector": {
+      "path": "scripts/adaptive_hint_selector.gd",
+      "sha256": "c4a2c31201143fde1616e97f8bec5544ccb775c1f0b3605c1fc8d89fea3a8cb2"
+    },
+    "condition_c_client": {
+      "path": "scripts/condition_c_client.gd",
+      "sha256": "d9071a9a8321f777a05c4c3c309f7b2ab244d90f74a55ec8d08f1a586bb5b107"
+    },
+    "condition_c_config": {
+      "path": "config/condition_c_model_v2.json",
+      "sha256": "9889a63f56b7d0e8416217aed106948274ed73558039201b32b81380c256be1e"
+    },
+    "condition_c_prompt": {
+      "path": "prompts/condition_c_selector_v1.txt",
+      "sha256": "c4848c52329d625efef4b4cd2b237787d02c5e2e1e015cc195aa6ff3976a9d93"
+    },
+    "condition_c_selector": {
+      "path": "scripts/condition_c_selector.gd",
+      "sha256": "f2cab2d0d3c9bb204724bd9ffe94301744fc81eff77bf0c3c6752279208f7e2d"
+    },
+    "condition_c_wrapper": {
+      "path": "tools/condition_c_claude_invoke.sh",
+      "sha256": "c8ab07a1bec297adab89fc159273a766f1987efad73121cfe0f2d6b48af7229e"
+    },
+    "pkm_implementation": {
+      "path": "scripts/player_knowledge_model.gd",
+      "sha256": "55ffe8bedb654813959a357d2ce427c068ea57ec37d9c76b50291eb40cd65cac"
+    },
+    "pre_annotation_scenarios": {
+      "path": "docs/heldout/heldout_v4_scenarios.json",
+      "sha256": "1bb1535f64168fe4c5e6fe767aabe841761d5bc248a2e17234d29942c3a0a23d"
+    },
+    "shared_catalogue": {
+      "path": "scripts/adaptive_hint_data.gd",
+      "sha256": "a957ef713b4f80f9e4a423d8e950aa29b0dd55819caa4b0a7ea59ccec78e2036"
+    }
+  },
+  "human_labels_changed": false,
+  "limitations": [
+    "CORE conclusions are confirmatory; STRESS is secondary robustness and boundary analysis.",
+    "Gardener and Mechanic interaction history is not represented in the state model. Scenarios 58 and 60 are HIGH ambiguity for this reason.",
+    "The v4 checker allowlist amendment occurred before evaluation and changed no frozen scenario selection, label, selector or Condition C behaviour.",
+    "The annotator note on Scenarios 67-70 contains a descriptive imprecision: circuit_fault_isolation is LEARNING at 69 and 70, not DEMONSTRATED. Frozen scenario state and labels are authoritative.",
+    "Scenario 72's final annotation was an assistant-proposed adjudication following the researcher's established rule and was accepted into the frozen set. Not all 72 labels originated independently with the researcher.",
+    "v3 outcomes were not used to alter v4 evaluation or interpretation.",
+    "Condition C output is not deterministic and is not claimed to be. Sampling parameters are not controllable through this transport, so re-running would not be expected to reproduce it exactly.",
+    "config/condition_c_model_v2.json declares transport_retry.backoff_seconds but the frozen selector counts transport retries without sleeping. The delay was applied by a composition wrapper in the runner, changing no retry count, budget or abort condition. Recorded in the C transport manifest."
+  ],
+  "output_artifacts": {
+    "condition_c_raw": {
+      "note": "Per-scenario Condition C output plus the transport manifest. One-shot: every row is a single live model call that is never repeated.",
+      "path": "docs/heldout/heldout_v4_c_raw.json",
+      "sha256": "052e25f8c48186ae174cd1546c8ec21537cf0cbb3f5bbaa0740b0fcaae964c42"
+    },
+    "condition_c_run_log": {
+      "note": "Append-only, one line per scenario, written before the next scenario started. The audit trail for one-shot execution: a resampled scenario would appear here twice.",
+      "path": "docs/heldout/heldout_v4_c_run.jsonl",
+      "sha256": "048ac67edab10cc51b5a22842dccfc3aae6386c99d7b1ca8cdee2f1a76924741"
+    },
+    "conditions_a_and_b_raw": {
+      "note": "Per-scenario Condition A and Condition B output, with the decision trace reconstructed and verified against what the frozen selectors returned.",
+      "path": "docs/heldout/heldout_v4_ab_raw.json",
+      "sha256": "1a78e1899481c096a441ffed2712b19c1d47cde4bcd55294597519e006d58b77"
+    },
+    "joined_evaluation_table": {
+      "note": "A, B and C joined per scenario against the frozen human labels, with enough metadata to recompute every metric independently.",
+      "path": "docs/heldout/heldout_v4_evaluation_table.json",
+      "sha256": "d72f1ede9651f290ae0c3f1a54ec2fd4dbb20e09b4c96a520d95a6ad6f3aebec"
+    },
+    "metric_summary": {
+      "note": "CORE, STRESS and all-72 descriptive summaries, exact paired McNemar results, and the per-NPC and ambiguity breakdowns.",
+      "path": "docs/heldout/heldout_v4_metrics.json",
+      "sha256": "66d4e62a17bb2fa06d943c1cc32b254b52e9001bdad053d6b6362fe930f816c3"
+    }
+  },
+  "primary_metric": "RelevantHintRate = relevant delivered hints / all attempted scenarios. SILENCE is always a failure, including where valid_hints is empty.",
+  "producers": [
+    {
+      "path": "tools/run_heldout_v4_ab_evaluation.gd",
+      "produces": "Conditions A and B"
+    },
+    {
+      "path": "tools/run_heldout_v4_c_evaluation.gd",
+      "produces": "Condition C, one shot"
+    },
+    {
+      "path": "tools/compute_heldout_v4_metrics.py",
+      "produces": "all metrics and McNemar tests"
+    },
+    {
+      "path": "tools/check_heldout_v4_evaluation_integrity.py",
+      "produces": "independent recomputation and fault suite"
+    }
+  ],
+  "redundancy_note": "Human relevance and non-redundancy are separate. A hint can be labelled relevant by the annotator and still count as redundant where it teaches a concept already DEMONSTRATED. Human labels were not rewritten to remove that tension.",
+  "run": "first and only heldout-v4 evaluation",
+  "secondary_metric": "AppropriateActionRate, prospective for v4. Not applied retrospectively to v3.",
+  "selector_logic_changed": false,
+  "strata": {
+    "CORE": "ordinals 1-48, PRIMARY CONFIRMATORY",
+    "STRESS": "ordinals 49-72, secondary robustness and boundary analysis",
+    "note": "CORE and STRESS are not merged into a headline result. The all-72 block is descriptive only."
+  }
+}
