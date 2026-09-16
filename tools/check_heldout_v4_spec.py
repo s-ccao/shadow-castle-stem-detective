@@ -699,7 +699,15 @@ def check_no_v4_yet(w, problems) -> None:
     """
     names = w["v4_artifacts"]
     if names:
-        expected = {"heldout_v4_scenarios.json", "heldout_v4_generation_audit.json"}
+        # The annotated copy is a required protocol artifact, not a stray file:
+        # §12.7 step 2 mandates human annotation after generation, and v3 has
+        # the same pair. The allowlist predated that step. Adding it costs the
+        # check nothing -- what this guard protects is asserted below against
+        # heldout_v4_scenarios.json specifically, which must still record
+        # annotations_present false and carry no label on any scenario.
+        expected = {"heldout_v4_scenarios.json",
+                    "heldout_v4_generation_audit.json",
+                    "heldout_v4_annotated.json"}
         unexpected = sorted(set(names) - expected)
         if unexpected:
             problems.append(f"unexpected v4 artifacts: {unexpected}")

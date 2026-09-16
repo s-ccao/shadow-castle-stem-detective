@@ -955,3 +955,100 @@ the time; this note records the present state.
 The consequence for v4 is stated in the generation spec §5.8: hard eligibility is
 a function of `evidence_items` alone, so hard-eligible candidate count is
 collinear with own-evidence-present within each NPC.
+
+### 12.10 Annotation freeze (`heldout-v4-post-annotation`)
+
+Ground truth was supplied by human blind relevance annotation for all 72
+scenarios and materialized into `docs/heldout/heldout_v4_annotated.json`, an
+annotated copy. As in §9b the pre-annotation file is **not** modified:
+`heldout_v4_scenarios.json` stays byte-identical at `1bb1535f…`,
+`annotations_present: false`, `selector_was_run: false`, so the state set
+remains verifiable without reference to the labels and
+`tools/check_heldout_v4_acceptance.py` still passes against it unchanged.
+
+Annotation-only fingerprint — SHA-256 over scenario id, `valid_hints`,
+`annotation_rationale` and `ambiguity_note` alone, in file order, computed the
+same way as v3 so the two protocol versions are comparable:
+
+```
+29a08dc05593366b77f77b745d33af31b8cf191c939e62cbc394ade0ecc858b2
+```
+
+Annotated file SHA-256:
+
+```
+cd8d9e06d9c2bfd0035e19ec6962af7c6ac377693b17c5d410d9037a9b55b13c
+```
+
+State-only content SHA-256 — over the 19 state, path, PKM and eligibility
+fields, excluding both annotation fields, and therefore identical for the
+pre-annotation set and the annotated copy:
+
+```
+d9289573df1fd90107ac9043318b506a603aef790228949af3721397f857621a
+```
+
+Ambiguity: **62 LOW, 8 MEDIUM, 2 HIGH**. MEDIUM at ordinals 6, 11, 12, 15, 22,
+29, 30, 41; HIGH at ordinals 58 and 60. Fifteen scenarios carry the **NONE**
+label — ordinals 2, 5, 9, 16, 19, 24, 28, 49, 50, 51, 52, 55, 56, 66 and 71.
+Per §8b NONE is a real annotation: every scenario carries a non-empty rationale
+and an ambiguity level, and it is those, not a non-empty `valid_hints`, that
+separate an annotated NONE from an unfilled blank. Across the set there are 105
+hint labels, every one of them hard-eligible in its own scenario.
+
+#### Annotator notes carried forward
+
+These were recorded by the annotator and are reproduced verbatim; they state
+the scope of the labels and are part of the freeze.
+
+- Scenario 58 and Scenario 60 are HIGH ambiguity because the progression model
+  has no Gardener interaction-history flags. Whether `h_gardener_pollen` is
+  relevant depends materially on whether the player has already heard that
+  exact response.
+- Gardener and Mechanic interaction history generally is not represented by the
+  frozen state model. Do not invent prior-conversation facts.
+- Scenario 72's final label follows the same human annotation rule already
+  applied to Scenarios 67–70: `circuit_fault_isolation` is DEMONSTRATED but the
+  maintenance-route statement can still provide investigative information,
+  while `circuit_continuity` is LEARNING and the series-basics explanation
+  remains useful.
+- The VALID_HINTS labels are the human ground truth. If you normalize rationale
+  wording, that is editorial prose only and must not alter the labels.
+
+On the third note: `circuit_fault_isolation` is DEMONSTRATED at ordinals 67, 68
+and 72, but LEARNING at ordinals 69 and 70. The label
+`[h_mechanic_knows_resistance, h_mechanic_series_basics]` is the same across all
+five, so the note's conclusion is unaffected; only its descriptive clause is
+imprecise for 69 and 70. Recorded here rather than corrected in the note, which
+is the annotator's text.
+
+The second note is a limitation of the state model, not of these two scenarios
+alone: `INTERACTION_FLAGS` declares three flags for the Butler
+(`butler_challenge_given`, `butler_challenge_complete`,
+`chemistry_butler_interviewed`) and none at all for the Gardener or the
+Mechanic. Ordinals 58 and 60 are where that gap becomes decision-relevant; the
+same gap applies in principle to every Gardener and Mechanic scenario, and no
+rationale in the annotated file claims that a Gardener or Mechanic line has or
+has not been heard before.
+
+#### Rationale text
+
+`annotation_rationale` is normalized English prose recording the state facts in
+view and the decision reached. It is editorial and carries no authority: several
+scenarios share an identical (NPC, evidence, hard-eligible-hint) shape and still
+carry different labels, so no rationale claims that the facts it cites entail
+the label. The hint ids and ambiguity levels are the ground truth.
+
+- **Regeneration** — `python3 tools/materialize_heldout_v4_annotations.py`
+  reproduces the annotated file byte-for-byte, and refuses to run unless the
+  pre-annotation source still hashes to `1bb1535f…`
+- **Validation** — `python3 tools/check_heldout_v4_annotations.py` re-derives
+  every claim above from the files on disk, re-parsing hint eligibility from
+  `scripts/adaptive_hint_data.gd` rather than trusting the artifact's own
+  `eligible_hints`. It shares no constants with the materializer.
+  `--fault-test` injects 15 mutations and requires each to be caught
+
+No selector has been run against heldout-v4. Both files carry
+`selector_was_run: false`, neither tool above imports a selector or calls a
+scoring function, and no Condition A, B or C output appears in either file.
+Conditions A, B and C remain unobserved on heldout-v4 as of this freeze.
