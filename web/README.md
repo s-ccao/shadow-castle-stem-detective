@@ -1,18 +1,24 @@
 # Web publishing
 
-Two Vercel projects, one repository. The portfolio site stays small and
-redeploys on every push; the game payload is tens of megabytes and is deployed
-and rolled back on its own schedule.
+Two Vercel projects, one repository. The portfolio site is small and cheap to
+redeploy; the game payload is tens of megabytes and is deployed and rolled back
+on its own schedule.
 
 | Hostname | Vercel project | Deploys from | Purpose |
 | --- | --- | --- | --- |
-| `shadowcastledetective.com` | `shadow-castle-detective-site` (`web/landing`) | Git push (automatic) | Game and portfolio site |
+| `shadowcastledetective.com` | `shadow-castle-detective-site` (`web/landing`) | CLI upload | Game and portfolio site |
 | `www.shadowcastledetective.com` | same | Redirect to apex | Canonical-domain redirect |
 | `play.shadowcastledetective.com` | `shadow-castle-detective-play` (`web/game`) | Built export (see below) | Browser-playable game |
 
-All three are live over HTTPS. `web/game/.vercel/project.json` links the game
-directory to its project, so `npx vercel --prod` from that directory redeploys
-without asking anything.
+All three are live over HTTPS. `web/game/.vercel/project.json` and
+`web/landing/.vercel/project.json` link each directory to its project, so
+`npx vercel --prod` from either one redeploys without asking anything.
+
+**Neither project is connected to Git.** Pushing to `main` deploys nothing; both
+sites are published by uploading a directory with the CLI. For the game that is
+deliberate, for the reason in the next section. For the landing site it means a
+change is not live until `npx vercel --prod` has been run from `web/landing`,
+however green the commit looks.
 
 ## Why the game site is not a plain Git deploy
 
@@ -126,7 +132,29 @@ ticked, which needs three repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`
 and `VERCEL_GAME_PROJECT_ID`. Without them the workflow still builds, verifies
 and uploads the result as a downloadable artifact.
 
-Tagging a release (`git tag v1.0.0 && git push --tags`) builds and deploys.
+### A `v*` tag deploys a freshly built game, not the payload in production
+
+Tagging a release (`git tag v1.0.0 && git push --tags`) runs the same workflow
+with the deploy step forced on: it checks the repository out, exports the game
+from current source, and pushes that result straight to production.
+
+That export is not what production is serving. The live payload is pinned to an
+older build — it was reconstructed from production and hash-verified when the
+research page shipped, specifically so that publishing the page would not move
+the game. Any tagged build produces a fresh export instead, so **a `v*` tag
+would replace the live game wholesale as a side effect of shipping something
+else.** The newer local export is a separate, untested release.
+
+So the two are coupled only through that tag, and the rule is simply not to
+reach for it:
+
+- Research-page and landing-site changes need no tag and must not use one.
+  Deploy `web/game` by CLI from a directory holding the payload you actually
+  intend to ship, and `web/landing` by CLI from its own directory.
+- A game release is its own release. Decide that the newer export should go
+  live, test it on its own, then tag deliberately — and expect the tagged build
+  to carry `research/` along with it, which is correct, because the page source
+  is committed.
 
 ### Checking that a deploy is real
 
