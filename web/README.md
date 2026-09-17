@@ -74,9 +74,40 @@ The private Vercel Blob store `shadow-castle-cloud-saves` is connected to
 not put either secret in source or in an exported game. `web/game/.vercelignore`
 must continue to exclude `.env*` and `node_modules`.
 
-Unlike the generated Godot files, `web/game/api/`, `package.json`, and
-`package-lock.json` are source and are explicitly unignored. A Godot export
-writes beside them rather than deleting them.
+Unlike the generated Godot files, `web/game/api/`, `web/game/research/`,
+`package.json`, and `package-lock.json` are source and are explicitly unignored.
+A Godot export writes beside them rather than deleting them.
+
+## The research page
+
+`play.shadowcastledetective.com/research` is the public research landing page
+and `/research/paper.pdf` is the published paper. Both live in
+`web/game/research/` — hand-written source, not build output:
+
+| File | What it is |
+| --- | --- |
+| `index.html` | the landing page |
+| `research.css` | its styles, self-contained |
+| `icon.svg` | favicon, copied from `web/landing/assets/` |
+| `paper.pdf` | the published paper, served verbatim |
+
+They are in the game project rather than the landing project because the
+requested URLs are under `play.shadowcastledetective.com`, and that hostname is
+served only by `shadow-castle-detective-play`. The practical cost is that
+**updating the research page requires a full game deploy** — the same ~140MB
+upload — so the export has to be present in `web/game/` before running the CLI.
+The `Web export` workflow handles this correctly on its own: it checks the
+repository out, which brings `research/` with it, then exports beside it.
+
+`research/` is a directory, so `vercel.json` carries an explicit rewrite for the
+extensionless `/research` as well. Do **not** add `cleanUrls` to get the same
+effect: it would 308-redirect `/index.html` to `/`, and the generated service
+worker calls `cache.addAll(["index.html", ...])` during install, where a
+redirected response is a real risk to the live game.
+
+The page states the frozen evaluation's numbers and the claims the study does
+not make. If the paper is revised, `docs/HINT_RELEVANCE_REPORT.md` is the
+source of truth for both; the frozen artifacts under `docs/heldout/` are not.
 
 ## Deploying the game
 
@@ -119,6 +150,18 @@ with `GDPC` and `index.wasm` with `\0asm`:
 
 ```bash
 curl -sS -r 0-3 https://play.shadowcastledetective.com/index.pck | xxd
+```
+
+The research page rides on the same deploy, so check it in the same pass. The
+extensionless URL has to return HTML rather than a 404, and the paper has to
+come back as `application/pdf` at its full size:
+
+```bash
+for p in research research/paper.pdf; do
+  printf '%-20s ' "/$p"
+  curl -sS -o /dev/null -w '%{http_code} %{size_download}B %{content_type}\n' \
+    "https://play.shadowcastledetective.com/$p"
+done
 ```
 
 ## The loading screen and the offline cache

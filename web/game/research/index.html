@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="A frozen held-out evaluation of three NPC hint-selection policies in Shadow Castle: STEM Detective — a static baseline, a deterministic Player Knowledge Model selector, and an LLM selector working from the same eleven-hint catalogue."
+    />
+    <meta name="theme-color" content="#15131d" />
+    <meta property="og:title" content="NPC Hint Relevance Research · Shadow Castle: STEM Detective" />
+    <meta
+      property="og:description"
+      content="72 frozen player states, human relevance labels frozen before any condition was run, and three hint-selection policies compared on the same catalogue."
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://play.shadowcastledetective.com/research" />
+    <meta property="og:image" content="https://shadowcastledetective.com/assets/hero-castle.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://play.shadowcastledetective.com/research" />
+    <link rel="icon" href="/research/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=IBM+Plex+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/research/research.css" />
+    <title>NPC Hint Relevance Research · Shadow Castle: STEM Detective</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#study">Skip to the study</a>
+
+    <header class="nav" aria-label="Primary navigation">
+      <a class="wordmark" href="/research" aria-label="Shadow Castle research home">
+        <span>Shadow Castle</span>
+        <small>Research</small>
+      </a>
+      <a class="nav__play" href="/">Play the game</a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="case-mark">Held-out evaluation · 2026</p>
+        <h1 id="hero-title">Does modelling what a player knows make an NPC's hints more relevant?</h1>
+        <p class="hero__lead">
+          Three NPC hint-selection policies, one shared catalogue of eleven authored lines, and 72
+          frozen player states with human relevance labels recorded before any policy was run.
+        </p>
+        <p class="byline">Changyang Cao · Eastlake High School</p>
+
+        <div class="actions" aria-label="Research paper and project links">
+          <a class="action action--primary" href="/research/paper.pdf">
+            Read Research Paper <span aria-hidden="true">↓</span>
+          </a>
+          <a class="action action--secondary" href="/">
+            Play Shadow Castle <span aria-hidden="true">▶</span>
+          </a>
+          <a class="action action--ghost" href="https://github.com/s-ccao/shadow-castle-stem-detective">
+            View GitHub <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <p class="hero__note">PDF · 15 pages · opens in this tab</p>
+      </section>
+
+      <section class="facts" aria-label="Study at a glance">
+        <dl class="fact-grid">
+          <div>
+            <dt>72</dt>
+            <dd>frozen player states</dd>
+          </div>
+          <div>
+            <dt>48 / 24</dt>
+            <dd>CORE confirmatory / STRESS boundary</dd>
+          </div>
+          <div>
+            <dt>11</dt>
+            <dd>authored hints, shared by all conditions</dd>
+          </div>
+          <div>
+            <dt>3</dt>
+            <dd>NPCs: butler, gardener, mechanic</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="band" id="study" aria-labelledby="questions-title">
+        <div class="section-heading">
+          <h2 id="questions-title">The questions</h2>
+        </div>
+        <div class="prose">
+          <p class="question">
+            <strong>Primary.</strong> Can a unified Player Knowledge Model improve NPC hint relevance
+            and reduce redundant guidance in an educational detective game?
+          </p>
+          <p class="question">
+            <strong>Secondary.</strong> Does an LLM-based hint selector provide meaningful advantages
+            over deterministic adaptive rules?
+          </p>
+          <p>
+            Choosing which line an NPC should say is a selection problem. The game holds a fixed
+            catalogue of authored lines, and a policy has to pick the one that fits the player's
+            current investigation — or decide to say nothing at all. A line that repeats something
+            the player has already worked through is not wrong, but it is not useful either.
+          </p>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="conditions-title">
+        <div class="section-heading">
+          <h2 id="conditions-title">Three policies, one catalogue</h2>
+          <p>
+            Every condition chooses from the same eleven authored hints under the same hard
+            eligibility rules. None of them writes new dialogue, so any difference comes from how
+            they choose — not from one of them being handed better-written content.
+          </p>
+        </div>
+
+        <ol class="conditions">
+          <li>
+            <span class="conditions__tag">Condition A</span>
+            <strong>Static evidence-depth baseline</strong>
+            <p>
+              Never consults the Player Knowledge Model. Walks a fixed evidence hierarchy and always
+              returns a hint.
+            </p>
+          </li>
+          <li>
+            <span class="conditions__tag">Condition B</span>
+            <strong>PKM-aware deterministic selector</strong>
+            <p>
+              The same catalogue and eligibility rules, refined with player-knowledge state so it can
+              prefer some hints and avoid re-teaching. Also always returns a hint.
+            </p>
+          </li>
+          <li>
+            <span class="conditions__tag">Condition C</span>
+            <strong>LLM + PKM selector</strong>
+            <p>
+              Receives the NPC, room, progression, evidence, story state and derived player-knowledge
+              state, and returns either one eligible hint identifier or <code>SILENCE</code>. It never
+              generates player-facing text.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="band" aria-labelledby="method-title">
+        <div class="section-heading">
+          <h2 id="method-title">How the evaluation was kept honest</h2>
+        </div>
+        <div class="prose">
+          <p>
+            The 72 player states were generated and frozen first. A human then labelled, for each
+            state, which of the eligible hints were reasonable — possibly several, possibly
+            <code>NONE</code> — and those labels were frozen and hashed <em>before</em> any condition
+            was run against them. Only afterwards were A, B and C evaluated.
+          </p>
+          <p>
+            48 CORE scenarios carry the primary confirmatory analysis. 24 STRESS scenarios were
+            deliberately built from boundary states and are reported separately as secondary evidence;
+            they are not used to override the CORE result. Comparisons use exact paired two-sided
+            McNemar tests, reported with their discordant counts.
+          </p>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="results-title">
+        <div class="section-heading">
+          <h2 id="results-title">Results</h2>
+          <p>CORE scenarios — the primary confirmatory set.</p>
+        </div>
+
+        <div class="result-tables">
+          <figure class="result-card">
+            <table>
+              <caption>
+                <span class="result-card__metric">CORE RelevantHintRate</span>
+                <span class="result-card__role">Primary metric</span>
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Condition</th>
+                  <th scope="col">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Static baseline</th>
+                  <td>32/48 (66.7%)</td>
+                </tr>
+                <tr>
+                  <th scope="row">PKM-aware deterministic</th>
+                  <td>32/48 (66.7%)</td>
+                </tr>
+                <tr>
+                  <th scope="row">LLM + PKM</th>
+                  <td>33/48 (68.8%)</td>
+                </tr>
+              </tbody>
+            </table>
+          </figure>
+
+          <figure class="result-card">
+            <table>
+              <caption>
+                <span class="result-card__metric">CORE AppropriateActionRate</span>
+                <span class="result-card__role">Secondary metric</span>
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Condition</th>
+                  <th scope="col">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Static baseline</th>
+                  <td>32/48 (66.7%)</td>
+                </tr>
+                <tr>
+                  <th scope="row">PKM-aware deterministic</th>
+                  <td>32/48 (66.7%)</td>
+                </tr>
+                <tr>
+                  <th scope="row">LLM + PKM</th>
+                  <td>35/48 (72.9%)</td>
+                </tr>
+              </tbody>
+            </table>
+          </figure>
+        </div>
+
+        <p class="caveat">
+          <strong>Read the tests, not the totals.</strong> The static baseline and the PKM-aware
+          deterministic selector produced no discordant relevance outcomes on CORE at all, so no exact
+          test is defined for that pair. The two comparisons against the LLM selector each rest on
+          three discordant scenarios, with an exact two-sided McNemar p&nbsp;=&nbsp;1.000. The
+          evaluation therefore did not establish a statistically supported improvement in confirmatory
+          hint relevance for any condition.
+        </p>
+
+        <div class="section-heading section-heading--sub">
+          <h3>Behaviour across all 72 scenarios</h3>
+        </div>
+        <ul class="findings">
+          <li>The LLM selector correctly chose <code>SILENCE</code> on 7 <code>NONE</code> scenarios.</li>
+          <li>It falsely abstained once.</li>
+          <li>Condition A produced 2 redundant delivered hints.</li>
+          <li>Conditions B and C produced 0 redundant delivered hints.</li>
+        </ul>
+        <p class="caveat caveat--quiet">
+          Two redundant events in the whole evaluation is very little to reason from, and Condition B's
+          explicit redundancy-avoidance rule was not what produced the difference — a soft preference
+          was. The study records a narrow observation about redundancy control rather than a validated
+          mechanism.
+        </p>
+      </section>
+
+      <section class="band band--limits" aria-labelledby="notclaimed-title">
+        <div class="band__inner">
+          <div class="section-heading">
+            <h2 id="notclaimed-title">What this study does not claim</h2>
+            <p>Stated plainly, because the numbers above are small and easy to over-read.</p>
+          </div>
+          <ul class="notclaimed">
+            <li>That the Player Knowledge Model significantly improved hint relevance.</li>
+            <li>That the LLM selector was better overall, or that it won.</li>
+            <li>That the two deterministic policies are equivalent — the study could not distinguish them.</li>
+            <li>That the game improves learning. No learning outcome was measured at any point.</li>
+            <li>
+              That a concept marked <code>DEMONSTRATED</code> means mastery. It means only that the
+              player passed the game's existing designated comprehension check.
+            </li>
+            <li>That the LLM result is reproducible by rerunning the model. Sampling was not controllable.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="limits-title">
+        <div class="section-heading">
+          <h2 id="limits-title">Limitations worth knowing before you read</h2>
+        </div>
+        <ul class="limits">
+          <li>48 CORE scenarios, and very few of them separated the policies at all.</li>
+          <li>Eleven hints across three NPCs; many states had only one or two eligible candidates.</li>
+          <li>
+            Conversational history is only modelled for the butler, which is why two annotations are
+            marked high-ambiguity.
+          </li>
+          <li>Labels are researcher-led and single-annotator, so there is no inter-rater statistic.</li>
+          <li>One model, one sample per scenario, and no measurement of real player experience.</li>
+        </ul>
+        <p class="prose">
+          The paper sets all of this out in full, along with the abstention analysis, the disagreement
+          breakdown, the AI-assistance disclosure and the reproducibility record.
+        </p>
+        <div class="actions actions--tail">
+          <a class="action action--primary" href="/research/paper.pdf">
+            Read Research Paper <span aria-hidden="true">↓</span>
+          </a>
+          <a class="action action--secondary" href="/">
+            Play Shadow Castle <span aria-hidden="true">▶</span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="band__inner">
+        <p class="footer__statement">
+          Scenarios, labels and outputs were frozen in sequence so the order of events can be audited
+          rather than taken on trust.
+        </p>
+        <div class="footer__meta">
+          <span>Shadow Castle: STEM Detective</span>
+          <span>Godot 4.7 · GDScript</span>
+          <a href="/research/paper.pdf">Paper (PDF)</a>
+          <a href="https://github.com/s-ccao/shadow-castle-stem-detective">GitHub ↗</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

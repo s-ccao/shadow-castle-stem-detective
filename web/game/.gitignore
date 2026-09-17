@@ -6,6 +6,11 @@
 # the one place where that would get materially worse.
 #
 # vercel.json is the exception: it configures the deploy and is hand-written.
+#
+# research/ is the other exception: it is hand-written source (the public
+# research landing page and the published paper PDF), not a build artifact. It
+# rides along with this deployment because /research has to be served from the
+# same origin as the game.
 *
 !.gitignore
 !.vercelignore
@@ -14,5 +19,7 @@
 !package-lock.json
 !api/
 !api/**
+!research/
+!research/**
 .vercel
 .env*

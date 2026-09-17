@@ -119,6 +119,7 @@ h2 {
 
 .nav__play,
 .nav__community,
+.nav__research,
 .action {
   min-height: 2.75rem;
   display: inline-flex;
@@ -140,7 +141,8 @@ h2 {
   gap: var(--space-xs);
 }
 
-.nav__community {
+.nav__community,
+.nav__research {
   min-height: 2.75rem;
   padding-inline: var(--space-sm);
   color: var(--color-ink-2);
@@ -495,6 +497,7 @@ h2 {
 }
 
 .nav__play:focus-visible,
+.nav__research:focus-visible,
 .wordmark:focus-visible,
 .action:focus-visible,
 .history-link:focus-visible,
@@ -557,12 +560,14 @@ h2 {
 @media (hover: hover) and (pointer: fine) {
   .nav__play:hover,
   .nav__community:hover,
+  .nav__research:hover,
   .action:hover {
     transform: translateY(calc(var(--space-3xs) * -1));
   }
 
   .nav__play:hover,
   .nav__community:hover,
+  .nav__research:hover,
   .action--glass:hover,
   .action--secondary:hover {
     border-color: var(--color-accent);
@@ -719,7 +724,10 @@ h2 {
   }
 
   @media (max-width: 32rem) {
-    .nav__community {
+    /* The nav has room for the wordmark and one button at this size. Both quiet
+       links collapse; the footer keeps Research reachable. */
+    .nav__community,
+    .nav__research {
       display: none;
     }
 
