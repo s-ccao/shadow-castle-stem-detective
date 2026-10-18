@@ -35,6 +35,7 @@ const ATTENTION_RELEASE_RADIUS: float = 168.0
 ## Column of a 4-frame walk strip that reads as "standing": both feet planted.
 const IDLE_STANDING_FRAME: int = 0
 const IDLE_SHEET_FPS: float = 4.0
+const FACING_HYSTERESIS_ANGLE: float = PI / 30.0
 
 var character_name: String = "NPC"
 var sprite_sheet_path: String = ""
@@ -151,12 +152,17 @@ func _play_notice_reaction() -> void:
 		return
 	if _notice_tween != null and _notice_tween.is_valid():
 		_notice_tween.kill()
-	var settled := Vector2(visual_scale, visual_scale)
-	actor_sprite.scale = settled
+	_set_notice_scale(1.0)
 	_notice_tween = create_tween()
 	_notice_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_notice_tween.tween_property(actor_sprite, "scale", settled * 1.06, 0.12)
-	_notice_tween.tween_property(actor_sprite, "scale", settled, 0.18)
+	_notice_tween.tween_method(_set_notice_scale, 1.0, 1.06, 0.12)
+	_notice_tween.tween_method(_set_notice_scale, 1.06, 1.0, 0.18)
+
+
+func _set_notice_scale(amount: float) -> void:
+	actor_sprite.scale = Vector2.ONE * visual_scale * amount
+	# Scale around the authored ground point, not the middle of the sheet.
+	actor_sprite.position = visual_foot_anchor * amount
 
 
 func _create_sprite() -> void:
@@ -232,12 +238,28 @@ func _play_idle(direction: StringName) -> void:
 		return
 	var animation: StringName = StringName("idle_" + str(direction))
 	if actor_sprite.animation != animation:
+		var previous_frame := actor_sprite.frame
+		var previous_progress := actor_sprite.frame_progress
 		actor_sprite.play(animation)
+		actor_sprite.set_frame_and_progress(previous_frame, previous_progress)
 	elif not actor_sprite.is_playing():
 		actor_sprite.play()
 
 
 func _direction_name(direction: Vector2) -> StringName:
+	if direction.length_squared() <= 1.0:
+		return _facing
+	var facing_vector := Vector2.DOWN
+	if use_eight_directions:
+		facing_vector = Vector2.UP.rotated(EIGHT_DIRECTIONS.find(_facing) * PI / 4.0)
+	else:
+		match _facing:
+			&"left": facing_vector = Vector2.LEFT
+			&"right": facing_vector = Vector2.RIGHT
+			&"up": facing_vector = Vector2.UP
+	var sector_half_angle := PI / 8.0 if use_eight_directions else PI / 4.0
+	if absf(facing_vector.angle_to(direction)) <= sector_half_angle + FACING_HYSTERESIS_ANGLE:
+		return _facing
 	if not use_eight_directions:
 		if absf(direction.x) > absf(direction.y):
 			return &"right" if direction.x > 0.0 else &"left"

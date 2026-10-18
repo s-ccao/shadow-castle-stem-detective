@@ -1,0 +1,17 @@
+Actual-main full headless sweep after the Esc settings change (2026-10-18)
+Runner: fresh isolated HOME per suite under the project .godot/, guards satisfied, 300 s limit, no captures.
+
+PASS 53 / FAIL 1 / TIMEOUT 0 / GUARD 0 (54 suites)
+All PASS suites exited 0 with their PASS summary and no SCRIPT ERROR / Parse Error, including:
+pause_menu_test (141 checks), audio_contract_test, chemistry_deduction_test, hub_toolbar_test,
+instrument_hubs_test, minigame_ui_polish_test (96 layout states), panel_overflow_test,
+ui_design_contract_test, localization_coverage_test, room_transition_flow_test,
+staged_hall_guidance_test, guided_crossing_test, guardian_* flow tests, tutorial_* tests.
+
+FAIL: opening_blockers_test — "The guided route to Chemistry exists (0 points)".
+Pre-existing and unrelated: the identical failure reproduces with PauseMenu removed before
+the suite starts (opening-baseline.log) and in the compatible worktree. It concerns
+GameWorld._get_hall_route_path from the first-arrival spawn, not pause/input code.
+
+Shutdown-only diagnostics (not failures): ObjectDB/resource retention at exit across many
+existing suites, e.g. 3-6 resources; audio_contract_test 14 resources.

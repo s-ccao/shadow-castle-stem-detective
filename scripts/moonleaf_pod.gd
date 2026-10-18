@@ -30,7 +30,10 @@ var _phase: float = 0.0
 func _ready() -> void:
 	custom_minimum_size = Vector2(92.0, 92.0)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	focus_mode = Control.FOCUS_ALL
 	gui_input.connect(_on_gui_input)
+	focus_entered.connect(queue_redraw)
+	focus_exited.connect(queue_redraw)
 
 
 func advance(delta: float) -> void:
@@ -42,6 +45,11 @@ func advance(delta: float) -> void:
 
 func reset_phase() -> void:
 	_phase = fmod(phase_offset, 1.0)
+
+
+func close_bloom() -> void:
+	_phase = 0.0
+	queue_redraw()
 
 
 ## 0 = 完全闭合，1 = 完全张开。用正弦让开合是平滑的呼吸而不是突变，
@@ -57,9 +65,13 @@ func is_ripe() -> bool:
 
 
 func _on_gui_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_accept") and not event.is_echo():
+		pod_pressed.emit(self)
+		accept_event()
 	if event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
 		if mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:
+			grab_focus()
 			pod_pressed.emit(self)
 			accept_event()
 
@@ -68,6 +80,8 @@ func _draw() -> void:
 	var center: Vector2 = size * 0.5
 	var radius: float = minf(size.x, size.y) * 0.42
 	draw_circle(center, radius + 4.0, PLATE_BG)
+	if has_focus():
+		draw_rect(Rect2(Vector2.ONE, size - Vector2(2.0, 2.0)), RIPE_RING, false, 2.0)
 
 	if harvested:
 		draw_arc(

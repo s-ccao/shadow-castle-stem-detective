@@ -1,13 +1,45 @@
 # Project status
 
-**Last updated:** 2026-08-14  
+**Last updated:** 2026-10-18
+
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
+
+## Latest actual-project update (2026-10-18)
+
+- Esc now opens an in-game settings dossier during free play: Resume, global mute, Music/Effects faders, field prompts, controls, and confirmed Main Menu/Quit actions. An Esc that closes an open panel never opens it as well; settings freeze the room and Guardian. Mute persists and title-screen settings can undo it. See the latest [stage report](AGENT_STAGE_REPORT.md).
+
+## Previous actual-project update (2026-09-07)
+
+- Material naturalness now uses a source-pixel glass partition with gravity, tray contact and dissipative settling; ice erodes asymmetrically into a density-accounted pool. Wax, cloth, nucleation sites, liquid-level bubbles and emission timing no longer use the previous repeated decorative motion. [Stage36 evidence](evidence/2026-09-07-material-naturalness/) preserves the earlier comparison frames.
+- Chemistry observations now state physical conditions and compressed time explicitly. Contact sounds wait for the material event, quiet changes do not invent splashes/rattles, and the fictional bronze device is not represented as a real chemical prediction.
+- Chemistry's eight-stage sample tray is now a large Material Observation Lab with 16 original raster-backed material effects, replay before judgment and six short exclusive material cues. Existing science, rewards and investigation callbacks remain intact; the update is in both local checkouts, not a published Web build.
+- [Native experiment evidence](evidence/2026-09-07-chemistry-effects/after/) shows real room-launched EN/ZH layouts, burning/char/smoke, fizz/foam, melting, fracture and time-lapse crystallization. Renderer contracts also cover all 16 presets and deterministic replay. Measurements on Apple M3 GL Compatibility are documented as frame intervals, not GPU timings or Web performance.
+- The top-left Hub layout now has stable semantic slots, readable permanent names, separate key hints and larger full-height targets. The compact preview has one fixed position; unlocking Note no longer moves Map. Internal Hub content is unchanged.
+- Chemistry's first door requires its knowledge answer before a dedicated near-miss CG; wrong answers cannot unlock or start the sequence. Both normal completion and skip enter safely.
+- Knowledge dossiers use five original pixel concept illustrations rather than object art. Small raster footsteps replace large glowing arrows, and the Hub is a physical tool belt rather than boxed cards.
+- Hall knowledge is now readable before collection in a five-subject illustrated dossier, with explicit filing and later review. A 72px wall-aware approach zone removes the need to hug the prop.
+- Tutorial immunity is limited to the 80px footprint corridor and required reading. Staying outside past a 1.1s warning starts real Guardian pursuit/capture; the player is no longer teleported back.
+- The Hub refinement adds proportionate hero icons, nine-sliced metal, parchment names, distinct interaction states and live purpose/content previews. See the latest stage report and before/after gallery.
+- Corrected the delivery mismatch: guidance changes now exist in the main checkout the Godot editors actually run, preserving the user's newer animation, artwork, collision and recorded-route edits.
+- The Hall now guides to the moved knowledge exhibit, stops queued movement until explicit filing, then supplies only the onward Chemistry leg. Real queued walks and every displayed travel-marker position are regression-checked against this checkout's geometry.
+- Developer mode (`0`) no longer implicitly records routes or bypasses the lesson; Hall recording is an explicit **Shift+0** action.
+- The four top-left Hub entries now form one brass/violet field-kit tray with consistent raster art, bilingual labels, shortcut keycaps, hover/pressed feedback and focus navigation. Existing internal Hub interactions are unchanged.
+- See the latest [stage report](AGENT_STAGE_REPORT.md) for actual-main runtime provenance, native evidence, tests and delivery limits. Web publication remains a separate step.
+
+## Latest playability pass (2026-09-05)
+
+- Chemistry now supports an actual field-case loop: visible traces → revisable hypothesis → separate/combined sample comparison → supported explanation → choose a report and witness statement → ask a specific follow-up. A colour comparison does not identify the culprit or constitute a biological blood test. Existing solved saves, key/crafting routes and one-time reputation rewards remain compatible.
+- The four field-kit Hubs have distinct, interruptible tool feedback: unfolding kit and travelling specimen, key insertion/turn and lock followers, immediate-readable dossier page turns/filing tabs, and fog-safe map ink with known-location clue selection.
+- Candle-and-jar experiments show a single wick and flame at every burn multiplier, with thicker wicks, broader/brighter flames and faster oxygen use at higher rates. Ignition, oxygen loss, smoke, sustained-air status and actual extinction order remain observable. Clicking a selected jar removes that prediction without discarding the whole order.
+- The six shared-shell minigames retain long failure explanations until another attempt, clear stale feedback on retry/advance, and support keyboard focus and closing. Presentation changes do not change the scientific answers or eight-stage reward requirements.
+- Player and Guardian locomotion follows actual displacement, preserves stride phase on turns, and stops at blocked floor. The Guardian uses all eight authored sprite rows; interview NPCs stay at their authored stations with stable gaze and foot-anchored acknowledgement.
+- The existing 48-point authored Hall route and all collision/visual-size calibration are retained. See [the stage report](AGENT_STAGE_REPORT.md) for measured validation and evidence.
 
 ## Current playable state
 
 - Main menu, opening cutscene, Wake Room tutorial, Castle Hall, Chemistry, Greenhouse, Circuit, Dining, Library, Final Room, death/retry, and ending flows are implemented.
 - The intended opening loop is active: inspect Dr. Lin's desk → collect Wake Room key from the bed → learn the oxygen answer and collect the Chemistry key from the bookshelf → solve the Wake Room door.
-- Desk-earned Bag, Key, Note, and Map hubs persist into Castle Hall. The first Hall arrival has a one-time floor-route guide to the Chemistry door, its brass core, and back to the lock.
+- Desk-earned tools persist into Castle Hall's field-kit toolbar. First arrival leads to the knowledge core, holds the player for explicit filing, then reveals the onward Chemistry route.
 - Inventory, map, clue journal, alchemy workbench, and final deduction board received visual/interaction redesign passes.
 - Every in-world character has been calibrated against actual furniture and door scale at 1024×768. Ordinary standing characters are approximately 91 world pixels tall, the Guardian remains deliberately larger, and fallen Mrs. Lin fits the Final Room floor perspective. Character physics, movement, navigation, and authored collisions remain unchanged.
 - The Guardian hunt begins on first Hall arrival. It chases via A* while the player is in Hall, persists as an off-scene Hall patrol while the player investigates rooms, and resumes from a safe persisted position on return.
@@ -15,7 +47,7 @@
 - Normal Hall entries open with a short Guardian close-up: the detective is held, the Guardian pauses and turns, begins marching toward the player, and the camera returns before lethal contact is enabled. The first powered return deliberately replaces that close-up with the route-memory scan. A live path-based contact estimate updates every 0.12 seconds beside the persistent red minimap signal.
 - Hall returns place the Guardian at least 800 world pixels from the player when possible, providing at least 4.32 seconds of measured pre-Circuit Tier-2 reaction. Entering any room switches it to off-scene Hall patrol; all nine Hall return spawn IDs are physics-checked for zero wall overlap and at least three clear exits.
 - Room interactions now use visible opaque footprints with a 14px contact band and 10px focus padding. Player-above/behind and player-below/in-front depth reversal is active across Wake, Hall, Chemistry, Greenhouse, Circuit, Dining, Library, and Final Room.
-- The one-time blue Hall route uses only horizontal/vertical arrows plus explicit 90-degree corner glyphs. Collision-safe orthogonal smoothing removes diagonal and start-cell U-turn artifacts while reducing marker density.
+- The Hall route clips completed authored sections and validates local connectors against real collision. Travel markers remain on walkable floor, the knowledge stop clears the trail, and no unnecessary reversing connector points the player back through a wall.
 - Bag recipes and all alchemy ingredients now use a shared item visual catalog. Two formula blueprints and three reagent models fill the former placeholders; Blue Blossom, Moonleaf, and potion hero art remain the approved source assets.
 - Note Hub now uses a real focusable close button and its functional native scrollbars; duplicate decorative scrolling was removed, record labels and dossier copy are centered, and long files retain themed brass thumbs.
 - Bag Hub categories are contained in a four-column filing rail. Long selected-item descriptions, quantity, requirements, action, and bottom status have separate non-overlapping regions. Blue Blossom and Moonleaf now use GPT-authored herbarium models.

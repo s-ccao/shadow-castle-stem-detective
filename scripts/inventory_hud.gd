@@ -34,14 +34,7 @@ const CATEGORY_BUTTON_RECTS: Array[Rect2] = [
 	Rect2(451.0, 76.0, 102.0, 31.0),
 ]
 
-const ENTRY_POSITION: Vector2 = Vector2(20.0, 14.0)
-const ENTRY_SIZE: Vector2 = Vector2(64.0, 64.0)
-
-var icon_button: TextureButton
-var entry_backplate: Panel
-var hover_halo: Panel
-var hover_plate: Panel
-var hover_label: Label
+var icon_button: Button
 var entry_label: Label
 var overlay: Control
 var board_panel: Control
@@ -64,6 +57,10 @@ var feature_description: Label
 var feature_tween: Tween
 var open_tween: Tween
 var inspection_tween: Tween
+var use_feedback: Control
+var use_feedback_tween: Tween
+var use_toast: Label
+var use_toast_tween: Tween
 var close_button: Button
 var category_buttons: Dictionary = {}
 var category_count_labels: Dictionary = {}
@@ -73,7 +70,6 @@ var entries: Array[Dictionary] = []
 var active_category: String = "all"
 var selected_index: int = -1
 var _open: bool = false
-var _hovered: bool = false
 var _paused_before_bag: bool = false
 var _had_inventory: bool = false
 var _entry_suppressed: bool = false
@@ -116,117 +112,10 @@ func _process(_delta: float) -> void:
 
 
 func _create_entry_button() -> void:
-	entry_backplate = Panel.new()
-	entry_backplate.name = "InventoryHubEntryBackplate"
-	entry_backplate.position = Vector2(18.0, 10.0)
-	entry_backplate.size = Vector2(72.0, 72.0)
-	entry_backplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	entry_backplate.z_index = -2
-	var backplate_style: StyleBoxFlat = StyleBoxFlat.new()
-	backplate_style.bg_color = Color(0.20, 0.12, 0.05, 0.90)
-	backplate_style.border_color = Color(0.95, 0.72, 0.28, 0.96)
-	backplate_style.set_border_width_all(1)
-	backplate_style.set_corner_radius_all(44)
-	backplate_style.shadow_color = Color(0.65, 0.35, 0.08, 0.34)
-	backplate_style.shadow_size = 8
-	entry_backplate.add_theme_stylebox_override("panel", backplate_style)
-	add_child(entry_backplate)
-
-	icon_button = TextureButton.new()
-	icon_button.name = "InventoryHubEntry"
-	icon_button.ignore_texture_size = true
-	icon_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	icon_button.texture_normal = load(BAG_ICON_PATH) as Texture2D
-	icon_button.position = ENTRY_POSITION
-	icon_button.size = ENTRY_SIZE
-	icon_button.tooltip_text = "Case satchel  ·  Tab"
-	icon_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	icon_button.modulate = Color(1.0, 0.92, 0.70, 1.0)
-	icon_button.mouse_entered.connect(_on_entry_mouse_entered)
-	icon_button.mouse_exited.connect(_on_entry_mouse_exited)
+	icon_button = ArchiveUi.create_hub_entry(self, "bag", "InventoryHubEntry")
+	icon_button.visible = GameState.game_started
+	entry_label = icon_button.get_node("BagEntryLabel") as Label
 	icon_button.pressed.connect(toggle_bag)
-	add_child(icon_button)
-
-	hover_halo = Panel.new()
-	hover_halo.name = "BagHoverHalo"
-	hover_halo.position = Vector2(16.0, 10.0)
-	hover_halo.size = Vector2(76.0, 76.0)
-	hover_halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hover_halo.z_index = -1
-	hover_halo.visible = false
-	var halo_style: StyleBoxFlat = StyleBoxFlat.new()
-	halo_style.bg_color = Color(0.32, 0.42, 0.78, 0.14)
-	halo_style.border_color = Color(0.55, 0.68, 1.0, 0.62)
-	halo_style.set_border_width_all(1)
-	halo_style.set_corner_radius_all(46)
-	halo_style.shadow_color = Color(0.30, 0.48, 1.0, 0.34)
-	halo_style.shadow_size = 8
-	hover_halo.add_theme_stylebox_override("panel", halo_style)
-	add_child(hover_halo)
-
-	hover_plate = Panel.new()
-	hover_plate.name = "BagHoverPlate"
-	hover_plate.position = Vector2(22.0, 82.0)
-	hover_plate.size = Vector2(60.0, 24.0)
-	hover_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hover_plate.visible = false
-	var plate_style: StyleBoxFlat = StyleBoxFlat.new()
-	plate_style.bg_color = Color(0.035, 0.03, 0.055, 0.92)
-	plate_style.border_color = Color(0.72, 0.58, 0.30, 0.76)
-	plate_style.set_border_width_all(1)
-	plate_style.set_corner_radius_all(5)
-	hover_plate.add_theme_stylebox_override("panel", plate_style)
-	add_child(hover_plate)
-
-	hover_label = Label.new()
-	hover_label.text = CaseLocale.line("SATCHEL")
-	hover_label.position = Vector2(2.0, 1.0)
-	hover_label.size = Vector2(56.0, 22.0)
-	hover_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hover_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hover_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hover_label.add_theme_font_size_override("font_size", 12)
-	hover_label.add_theme_color_override("font_color", Color(0.95, 0.90, 0.72, 1.0))
-	hover_label.add_theme_color_override("font_outline_color", Color(0.10, 0.08, 0.05, 1.0))
-	hover_label.add_theme_constant_override("outline_size", 2)
-	hover_plate.add_child(hover_label)
-
-	entry_label = Label.new()
-	entry_label.name = "BagEntryLabel"
-	entry_label.text = CaseLocale.line("BAG")
-	entry_label.position = Vector2(22.0, 82.0)
-	entry_label.size = Vector2(60.0, 20.0)
-	entry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	entry_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	entry_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	entry_label.add_theme_font_size_override("font_size", 11)
-	entry_label.add_theme_color_override("font_color", Color(0.98, 0.80, 0.38, 1.0))
-	entry_label.add_theme_color_override("font_outline_color", Color(0.10, 0.05, 0.01, 1.0))
-	entry_label.add_theme_constant_override("outline_size", 3)
-	add_child(entry_label)
-
-
-func _set_hovered(is_over: bool) -> void:
-	if _entry_suppressed:
-		is_over = false
-	_hovered = is_over
-	hover_halo.visible = is_over
-	hover_plate.visible = is_over
-	var target_scale: Vector2 = Vector2(1.08, 1.08) if is_over else Vector2.ONE
-	var target_color: Color = Color(1.0, 0.98, 0.84, 1.0) if is_over else Color(1.0, 0.92, 0.70, 1.0)
-	var tween: Tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(icon_button, "scale", target_scale, 0.12)
-	tween.parallel().tween_property(icon_button, "modulate", target_color, 0.12)
-
-
-func _on_entry_mouse_entered() -> void:
-	_set_hovered(true)
-
-
-func _on_entry_mouse_exited() -> void:
-	_set_hovered(false)
 
 
 func _create_overlay() -> void:
@@ -634,6 +523,7 @@ func _create_feature_panel() -> void:
 
 
 func _on_game_state_changed() -> void:
+	icon_button.visible = GameState.game_started and not _entry_suppressed
 	var has_inventory: bool = _has_stored_items()
 	if has_inventory and not _had_inventory:
 		if _can_show_feature_unlock():
@@ -682,7 +572,7 @@ func show_feature_unlock(title_text: String, message_text: String, duration: flo
 	feature_tween = create_tween()
 	feature_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	feature_tween.set_loops(4)
-	feature_tween.tween_property(icon_button, "scale", Vector2(1.10, 1.10), 0.36)
+	feature_tween.tween_property(icon_button, "scale", Vector2(1.02, 1.02), 0.36)
 	feature_tween.tween_property(icon_button, "scale", Vector2.ONE, 0.36)
 	var timer: SceneTreeTimer = get_tree().create_timer(duration, true)
 	timer.timeout.connect(_hide_feature_unlock)
@@ -709,6 +599,9 @@ func toggle_bag() -> void:
 
 
 func open_bag() -> void:
+	if _open:
+		return
+	ArchiveUi.prepare_hub_open("InventoryHud")
 	_paused_before_bag = get_tree().paused
 	get_tree().paused = true
 	_open = true
@@ -721,7 +614,10 @@ func open_bag() -> void:
 
 
 func close_bag() -> void:
+	if not _open:
+		return
 	_open = false
+	ArchiveUi.settle_motion_tree(overlay)
 	overlay.visible = false
 	if open_tween != null and open_tween.is_valid():
 		open_tween.kill()
@@ -733,16 +629,9 @@ func close_bag() -> void:
 
 func set_entry_suppressed(suppressed: bool) -> void:
 	_entry_suppressed = suppressed
-	if entry_backplate != null:
-		entry_backplate.visible = not suppressed
 	if icon_button != null:
-		icon_button.visible = not suppressed
-	if entry_label != null:
-		entry_label.visible = not suppressed
-	if hover_halo != null:
-		hover_halo.visible = not suppressed and _hovered
-	if hover_plate != null:
-		hover_plate.visible = not suppressed and _hovered
+		icon_button.scale = Vector2.ONE
+		icon_button.visible = GameState.game_started and not suppressed
 
 
 func _on_close_button_pressed() -> void:
@@ -758,6 +647,7 @@ func _on_category_pressed(category_id: String) -> void:
 
 
 func _rebuild_inventory() -> void:
+	ArchiveUi.settle_motion(detail_icon_texture)
 	entries = _build_entries(active_category)
 	if entries.is_empty():
 		selected_index = -1
@@ -932,6 +822,8 @@ func _append_developer_entries(result: Array[Dictionary]) -> void:
 
 func _rebuild_slots() -> void:
 	for old_slot: Control in slot_nodes:
+		ArchiveUi.settle_motion_tree(old_slot)
+		slot_layer.remove_child(old_slot)
 		old_slot.queue_free()
 	slot_nodes.clear()
 	for i: int in range(entries.size()):
@@ -1026,6 +918,8 @@ func _create_slot(entry_index: int, center: Vector2) -> Control:
 	hit_button.focus_mode = Control.FOCUS_ALL
 	hit_button.mouse_entered.connect(_on_slot_mouse_entered.bind(slot))
 	hit_button.mouse_exited.connect(_on_slot_mouse_exited.bind(slot, entry_index))
+	hit_button.focus_entered.connect(_on_slot_mouse_entered.bind(slot))
+	hit_button.focus_exited.connect(_on_slot_mouse_exited.bind(slot, entry_index))
 	hit_button.pressed.connect(_on_slot_pressed.bind(entry_index))
 	hit_button.mouse_filter = Control.MOUSE_FILTER_PASS
 	slot.add_child(hit_button)
@@ -1036,9 +930,20 @@ func _on_slot_mouse_entered(slot: Control) -> void:
 	var frame: TextureRect = slot.get_node_or_null("SlotFrame") as TextureRect
 	if frame != null:
 		frame.modulate = Color(1.0, 0.96, 0.72, 1.0)
+	var art := slot.get_node_or_null("ItemArtwork") as Control
+	if art != null:
+		var tween := ArchiveUi.begin_motion(art)
+		art.pivot_offset = art.size * 0.5
+		tween.tween_property(art, "rotation", -0.08, 0.08)
+		tween.parallel().tween_property(art, "position:y", art.position.y - 3.0, 0.08)
+		tween.tween_property(art, "rotation", 0.0, 0.10)
+		tween.parallel().tween_property(art, "position:y", 4.0, 0.10)
 
 
 func _on_slot_mouse_exited(slot: Control, entry_index: int) -> void:
+	var art := slot.get_node_or_null("ItemArtwork") as Control
+	if art != null:
+		ArchiveUi.settle_motion(art)
 	var frame: TextureRect = slot.get_node_or_null("SlotFrame") as TextureRect
 	if frame != null:
 		frame.modulate = (
@@ -1048,10 +953,16 @@ func _on_slot_mouse_exited(slot: Control, entry_index: int) -> void:
 
 
 func _on_slot_pressed(entry_index: int) -> void:
+	if not _open or entry_index < 0 or entry_index >= entries.size():
+		return
 	selected_index = entry_index
-	_rebuild_slots()
+	for index: int in range(slot_nodes.size()):
+		var frame := slot_nodes[index].get_node("SlotFrame") as TextureRect
+		frame.texture = load(SLOT_FRAME_B_PATH if index == selected_index else SLOT_FRAME_A_PATH) as Texture2D
+		_on_slot_mouse_exited(slot_nodes[index], index)
 	_update_detail_panel()
 	_play_inspection_feedback()
+	GameAudio.play(&"ui_select")
 
 
 func _item_icon_path(entry: Dictionary) -> String:
@@ -1132,6 +1043,7 @@ func _update_category_visuals() -> void:
 
 
 func _update_detail_panel() -> void:
+	ArchiveUi.settle_motion(detail_icon_texture)
 	if selected_index < 0 or selected_index >= entries.size():
 		detail_icon_texture.visible = false
 		detail_icon_label.text = "—"
@@ -1157,13 +1069,13 @@ func _update_detail_panel() -> void:
 	detail_icon_texture.visible = not icon_path.is_empty()
 	if not icon_path.is_empty():
 		detail_icon_texture.texture = load(icon_path) as Texture2D
-	detail_title.text = str(entry["name"])
+	detail_title.text = CaseLocale.line(str(entry["name"]))
 	detail_title.add_theme_font_size_override(
 		"font_size",
 		14 if detail_title.text.length() > 24 else 16
 	)
 	detail_category.text = str(kind).to_upper()
-	detail_description.text = str(entry["description"])
+	detail_description.text = CaseLocale.line(str(entry["description"]))
 	detail_description.add_theme_font_size_override(
 		"font_size",
 		10 if detail_description.text.length() > 72 else 11
@@ -1174,7 +1086,7 @@ func _update_detail_panel() -> void:
 		if int(entry["quantity"]) < 0
 		else count_label + "×" + str(entry["quantity"])
 	)
-	detail_requirements.text = str(entry["requirements"])
+	detail_requirements.text = CaseLocale.line(str(entry["requirements"]))
 	detail_use_button.text = (
 		CaseLocale.line("OPEN MAP") if kind == "map" else CaseLocale.line("USE")
 	)
@@ -1194,31 +1106,41 @@ func _update_bottom_status() -> void:
 
 
 func _animate_bag_open() -> void:
-	if open_tween != null and open_tween.is_valid():
-		open_tween.kill()
-	overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	board_panel.scale = Vector2(0.965, 0.965)
-	open_tween = create_tween()
-	open_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	open_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	open_tween.tween_property(overlay, "modulate:a", 1.0, 0.16)
-	open_tween.parallel().tween_property(board_panel, "scale", Vector2.ONE, 0.22)
+	# Unfold the authored kit and draw out its two trays; copy never fades.
+	var artwork := board_panel.get_node("InventoryBoardTexture") as Control
+	open_tween = ArchiveUi.begin_motion(artwork)
+	artwork.pivot_offset = Vector2(BOARD_SIZE.x * 0.5, BOARD_SIZE.y)
+	artwork.scale = Vector2(1.0, 0.88)
+	open_tween.tween_property(artwork, "scale", Vector2.ONE, 0.26)
+	var tray_tween := ArchiveUi.begin_motion(slot_layer)
+	slot_layer.position.y = 16.0
+	tray_tween.tween_property(slot_layer, "position", Vector2.ZERO, 0.24)
+	var plate_tween := ArchiveUi.begin_motion(detail_frame)
+	var resting_position := detail_frame.position
+	detail_frame.position.x += 24.0
+	plate_tween.tween_property(detail_frame, "position", resting_position, 0.28)
 
 
 func _play_inspection_feedback() -> void:
-	if detail_layer == null:
+	if not _open or selected_index < 0 or selected_index >= slot_nodes.size() or not detail_icon_texture.visible:
 		return
-	if inspection_tween != null and inspection_tween.is_valid():
-		inspection_tween.kill()
-	detail_layer.pivot_offset = Vector2(684.0, 334.0)
-	detail_layer.scale = Vector2(0.985, 0.985)
-	inspection_tween = create_tween()
-	inspection_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	inspection_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	inspection_tween.tween_property(detail_layer, "scale", Vector2.ONE, 0.18)
+	var source := slot_nodes[selected_index].get_node_or_null("ItemArtwork") as Control
+	if source == null:
+		return
+	inspection_tween = ArchiveUi.begin_motion(detail_icon_texture)
+	var destination := detail_icon_texture.position
+	detail_icon_texture.pivot_offset = Vector2.ZERO
+	detail_icon_texture.position = detail_layer.get_global_transform().affine_inverse() * source.global_position
+	detail_icon_texture.scale = source.size / detail_icon_texture.size
+	detail_icon_texture.rotation = -0.12
+	inspection_tween.tween_property(detail_icon_texture, "position", destination, 0.26)
+	inspection_tween.parallel().tween_property(detail_icon_texture, "scale", Vector2.ONE, 0.26)
+	inspection_tween.parallel().tween_property(detail_icon_texture, "rotation", 0.0, 0.26)
 
 
 func _focus_selected_slot() -> void:
+	if not _open:
+		return
 	if selected_index >= 0 and selected_index < slot_nodes.size():
 		var selected_slot: Control = slot_nodes[selected_index]
 		var selected_button: Button = selected_slot.get_node_or_null("SlotButton") as Button
@@ -1227,9 +1149,11 @@ func _focus_selected_slot() -> void:
 
 
 func _use_selected_item() -> void:
-	if selected_index < 0 or selected_index >= entries.size():
+	if not _open or selected_index < 0 or selected_index >= entries.size():
 		return
 	var entry: Dictionary = entries[selected_index]
+	var use_texture: Texture2D = detail_icon_texture.texture
+	var use_position := detail_layer.global_position + Vector2(626.0, 162.0)
 	if str(entry["kind"]) == "map":
 		feature_panel.visible = false
 		close_bag()
@@ -1244,8 +1168,12 @@ func _use_selected_item() -> void:
 	if str(entry["kind"]) == "dish":
 		var dish_id: String = str(entry["id"])
 		if GameState.consume_dish(dish_id):
-			_show_use_toast(str(entry["name"]) + " eaten — health restored")
 			_rebuild_inventory()
+			_play_use_feedback(use_texture, use_position, "")
+			_show_use_toast(
+				("已食用 %s — 生命已恢复" if CaseLocale.is_chinese() else "%s eaten — health restored")
+				% CaseLocale.line(str(entry["name"]))
+			)
 		return
 	if str(entry["kind"]) != "potion":
 		return
@@ -1282,11 +1210,110 @@ func _use_selected_item() -> void:
 	GameState.remove_inventory_item(potion_id)
 	_rebuild_inventory()
 	close_bag()
-	_show_use_toast(str(potion_info.get("name", potion_id)) + " used")
+	_play_use_feedback(use_texture, use_position, potion_id)
+	_show_use_toast(
+		("已使用 %s" if CaseLocale.is_chinese() else "%s used")
+		% CaseLocale.line(str(potion_info.get("name", potion_id)))
+	)
+
+
+func _play_use_feedback(texture: Texture2D, at: Vector2, potion_id: String) -> void:
+	dismiss_use_feedback()
+	if texture == null:
+		return
+	# Gameplay has already committed and resumed. This detached specimen is
+	# presentation only, and is dismissed if any new Hub opens.
+	use_feedback = Control.new()
+	use_feedback.name = "UsedSpecimen"
+	use_feedback.position = at
+	use_feedback.size = Vector2(116.0, 116.0)
+	use_feedback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(use_feedback)
+	var frame := TextureRect.new()
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.texture = load(SLOT_FRAME_B_PATH) as Texture2D
+	frame.position = Vector2(-12.0, -12.0)
+	frame.size = Vector2(140.0, 140.0)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	use_feedback.add_child(frame)
+	var cut := 0.0
+	if potion_id == "swift_potion":
+		cut = 0.263
+	elif potion_id in ["vision_potion", "purification_potion", "daze_potion"]:
+		cut = 0.181
+	elif potion_id in ["green_potion", "shroud_potion"]:
+		cut = 0.209
+	elif potion_id == "reveal_potion":
+		cut = 0.233
+	# Split only the measured cork bands in the original raster; other supplies
+	# receive the same tip-and-settle without inventing a replacement bottle.
+	var texture_size := texture.get_size()
+	var fitted := texture_size * minf(116.0 / texture_size.x, 116.0 / texture_size.y)
+	for part: int in range(2 if cut > 0.0 else 1):
+		var art := TextureRect.new()
+		art.name = "Cork" if part == 1 else "Bottle"
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art.size = fitted
+		art.position = (Vector2(116.0, 116.0) - fitted) * 0.5
+		art.texture = texture
+		if cut > 0.0:
+			var top := 0.0 if part == 1 else cut
+			var height := cut if part == 1 else 1.0 - cut
+			var atlas := AtlasTexture.new()
+			atlas.atlas = texture
+			atlas.region = Rect2(0.0, texture.get_height() * top, texture.get_width(), texture.get_height() * height)
+			art.texture = atlas
+			art.position.y += fitted.y * top
+			art.size.y = fitted.y * height
+		use_feedback.add_child(art)
+		var motion := ArchiveUi.begin_motion(art)
+		var rest := art.position
+		art.pivot_offset = art.size * 0.5
+		motion.tween_property(art, "position", rest + Vector2(3.0, -12.0 if part == 1 else 3.0), 0.10)
+		motion.parallel().tween_property(art, "rotation", -0.16 if part == 1 else 0.07, 0.10)
+		motion.tween_property(art, "position", rest, 0.18)
+		motion.parallel().tween_property(art, "rotation", 0.0, 0.18)
+	# Timed potions already sound through PotionHud.potion_applied.
+	if potion_id == "purification_potion":
+		GameAudio.play(&"potion_extract")
+	elif potion_id.is_empty():
+		GameAudio.play(&"ui_confirm")
+	use_feedback_tween = use_feedback.create_tween()
+	use_feedback_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	use_feedback_tween.tween_interval(0.22)
+	use_feedback_tween.tween_property(use_feedback, "modulate:a", 0.0, 0.12)
+	use_feedback_tween.tween_callback(_clear_use_visual)
+
+
+func dismiss_use_feedback() -> void:
+	_clear_use_visual()
+	if use_toast_tween != null and use_toast_tween.is_valid():
+		use_toast_tween.kill()
+	use_toast_tween = null
+	if is_instance_valid(use_toast):
+		use_toast.queue_free()
+	use_toast = null
+
+
+func _clear_use_visual() -> void:
+	if use_feedback_tween != null and use_feedback_tween.is_valid():
+		use_feedback_tween.kill()
+	use_feedback_tween = null
+	if is_instance_valid(use_feedback):
+		ArchiveUi.settle_motion_tree(use_feedback)
+		use_feedback.queue_free()
+	use_feedback = null
 
 
 func _show_use_toast(text: String) -> void:
+	if use_toast_tween != null and use_toast_tween.is_valid():
+		use_toast_tween.kill()
+	if is_instance_valid(use_toast):
+		use_toast.queue_free()
 	var toast: Label = Label.new()
+	use_toast = toast
 	toast.text = text
 	toast.position = Vector2(320.0, 700.0)
 	toast.size = Vector2(400.0, 36.0)
@@ -1296,7 +1323,8 @@ func _show_use_toast(text: String) -> void:
 	toast.add_theme_color_override("font_outline_color", Color(0.10, 0.06, 0.02, 1.0))
 	toast.add_theme_constant_override("outline_size", 5)
 	add_child(toast)
-	var tween: Tween = create_tween()
+	var tween: Tween = toast.create_tween()
+	use_toast_tween = tween
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_interval(1.8)
 	tween.tween_property(toast, "modulate:a", 0.0, 0.5)

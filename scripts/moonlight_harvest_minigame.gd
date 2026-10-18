@@ -126,20 +126,14 @@ func _process(delta: float) -> void:
 	_refresh_readout()
 	if _remaining_time <= 0.0:
 		_running = false
+		for pod: MoonleafPod in _pods:
+			pod.close_bloom()
 		report_level_failed(_text(
 			"The moon passes. The blooms close for the night — try the rhythm again.",
 			"月亮偏过去了，花苞全部合拢——重新找一次节奏。"
 		))
 		# 超时不惩罚进度，直接重开本关，让玩家专注在"看懂节奏"上。
-		var timer: SceneTreeTimer = get_tree().create_timer(1.4, true, false, true)
-		timer.timeout.connect(_restart_level)
-
-
-func _restart_level() -> void:
-	if visible:
-		# 必须走外壳的 restart_level()：直接调 build_level() 不会清空
-		# content，每次超时都会把一整排花苞叠加上去，旧花苞还挂着点击回调。
-		restart_level()
+		restart_after_feedback()
 
 
 func _harvested_count() -> int:
@@ -181,6 +175,7 @@ func _on_pod_pressed(pod: MoonleafPod) -> void:
 		))
 		return
 	pod.harvested = true
+	clear_feedback()
 	pod.queue_redraw()
 	_refresh_readout()
 	if _harvested_count() >= _target_count:

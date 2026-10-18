@@ -5,7 +5,7 @@ extends MinigameShell
 ##
 ## 教的正是苏醒室那道知识锁问的东西——火焰要持续燃烧，需要空气里的氧气。
 ## 但只答"需要氧气"太浅，所以这里把它推到可量化的一步：**空气越多，烧得
-## 越久；完全密封，最先灭**。通气孔会持续补气，所以一只小罐配通气孔，可以
+## 越久；相同空气下，耗氧倍率越高烧得越快**。通气孔会持续补气，所以一只小罐配通气孔，可以
 ## 比一只密封的大罐烧得更久——这一点几乎每个孩子都会先猜错。
 ##
 ## 玩法：几只罩着蜡烛的玻璃罐，参数各不相同，把它们按"谁先灭"排出顺序。
@@ -110,13 +110,12 @@ func build_level(index: int) -> void:
 	_deaths_seen = 0
 
 	set_instruction(_text(
-		"A flame burns only while air still reaches it. More air lasts "
-		+ "longer; sealed goes out first; a vent keeps feeding it. "
-		+ "Click the jars in the order their flames die — first to go out "
-		+ "first — then light them and watch.",
-		"火焰只有在还够得着空气时才烧得下去。空气越多烧得越久，密封的最先灭，"
-		+ "而通气孔会一直补进新的空气。按火焰熄灭的先后点选罐子——最先灭的先"
-		+ "点——然后点火，亲眼看着它们烧。"
+		"One wick per candle: a higher burn rate makes a stronger flame and uses air faster. "
+		+ "Vents replace air. "
+		+ "Pick the jars from first out to last, then light them. "
+		+ "Click a chosen jar again to undo its place.",
+		"每支蜡烛只有一根灯芯：耗氧倍率越高，火越旺，空气用得越快。通气孔会补进空气。"
+		+ "按预计熄灭的先后点选，再点火观察。再点一次已选的罐子，可以撤回它的顺序。"
 	))
 
 	var column := VBoxContainer.new()
@@ -151,9 +150,11 @@ func build_level(index: int) -> void:
 func _build_jar(jar_index: int) -> Control:
 	var jar: Dictionary = _jars[jar_index]
 	var lane := VBoxContainer.new()
+	lane.name = "Jar%d" % (jar_index + 1)
 	lane.add_theme_constant_override("separation", 4)
 
 	var view := FlameJarView.new()
+	view.name = "FlameView"
 	view.air = float(jar["air"])
 	view.vents = float(jar["vents"])
 	view.burn = float(jar["burn"])
@@ -165,12 +166,12 @@ func _build_jar(jar_index: int) -> Control:
 
 	var detail := _make_label(
 		_text(
-			"air %s\nvents %s\nwick x%s" % [
+			"air %s\nvents %s\nburn x%s" % [
 				_num(float(jar["air"])),
 				_num(float(jar["vents"])),
 				_num(float(jar["burn"])),
 			],
-			"空气 %s\n通气 %s\n灯芯 x%s" % [
+			"空气 %s\n通气 %s\n耗氧 x%s" % [
 				_num(float(jar["air"])),
 				_num(float(jar["vents"])),
 				_num(float(jar["burn"])),
@@ -199,22 +200,30 @@ func _num(value: float) -> String:
 ## 直接点罐子。罐子不是 Button，走不到 make_button 接的公共点击音，所以
 ## 这条路要自己补一声——放在 _on_pick 里会让点下方按钮的那条路响两次。
 func _on_jar_clicked(jar_index: int) -> void:
-	if _running or _order.has(jar_index):
+	if _running or _advancing or _finished:
 		return
 	GameAudio.play(&"ui_select")
 	_on_pick(jar_index)
 
 
 func _on_pick(jar_index: int) -> void:
-	if _running or _order.has(jar_index):
+	if _running or _advancing or _finished:
 		return
-	_order.append(jar_index)
+	clear_feedback()
+	for view: FlameJarView in _views:
+		view.reset_flame()
+	var place := _order.find(jar_index)
+	if place >= 0:
+		_order.remove_at(place)
+	else:
+		_order.append(jar_index)
 	_refresh()
 
 
 func _on_reset() -> void:
-	if _running:
+	if _running or _advancing or _finished:
 		return
+	clear_feedback()
 	_order = []
 	for view: FlameJarView in _views:
 		if is_instance_valid(view):
@@ -243,8 +252,9 @@ func _refresh() -> void:
 ## 然后交给 _process 逐帧演。等比例缩放保留了"谁比谁久多少"的直觉，而最小
 ## 间隔保证时长接近的两只不会看起来同时灭。
 func _on_confirm() -> void:
-	if _running or _order.size() < _jars.size():
+	if _running or _advancing or _finished or _order.size() < _jars.size():
 		return
+	clear_feedback()
 	_expected = _correct_order()
 	_death_at = []
 	_dead = []
@@ -324,6 +334,7 @@ func _reveal(jar_index: int) -> void:
 	if not is_instance_valid(view):
 		return
 	view.verdict = 1 if _order.find(jar_index) == _deaths_seen else 0
+	view.reveal_order(_deaths_seen)
 	_deaths_seen += 1
 
 
@@ -337,8 +348,8 @@ func _settle() -> void:
 
 	if _order == _expected:
 		report_level_cleared(_text(
-			"Every flame went out exactly when you said it would.",
-			"每一支火焰，都在你说的那一刻熄灭了。"
+			"Each flame behaved exactly as predicted.",
+			"每一支火焰的燃烧结果都与你的预测一致。"
 		))
 		return
 
@@ -363,11 +374,11 @@ func _settle() -> void:
 		(
 			"Not there. Position %d belongs to the jar with air %s and "
 			+ "vents %s: it lasts %s, and the one you put there lasts %s. "
-			+ "Air divided by (wick minus vents) gives the burn."
+			+ "Air divided by (burn rate minus vents) gives the duration."
 		) % numbers,
 		(
 			"这一位不对。第 %d 位该是空气 %s、通气 %s 的那只：它只能烧 %s，"
-			+ "而你放在这一位的那只能烧 %s。用「空气 ÷（灯芯 − 通气）」"
+			+ "而你放在这一位的那只能烧 %s。用「空气 ÷（耗氧倍率 − 通气）」"
 			+ "算一遍就分得出先后。"
 		) % numbers
 	))

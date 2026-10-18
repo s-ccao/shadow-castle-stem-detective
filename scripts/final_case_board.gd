@@ -14,8 +14,8 @@ const SOURCE_SPECS: Array[Dictionary] = [
 	{
 		"id": "fake_red_stain",
 		"evidence": "fake_red_stain",
-		"en": "Staged red stain",
-		"zh": "伪造的红色污渍",
+		"en": "Red stain comparison",
+		"zh": "红渍比较报告",
 	},
 	{
 		"id": "butler_service_account",
@@ -1012,10 +1012,15 @@ func _source_available(source: Dictionary) -> bool:
 	if source.has("evidence"):
 		return GameState.has_evidence(str(source["evidence"]))
 	if source.has("flag"):
-		return (
-			GameState.has_story_flag(str(source["flag"]))
-			or GameState.has_evidence(str(source.get("fallback_evidence", "")))
-		)
+		if GameState.has_story_flag(str(source["flag"])):
+			return true
+		# New investigations must earn the interview independently of the lab
+		# result; the evidence-only fallback remains for older case records.
+		if str(source["flag"]) == "chemistry_butler_interviewed" \
+				and GameState.has_story_flag("chemistry_case_observed") \
+				and not GameState.has_story_flag("chemistry_case_legacy"):
+			return false
+		return GameState.has_evidence(str(source.get("fallback_evidence", "")))
 	return false
 
 

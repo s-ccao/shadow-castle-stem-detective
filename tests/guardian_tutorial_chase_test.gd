@@ -203,6 +203,9 @@ func _test_near_miss_fires_at_the_door(game_state: Node) -> void:
 	game_state.call("set_story_flag", "hall_first_route_core_studied")
 	hall.call("_set_hall_arrival_step", 3)
 	await process_frame
+	_expect(not bool(hall.call("_try_guardian_near_miss")), "The near-miss cannot bypass the Chemistry question")
+	game_state.call("set_story_flag", "door_chemistry_question_answered")
+	game_state.call("set_story_flag", "door_chemistry_unlocked")
 
 	var fired := (
 		bool(hall.call("_try_guardian_near_miss"))

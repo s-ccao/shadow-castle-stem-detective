@@ -1,0 +1,31 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: Minigame panel exists
+PASS: Wrong-answer minigame keeps every element inside its panel ([])
+PASS: Wrong-answer minigame text stays inside its own box ([])
+PASS: Minigame content area seats its level (needs 361px, has 361px)
+PASS: Wake Room objective card exists in en
+PASS: Wake objective body fits its box in en (needs 44px, has 47px)
+PASS: Wake objective card is tall enough for its copy in en (needs 73px, card 85px)
+PASS: Wake Room objective card exists in zh
+PASS: Wake objective body fits its box in zh (needs 44px, has 47px)
+PASS: Wake objective card is tall enough for its copy in zh (needs 73px, card 85px)
+PASS: Chemistry objective card exists in en
+PASS: Chemistry objective body fits its box in en (needs 66px, has 72px)
+PASS: Chemistry objective card is tall enough for its copy in en (needs 95px, card 107px)
+PASS: Chemistry objective card exists in zh
+PASS: Chemistry objective body fits its box in zh (needs 44px, has 47px)
+PASS: Chemistry objective card is tall enough for its copy in zh (needs 73px, card 85px)
+PASS: Hall route card exists in en
+PASS: Hall route body fits its box in en (needs 66px, has 72px)
+PASS: Hall route card is tall enough for its copy in en (needs 94px, card 136px)
+PASS: Hall route compass stays inside its card in en (124px in 136px)
+PASS: Hall route card exists in zh
+PASS: Hall route body fits its box in zh (needs 44px, has 47px)
+PASS: Hall route card is tall enough for its copy in zh (needs 72px, card 114px)
+PASS: Hall route compass stays inside its card in zh (102px in 114px)
+panel_overflow_test: PASS
+WARNING: 8 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 4 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

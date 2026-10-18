@@ -72,10 +72,11 @@ func _flame() -> void:
 	var game: Node = script.new()
 	root.add_child(game)
 	_head("烛与罩（Candle and Jar）", "苏醒室", "燃烧需要氧气；空气越多烧越久，通气孔持续补气")
-	lines.append("燃烧时长 = 空气 ÷ (灯芯 − 通气)。通气 ≥ 灯芯的罐子永不熄灭。")
+	lines.append("燃烧时长 = 空气 ÷ (耗氧倍率 − 通气)。通气 ≥ 耗氧倍率时，火焰持续燃烧。")
+	lines.append("每支蜡烛都是一根灯芯；倍率表示耗氧速度，不是灯芯根数。")
 	lines.append("**按熄灭先后点选罐子**（最先灭的先点），罐子编号从左到右为 1 起。")
 	lines.append("")
-	lines.append("| 关 | 罐子（空气/通气/灯芯） | 各自可烧 | 正确点选顺序 |")
+	lines.append("| 关 | 罐子（空气/通气/耗氧倍率） | 各自可烧 | 正确点选顺序 |")
 	lines.append("| --- | --- | --- | --- |")
 
 	var levels: Array = script.get_script_constant_map()["LEVELS"]
@@ -110,8 +111,8 @@ func _sorting() -> void:
 	var script := load("res://scripts/change_sorting_minigame.gd") as GDScript
 	var game: Node = script.new()
 	root.add_child(game)
-	_head("变化分类（Change Sorting）", "化学室", "物理变化不生成新物质，化学变化生成新物质")
-	lines.append("把每个样本投进「物理」或「化学」。判据：有没有生成**新物质**。")
+	_head("变化观察实验台（Material Observation Lab）", "化学室", "物理变化不生成新物质，化学变化生成新物质")
+	lines.append("选中样本观察变化，可随时重播；逐份选择「物理」或「化学」，再封盘验证。判据：有没有生成**新物质**。")
 	lines.append("")
 	lines.append("| 关 | 正确归类 |")
 	lines.append("| --- | --- |")

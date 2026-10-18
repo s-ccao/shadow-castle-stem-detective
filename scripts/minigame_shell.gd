@@ -31,9 +31,9 @@ const INK_OUTLINE := Color(0.09, 0.05, 0.02, 1.0)
 const PANEL_SIZE := Vector2(820.0, 648.0)
 
 ## 过关后停留多久再切下一关，让特效播完。
-const LEVEL_CLEAR_DELAY: float = 0.9
+const LEVEL_CLEAR_DELAY: float = 2.5
 ## 全部通关后停留得久一点，这是整局最值得看的一下。
-const FINAL_CLEAR_DELAY: float = 1.5
+const FINAL_CLEAR_DELAY: float = 3.5
 
 var content: Control
 var accent: Color = GOLD
@@ -47,6 +47,7 @@ var _instruction_label: Label
 var _banner: Label
 var _footer: HBoxContainer
 var _close_button: Button
+var _continue_button: Button
 var _dev_button: Button
 var _level_index: int = 0
 var _cleared_count: int = 0
@@ -54,7 +55,9 @@ var _cleared_count: int = 0
 var _advancing: bool = false
 ## finished 只应发一次；收尾延时期间关闭按钮仍然是可按的。
 var _finished: bool = false
-var _banner_tween: Tween
+var _transition_timer: Timer
+var _retry_pending: bool = false
+var _content_focus: Control
 
 
 func _ready() -> void:
@@ -62,6 +65,11 @@ func _ready() -> void:
 	# 小游戏期间房间被暂停，外壳自己必须继续响应输入。
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_chrome()
+	_transition_timer = Timer.new()
+	_transition_timer.one_shot = true
+	_transition_timer.ignore_time_scale = true
+	_transition_timer.timeout.connect(_on_transition_timeout)
+	add_child(_transition_timer)
 	visible = false
 
 
@@ -148,6 +156,21 @@ func _build_chrome() -> void:
 	_footer.alignment = BoxContainer.ALIGNMENT_END
 	_footer.add_theme_constant_override("separation", 10)
 	column.add_child(_footer)
+
+	var controls_hint := _make_label(
+		_text("Tab: select · Enter: use · Esc: close", "Tab：选择 · Enter：操作 · Esc：关闭"),
+		12, Color(0.80, 0.74, 0.58, 1.0)
+	)
+	controls_hint.name = "ControlsHint"
+	controls_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	controls_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_footer.add_child(controls_hint)
+
+	_continue_button = make_button("")
+	_continue_button.name = "ContinueResult"
+	_continue_button.visible = false
+	_continue_button.pressed.connect(_continue_after_result)
+	_footer.add_child(_continue_button)
 
 	# 开发者模式下的直接通关键。做在外壳里而不是每个玩法各写一个，是因为
 	# "算通关并收尾" 这一步六个小游戏完全一样，而且外壳这层保证新增玩法
@@ -239,10 +262,15 @@ func make_button(text: String) -> Button:
 	var disabled := normal.duplicate() as StyleBoxFlat
 	disabled.bg_color = Color(0.09, 0.08, 0.07, 0.85)
 	disabled.border_color = Color(0.40, 0.34, 0.22, 0.5)
+	var focus := normal.duplicate() as StyleBoxFlat
+	focus.bg_color = Color.TRANSPARENT
+	focus.border_color = GOLD
+	focus.set_border_width_all(3)
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_stylebox_override("focus", focus)
 	# 所有小游戏按钮共用同一个点击音，不必每个玩法各接一次。
 	button.pressed.connect(_on_any_button_pressed)
 	return button
@@ -261,6 +289,9 @@ func configure(title: String, subtitle: String, tint: Color) -> void:
 	style.border_color = Color(tint.r, tint.g, tint.b, 0.85)
 	_panel.add_theme_stylebox_override("panel", style)
 	_close_button.text = _text("Close", "关闭")
+	(_footer.get_node("ControlsHint") as Label).text = _text(
+		"Tab: select · Enter: use · Esc: close", "Tab：选择 · Enter：操作 · Esc：关闭"
+	)
 	_sync_dev_button()
 
 
@@ -287,6 +318,12 @@ func start() -> void:
 
 
 func _enter_level() -> void:
+	if _finished:
+		return
+	_transition_timer.stop()
+	_retry_pending = false
+	_continue_button.visible = false
+	clear_feedback()
 	_clear_content()
 	_advancing = false
 	_set_content_interactive(true)
@@ -295,6 +332,48 @@ func _enter_level() -> void:
 		"第 %d / %d 关" % [_level_index + 1, level_count()]
 	)
 	build_level(_level_index)
+	call_deferred("_focus_first_content")
+
+
+func _input(event: InputEvent) -> void:
+	if not visible or _finished:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_close_pressed()
+	elif event.is_action_pressed("ui_focus_next") or event.is_action_pressed("ui_focus_prev"):
+		var controls: Array[Control] = []
+		_collect_focusable(_root, controls)
+		if not controls.is_empty():
+			var selected: int = controls.find(get_viewport().gui_get_focus_owner())
+			var step: int = -1 if event.is_action_pressed("ui_focus_prev") else 1
+			if selected < 0:
+				selected = 0 if step < 0 else -1
+			controls[posmod(selected + step, controls.size())].grab_focus()
+		get_viewport().set_input_as_handled()
+
+
+func _collect_focusable(node: Node, controls: Array[Control]) -> void:
+	if node == content and (_advancing or _retry_pending):
+		return
+	for child: Node in node.get_children():
+		if child is Control:
+			var control := child as Control
+			if control.is_visible_in_tree() and control.focus_mode == Control.FOCUS_ALL:
+				if not (control is BaseButton) or not (control as BaseButton).disabled:
+					controls.append(control)
+		_collect_focusable(child, controls)
+
+
+func _focus_first_content() -> void:
+	if _finished or not visible or _advancing or _retry_pending:
+		return
+	var controls: Array[Control] = []
+	_collect_focusable(content, controls)
+	if controls.is_empty():
+		_close_button.grab_focus()
+	else:
+		controls[0].grab_focus()
 
 
 ## 过关动画期间把内容区整体设为不可点，避免重复触发。
@@ -304,23 +383,65 @@ func _set_content_interactive(interactive: bool) -> void:
 	content.mouse_filter = (
 		Control.MOUSE_FILTER_PASS if interactive else Control.MOUSE_FILTER_IGNORE
 	)
+	content.mouse_behavior_recursive = (
+		Control.MOUSE_BEHAVIOR_ENABLED if interactive else Control.MOUSE_BEHAVIOR_DISABLED
+	)
+	content.focus_behavior_recursive = (
+		Control.FOCUS_BEHAVIOR_ENABLED if interactive else Control.FOCUS_BEHAVIOR_DISABLED
+	)
 	_set_buttons_disabled(content, not interactive)
 
 
 func _set_buttons_disabled(node: Node, disabled: bool) -> void:
+	if node == content and disabled:
+		var focused: Control = get_viewport().gui_get_focus_owner()
+		if focused != null and content.is_ancestor_of(focused):
+			_content_focus = focused
 	for child: Node in node.get_children():
 		if child is BaseButton:
-			(child as BaseButton).disabled = disabled
+			var button := child as BaseButton
+			if disabled:
+				if not button.has_meta("minigame_was_disabled"):
+					button.set_meta("minigame_was_disabled", button.disabled)
+				button.disabled = true
+			elif button.has_meta("minigame_was_disabled"):
+				button.disabled = bool(button.get_meta("minigame_was_disabled"))
+				button.remove_meta("minigame_was_disabled")
 		_set_buttons_disabled(child, disabled)
+	if node == content and not disabled:
+		call_deferred("_restore_content_focus")
+
+
+func _restore_content_focus() -> void:
+	if _finished or not visible or _advancing or _retry_pending:
+		return
+	if get_viewport().gui_get_focus_owner() != null:
+		return
+	if is_instance_valid(_content_focus) and _content_focus.is_visible_in_tree():
+		if not (_content_focus is BaseButton) or not (_content_focus as BaseButton).disabled:
+			_content_focus.grab_focus()
+			return
+	_focus_first_content()
 
 
 ## 供具体玩法重开当前关。必须走这里而不是直接调 build_level()，
 ## 否则旧的一整套控件会留在 content 里越叠越多。
 func restart_level() -> void:
+	if _advancing:
+		return
 	_enter_level()
 
 
+func restart_after_feedback() -> void:
+	if _finished or _advancing:
+		return
+	_retry_pending = true
+	_set_content_interactive(false)
+	_transition_timer.start(feedback_read_time(_banner.text))
+
+
 func _clear_content() -> void:
+	_content_focus = null
 	for child: Node in content.get_children():
 		child.queue_free()
 		content.remove_child(child)
@@ -328,10 +449,10 @@ func _clear_content() -> void:
 
 ## 具体玩法在过关时调用；最后一关过掉会触发 finished(true)。
 func report_level_cleared(message: String) -> void:
-	# 过关到切下一关之间有 0.9 秒的特效时间，这期间控件仍然是活的，而且
+	# 过关到切下一关之间有一段特效时间，这期间控件仍然是活的，而且
 	# 胜利条件依然成立——不挡住的话，连点获胜按钮会把关卡数和通关计数
 	# 一起翻倍，一关能刷出满进度。
-	if _advancing:
+	if _advancing or _finished or _retry_pending:
 		return
 	_advancing = true
 	_set_content_interactive(false)
@@ -340,37 +461,64 @@ func report_level_cleared(message: String) -> void:
 	_spawn_clear_effect()
 	_cleared_count += 1
 	var is_last: bool = _level_index + 1 >= level_count()
-	if not is_last:
-		_level_index += 1
+	_continue_button.text = _text("Finish", "完成") if is_last else _text("Next stage", "下一关")
+	_continue_button.visible = true
+	_continue_button.grab_focus()
 	# 留一点时间让过关特效播完再切下一关。最后一关同样要等——原来这里直接
 	# _finish()，面板瞬间关闭，全通关那一下的横幅和光环玩家根本看不到，
 	# 而那正是整局最该被看见的一刻。
-	var timer: SceneTreeTimer = get_tree().create_timer(
-		FINAL_CLEAR_DELAY if is_last else LEVEL_CLEAR_DELAY, true, false, true
+	_transition_timer.start(
+		maxf(FINAL_CLEAR_DELAY if is_last else LEVEL_CLEAR_DELAY, feedback_read_time(message))
 	)
-	if is_last:
-		timer.timeout.connect(_finish.bind(true))
-	else:
-		timer.timeout.connect(_enter_level)
+
+
+func _on_transition_timeout() -> void:
+	if _finished or not visible:
+		return
+	if _retry_pending:
+		_enter_level()
+	elif _advancing:
+		if _cleared_count >= level_count():
+			_finish(true)
+		else:
+			_level_index += 1
+			_enter_level()
+
+
+func _continue_after_result() -> void:
+	if _finished or not _advancing:
+		return
+	# Reading time is an allowance, not a mandatory wait after each result.
+	_transition_timer.stop()
+	_on_transition_timeout()
 
 
 func report_level_failed(message: String) -> void:
+	if _finished or _advancing or _retry_pending:
+		return
 	GameAudio.play(&"bench_fail")
 	show_banner(message, false)
 
 
 func show_banner(message: String, good: bool) -> void:
+	clear_feedback()
 	_banner.text = message
 	_banner.add_theme_color_override(
 		"font_color", SUCCESS if good else FAILURE
 	)
-	if _banner_tween != null and _banner_tween.is_valid():
-		_banner_tween.kill()
 	_banner.modulate.a = 1.0
-	_banner_tween = create_tween()
-	_banner_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	_banner_tween.tween_interval(1.6)
-	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.5)
+
+
+func clear_feedback() -> void:
+	_banner.text = ""
+	_banner.modulate.a = 0.0
+
+
+func feedback_read_time(message: String) -> float:
+	# Keep automatic progression, but allow a full sentence to be read in either locale.
+	var units: float = float(message.length()) / 7.0 if CaseLocale.is_chinese() \
+		else float(message.split(" ", false).size()) / 3.0
+	return clampf(0.8 + units, LEVEL_CLEAR_DELAY, 10.0)
 
 
 ## 过关时从面板中心扩散的光环，和药水特效同一套视觉语言。
@@ -395,6 +543,11 @@ func _finish(cleared_all: bool) -> void:
 	if _finished:
 		return
 	_finished = true
+	_transition_timer.stop()
+	_advancing = false
+	_retry_pending = false
+	_continue_button.visible = false
+	clear_feedback()
 	visible = false
 	_clear_content()
 	finished.emit(cleared_all)

@@ -39,6 +39,9 @@ static func launch(
 	game.finished.connect(
 		_on_finished.bind(host, game, on_finished), CONNECT_ONE_SHOT
 	)
+	game.tree_exiting.connect(
+		_on_game_exiting.bind(game, host.get_tree()), CONNECT_ONE_SHOT
+	)
 	_active = game
 	# 小游戏是模态的：不暂停的话玩家会在面板后面继续走动，按 E 还会触发
 	# 身后的交互，把对话框叠在小游戏上面。项目里其他模态都是这么做的。
@@ -62,3 +65,11 @@ static func _on_finished(
 	# 房间可能在小游戏结束前就被切走了，回调前先确认它还活着。
 	if is_instance_valid(host) and on_finished.is_valid():
 		on_finished.call(cleared_all, stages)
+
+
+static func _on_game_exiting(game: MinigameShell, tree: SceneTree) -> void:
+	# A room can be replaced without the modal emitting finished.
+	if _active != game:
+		return
+	_active = null
+	tree.paused = _was_paused

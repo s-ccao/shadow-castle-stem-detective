@@ -223,6 +223,7 @@ func _on_pick_gear(teeth: int) -> void:
 		return
 	if _selected_stage < 0 or _selected_stage >= _picked.size():
 		return
+	clear_feedback()
 	_picked[_selected_stage] = teeth
 	# 换了齿轮，上一轮跑出来的结果就不再作数；转角也归零，免得新链条一上来
 	# 就停在一个莫名其妙的姿态上。
@@ -312,6 +313,7 @@ func _on_engage() -> void:
 		turns = SLOW_TURNS / maxf(ratio, 0.05)
 	_drive_total = minf(turns, MAX_INPUT_TURNS) * TAU
 
+	clear_feedback()
 	_running = true
 	_run_time = 0.0
 	_revealed = false

@@ -266,9 +266,9 @@ func _run() -> void:
 		_expect(
 			chemistry_exhibit != null
 			and (core_route.get("target", Vector2.ZERO) as Vector2).is_equal_approx(
-				chemistry_exhibit.global_position
+				RoomSpatialRuntime.new().get_visual_feet(chemistry_exhibit)
 			),
-			"Tutorial route follows the player-authored Chemistry Knowledge position"
+			"Tutorial route follows the visible Chemistry Knowledge position"
 		)
 		hall.set("hall_arrival_step", arrival_step_before)
 		# From here the test is about the ordinary hunt, not the guided crossing.

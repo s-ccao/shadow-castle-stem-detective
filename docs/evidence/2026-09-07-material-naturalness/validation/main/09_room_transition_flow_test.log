@@ -1,0 +1,44 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: Dining Hall exit warns about the Guardian before the chase
+PASS: Guardian transition warning has Chinese copy
+PASS: res://scripts/circuit_room.gd returns through the shared Hall transition
+PASS: res://scripts/circuit_room.gd locks room and player input during transition
+PASS: res://scripts/circuit_room.gd restores input when a scene change fails
+PASS: res://scripts/greenhouse_room.gd returns through the shared Hall transition
+PASS: res://scripts/greenhouse_room.gd locks room and player input during transition
+PASS: res://scripts/greenhouse_room.gd restores input when a scene change fails
+PASS: res://scripts/library_room.gd returns through the shared Hall transition
+PASS: res://scripts/library_room.gd locks room and player input during transition
+PASS: res://scripts/library_room.gd restores input when a scene change fails
+PASS: res://scenes/floor_1/chemistry_room.gd returns through the shared Hall transition
+PASS: res://scenes/floor_1/chemistry_room.gd locks room and player input during transition
+PASS: res://scenes/floor_1/chemistry_room.gd restores input when a scene change fails
+PASS: res://scripts/dining_hall_room.gd returns through the shared Hall transition
+PASS: res://scripts/dining_hall_room.gd locks room and player input during transition
+PASS: res://scripts/dining_hall_room.gd restores input when a scene change fails
+PASS: res://scripts/final_room.gd returns through the shared Hall transition
+PASS: res://scripts/final_room.gd locks room and player input during transition
+PASS: res://scripts/final_room.gd restores input when a scene change fails
+PASS: res://scripts/wake_room.gd returns through the shared Hall transition
+PASS: Every Hall room entry uses the shared destination transition
+PASS: Continue Case identifies the destination instead of cutting to it
+PASS: enter_greenhouse_room delegates to the shared room-entry path
+PASS: enter_circuit_room delegates to the shared room-entry path
+PASS: enter_dining_hall_room delegates to the shared room-entry path
+PASS: enter_library_room delegates to the shared room-entry path
+PASS: enter_final_room delegates to the shared room-entry path
+PASS: enter_chemistry_room delegates to the shared room-entry path
+PASS: enter_wake_room delegates to the shared room-entry path
+PASS: Dining Hall starts pursuit at the warned transition midpoint
+PASS: Room transition persists under SceneTree root
+PASS: Room transition pauses world and keyboard input
+PASS: Room transition blocks pointer input while the scene changes
+PASS: Room transition invokes the scene change at full cover
+PASS: Room transition removes itself after fading into the destination
+PASS: Room transition restores the previous pause state
+room_transition_flow_test: PASS
+WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

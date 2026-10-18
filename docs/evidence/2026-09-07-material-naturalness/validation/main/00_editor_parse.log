@@ -1,0 +1,204 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Project initialization (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Scanning file structure...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Loading global class names...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verifying GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Creating autoload scripts...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Initializing plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Starting file scan...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | Started Registering global classes... (4 steps)[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  20% ] [90m[1mupdate_scripts_classes[22m | SampleDishView[39m[0m
+[  40% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  60% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Started Scanning actions... (55 steps)[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | contact-after.png[39m[0m
+[   1% ] [90m[1m_update_scan_actions[22m | contact-before.png[39m[0m
+[   3% ] [90m[1m_update_scan_actions[22m | contact-changing.png[39m[0m
+[   5% ] [90m[1m_update_scan_actions[22m | hero-baking_soda_vinegar.png[39m[0m
+[   7% ] [90m[1m_update_scan_actions[22m | hero-boiling_water.png[39m[0m
+[   8% ] [90m[1m_update_scan_actions[22m | hero-breaking_glass.png[39m[0m
+[  10% ] [90m[1m_update_scan_actions[22m | hero-bronze_reaction.png[39m[0m
+[  12% ] [90m[1m_update_scan_actions[22m | hero-burning_paper.png[39m[0m
+[  14% ] [90m[1m_update_scan_actions[22m | hero-cooking_egg.png[39m[0m
+[  16% ] [90m[1m_update_scan_actions[22m | hero-dissolving_sugar.png[39m[0m
+[  17% ] [90m[1m_update_scan_actions[22m | hero-magnet_attracting.png[39m[0m
+[  19% ] [90m[1m_update_scan_actions[22m | hero-melting_ice.png[39m[0m
+[  21% ] [90m[1m_update_scan_actions[22m | hero-melting_wax.png[39m[0m
+[  23% ] [90m[1m_update_scan_actions[22m | hero-milk_souring.png[39m[0m
+[  25% ] [90m[1m_update_scan_actions[22m | hero-rusting_iron.png[39m[0m
+[  26% ] [90m[1m_update_scan_actions[22m | hero-salt_crystallising.png[39m[0m
+[  28% ] [90m[1m_update_scan_actions[22m | hero-silver_tarnish.png[39m[0m
+[  30% ] [90m[1m_update_scan_actions[22m | hero-stretching_spring.png[39m[0m
+[  32% ] [90m[1m_update_scan_actions[22m | hero-tearing_cloth.png[39m[0m
+[  33% ] [90m[1m_update_scan_actions[22m | integrated-baking_soda_vinegar-0350.png[39m[0m
+[  35% ] [90m[1m_update_scan_actions[22m | integrated-baking_soda_vinegar-0883.png[39m[0m
+[  37% ] [90m[1m_update_scan_actions[22m | integrated-baking_soda_vinegar-1350.png[39m[0m
+[  39% ] [90m[1m_update_scan_actions[22m | integrated-baking_soda_vinegar-1983.png[39m[0m
+[  41% ] [90m[1m_update_scan_actions[22m | integrated-baking_soda_vinegar-2616.png[39m[0m
+[  42% ] [90m[1m_update_scan_actions[22m | integrated-breaking_glass-0350.png[39m[0m
+[  44% ] [90m[1m_update_scan_actions[22m | integrated-breaking_glass-0883.png[39m[0m
+[  46% ] [90m[1m_update_scan_actions[22m | integrated-breaking_glass-1350.png[39m[0m
+[  48% ] [90m[1m_update_scan_actions[22m | integrated-breaking_glass-1983.png[39m[0m
+[  50% ] [90m[1m_update_scan_actions[22m | integrated-breaking_glass-2616.png[39m[0m
+[  51% ] [90m[1m_update_scan_actions[22m | integrated-burning_paper-0350.png[39m[0m
+[  53% ] [90m[1m_update_scan_actions[22m | integrated-burning_paper-0883.png[39m[0m
+[  55% ] [90m[1m_update_scan_actions[22m | integrated-burning_paper-1350.png[39m[0m
+[  57% ] [90m[1m_update_scan_actions[22m | integrated-burning_paper-1983.png[39m[0m
+[  58% ] [90m[1m_update_scan_actions[22m | integrated-burning_paper-2616.png[39m[0m
+[  60% ] [90m[1m_update_scan_actions[22m | integrated-melting_ice-0350.png[39m[0m
+[  62% ] [90m[1m_update_scan_actions[22m | integrated-melting_ice-0883.png[39m[0m
+[  64% ] [90m[1m_update_scan_actions[22m | integrated-melting_ice-1350.png[39m[0m
+[  66% ] [90m[1m_update_scan_actions[22m | integrated-melting_ice-1983.png[39m[0m
+[  67% ] [90m[1m_update_scan_actions[22m | integrated-melting_ice-2616.png[39m[0m
+[  69% ] [90m[1m_update_scan_actions[22m | integrated-melting_wax-0350.png[39m[0m
+[  71% ] [90m[1m_update_scan_actions[22m | integrated-melting_wax-0883.png[39m[0m
+[  73% ] [90m[1m_update_scan_actions[22m | integrated-melting_wax-1350.png[39m[0m
+[  75% ] [90m[1m_update_scan_actions[22m | integrated-melting_wax-1983.png[39m[0m
+[  76% ] [90m[1m_update_scan_actions[22m | integrated-melting_wax-2616.png[39m[0m
+[  78% ] [90m[1m_update_scan_actions[22m | motion-baking_soda_vinegar.png[39m[0m
+[  80% ] [90m[1m_update_scan_actions[22m | motion-breaking_glass.png[39m[0m
+[  82% ] [90m[1m_update_scan_actions[22m | motion-burning_paper.png[39m[0m
+[  83% ] [90m[1m_update_scan_actions[22m | motion-magnet_attracting.png[39m[0m
+[  85% ] [90m[1m_update_scan_actions[22m | motion-melting_ice.png[39m[0m
+[  87% ] [90m[1m_update_scan_actions[22m | motion-melting_wax.png[39m[0m
+[  89% ] [90m[1m_update_scan_actions[22m | motion-milk_souring.png[39m[0m
+[  91% ] [90m[1m_update_scan_actions[22m | motion-salt_crystallising.png[39m[0m
+[  92% ] [90m[1m_update_scan_actions[22m | motion-stretching_spring.png[39m[0m
+[  94% ] [90m[1m_update_scan_actions[22m | motion-tearing_cloth.png[39m[0m
+[  96% ] [90m[1m_update_scan_actions[22m | performance-one-hero-six-thumbnails.png[39m[0m
+[92m[ DONE ][39m [1m_update_scan_actions[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (55 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   1% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   3% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   5% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   7% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   8% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  10% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  12% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  14% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  16% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  17% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  19% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  21% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  23% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  25% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  26% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  28% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  30% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  32% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  33% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  35% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  37% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  39% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  41% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  42% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  44% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  46% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  48% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  50% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  51% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  53% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  55% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  57% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  58% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  60% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  62% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  64% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  66% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  67% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  69% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  71% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  73% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  75% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  76% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  78% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  80% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  82% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  83% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  85% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  87% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  89% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  91% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  92% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  94% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  96% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | integrated-breaking_glass-2616.png[39m[0m
+[   1% ] [90m[1mreimport[22m | integrated-burning_paper-0350.png[39m[0m
+[   3% ] [90m[1mreimport[22m | integrated-burning_paper-0883.png[39m[0m
+[   5% ] [90m[1mreimport[22m | integrated-burning_paper-1350.png[39m[0m
+[   7% ] [90m[1mreimport[22m | integrated-burning_paper-1983.png[39m[0m
+[   8% ] [90m[1mreimport[22m | integrated-burning_paper-2616.png[39m[0m
+[  10% ] [90m[1mreimport[22m | integrated-melting_ice-0350.png[39m[0m
+[  12% ] [90m[1mreimport[22m | integrated-melting_ice-0883.png[39m[0m
+[  14% ] [90m[1mreimport[22m | integrated-melting_ice-1350.png[39m[0m
+[  16% ] [90m[1mreimport[22m | integrated-melting_ice-1983.png[39m[0m
+[  17% ] [90m[1mreimport[22m | integrated-melting_ice-2616.png[39m[0m
+[  19% ] [90m[1mreimport[22m | integrated-melting_wax-0350.png[39m[0m
+[  21% ] [90m[1mreimport[22m | integrated-melting_wax-0883.png[39m[0m
+[  23% ] [90m[1mreimport[22m | integrated-melting_wax-1350.png[39m[0m
+[  25% ] [90m[1mreimport[22m | integrated-melting_wax-1983.png[39m[0m
+[  26% ] [90m[1mreimport[22m | integrated-melting_wax-2616.png[39m[0m
+[  28% ] [90m[1mreimport[22m | motion-baking_soda_vinegar.png[39m[0m
+[  30% ] [90m[1mreimport[22m | motion-breaking_glass.png[39m[0m
+[  32% ] [90m[1mreimport[22m | motion-burning_paper.png[39m[0m
+[  33% ] [90m[1mreimport[22m | motion-magnet_attracting.png[39m[0m
+[  35% ] [90m[1mreimport[22m | motion-melting_ice.png[39m[0m
+[  37% ] [90m[1mreimport[22m | motion-melting_wax.png[39m[0m
+[  39% ] [90m[1mreimport[22m | motion-milk_souring.png[39m[0m
+[  41% ] [90m[1mreimport[22m | motion-salt_crystallising.png[39m[0m
+[  42% ] [90m[1mreimport[22m | motion-stretching_spring.png[39m[0m
+[  44% ] [90m[1mreimport[22m | motion-tearing_cloth.png[39m[0m
+[  46% ] [90m[1mreimport[22m | performance-one-hero-six-thumbnails.png[39m[0m
+[  48% ] [90m[1mreimport[22m | contact-after.png[39m[0m
+[  50% ] [90m[1mreimport[22m | contact-before.png[39m[0m
+[  51% ] [90m[1mreimport[22m | contact-changing.png[39m[0m
+[  53% ] [90m[1mreimport[22m | hero-baking_soda_vinegar.png[39m[0m
+[  55% ] [90m[1mreimport[22m | hero-boiling_water.png[39m[0m
+[  57% ] [90m[1mreimport[22m | hero-breaking_glass.png[39m[0m
+[  58% ] [90m[1mreimport[22m | hero-bronze_reaction.png[39m[0m
+[  60% ] [90m[1mreimport[22m | hero-burning_paper.png[39m[0m
+[  62% ] [90m[1mreimport[22m | hero-cooking_egg.png[39m[0m
+[  64% ] [90m[1mreimport[22m | hero-dissolving_sugar.png[39m[0m
+[  66% ] [90m[1mreimport[22m | hero-magnet_attracting.png[39m[0m
+[  67% ] [90m[1mreimport[22m | hero-melting_ice.png[39m[0m
+[  69% ] [90m[1mreimport[22m | hero-melting_wax.png[39m[0m
+[  71% ] [90m[1mreimport[22m | hero-milk_souring.png[39m[0m
+[  73% ] [90m[1mreimport[22m | hero-rusting_iron.png[39m[0m
+[  75% ] [90m[1mreimport[22m | hero-salt_crystallising.png[39m[0m
+[  76% ] [90m[1mreimport[22m | hero-silver_tarnish.png[39m[0m
+[  78% ] [90m[1mreimport[22m | hero-stretching_spring.png[39m[0m
+[  80% ] [90m[1mreimport[22m | hero-tearing_cloth.png[39m[0m
+[  82% ] [90m[1mreimport[22m | integrated-baking_soda_vinegar-0350.png[39m[0m
+[  83% ] [90m[1mreimport[22m | integrated-baking_soda_vinegar-0883.png[39m[0m
+[  85% ] [90m[1mreimport[22m | integrated-baking_soda_vinegar-1350.png[39m[0m
+[  87% ] [90m[1mreimport[22m | integrated-baking_soda_vinegar-1983.png[39m[0m
+[  89% ] [90m[1mreimport[22m | integrated-baking_soda_vinegar-2616.png[39m[0m
+[  91% ] [90m[1mreimport[22m | integrated-breaking_glass-0350.png[39m[0m
+[  92% ] [90m[1mreimport[22m | integrated-breaking_glass-0883.png[39m[0m
+[  94% ] [90m[1mreimport[22m | integrated-breaking_glass-1350.png[39m[0m
+[  96% ] [90m[1mreimport[22m | integrated-breaking_glass-1983.png[39m[0m
+[  98% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (55 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[  33% ] [90m[1mloading_editor_layout[22m | Reopening scenes...[39m[0m
+[  50% ] [90m[1mloading_editor_layout[22m | Loading central editor layout...[39m[0m
+[  66% ] [90m[1mloading_editor_layout[22m | Loading plugin window layout...[39m[0m
+[  83% ] [90m[1mloading_editor_layout[22m | Editor layout ready.[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m

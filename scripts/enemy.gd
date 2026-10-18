@@ -19,9 +19,13 @@ const HALL_VISUAL_FOOT_ANCHOR: Vector2 = Vector2(0.0, -44.8)
 const GUARDIAN_FRAME_COUNT: int = 8
 const GUARDIAN_ROW_BY_ANIMATION: Dictionary = {
 	&"walk_down": 4,
+	&"walk_down_left": 5,
 	&"walk_left": 6,
+	&"walk_up_left": 7,
 	&"walk_right": 2,
+	&"walk_up_right": 1,
 	&"walk_up": 0,
+	&"walk_down_right": 3,
 }
 ## Fraction of the intended step the body must actually cover to count as
 ## moving. Sliding along a wall keeps most of it; pressing into a corner
@@ -39,10 +43,9 @@ const STALL_TIMEOUT: float = 0.4
 ## what keeps a foot planted on one spot of floor at any speed.
 const WALK_CYCLE_DISTANCE: float = 102.0
 const WALK_CYCLE_SECONDS: float = 1.6
-const WALK_SCALE_MIN: float = 0.65
+const WALK_SCALE_MIN: float = 0.0
 const WALK_SCALE_MAX: float = 5.0
-## Standing still still breathes, just slowly.
-const IDLE_ANIMATION_SCALE: float = 0.35
+const FACING_HYSTERESIS_ANGLE: float = PI / 30.0
 
 ## How far from the last sighting the Guardian sweeps before giving up, and how
 ## long it will keep pushing at one unreachable target before picking another.
@@ -68,6 +71,9 @@ var path: PackedVector2Array = PackedVector2Array()
 var path_index: int = 0
 var repath_timer: float = 0.0
 var facing_direction: Vector2 = Vector2.DOWN
+var _scripted_presentation_active := false
+var _scripted_mark := Vector2.ZERO
+var _scripted_stride := 0.0
 var behavior: int = Behavior.DORMANT
 var cinematic_hold: bool = false
 var catch_enabled: bool = true
@@ -115,7 +121,7 @@ func _apply_updated_guardian_model() -> void:
 	guardian_sprite.position = HALL_VISUAL_FOOT_ANCHOR
 	guardian_sprite.scale = HALL_VISUAL_SCALE
 	guardian_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	guardian_sprite.play(&"walk_down")
+	_update_animation(Vector2.ZERO)
 
 
 func setup(world: Node, target_player: Node2D):
@@ -162,6 +168,35 @@ func face_toward(target_position: Vector2) -> void:
 	if toward.length_squared() > 1.0:
 		facing_direction = toward.normalized()
 	_update_animation(Vector2.ZERO)
+
+
+func present_scripted_step(mark: Vector2, look_target: Vector2) -> void:
+	# Tutorial placement owns the safety geometry. Animate distance between its
+	# marks rather than resetting to standing on every face_toward() call.
+	if not _scripted_presentation_active:
+		_scripted_presentation_active = true
+		_scripted_mark = mark
+		_scripted_stride = 0.0
+	var step := mark - _scripted_mark
+	_scripted_mark = mark
+	global_position = mark
+	_scripted_stride = fposmod(
+		_scripted_stride + step.length() * GUARDIAN_FRAME_COUNT / WALK_CYCLE_DISTANCE,
+		float(GUARDIAN_FRAME_COUNT)
+	)
+	var toward := step if step.length_squared() > 0.01 else look_target - mark
+	if not toward.is_zero_approx():
+		facing_direction = toward.normalized()
+	guardian_sprite.animation = _walk_animation_name()
+	guardian_sprite.pause()
+	guardian_sprite.set_frame_and_progress(
+		int(_scripted_stride), _scripted_stride - floorf(_scripted_stride)
+	)
+
+
+func clear_scripted_presentation() -> void:
+	_scripted_presentation_active = false
+	_scripted_stride = 0.0
 
 
 func _physics_process(delta):
@@ -341,6 +376,11 @@ func _choose_next_target() -> void:
 
 
 func move_along_path(delta: float) -> void:
+	# Crossing a grid waypoint is not a stop. Consume nearby points in this tick
+	# so turns do not insert an idle frame into every few steps.
+	while path_index < path.size() and global_position.distance_to(path[path_index]) < 4.0:
+		path_index += 1
+		stall_timer = 0.0
 	if path.size() == 0 or path_index >= path.size():
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
@@ -354,18 +394,12 @@ func move_along_path(delta: float) -> void:
 	var target_position: Vector2 = path[path_index]
 	var direction := target_position - global_position
 
-	if direction.length() < 4.0:
-		path_index += 1
-		stall_timer = 0.0
-		_update_animation(Vector2.ZERO)
-		return
-
-	var move_speed := _current_move_speed()
+	var move_speed := minf(_current_move_speed(), direction.length() / maxf(delta, 0.0001))
 
 	velocity = direction.normalized() * move_speed
-	_update_animation(velocity)
 	var position_before := global_position
 	move_and_slide()
+	_update_animation((global_position - position_before) / maxf(delta, 0.0001))
 	_note_progress(position_before, move_speed, delta)
 	GameState.update_guardian_hall_position(global_position)
 
@@ -411,28 +445,41 @@ func _current_move_speed() -> float:
 func _update_animation(movement_velocity: Vector2) -> void:
 	if guardian_sprite == null:
 		return
-	if movement_velocity.length_squared() > 1.0:
+	var is_moving := movement_velocity.length_squared() > 1.0
+	if is_moving:
 		facing_direction = movement_velocity.normalized()
 	var animation: StringName = _walk_animation_name()
+	if not is_moving:
+		guardian_sprite.animation = animation
+		guardian_sprite.stop()
+		guardian_sprite.frame = 0
+		return
 	if guardian_sprite.animation != animation:
+		var previous_frame := guardian_sprite.frame
+		var previous_progress := guardian_sprite.frame_progress
 		guardian_sprite.play(animation)
+		guardian_sprite.set_frame_and_progress(previous_frame, previous_progress)
 	elif not guardian_sprite.is_playing():
 		guardian_sprite.play()
-	guardian_sprite.speed_scale = (
-		clampf(
-			movement_velocity.length() * WALK_CYCLE_SECONDS / WALK_CYCLE_DISTANCE,
-			WALK_SCALE_MIN,
-			WALK_SCALE_MAX
-		)
-		if movement_velocity.length_squared() > 1.0
-		else IDLE_ANIMATION_SCALE
+	guardian_sprite.speed_scale = clampf(
+		movement_velocity.length() * WALK_CYCLE_SECONDS / WALK_CYCLE_DISTANCE,
+		WALK_SCALE_MIN,
+		WALK_SCALE_MAX
 	)
 
 
 func _walk_animation_name() -> StringName:
-	if absf(facing_direction.x) > absf(facing_direction.y):
-		return &"walk_right" if facing_direction.x > 0.0 else &"walk_left"
-	return &"walk_down" if facing_direction.y > 0.0 else &"walk_up"
+	var angle := facing_direction.angle()
+	if GUARDIAN_ROW_BY_ANIMATION.has(guardian_sprite.animation):
+		var current_row := int(GUARDIAN_ROW_BY_ANIMATION[guardian_sprite.animation])
+		var current_angle := -PI / 2.0 + current_row * PI / 4.0
+		if absf(wrapf(angle - current_angle, -PI, PI)) <= PI / 8.0 + FACING_HYSTERESIS_ANGLE:
+			return guardian_sprite.animation
+	var row := posmod(roundi((angle + PI / 2.0) / (PI / 4.0)), 8)
+	for animation: StringName in GUARDIAN_ROW_BY_ANIMATION:
+		if int(GUARDIAN_ROW_BY_ANIMATION[animation]) == row:
+			return animation
+	return &"walk_down"
 
 
 func check_player_collision():

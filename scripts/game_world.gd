@@ -406,6 +406,7 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 		"title": "Dining Hall Knowledge",
 		"prompt": "the Dining Hall knowledge exhibit",
 		"note_id": "hall_knowledge_dining_timeline",
+		"knowledge_key": "knowledge.time.principle",
 		"knowledge_flag": "hall_knowledge_dining_hall_collected",
 		"knowledge": (
 			"When a process changes at a reasonably steady rate, measuring how much it "
@@ -419,6 +420,7 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 		"title": "Circuit Room Knowledge",
 		"prompt": "the Circuit Room knowledge exhibit",
 		"note_id": "hall_knowledge_electricity",
+		"knowledge_key": "knowledge.circuit.principle",
 		"knowledge_flag": "hall_knowledge_circuit_room_collected",
 		"knowledge": (
 			"The two gauges measure a closed electrical circuit. "
@@ -433,6 +435,7 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 		"title": "Chemistry Room Knowledge",
 		"prompt": "the Chemistry Room knowledge exhibit",
 		"note_id": "hall_knowledge_chemical_change",
+		"knowledge_key": "knowledge.chemistry.principle",
 		"knowledge_flag": "hall_knowledge_chemistry_room_collected",
 		"knowledge": (
 			"The core is warm because a reaction is taking place inside it. "
@@ -447,6 +450,7 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 		"title": "Greenhouse Room Knowledge",
 		"prompt": "the Greenhouse Room knowledge exhibit",
 		"note_id": "hall_knowledge_photosynthesis",
+		"knowledge_key": "knowledge.greenhouse.principle",
 		"knowledge_flag": "hall_knowledge_greenhouse_room_collected",
 		"knowledge": (
 			"The living panels are imitating photosynthesis. Plants absorb carbon "
@@ -461,6 +465,7 @@ const HALL_KNOWLEDGE_ITEMS: Array[Dictionary] = [
 		"title": "Library Knowledge",
 		"prompt": "the Library knowledge exhibit",
 		"note_id": "hall_knowledge_light",
+		"knowledge_key": "knowledge.light.principle",
 		"knowledge_flag": "hall_knowledge_library_collected",
 		"knowledge": (
 			"The console mixes light, not paint. The primary colors of light are "
@@ -667,6 +672,9 @@ var guardian_entry_sequence_active: bool = false
 var guardian_entry_sequence_played: bool = false
 var guardian_near_miss_active: bool = false
 var guardian_near_miss_played: bool = false
+var chemistry_near_miss_cg: CanvasLayer
+var chemistry_door_question: CanvasLayer
+var _chemistry_door_enter: Callable
 var guardian_tutorial_pace: float = 1.0
 var guardian_hold_watchdog: float = 0.0
 ## Cell -> the point inside it a mover must steer to, for the cells whose
@@ -690,13 +698,12 @@ var guardian_eta_seconds: float = INF
 var guardian_eta_refresh_remaining: float = 0.0
 var guardian_reveal_fog_was_visible: bool = true
 
-## First arrival is a small state machine: it keeps the hall readable until the
-## player has reached the first door, studied its nearby core, and returned.
+## Reach the knowledge exhibit, stop to file its observation, then open the door.
 enum HallArrivalStep {
 	NONE,
-	REACH_CHEMISTRY_DOOR,
+	APPROACH_CHEMISTRY_CORE,
 	STUDY_CHEMISTRY_CORE,
-	RETURN_TO_CHEMISTRY_DOOR,
+	REACH_CHEMISTRY_DOOR,
 	COMPLETE,
 }
 
@@ -726,9 +733,9 @@ const TUTORIAL_TRAIL_START_DISTANCE: float = 900.0
 const TUTORIAL_TRAIL_END_DISTANCE: float = 420.0
 ## How near a waypoint counts as reaching it.
 const TUTORIAL_WAYPOINT_REACH: float = 96.0
-## Straying further than this from every waypoint means the player has left the
-## route, and is returned to the last one they reached.
-const TUTORIAL_ROUTE_LEASH: float = 420.0
+## Half-width of the temporary protection corridor, measured from its polyline.
+const TUTORIAL_ROUTE_LEASH: float = 80.0
+const HALL_KNOWLEDGE_INTERACTION_MARGIN: float = 72.0
 ## 踏出踪迹到被看清之间的宽限。给玩家一拍时间自己走回来——规则要能学，
 ## 不是只能被惩罚。
 const HALL_ROUTE_EXPOSURE_GRACE: float = 1.1
@@ -737,8 +744,14 @@ const HALL_ROUTE_PATROL_OFFSET: float = 190.0
 
 var hall_tutorial_route: Array[Vector2] = []
 var _hall_route_recorder: HallRouteRecorder = null
+var _hall_navigation_ready := false
+var _hall_route_recording_requested := false
 var hall_route_exposure: float = 0.0
+var hall_route_exposed := false
+var knowledge_dossier: CanvasLayer
+var _knowledge_input_resume_frame := -1
 var hall_tutorial_reached: int = 0
+var hall_route_distance_travelled: float = 0.0
 ## Where the Guardian stands before the player has walked far enough for the
 ## trailing gap to reach into the route. Without this the clamp put it on
 ## waypoint zero, which is the player's own starting mark.
@@ -755,8 +768,9 @@ var hall_route_ui_only := false
 var hall_route_trail: Node2D
 var hall_route_trail_tween: Tween
 var hall_route_marker_nodes: Array[Node2D] = []
-const HALL_ROUTE_MARKER_SPACING: float = 96.0
-const HALL_ROUTE_FIRST_MARKER_OFFSET: float = 56.0
+const HALL_ROUTE_MARKER_SPACING: float = 64.0
+const HALL_ROUTE_FIRST_MARKER_OFFSET: float = 28.0
+const HALL_ROUTE_VISIBLE_AHEAD: float = 480.0
 const HALL_ROUTE_TARGET_SEARCH_RADIUS: int = 3
 const CASTLE_FLOOR_1_BACKGROUND := \
 	"res://assets/backgrounds/hall_floor_bg.png"
@@ -837,11 +851,30 @@ func get_interaction_rect(interaction_id: String) -> Rect2:
 
 
 func _is_near_hall_interaction(interaction_id: String) -> bool:
-	return spatial.is_actor_near_rect(
-		player,
-		get_interaction_rect(interaction_id),
-		14.0
-	)
+	var rect := get_interaction_rect(interaction_id)
+	if not spatial.is_actor_near_rect(player, rect, _hall_interaction_margin(interaction_id)):
+		return false
+	return not _is_knowledge_interaction(interaction_id) or _knowledge_sight_clear(player.global_position, rect)
+
+
+func _is_knowledge_interaction(interaction_id: String) -> bool:
+	return interaction_id == "arrival_chemistry_core" or interaction_id.begins_with("hall_knowledge:")
+
+
+func _hall_interaction_margin(interaction_id: String) -> float:
+	return HALL_KNOWLEDGE_INTERACTION_MARGIN if _is_knowledge_interaction(interaction_id) else 14.0
+
+
+func _knowledge_sight_clear(viewer: Vector2, rect: Rect2) -> bool:
+	var target := Vector2(clampf(viewer.x, rect.position.x, rect.end.x), rect.end.y)
+	var start_cell := Vector2i(viewer / FOG_CELL_SIZE)
+	var end_cell := Vector2i(target / FOG_CELL_SIZE)
+	var steps := maxi(1, ceili(viewer.distance_to(target) / 4.0))
+	for index: int in range(1, steps):
+		var cell := Vector2i(viewer.lerp(target, float(index) / steps) / FOG_CELL_SIZE)
+		if cell != start_cell and cell != end_cell and sight_blockers.has(fog_key(cell)):
+			return false
+	return true
 func _ready():
 	if not GameState.state_changed.is_connected(_on_developer_mode_changed):
 		GameState.state_changed.connect(_on_developer_mode_changed)
@@ -941,6 +974,8 @@ func _ready():
 
 	create_follow_camera()
 	setup_enemy()
+	_hall_navigation_ready = true
+	_sync_hall_route_recorder()
 
 	if SHOW_LAYOUT_MARKERS:
 		create_floor_one_layout_markers()
@@ -962,6 +997,16 @@ func _ready():
 
 
 func _exit_tree() -> void:
+	if guardian_near_miss_active or (chemistry_door_question != null and chemistry_door_question.visible):
+		ArchiveUi.set_hub_entries_suppressed(false)
+		get_tree().root.get_node("MapHud").call("set_guardian_tracking_suppressed", false)
+	if knowledge_dossier != null and knowledge_dossier.visible:
+		ArchiveUi.set_hub_entries_suppressed(false)
+		get_tree().root.get_node("MapHud").call("set_guardian_tracking_suppressed", false)
+	if player != null and is_instance_valid(player) and bool(player.get("movement_locked")):
+		var map_hud := get_tree().root.get_node_or_null("MapHud")
+		if map_hud != null:
+			map_hud.call("set_guardian_tracking_suppressed", false)
 	if guardian_entry_sequence_active:
 		ArchiveUi.set_hub_entries_suppressed(false)
 		var map_hud := get_node_or_null("/root/MapHud")
@@ -976,6 +1021,7 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_hall_knowledge_stop()
 	_update_hall_prop_occlusion_layers()
 	# 追逐模式计时与敌人启动。
 	if _damage_invincible_timer > 0.0:
@@ -987,12 +1033,20 @@ func _process(delta: float) -> void:
 	_update_guardian_pressure(delta)
 	_update_music_intensity()
 	_update_guardian_awareness_readout()
-	if guardian_entry_sequence_active:
+	if guardian_entry_sequence_active or guardian_near_miss_active:
 		update_fog_of_war()
 		hide_interaction_feedback()
 		return
 
 	update_camera_zoom(delta)
+	if (
+		(knowledge_dossier != null and knowledge_dossier.visible)
+		or (chemistry_door_question != null and chemistry_door_question.visible)
+		or Engine.get_process_frames() <= _knowledge_input_resume_frame
+	):
+		update_fog_of_war()
+		hide_interaction_feedback()
+		return
 	# Record Hall history on the 32px map grid even during the blackout. It is
 	# deliberately invisible until Circuit power returns, then becomes gray
 	# route memory in both the world fog and Map Hub.
@@ -1111,6 +1165,10 @@ func on_player_ground_move_started(
 		and get_interaction_rect(current_interaction).has_point(target_position)
 	):
 		try_investigate_clue()
+		return
+
+	if _is_hall_knowledge_stop_active():
+		show_hall_notice(CaseLocale.text("hall.route_study_action"))
 		return
 
 	var target_cell: Vector2i = world_to_cell(
@@ -2094,12 +2152,12 @@ func _lattice_step_exists(from_index: Vector2i, to_index: Vector2i) -> bool:
 	)
 
 
-func nearest_lattice_id(position: Vector2) -> int:
+func nearest_lattice_id(position: Vector2, player_route: bool = false) -> int:
 	var centre := Vector2i(
 		int(roundf(position.x / float(NAV_LATTICE_SPACING))),
 		int(roundf(position.y / float(NAV_LATTICE_SPACING)))
 	)
-	if _lattice_has(centre):
+	if _lattice_has(centre) and (not player_route or is_player_position_walkable(lattice_point(centre))):
 		return _lattice_id(centre)
 	for radius: int in range(1, NAV_LATTICE_SEARCH_RADIUS + 1):
 		var best_id: int = -1
@@ -2110,6 +2168,8 @@ func nearest_lattice_id(position: Vector2) -> int:
 					continue
 				var candidate := centre + Vector2i(offset_x, offset_y)
 				if not _lattice_has(candidate):
+					continue
+				if player_route and not is_player_position_walkable(lattice_point(candidate)):
 					continue
 				var distance := lattice_point(candidate).distance_squared_to(position)
 				if distance < best_distance:
@@ -2124,9 +2184,9 @@ func nearest_lattice_id(position: Vector2) -> int:
 ## can walk in a straight line. Empty when the two are not connected, which is
 ## a real answer and not a failure: the caller should fall back rather than
 ## pretend a route exists.
-func find_route(from_position: Vector2, to_position: Vector2) -> PackedVector2Array:
-	var start_id := nearest_lattice_id(from_position)
-	var end_id := nearest_lattice_id(to_position)
+func find_route(from_position: Vector2, to_position: Vector2, player_route: bool = false) -> PackedVector2Array:
+	var start_id := nearest_lattice_id(from_position, player_route)
+	var end_id := nearest_lattice_id(to_position, player_route)
 	if start_id < 0 or end_id < 0:
 		return PackedVector2Array()
 	if start_id == end_id:
@@ -2410,8 +2470,12 @@ func _prepare_standalone_tutorial_preview() -> void:
 	for flag: String in [
 		"hall_first_route_started",
 		"hall_first_route_door_reached",
+		"hall_first_route_core_reached",
 		"hall_first_route_core_studied",
+		"hall_knowledge_chemistry_room_collected",
 		"hall_first_route_complete",
+		"door_chemistry_unlocked",
+		"door_chemistry_question_answered",
 		"hall_orientation_completed",
 	]:
 		GameState.set_story_flag(flag, false)
@@ -2568,7 +2632,7 @@ func _update_guardian_tutorial_pace(delta: float) -> void:
 	# already marked complete by then, so this check has to come first.
 	if guardian_entry_sequence_active or guardian_near_miss_active:
 		return
-	if not _is_hall_arrival_active():
+	if not _is_hall_tutorial_protected():
 		guardian_tutorial_pace = 1.0
 		GameState.set_guardian_tutorial_pace(1.0)
 		return
@@ -2598,6 +2662,8 @@ func _update_guardian_tutorial_pace(delta: float) -> void:
 ## The payoff: the Guardian's hand closes on empty air as the door shuts.
 ## Returns true when it staged the beat, false when it has already played.
 func _try_guardian_near_miss() -> bool:
+	if not GameState.has_story_flag("door_chemistry_question_answered"):
+		return false
 	if guardian_near_miss_played or enemy == null or player == null:
 		return false
 	if follow_camera == null or game_over:
@@ -2609,117 +2675,46 @@ func _try_guardian_near_miss() -> bool:
 
 
 func _run_guardian_near_miss() -> void:
-	GameAudio.play(&"guardian_alert")
-	GameAudio.duck_music(1.2)
 	hide_interaction_feedback()
 	ArchiveUi.set_hub_entries_suppressed(true)
-	if player.has_method("cancel_click_movement"):
-		player.call("cancel_click_movement")
+	player.call("cancel_click_movement")
 	player.set_physics_process(false)
-	if enemy.has_method("set_catch_enabled"):
-		enemy.call("set_catch_enabled", false)
-	if enemy.has_method("set_cinematic_hold"):
-		enemy.call("set_cinematic_hold", true)
-	var near_miss_map_hud := get_node_or_null("/root/MapHud")
-	if (
-		near_miss_map_hud != null
-		and near_miss_map_hud.has_method("set_guardian_tracking_suppressed")
-	):
-		near_miss_map_hud.call("set_guardian_tracking_suppressed", true)
+	enemy.call("set_catch_enabled", false)
+	enemy.call("set_cinematic_hold", true)
+	get_node("/root/MapHud").call("set_guardian_tracking_suppressed", true)
+	chemistry_near_miss_cg = load("res://scripts/chemistry_near_miss_cg.gd").new() as CanvasLayer
+	chemistry_near_miss_cg.name = "ChemistryNearMissCG"
+	add_child(chemistry_near_miss_cg)
+	chemistry_near_miss_cg.connect("finished", _finish_guardian_near_miss)
+	chemistry_near_miss_cg.call("play_scene", self)
 
-	# Bring the Guardian to arm's length, on the side it was actually coming
-	# from, so the lunge reads as the end of the chase the player just ran.
-	var approach: Vector2 = (
-		enemy.global_position - player.global_position
-	).normalized()
-	if approach.is_equal_approx(Vector2.ZERO):
-		approach = Vector2.RIGHT
-	var lunge_from := _nearest_guardian_walkable_position(
-		player.global_position + approach * GUARDIAN_NEAR_MISS_STANDOFF
-	)
-	enemy.global_position = lunge_from
-	if enemy.has_method("face_toward"):
-		enemy.call("face_toward", player.global_position)
 
-	var near_miss_camera := Camera2D.new()
-	near_miss_camera.name = "GuardianNearMissCamera"
-	near_miss_camera.global_position = follow_camera.get_screen_center_position()
-	near_miss_camera.zoom = follow_camera.zoom
-	near_miss_camera.position_smoothing_enabled = false
-	near_miss_camera.limit_left = 0
-	near_miss_camera.limit_top = 0
-	near_miss_camera.limit_right = MAP_PIXEL_WIDTH
-	near_miss_camera.limit_bottom = MAP_PIXEL_HEIGHT
-	add_child(near_miss_camera)
-	near_miss_camera.make_current()
-
-	if guardian_reveal_overlay != null:
-		guardian_reveal_overlay.visible = true
-		guardian_reveal_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
-		guardian_reveal_title.text = CaseLocale.text("hall.near_miss_title")
-		guardian_reveal_body.text = CaseLocale.text("hall.near_miss_body")
-		var overlay_in := create_tween()
-		overlay_in.tween_property(guardian_reveal_overlay, "modulate:a", 1.0, 0.16)
-
-	var framing: Vector2 = (enemy.global_position + player.global_position) * 0.5
-	var push := create_tween()
-	push.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
-	push.tween_property(near_miss_camera, "global_position", framing, 0.34)
-	push.parallel().tween_property(
-		near_miss_camera, "zoom", GUARDIAN_NEAR_MISS_ZOOM, 0.34
-	)
-	# The lunge itself: it reaches, and comes up just short.
-	push.parallel().tween_property(
-		enemy,
-		"global_position",
-		_nearest_guardian_walkable_position(
-			player.global_position + approach * GUARDIAN_NEAR_MISS_CLOSEST
-		),
-		0.30
-	)
-	await push.finished
-	if not is_inside_tree():
+func _finish_guardian_near_miss() -> void:
+	if chemistry_near_miss_cg != null:
+		chemistry_near_miss_cg.queue_free()
+		chemistry_near_miss_cg = null
+	if not is_inside_tree() or scene_transitioning:
 		return
-
-	await get_tree().create_timer(GUARDIAN_NEAR_MISS_HOLD).timeout
-	if not is_inside_tree():
-		return
-	if guardian_reveal_body != null:
-		guardian_reveal_body.text = CaseLocale.text("hall.near_miss_escape")
-	await get_tree().create_timer(GUARDIAN_NEAR_MISS_HOLD).timeout
-	if not is_inside_tree():
-		return
-
-	if guardian_reveal_overlay != null:
-		var overlay_out := create_tween()
-		overlay_out.tween_property(guardian_reveal_overlay, "modulate:a", 0.0, 0.18)
-		await overlay_out.finished
-		if not is_inside_tree():
-			return
-		guardian_reveal_overlay.visible = false
-
-	if is_instance_valid(near_miss_camera):
-		near_miss_camera.queue_free()
-	if follow_camera != null:
-		follow_camera.make_current()
+	enemy.global_position = _nearest_guardian_walkable_position(
+		CHEMISTRY_ROOM_RETURN_POSITION + Vector2(160, 160)
+	)
+	GameState.update_guardian_hall_position(enemy.global_position)
+	enemy.call("set_cinematic_hold", false)
+	enemy.call("set_catch_enabled", true)
 	ArchiveUi.set_hub_entries_suppressed(false)
-	if (
-		near_miss_map_hud != null
-		and near_miss_map_hud.has_method("set_guardian_tracking_suppressed")
-	):
-		near_miss_map_hud.call("set_guardian_tracking_suppressed", false)
+	get_node("/root/MapHud").call("set_guardian_tracking_suppressed", false)
 	guardian_near_miss_active = false
-	# The door is the escape. Control returns inside Chemistry, not out here.
 	enter_chemistry_room()
 
 
 func on_player_caught():
-	if game_over:
+	if (
+		game_over
+		or (knowledge_dossier != null and knowledge_dossier.visible)
+		or (chemistry_door_question != null and chemistry_door_question.visible)
+	):
 		return
-	# The first crossing is a set piece, not a skill check. A newcomer who does
-	# not know the maze must not lose the run to it, so contact here becomes a
-	# shove that costs ground and dignity instead of the game.
-	if _is_hall_arrival_active():
+	if _is_hall_tutorial_protected():
 		_play_guided_crossing_shove()
 		return
 	# Hall pursuit is intentionally a one-hit failure state. `take_damage()`
@@ -3028,7 +3023,7 @@ func create_potion_field_effects() -> void:
 func update_interaction_focus() -> void:
 	if interaction_focus == null:
 		return
-	if _is_hall_arrival_active() and current_interaction.is_empty():
+	if _is_hall_arrival_active() and not hall_route_exposed and current_interaction.is_empty():
 		var arrival_focus: Dictionary = _hall_arrival_focus()
 		if not arrival_focus.is_empty():
 			interaction_focus.set_focus(
@@ -3354,8 +3349,8 @@ func sync_hall_knowledge_items() -> void:
 		if exhibit_node == null:
 			push_warning("Knowledge exhibit node missing: " + exhibit_id)
 			continue
-		# Inspector/tscn 是位置唯一来源；脚本不覆盖父节点 Transform。
-		item["position"] = exhibit_node.global_position
+		# Both parent and child edits must follow the prop the player actually sees.
+		item["position"] = spatial.get_visual_feet(exhibit_node)
 		hall_knowledge_items.append(item)
 		hall_knowledge_sprites[exhibit_id] = exhibit_node.get_node_or_null("Sprite")
 
@@ -3396,7 +3391,7 @@ func update_interaction_prompt() -> void:
 	if knowledge_panel_open:
 		return
 
-	if _is_hall_arrival_active():
+	if _is_hall_arrival_active() and not hall_route_exposed:
 		_update_hall_arrival_prompt()
 		return
 
@@ -3446,24 +3441,6 @@ func update_interaction_prompt() -> void:
 		if _is_near_hall_interaction("final_key_machine_%d" % station_index):
 			current_interaction = "final_key_machine_%d" % station_index
 			interact_label.text = machine_labels[machine_index]
-			interact_label.visible = true
-			return
-
-	# ========================================================
-	# Hall knowledge exhibits
-	# ========================================================
-	for item: Dictionary in hall_knowledge_items:
-		var exhibit_id: String = str(item["id"])
-		var collected_flag: String = str(
-			item.get("knowledge_flag", "hall_knowledge_%s_collected" % exhibit_id)
-		)
-		if GameState.has_story_flag(collected_flag):
-			continue
-		if _is_near_hall_interaction("hall_knowledge:" + exhibit_id):
-			current_interaction = "hall_knowledge:" + exhibit_id
-			interact_label.text = (
-				CaseLocale.line("Press E to study ") + CaseLocale.line(str(item["prompt"]))
-			)
 			interact_label.visible = true
 			return
 
@@ -3622,6 +3599,29 @@ func update_interaction_prompt() -> void:
 
 	# 房间内部线索（Maintenance Note / Pollen / Circuit / NPC / Final Deduction）
 	# 不在大厅检测，进入对应房间后由房间脚本负责。
+	_update_hall_knowledge_prompt()
+
+
+func _update_hall_knowledge_prompt() -> void:
+	var closest: Dictionary = {}
+	var closest_gap := INF
+	for item: Dictionary in hall_knowledge_items:
+		var interaction_id := "hall_knowledge:" + str(item["id"])
+		if not _is_near_hall_interaction(interaction_id):
+			continue
+		var gap := spatial.rect_gap(spatial.get_player_collision_rect(player), get_interaction_rect(interaction_id))
+		if gap < closest_gap:
+			closest_gap = gap
+			closest = item
+	if closest.is_empty():
+		return
+	current_interaction = "hall_knowledge:" + str(closest["id"])
+	var recorded := GameState.has_story_flag(str(closest["knowledge_flag"]))
+	interact_label.text = CaseLocale.text(
+		"knowledge.review_prompt" if recorded else "knowledge.inspect_prompt",
+		{"title": CaseLocale.line(str(closest["title"]))}
+	)
+	interact_label.visible = true
 
 func _is_corridor_fragment_active(fragment_index: int) -> bool:
 	if GameState.developer_mode:
@@ -3661,7 +3661,9 @@ func _stop_walking_to_interact() -> void:
 
 func try_investigate_clue() -> void:
 	_stop_walking_to_interact()
-	if _is_hall_arrival_active():
+	if _is_hall_arrival_active() and current_interaction in [
+		"arrival_chemistry_core", "arrival_chemistry_door", "wake_room_door"
+	]:
 		_try_hall_arrival_interaction()
 		return
 	if current_interaction.begins_with("hall_knowledge:"):
@@ -3736,31 +3738,60 @@ func _inspect_hall_knowledge(exhibit_id: String) -> void:
 	for item: Dictionary in hall_knowledge_items:
 		if str(item["id"]) != exhibit_id:
 			continue
-		var collected_flag: String = str(
-			item.get("knowledge_flag", "hall_knowledge_%s_collected" % exhibit_id)
-		)
-		if GameState.has_story_flag(collected_flag):
-			return
-		GameState.set_story_flag(collected_flag)
-		if NoteHud != null:
-			NoteHud.add_clue(str(item["note_id"]), {
-				"title": CaseLocale.line(str(item["title"])),
-				"icon": "icon_book",
-				"content": CaseLocale.line(str(item["knowledge"])),
-				"category": "knowledge",
-			})
+		_stop_walking_to_interact()
 		start_dialogue_pause()
 		clear_buttons()
-		set_dialogue_speaker("You")
-		message_panel.visible = true
-		set_dialogue_text(
-			"You",
-			CaseLocale.line(str(item["title"]))
-			+ "\n\n" + CaseLocale.line(str(item["knowledge"])) + "\n\n"
-			+ CaseLocale.line("This knowledge has been added to NoteHub.")
+		message_panel.hide()
+		ArchiveUi.set_hub_entries_suppressed(true)
+		get_node("/root/MapHud").call("set_guardian_tracking_suppressed", true)
+		if knowledge_dossier == null:
+			knowledge_dossier = load("res://scripts/hall_knowledge_dossier.gd").new() as CanvasLayer
+			knowledge_dossier.name = "HallKnowledgeDossier"
+			add_child(knowledge_dossier)
+			knowledge_dossier.connect("recorded", _on_hall_knowledge_recorded)
+			knowledge_dossier.connect("closed", _on_hall_knowledge_closed)
+		knowledge_dossier.call(
+			"open_record", item, GameState.has_story_flag(str(item["knowledge_flag"]))
 		)
-		show_continue_button(CaseLocale.line("Continue"), close_message_panel)
 		return
+	push_warning("Unknown Hall knowledge exhibit: " + exhibit_id)
+
+
+func _record_hall_knowledge(exhibit_id: String) -> void:
+	for item: Dictionary in hall_knowledge_items:
+		if str(item["id"]) != exhibit_id:
+			continue
+		if GameState.has_story_flag(str(item["knowledge_flag"])):
+			return
+		NoteHud.unlock()
+		NoteHud.add_clue(str(item["note_id"]), {
+			"title": str(item["title"]),
+			"icon": "icon_book",
+			"content": str(item["knowledge"]),
+			"content_key": str(item["knowledge_key"]),
+			"category": "knowledge",
+			"silent": true,
+		})
+		GameState.set_story_flag(str(item["knowledge_flag"]))
+		return
+	push_warning("Cannot file unknown Hall knowledge: " + exhibit_id)
+
+
+func _on_hall_knowledge_recorded(exhibit_id: String) -> void:
+	if exhibit_id == "ChemistryRoomKnowledge" and _is_hall_arrival_active():
+		_complete_hall_chemistry_core()
+	else:
+		_record_hall_knowledge(exhibit_id)
+
+
+func _on_hall_knowledge_closed() -> void:
+	_knowledge_input_resume_frame = Engine.get_process_frames() + 1
+	ArchiveUi.set_hub_entries_suppressed(guardian_entry_sequence_active or guardian_near_miss_active)
+	get_node("/root/MapHud").call(
+		"set_guardian_tracking_suppressed",
+		_is_hall_knowledge_stop_active() or guardian_entry_sequence_active or guardian_near_miss_active
+	)
+	close_message_panel()
 
 
 ## 收集大厅中 Mrs. Lin 撕落的走廊笔记碎片；集齐 3 张后拼凑出路线并得到 Final Room Key。
@@ -4128,6 +4159,7 @@ func end_dialogue_pause():
 		enemy.set_physics_process(
 			enemy_chase_started
 		)
+	_sync_hall_knowledge_stop()
 
 func create_evidence_board_ui():
 	evidence_panel = Panel.new()
@@ -4668,6 +4700,20 @@ func show_wrong_accusation_ending(suspect_id: String):
 
 	message_panel.visible = true
 	message_label.text = "WRONG ACCUSATION\n\nYou accused the " + suspect_name + ".\n\nYou:\nThat does not fully explain the deliberate blackout. The evidence suggests someone with electrical knowledge used the circuit panel to create confusion.\n\nThe real culprit escaped in the darkness.\n\nFinal Reputation: " + str(reputation) + "\n\nPress R to restart.\nPress M for main menu."
+## PauseMenu asks first: scripted Hall moments and their own panels keep Esc.
+func can_open_pause_menu() -> bool:
+	return not (
+		game_over
+		or guardian_entry_sequence_active
+		or guardian_near_miss_active
+		or power_route_scan_active
+		or chemistry_near_miss_cg != null
+		or (knowledge_dossier != null and knowledge_dossier.visible)
+		or (chemistry_door_question != null and chemistry_door_question.visible)
+		or Engine.get_process_frames() <= _knowledge_input_resume_frame
+	)
+
+
 func restart_current_game():
 	# Retry 只重载当前场景；玩家保留实时调查进度。
 	var current_path: String = "res://scenes/game_world.tscn"
@@ -5117,6 +5163,7 @@ func _update_guardian_pressure(delta: float) -> void:
 		and GameState.get_guardian_mode() == GameState.GuardianMode.CHASE
 		and not guardian_entry_sequence_active
 		and not dialogue_active
+		and not _is_hall_knowledge_stop_active()
 		and not game_over
 	):
 		var urgency := 1.0 - clampf(
@@ -5166,6 +5213,7 @@ func _update_guardian_countdown(delta: float) -> void:
 		and not guardian_entry_sequence_active
 		and not power_route_scan_active
 		and not dialogue_active
+		and not _is_hall_knowledge_stop_active()
 		and (power_restoration_panel == null or not power_restoration_panel.visible)
 		and not game_over
 	)
@@ -5321,6 +5369,7 @@ func _update_guardian_awareness_readout() -> void:
 		GameState.is_guardian_hunt_active()
 		and not guardian_entry_sequence_active
 		and not power_route_scan_active
+		and not _is_hall_knowledge_stop_active()
 		and (power_restoration_panel == null or not power_restoration_panel.visible)
 		and not game_over
 	)
@@ -5467,9 +5516,9 @@ var _final_synthesis_active: bool = false
 var _final_synthesis_index: int = 0
 
 ## 统一双锁入口：无钥匙提示找钥匙；有钥匙未解锁弹出知识题；已解锁直接进入。
-func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable) -> void:
+func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable, force_question: bool = false) -> void:
 	var unlocked_flag: String = "door_%s_unlocked" % door_id
-	if GameState.has_story_flag(unlocked_flag):
+	if GameState.has_story_flag(unlocked_flag) and not force_question:
 		on_enter.call()
 		return
 	if not GameState.has_key(key_id):
@@ -5493,6 +5542,7 @@ func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable)
 	if (
 		not required_knowledge_flag.is_empty()
 		and not GameState.has_story_flag(required_knowledge_flag)
+		and not (door_id == "chemistry" and _has_first_hall_knowledge())
 	):
 		var room_label: String = door_id.capitalize()
 		if door_id == "final":
@@ -5518,6 +5568,8 @@ func _try_enter_locked_room(door_id: String, key_id: String, on_enter: Callable)
 		)
 		show_continue_button("Continue", close_message_panel)
 		return
+	if door_id == "chemistry":
+		_chemistry_door_enter = on_enter
 	_show_door_question(
 		door_id,
 		str(data["question"]),
@@ -5588,8 +5640,55 @@ func _show_final_synthesis_wrong() -> void:
 	show_continue_button("Leave the lock", close_message_panel)
 
 
+func _open_chemistry_door_question() -> void:
+	_stop_walking_to_interact()
+	start_dialogue_pause()
+	clear_buttons()
+	message_panel.hide()
+	ArchiveUi.set_hub_entries_suppressed(true)
+	get_node("/root/MapHud").call("set_guardian_tracking_suppressed", true)
+	if chemistry_door_question == null:
+		chemistry_door_question = load("res://scripts/chemistry_door_question.gd").new() as CanvasLayer
+		chemistry_door_question.name = "ChemistryDoorQuestion"
+		add_child(chemistry_door_question)
+		chemistry_door_question.connect("answered", _on_chemistry_door_answered)
+		chemistry_door_question.connect("enter_requested", _on_chemistry_door_enter_requested)
+		chemistry_door_question.connect("closed", _on_chemistry_door_question_closed)
+	chemistry_door_question.call("open_question", DOOR_QUESTIONS["chemistry"])
+
+
+func _on_chemistry_door_answered(index: int) -> void:
+	if index == int(DOOR_QUESTIONS["chemistry"]["correct"]):
+		_on_door_question_correct()
+	else:
+		_on_door_question_wrong()
+
+
+func _on_chemistry_door_enter_requested() -> void:
+	if not GameState.has_story_flag("door_chemistry_question_answered"):
+		chemistry_door_question.call("show_result", false)
+		return
+	if not _chemistry_door_enter.is_valid():
+		push_error("Chemistry entry has no valid continuation.")
+		return
+	var enter := _chemistry_door_enter
+	chemistry_door_question.call("close")
+	enter.call()
+
+
+func _on_chemistry_door_question_closed() -> void:
+	_chemistry_door_enter = Callable()
+	_knowledge_input_resume_frame = Engine.get_process_frames() + 1
+	ArchiveUi.set_hub_entries_suppressed(false)
+	get_node("/root/MapHud").call("set_guardian_tracking_suppressed", false)
+	close_message_panel()
+
+
 func _show_door_question(door_id: String, question: String, options: Array, correct_index: int) -> void:
 	_door_question_target = door_id
+	if door_id == "chemistry":
+		_open_chemistry_door_question()
+		return
 	start_dialogue_pause()
 	clear_buttons()
 	set_dialogue_speaker("You")
@@ -5630,7 +5729,8 @@ func _on_door_question_correct() -> void:
 		_on_final_synthesis_correct()
 		return
 	var door_id: String = _door_question_target
-	award_reputation(5)
+	if not GameState.has_story_flag("door_%s_unlocked" % door_id):
+		award_reputation(5)
 	clear_buttons()
 	match door_id:
 		"circuit":
@@ -5638,6 +5738,7 @@ func _on_door_question_correct() -> void:
 			open_circuit_door()
 		"chemistry":
 			GameState.set_story_flag("door_chemistry_unlocked")
+			GameState.set_story_flag("door_chemistry_question_answered")
 		"greenhouse":
 			GameState.set_story_flag("door_greenhouse_unlocked")
 		"dining":
@@ -5646,6 +5747,9 @@ func _on_door_question_correct() -> void:
 			GameState.set_story_flag("door_library_unlocked")
 		"final":
 			GameState.set_story_flag("door_final_unlocked")
+	if door_id == "chemistry" and chemistry_door_question != null and chemistry_door_question.visible:
+		chemistry_door_question.call("show_result", true)
+		return
 	set_dialogue_text(
 		"You",
 		"Correct.\n\nThe knowledge lock takes it.\n\nThe door is open."
@@ -5654,6 +5758,9 @@ func _on_door_question_correct() -> void:
 
 
 func _on_door_question_wrong() -> void:
+	if _door_question_target == "chemistry" and chemistry_door_question != null and chemistry_door_question.visible:
+		chemistry_door_question.call("show_result", false)
+		return
 	if _final_synthesis_active:
 		_show_final_synthesis_wrong()
 		return
@@ -6115,12 +6222,18 @@ func _begin_first_hall_route_after_reveal() -> void:
 func _restore_hall_arrival_route() -> void:
 	if GameState.has_story_flag("hall_first_route_complete"):
 		hall_arrival_step = HallArrivalStep.COMPLETE
-	elif GameState.has_story_flag("hall_first_route_core_studied"):
-		hall_arrival_step = HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR
-	elif GameState.has_story_flag("hall_first_route_door_reached"):
-		hall_arrival_step = HallArrivalStep.STUDY_CHEMISTRY_CORE
+	elif _has_first_hall_knowledge():
+		hall_arrival_step = HallArrivalStep.REACH_CHEMISTRY_DOOR
+	elif (
+		GameState.has_story_flag("hall_first_route_started")
+		or GameState.has_story_flag("hall_first_route_door_reached")
+	):
+		hall_arrival_step = HallArrivalStep.APPROACH_CHEMISTRY_CORE
 	else:
 		hall_arrival_step = HallArrivalStep.NONE
+	if _is_hall_arrival_active():
+		_build_hall_tutorial_route()
+	_sync_hall_knowledge_stop()
 	_refresh_hall_route_ui(false)
 	_sync_hall_arrival_huds()
 	call_deferred("_sync_hall_arrival_huds")
@@ -6132,10 +6245,12 @@ func _begin_hall_arrival_route() -> void:
 	# Idempotent: the arrival raises this immediately, and the reveal asks for it
 	# again on the way out. Rebuilding the route the second time would move the
 	# Guardian back to its opening mark mid-crossing.
-	if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
+	if _is_hall_arrival_active():
 		return
-	_set_hall_arrival_step(HallArrivalStep.REACH_CHEMISTRY_DOOR)
-	_build_hall_tutorial_route()
+	_set_hall_arrival_step(
+		HallArrivalStep.REACH_CHEMISTRY_DOOR
+		if _has_first_hall_knowledge() else HallArrivalStep.APPROACH_CHEMISTRY_CORE
+	)
 	call_deferred("_sync_hall_arrival_huds")
 	_show_hall_route_arrival_toast()
 
@@ -6146,12 +6261,15 @@ func _begin_hall_arrival_route() -> void:
 func _build_hall_tutorial_route() -> void:
 	hall_tutorial_route.clear()
 	hall_tutorial_reached = 0
+	hall_route_distance_travelled = 0.0
 	if player == null:
 		return
 	var built: Array[Vector2] = _hall_route_points(
-		player.global_position, CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
+		player.global_position, _hall_arrival_target_position(hall_arrival_step)
 	)
+	built = _collision_safe_hall_route(_hall_route_to_interaction(built))
 	if built.size() < 2:
+		push_warning("Could not build the active Hall tutorial segment.")
 		return
 	hall_tutorial_route = built
 	if enemy != null and is_instance_valid(enemy):
@@ -6203,29 +6321,28 @@ func _update_hall_tutorial_chase() -> void:
 	if player == null or enemy == null:
 		return
 	if not _is_hall_arrival_active() or guardian_entry_sequence_active:
+		enemy.clear_scripted_presentation()
 		return
 	if guardian_near_miss_active or game_over or dialogue_active:
 		return
 
-	# The rehearsal is never lethal. This is asserted here rather than only
-	# where the route is driven, because a route that failed to build would
-	# otherwise leave a live Guardian loose with no protection at all.
 	if enemy.has_method("set_catch_enabled"):
-		enemy.call("set_catch_enabled", false)
+		enemy.call("set_catch_enabled", hall_route_exposed and not _is_hall_knowledge_stop_active())
 
 	# While a new route is being walked, the rehearsal must not enforce the old
 	# one. The leash exists to keep a first-time player on the taught line, but
 	# the taught line is precisely what is being replaced here: every attempt to
 	# walk the correct path would be dragged back onto the wrong one, which
 	# makes the recorder unusable for the only job it has.
-	if (
-		_hall_route_recorder != null
-		and is_instance_valid(_hall_route_recorder)
-		and not _hall_route_recorder.is_finished()
-	):
+	if _is_recording_hall_route():
+		enemy.call("set_catch_enabled", false)
+		enemy.clear_scripted_presentation()
 		return
 
 	if hall_tutorial_route.is_empty():
+		if not hall_route_exposed:
+			hall_route_exposed = true
+			_resume_off_route_pursuit()
 		return
 
 	# Advance as far along the route as the player has actually walked.
@@ -6234,19 +6351,21 @@ func _update_hall_tutorial_chase() -> void:
 		if player.global_position.distance_to(hall_tutorial_route[index]) <= TUTORIAL_WAYPOINT_REACH:
 			advanced = index
 	hall_tutorial_reached = maxi(hall_tutorial_reached, advanced)
+	var projection := _project_onto_hall_route(hall_tutorial_route, player.global_position)
+	if float(projection["distance"]) <= TUTORIAL_ROUTE_LEASH:
+		hall_route_distance_travelled = maxf(
+			hall_route_distance_travelled, float(projection["offset"])
+		)
+	_update_hall_route_marker_visibility()
 
-	# Left the route entirely: put them back on it rather than let them wander
-	# into the Guardian or get lost in the dark.
-	var nearest := INF
-	for point: Vector2 in hall_tutorial_route:
-		nearest = minf(nearest, player.global_position.distance_to(point))
-	_tick_hall_route_exposure(nearest > TUTORIAL_ROUTE_LEASH, get_process_delta_time())
+	var off_route := float(projection["distance"]) > TUTORIAL_ROUTE_LEASH
+	_tick_hall_route_exposure(off_route and not _is_hall_knowledge_stop_active(), get_process_delta_time())
+	if hall_route_exposed:
+		return
 	if hall_route_exposure > 0.0:
 		return
 
-	enemy.global_position = _hall_tutorial_guardian_position()
-	if enemy.has_method("face_toward"):
-		enemy.call("face_toward", player.global_position)
+	enemy.present_scripted_step(_hall_tutorial_guardian_position(), player.global_position)
 	GameState.update_guardian_hall_position(enemy.global_position)
 
 
@@ -6263,6 +6382,7 @@ func _return_player_to_route() -> void:
 		player.call("cancel_click_movement")
 	player.global_position = checkpoint
 	if enemy != null and is_instance_valid(enemy):
+		enemy.clear_scripted_presentation()
 		enemy.global_position = _hall_tutorial_guardian_position()
 		GameState.update_guardian_hall_position(enemy.global_position)
 	show_hall_notice(CaseLocale.text("hall.guided_return"))
@@ -6271,9 +6391,13 @@ func _return_player_to_route() -> void:
 ## 玩家离开踪迹后的宽限计时。守卫"注意到"和"看清"之间的那一拍。
 func _tick_hall_route_exposure(off_route: bool, delta: float) -> void:
 	if not off_route:
-		if hall_route_exposure > 0.0:
+		if hall_route_exposure > 0.0 or hall_route_exposed:
 			hall_route_exposure = 0.0
+			hall_route_exposed = false
 			_set_hall_route_alarm(false)
+			enemy.call("set_catch_enabled", false)
+		return
+	if hall_route_exposed:
 		return
 	if hall_route_exposure <= 0.0:
 		_set_hall_route_alarm(true)
@@ -6281,8 +6405,37 @@ func _tick_hall_route_exposure(off_route: bool, delta: float) -> void:
 	hall_route_exposure += delta
 	if hall_route_exposure >= HALL_ROUTE_EXPOSURE_GRACE:
 		hall_route_exposure = 0.0
-		_set_hall_route_alarm(false)
-		_return_player_to_route()
+		hall_route_exposed = true
+		_resume_off_route_pursuit()
+		show_hall_notice(CaseLocale.text("hall.route_exposed"))
+
+
+func _resume_off_route_pursuit() -> void:
+	if enemy == null:
+		return
+	if enemy.has_method("clear_scripted_presentation"):
+		enemy.call("clear_scripted_presentation")
+	if not is_player_position_walkable(enemy.global_position):
+		enemy.global_position = _nearest_guardian_walkable_position(enemy.global_position)
+	GameState.update_guardian_hall_position(enemy.global_position)
+	if GameState.guardian_tracking_serum:
+		GameState.report_player_seen(player.global_position)
+	enemy.call("set_cinematic_hold", false)
+	enemy.call("set_catch_enabled", true)
+	enemy.call("set_behavior", GameState.get_guardian_mode())
+	enemy.set("repath_timer", 0.0)
+	enemy.set_physics_process(true)
+	GameState.set_guardian_tutorial_pace(1.0)
+
+
+func _is_hall_tutorial_protected() -> bool:
+	if not _is_hall_arrival_active():
+		return false
+	if _is_recording_hall_route() or _is_hall_knowledge_stop_active():
+		return true
+	if hall_tutorial_route.is_empty() or player == null:
+		return false
+	return float(_project_onto_hall_route(hall_tutorial_route, player.global_position)["distance"]) <= TUTORIAL_ROUTE_LEASH
 
 
 ## 被盯上时守卫转向玩家并亮起来，这样"我被看见了"是看得出来的，
@@ -6308,14 +6461,22 @@ func _set_hall_arrival_step(next_step: HallArrivalStep) -> void:
 		return
 	hall_arrival_step = next_step
 	match next_step:
-		HallArrivalStep.REACH_CHEMISTRY_DOOR:
+		HallArrivalStep.APPROACH_CHEMISTRY_CORE:
 			GameState.set_story_flag("hall_first_route_started")
 		HallArrivalStep.STUDY_CHEMISTRY_CORE:
-			GameState.set_story_flag("hall_first_route_door_reached")
-		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+			GameState.set_story_flag("hall_first_route_core_reached")
+			hall_route_exposure = 0.0
+			hall_route_exposed = false
+			_set_hall_route_alarm(false)
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
 			GameState.set_story_flag("hall_first_route_core_studied")
 		HallArrivalStep.COMPLETE:
 			GameState.set_story_flag("hall_first_route_complete")
+	if next_step in [
+		HallArrivalStep.APPROACH_CHEMISTRY_CORE, HallArrivalStep.REACH_CHEMISTRY_DOOR
+	]:
+		_build_hall_tutorial_route()
+	_sync_hall_knowledge_stop()
 	_refresh_hall_route_ui(true)
 	_sync_hall_arrival_huds()
 
@@ -6324,10 +6485,10 @@ func _hall_arrival_focus() -> Dictionary:
 	var interaction_id := ""
 	var title := ""
 	match hall_arrival_step:
-		HallArrivalStep.REACH_CHEMISTRY_DOOR, HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
 			interaction_id = "arrival_chemistry_door"
 			title = "Chemistry Room"
-		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+		HallArrivalStep.APPROACH_CHEMISTRY_CORE, HallArrivalStep.STUDY_CHEMISTRY_CORE:
 			interaction_id = "arrival_chemistry_core"
 			title = "Brass core"
 	if interaction_id.is_empty():
@@ -6352,11 +6513,83 @@ func _get_hall_knowledge_position(exhibit_id: String) -> Vector2:
 
 func _hall_arrival_target_position(step: HallArrivalStep) -> Vector2:
 	match step:
-		HallArrivalStep.REACH_CHEMISTRY_DOOR, HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
 			return CHEMISTRY_ROOM_DOOR_FOCUS_POSITION
-		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+		HallArrivalStep.APPROACH_CHEMISTRY_CORE, HallArrivalStep.STUDY_CHEMISTRY_CORE:
 			return _get_hall_knowledge_position("ChemistryRoomKnowledge")
 	return Vector2.ZERO
+
+
+func _has_first_hall_knowledge() -> bool:
+	return (
+		GameState.has_story_flag("hall_knowledge_chemistry_room_collected")
+		or GameState.has_story_flag("hall_first_route_core_studied")
+	)
+
+
+func _is_recording_hall_route() -> bool:
+	return (
+		_hall_route_recorder != null
+		and is_instance_valid(_hall_route_recorder)
+		and not _hall_route_recorder.is_finished()
+	)
+
+
+func _is_hall_knowledge_stop_active() -> bool:
+	return (
+		_is_hall_arrival_active()
+		and hall_arrival_step == HallArrivalStep.STUDY_CHEMISTRY_CORE
+		and not _is_recording_hall_route()
+	)
+
+
+func _sync_hall_knowledge_stop() -> void:
+	if player == null:
+		return
+	if _is_hall_knowledge_stop_active() and not _is_near_hall_interaction("arrival_chemistry_core"):
+		_set_hall_arrival_step(HallArrivalStep.APPROACH_CHEMISTRY_CORE)
+		return
+	var was_locked: bool = player.get("movement_locked")
+	var locked := _is_hall_knowledge_stop_active()
+	player.call("set_movement_locked", locked)
+	var map_hud := get_node_or_null("/root/MapHud")
+	if map_hud != null:
+		if locked:
+			map_hud.call("set_guardian_tracking_suppressed", true)
+		elif was_locked:
+			map_hud.call(
+				"set_guardian_tracking_suppressed",
+				guardian_entry_sequence_active or guardian_near_miss_active
+			)
+	if enemy != null:
+		if locked:
+			enemy.set_physics_process(false)
+			enemy.velocity = Vector2.ZERO
+			enemy.call("set_catch_enabled", false)
+		elif was_locked and not dialogue_active and not guardian_entry_sequence_active:
+			enemy.set_physics_process(enemy_chase_started)
+
+
+func _update_hall_knowledge_stop() -> void:
+	if (
+		not _is_hall_arrival_active()
+		or dialogue_active or guardian_entry_sequence_active
+		or guardian_near_miss_active or scene_transitioning or game_over
+		or _is_recording_hall_route()
+	):
+		return
+	if hall_arrival_step == HallArrivalStep.STUDY_CHEMISTRY_CORE:
+		_sync_hall_knowledge_stop()
+		return
+	if (
+		hall_arrival_step == HallArrivalStep.APPROACH_CHEMISTRY_CORE
+		and _is_near_hall_interaction("arrival_chemistry_core")
+	):
+		_set_hall_arrival_step(HallArrivalStep.STUDY_CHEMISTRY_CORE)
+		player.call("update_character_animation", _get_hall_knowledge_position("ChemistryRoomKnowledge") - player.global_position)
+		player.call("update_character_animation", Vector2.ZERO)
+		update_interaction_prompt()
+		update_interaction_focus()
 
 
 func _update_hall_arrival_prompt() -> void:
@@ -6371,17 +6604,12 @@ func _update_hall_arrival_prompt() -> void:
 		interact_label.visible = true
 		return
 	match hall_arrival_step:
-		HallArrivalStep.REACH_CHEMISTRY_DOOR:
-			if _is_near_hall_interaction("arrival_chemistry_door"):
-				current_interaction = "arrival_chemistry_door"
-				interact_label.text = CaseLocale.line("Press E to inspect the Chemistry Room lock")
-				interact_label.visible = true
-		HallArrivalStep.STUDY_CHEMISTRY_CORE:
+		HallArrivalStep.APPROACH_CHEMISTRY_CORE, HallArrivalStep.STUDY_CHEMISTRY_CORE:
 			if _is_near_hall_interaction("arrival_chemistry_core"):
 				current_interaction = "arrival_chemistry_core"
-				interact_label.text = CaseLocale.line("Press E to study the active brass core")
+				interact_label.text = CaseLocale.text("hall.route_study_action")
 				interact_label.visible = true
-		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
 			if _is_near_hall_interaction("arrival_chemistry_door"):
 				current_interaction = "arrival_chemistry_door"
 				interact_label.text = CaseLocale.line("Press E to open the Chemistry Room lock")
@@ -6395,10 +6623,9 @@ func _try_hall_arrival_interaction() -> void:
 	match current_interaction:
 		"arrival_chemistry_door":
 			if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
-				_show_hall_chemistry_door_lock()
-			elif hall_arrival_step == HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
 				_open_first_chemistry_room()
 		"arrival_chemistry_core":
+			_set_hall_arrival_step(HallArrivalStep.STUDY_CHEMISTRY_CORE)
 			_show_hall_chemistry_core()
 
 
@@ -6412,33 +6639,16 @@ func _show_hall_chemistry_door_lock() -> void:
 
 func _advance_to_hall_chemistry_core() -> void:
 	close_message_panel()
-	_set_hall_arrival_step(HallArrivalStep.STUDY_CHEMISTRY_CORE)
+	_set_hall_arrival_step(HallArrivalStep.APPROACH_CHEMISTRY_CORE)
 
 
 func _show_hall_chemistry_core() -> void:
-	start_dialogue_pause()
-	clear_buttons()
-	set_dialogue_speaker("You")
-	set_dialogue_text("You", CaseLocale.text("hall.chemistry_core_body"))
-	show_continue_button(
-		CaseLocale.text("hall.chemistry_core_continue"),
-		_complete_hall_chemistry_core
-	)
+	_inspect_hall_knowledge("ChemistryRoomKnowledge")
 
 
 func _complete_hall_chemistry_core() -> void:
-	if NoteHud != null:
-		NoteHud.unlock()
-		NoteHud.add_clue("hall_knowledge_chemical_change", {
-			"title": "Chemistry Room Knowledge",
-			"icon": "icon_book",
-			"content": "A chemical change creates a new substance. Burning paper is chemical; melting ice, breaking glass, and dissolving sugar are physical changes.",
-			"category": "knowledge",
-			"silent": true,
-		})
-	GameState.set_story_flag("hall_knowledge_chemistry_room_collected")
-	close_message_panel()
-	_set_hall_arrival_step(HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR)
+	_record_hall_knowledge("ChemistryRoomKnowledge")
+	_set_hall_arrival_step(HallArrivalStep.REACH_CHEMISTRY_DOOR)
 	# The bookshelf in the Wake Room normally provides the physical Chemistry
 	# Room key. Keep this fallback for legacy/checkpoint saves that reached the
 	# hall without it; the brass core's main reward is the knowledge answer.
@@ -6447,7 +6657,16 @@ func _complete_hall_chemistry_core() -> void:
 
 
 func _open_first_chemistry_room() -> void:
-	GameState.set_story_flag("door_chemistry_unlocked")
+	if not _has_first_hall_knowledge():
+		show_hall_notice(CaseLocale.text("hall.route_step_1_body"))
+		return
+	_try_enter_locked_room(
+		"chemistry", "chemistry_room_key", _enter_first_chemistry_after_question,
+		not GameState.has_story_flag("door_chemistry_question_answered")
+	)
+
+
+func _enter_first_chemistry_after_question() -> void:
 	_set_hall_arrival_step(HallArrivalStep.COMPLETE)
 	GameState.hall_arrival_seen = true
 	GameState.set_room_completed("wake_room")
@@ -6467,7 +6686,7 @@ func _sync_hall_arrival_huds() -> void:
 	# portable and should still be available when the player reaches the hall.
 	var show_first_tools: bool = (
 		GameState.hall_arrival_seen
-		or hall_arrival_step == HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR
+		or hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR
 		or hall_arrival_step == HallArrivalStep.COMPLETE
 	)
 	var has_portable_toolkit: bool = (
@@ -6812,7 +7031,7 @@ func _hall_route_copy() -> Dictionary:
 			"ui_only": true,
 		}
 	match hall_arrival_step:
-		HallArrivalStep.REACH_CHEMISTRY_DOOR:
+		HallArrivalStep.APPROACH_CHEMISTRY_CORE:
 			return {
 				"title": CaseLocale.text("hall.route_step_1_title"),
 				"body": CaseLocale.text("hall.route_step_1_body"),
@@ -6824,7 +7043,7 @@ func _hall_route_copy() -> Dictionary:
 				"body": CaseLocale.text("hall.route_step_2_body"),
 				"target": _hall_arrival_target_position(hall_arrival_step),
 			}
-		HallArrivalStep.RETURN_TO_CHEMISTRY_DOOR:
+		HallArrivalStep.REACH_CHEMISTRY_DOOR:
 			return {
 				"title": CaseLocale.text("hall.route_step_3_title"),
 				"body": CaseLocale.text("hall.route_step_3_body"),
@@ -6837,8 +7056,14 @@ func _refresh_hall_route_trail(route_copy: Dictionary) -> void:
 	_clear_hall_route_trail()
 	if route_copy.is_empty() or player == null or bool(route_copy.get("ui_only", false)):
 		return
+	if hall_arrival_step == HallArrivalStep.STUDY_CHEMISTRY_CORE:
+		return
 	var target: Vector2 = route_copy.get("target", Vector2.ZERO) as Vector2
-	var path_points: Array[Vector2] = _hall_route_points(player.global_position, target)
+	var path_points: Array[Vector2] = hall_tutorial_route
+	if path_points.is_empty():
+		path_points = _collision_safe_hall_route(_hall_route_to_interaction(
+			_hall_route_points(player.global_position, target)
+		))
 	if path_points.size() < 2:
 		push_warning("Could not build first-arrival floor route to: " + str(target))
 		return
@@ -6858,11 +7083,24 @@ func _refresh_hall_route_trail(route_copy: Dictionary) -> void:
 			marker_position
 		)
 		var is_destination: bool = index == marker_positions.size() - 1
+		var near_turn := false
+		if not is_destination:
+			for turn_index: int in range(1, path_points.size() - 1):
+				if marker_position.distance_to(path_points[turn_index]) > 22.0:
+					continue
+				var before := _cardinal_route_direction(path_points[turn_index] - path_points[turn_index - 1])
+				var after := _cardinal_route_direction(path_points[turn_index + 1] - path_points[turn_index])
+				if before != after:
+					near_turn = true
+					break
+		if near_turn:
+			continue
 		var marker: Node2D = _create_hall_route_floor_marker(
 			marker_position,
 			direction,
 			is_destination
 		)
+		marker.set_meta("route_offset", _project_onto_hall_route(path_points, marker_position)["offset"])
 		hall_route_trail.add_child(marker)
 		hall_route_marker_nodes.append(marker)
 	for corner_index: int in range(1, path_points.size() - 1):
@@ -6879,9 +7117,22 @@ func _refresh_hall_route_trail(route_copy: Dictionary) -> void:
 			incoming,
 			outgoing
 		)
+		corner.set_meta("route_offset", _project_onto_hall_route(path_points, path_points[corner_index])["offset"])
 		hall_route_trail.add_child(corner)
 		hall_route_marker_nodes.append(corner)
-	_animate_hall_route_trail()
+	_update_hall_route_marker_visibility()
+
+
+func _update_hall_route_marker_visibility() -> void:
+	var time := float(Time.get_ticks_msec()) * 0.001
+	for marker: Node2D in hall_route_marker_nodes:
+		var offset := float(marker.get_meta("route_offset", 0.0))
+		var ahead := offset - hall_route_distance_travelled
+		marker.visible = ahead >= -12.0 and ahead <= HALL_ROUTE_VISIBLE_AHEAD
+		if marker.visible:
+			var proximity := 1.0 - clampf(ahead / HALL_ROUTE_VISIBLE_AHEAD, 0.0, 1.0)
+			var shimmer := 0.88 + 0.12 * sin(time * 2.4 - offset / 96.0)
+			marker.modulate = Color(0.93, 0.86, 1.0, (0.22 + 0.56 * proximity) * shimmer)
 
 
 func _clear_hall_route_trail() -> void:
@@ -6899,16 +7150,68 @@ func _clear_hall_route_trail() -> void:
 ## 放在一个函数里，是因为守卫跟的线和玩家看到的路标必须是同一条——分开取
 ## 的话，改了一处忘了另一处，玩家会跟着路标走却被判定偏离航道。
 func _hall_route_points(from_position: Vector2, target: Vector2) -> Array[Vector2]:
-	if target.distance_to(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION) <= 96.0:
+	var core := _get_hall_knowledge_position("ChemistryRoomKnowledge")
+	var interaction_id := ""
+	if target.is_equal_approx(core):
+		interaction_id = "arrival_chemistry_core"
+	elif target.distance_to(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION) <= 96.0:
+		interaction_id = "arrival_chemistry_door"
+	if not interaction_id.is_empty():
 		var authored: Array[Vector2] = HallRouteStore.load_route()
-		if authored.size() >= 2:
-			return authored
-	return _get_hall_route_path(from_position, target)
+		if authored.size() >= 2 and from_position.distance_to(target) > 256.0:
+			var start := _project_onto_hall_route(authored, from_position)
+			var finish := _project_onto_hall_route(authored, target)
+			if float(start["offset"]) < float(finish["offset"]):
+				var route: Array[Vector2] = [from_position]
+				var start_point: Vector2 = start["point"]
+				if from_position.distance_to(start_point) > 1.0:
+					var entry := _get_hall_route_path(from_position, start_point)
+					if entry.is_empty():
+						return entry
+					route = entry
+				for index: int in range(int(start["index"]) + 1, int(finish["index"]) + 1):
+					if route[-1].distance_to(authored[index]) > 1.0:
+						route.append(authored[index])
+				var finish_point: Vector2 = finish["point"]
+				if route[-1].distance_to(finish_point) > 1.0:
+					route.append(finish_point)
+				if finish_point.distance_to(target) > 1.0:
+					var exit := _get_hall_route_path(finish_point, target, interaction_id)
+					if exit.is_empty():
+						return exit
+					route.append_array(exit.slice(1))
+				return route
+	return _get_hall_route_path(from_position, target, interaction_id)
 
 
-func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vector2]:
+func _project_onto_hall_route(points: Array[Vector2], position_on_floor: Vector2) -> Dictionary:
+	var best := {"point": points[0], "index": 0, "offset": 0.0, "distance": INF}
+	var travelled := 0.0
+	for index: int in range(points.size() - 1):
+		var closest := Geometry2D.get_closest_point_to_segment(
+			position_on_floor, points[index], points[index + 1]
+		)
+		var distance := position_on_floor.distance_to(closest)
+		if distance < float(best["distance"]):
+			best = {
+				"point": closest, "index": index,
+				"offset": travelled + points[index].distance_to(closest),
+				"distance": distance,
+			}
+		travelled += points[index].distance_to(points[index + 1])
+	return best
+
+
+func _get_hall_route_path(
+	from_position: Vector2, target: Vector2, interaction_id: String = ""
+) -> Array[Vector2]:
 	var start_cell: Vector2i = world_to_cell(from_position)
 	var target_cell: Vector2i = world_to_cell(target)
+	var interaction_rect := get_interaction_rect(interaction_id)
+	var body_rect := spatial.get_player_collision_rect(player)
+	# Click movement stops short of its destination; keep that whole tolerance
+	# inside the interaction band so following the last footprint is sufficient.
+	var contact_margin := maxf(1.0, _hall_interaction_margin(interaction_id) - float(player.get("click_stop_distance")) - 1.0)
 	var best_path: Array = []
 	var best_score: float = INF
 	for radius: int in range(HALL_ROUTE_TARGET_SEARCH_RADIUS + 1):
@@ -6919,13 +7222,31 @@ func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vect
 				var candidate: Vector2i = target_cell + Vector2i(offset_x, offset_y)
 				if not is_inside_map(candidate) or astar_grid.is_point_solid(candidate):
 					continue
+				var candidate_position := cell_nav_point(candidate)
+				if not interaction_id.is_empty():
+					var candidate_body := Rect2(
+						body_rect.position + candidate_position - player.global_position,
+						body_rect.size
+					)
+					if spatial.rect_gap(candidate_body, interaction_rect) > contact_margin:
+						continue
+					if not is_player_position_walkable(candidate_position):
+						continue
+					if _is_knowledge_interaction(interaction_id) and not _knowledge_sight_clear(candidate_position, interaction_rect):
+						continue
 				var candidate_path: Array = find_path(start_cell, candidate)
 				if candidate_path.is_empty():
 					continue
 				var candidate_score: float = (
-					cell_nav_point(candidate).distance_squared_to(target)
+					candidate_position.distance_squared_to(target)
 					+ float(candidate_path.size()) * 0.01
 				)
+				# The painted centre can be behind a wall. Reach the nearest usable
+				# edge instead of taking a long detour toward an unreachable centre.
+				if not interaction_id.is_empty():
+					candidate_score = float(candidate_path.size()) * CELL_SIZE + (
+						candidate_position.distance_squared_to(target) * 0.0001
+					)
 				if candidate_score < best_score:
 					best_score = candidate_score
 					best_path = candidate_path
@@ -6943,8 +7264,21 @@ func _get_hall_route_path(from_position: Vector2, target: Vector2) -> Array[Vect
 			not is_equal_approx(from_position.x, first_grid_point.x)
 			and not is_equal_approx(from_position.y, first_grid_point.y)
 		):
-			route_points.insert(1, Vector2(first_grid_point.x, from_position.y))
-	return _simplify_hall_route_path(route_points)
+			var horizontal_corner := Vector2(first_grid_point.x, from_position.y)
+			var vertical_corner := Vector2(from_position.x, first_grid_point.y)
+			for corner: Vector2 in [horizontal_corner, vertical_corner]:
+				if (
+					_hall_route_segment_is_walkable(from_position, corner)
+					and _hall_route_segment_is_walkable(corner, first_grid_point)
+				):
+					route_points.insert(1, corner)
+					break
+	var simplified := _simplify_hall_route_path(route_points)
+	simplified = _collision_safe_hall_route(simplified)
+	if simplified.size() == 1 and not interaction_id.is_empty():
+		# Already at a usable edge: show a destination beacon, not a false detour.
+		return [from_position, from_position]
+	return simplified
 
 
 func _smooth_hall_route_cells(raw_path: Array) -> Array[Vector2i]:
@@ -7010,25 +7344,102 @@ func _axis_route_clear(from_cell: Vector2i, to_cell: Vector2i) -> bool:
 	return false
 
 
-func _simplify_hall_route_path(path_points: Array[Vector2]) -> Array[Vector2]:
+func _simplify_hall_route_path(
+	path_points: Array[Vector2], compact_straights: bool = true
+) -> Array[Vector2]:
 	var simplified: Array[Vector2] = []
 	for point: Vector2 in path_points:
-		if not simplified.is_empty() and simplified[simplified.size() - 1].is_equal_approx(point):
-			continue
-		if simplified.size() < 2:
-			simplified.append(point)
-			continue
-		var previous_direction := _cardinal_route_direction(
-			simplified[simplified.size() - 1] - simplified[simplified.size() - 2]
-		)
-		var next_direction := _cardinal_route_direction(
-			point - simplified[simplified.size() - 1]
-		)
-		if previous_direction == next_direction:
-			simplified[simplified.size() - 1] = point
-		else:
+		while simplified.size() >= 2:
+			var incoming := simplified[-1] - simplified[-2]
+			var outgoing := point - simplified[-1]
+			if not compact_straights and _cardinal_route_direction(incoming) != -_cardinal_route_direction(outgoing):
+				break
+			if not is_zero_approx(incoming.cross(outgoing)):
+				# Cell navigation points can sit off-centre. Remove their small
+				# reversing detour only when the real player body clears the shortcut.
+				if (
+					_cardinal_route_direction(incoming) != -_cardinal_route_direction(outgoing)
+					or not _hall_route_segment_is_walkable(simplified[-2], point)
+				):
+					break
+			# Collapsing a collinear reversal only removes already-covered ground.
+			simplified.pop_back()
+		if simplified.is_empty() or not simplified[-1].is_equal_approx(point):
 			simplified.append(point)
 	return simplified
+
+
+func _hall_route_segment_is_walkable(from_position: Vector2, target: Vector2) -> bool:
+	var steps := maxi(1, ceili(from_position.distance_to(target) / 4.0))
+	for index: int in range(steps + 1):
+		if not is_player_position_walkable(from_position.lerp(target, float(index) / steps)):
+			return false
+	return true
+
+
+func _collision_safe_hall_route(points: Array[Vector2]) -> Array[Vector2]:
+	var safe: Array[Vector2] = []
+	for authored_point: Vector2 in points:
+		var point := authored_point
+		if not is_player_position_walkable(point):
+			var node_id := nearest_lattice_id(point, true)
+			if node_id < 0:
+				push_warning("No walkable Hall route anchor near " + str(point))
+				return []
+			point = nav_graph.get_point_position(node_id)
+		if safe.is_empty():
+			safe.append(point)
+			continue
+		var previous := safe[-1]
+		if previous.is_equal_approx(point):
+			continue
+		if _hall_route_segment_is_walkable(previous, point):
+			safe.append(point)
+			continue
+		var detour: Array[Vector2] = [previous]
+		for waypoint: Vector2 in find_route(previous, point, true):
+			if not detour[-1].is_equal_approx(waypoint):
+				detour.append(waypoint)
+		if not detour[-1].is_equal_approx(point):
+			detour.append(point)
+		for index: int in range(1, detour.size()):
+			if not _hall_route_segment_is_walkable(detour[index - 1], detour[index]):
+				push_warning("No collision-safe Hall guide between %s and %s." % [previous, point])
+				return []
+		safe.append_array(detour.slice(1))
+	if safe.size() == 1 and points.size() >= 2:
+		return [safe[0], safe[0]]
+	return _simplify_hall_route_path(safe, false)
+
+
+func _hall_route_to_interaction(points: Array[Vector2]) -> Array[Vector2]:
+	if points.is_empty():
+		return []
+	var interaction_id := (
+		"arrival_chemistry_core" if hall_arrival_step == HallArrivalStep.APPROACH_CHEMISTRY_CORE
+		else "arrival_chemistry_door"
+	)
+	var target_rect := get_interaction_rect(interaction_id)
+	var body_rect := spatial.get_player_collision_rect(player)
+	var margin := maxf(1.0, _hall_interaction_margin(interaction_id) - float(player.get("click_stop_distance")) - 1.0)
+	var clipped: Array[Vector2] = [points[0]]
+	for index: int in range(points.size()):
+		var previous := points[maxi(0, index - 1)]
+		var steps := maxi(1, ceili(previous.distance_to(points[index]) / 4.0))
+		for sample_index: int in range(steps + 1):
+			var point := previous.lerp(points[index], float(sample_index) / steps)
+			var sample_body := Rect2(
+				body_rect.position + point - player.global_position, body_rect.size
+			)
+			if spatial.rect_gap(sample_body, target_rect) <= margin and is_player_position_walkable(point):
+				if _is_knowledge_interaction(interaction_id) and not _knowledge_sight_clear(point, target_rect):
+					continue
+				clipped.append(point)
+				return clipped
+		if not clipped[-1].is_equal_approx(points[index]):
+			clipped.append(points[index])
+	push_warning("Hall guide does not reach a usable interaction edge: " + interaction_id)
+	return []
 
 
 func _sample_hall_route_markers(path_points: Array[Vector2]) -> Array[Vector2]:
@@ -7089,53 +7500,10 @@ func _create_hall_route_floor_marker(
 	direction: Vector2,
 	is_destination: bool
 ) -> Node2D:
-	var marker := Node2D.new()
-	marker.name = "RouteBeacon" if is_destination else "RouteGlyph"
+	var marker := load("res://scripts/hall_footprint_marker.gd").new() as Node2D
 	marker.position = position_on_floor
-	var cardinal_direction := _cardinal_route_direction(direction)
-	marker.rotation = cardinal_direction.angle()
-	marker.set_meta("route_kind", "destination" if is_destination else "straight")
-	marker.set_meta("route_direction", cardinal_direction)
-	marker.modulate = Color(0.62, 0.82, 1.0, 0.58)
-
-	# 脚印，不是箭头。箭头是游戏在说"往这边走"；脚印是有人真的走过这里，
-	# 而洒出的药水让它显了形。玩家由此自己得出规则——踩着别人走通的路才
-	# 安全——而不是被告知一条教程路线。
-	var side: float = 1.0 if int(round(position_on_floor.x + position_on_floor.y)) % 2 == 0 else -1.0
-	var halo := Polygon2D.new()
-	halo.polygon = _hall_footprint_polygon(1.55, side)
-	halo.color = Color(0.42, 0.30, 0.86, 0.20)
-	marker.add_child(halo)
-
-	var sole := Polygon2D.new()
-	sole.polygon = _hall_footprint_polygon(1.0, side)
-	sole.color = Color(0.68, 0.55, 1.0, 0.82)
-	marker.add_child(sole)
-
-	var toe := Polygon2D.new()
-	toe.polygon = _hall_footprint_toe(side)
-	toe.color = Color(0.80, 0.70, 1.0, 0.88)
-	marker.add_child(toe)
-
-	var core := Polygon2D.new()
-	core.polygon = PackedVector2Array([
-		Vector2(-10.0, -4.5), Vector2(3.0, -4.5),
-		Vector2(10.0, 0.0), Vector2(3.0, 4.5),
-		Vector2(-10.0, 4.5), Vector2(-3.0, 0.0),
-	])
-	core.color = Color(0.85, 0.94, 1.0, 0.95)
-	marker.add_child(core)
-
-	if is_destination:
-		var ring := Line2D.new()
-		ring.width = 2.5
-		ring.default_color = Color(0.50, 0.82, 1.0, 0.96)
-		ring.points = _make_route_beacon_ring(25.0)
-		marker.add_child(ring)
-		var center := Polygon2D.new()
-		center.polygon = _make_route_beacon_ring(14.0)
-		center.color = Color(0.16, 0.42, 0.82, 0.34)
-		marker.add_child(center)
+	marker.call("setup_straight", _cardinal_route_direction(direction), is_destination,
+		hall_route_marker_nodes.size() % 2 == 0, Callable(self, "is_player_position_walkable"))
 	return marker
 
 
@@ -7144,39 +7512,9 @@ func _create_hall_route_corner_marker(
 	incoming: Vector2,
 	outgoing: Vector2
 ) -> Node2D:
-	var marker := Node2D.new()
-	marker.name = "RouteCorner90"
+	var marker := load("res://scripts/hall_footprint_marker.gd").new() as Node2D
 	marker.position = position_on_floor
-	marker.modulate = Color(0.62, 0.82, 1.0, 0.66)
-	marker.set_meta("route_kind", "corner_90")
-	marker.set_meta("incoming_direction", incoming)
-	marker.set_meta("outgoing_direction", outgoing)
-	var points := PackedVector2Array([
-		-incoming * 22.0,
-		Vector2.ZERO,
-		outgoing * 22.0,
-	])
-	var glow := Line2D.new()
-	glow.width = 11.0
-	glow.default_color = Color(0.08, 0.38, 0.98, 0.28)
-	glow.joint_mode = Line2D.LINE_JOINT_SHARP
-	glow.points = points
-	marker.add_child(glow)
-	var corner_line := Line2D.new()
-	corner_line.width = 4.0
-	corner_line.default_color = Color(0.72, 0.91, 1.0, 0.96)
-	corner_line.joint_mode = Line2D.LINE_JOINT_SHARP
-	corner_line.points = points
-	marker.add_child(corner_line)
-	var corner_core := Polygon2D.new()
-	corner_core.polygon = PackedVector2Array([
-		Vector2(-5.0, -5.0),
-		Vector2(5.0, -5.0),
-		Vector2(5.0, 5.0),
-		Vector2(-5.0, 5.0),
-	])
-	corner_core.color = Color(0.90, 0.97, 1.0, 0.98)
-	marker.add_child(corner_core)
+	marker.call("setup_turn", incoming, outgoing, Callable(self, "is_player_position_walkable"))
 	return marker
 
 
@@ -7226,6 +7564,12 @@ func _update_hall_route_compass() -> void:
 		return
 	if hall_route_ui_only:
 		hall_route_compass.text = "PRESS U · OPEN MAP"
+		return
+	if hall_arrival_step == HallArrivalStep.STUDY_CHEMISTRY_CORE:
+		hall_route_compass.text = CaseLocale.text("hall.route_study_action")
+		return
+	if hall_route_exposed or hall_route_exposure > 0.0:
+		hall_route_compass.text = CaseLocale.text("hall.route_exposed" if hall_route_exposed else "hall.route_warning")
 		return
 	var delta: Vector2 = hall_route_target - player.global_position
 	if delta.length_squared() < 1.0:
@@ -7634,6 +7978,7 @@ func resume_castle_hall_after_return() -> void:
 ## 只跟随，不切换：开关归 DevTools，房间再切一次会把同一下按键抵消掉。
 func _on_developer_mode_changed() -> void:
 	_sync_hall_route_recorder()
+	_sync_hall_knowledge_stop()
 
 	if GameState.developer_mode:
 		camera_target_zoom = GameState.get_room_camera_zoom(GAMEPLAY_CAMERA_ZOOM, DEVELOPER_CAMERA_ZOOM)
@@ -7682,12 +8027,22 @@ func set_developer_markers_visible(
 			canvas_item.visible = should_show
 
 
-## 开发者模式一开就开始录路，关掉就丢弃这次录制。
-##
-## 不做成"再按一个键开始录制"：真正要调的是"我走的这条路"，多一个开关就
-## 多一次忘了按的机会，走完一遍才发现没录上。
+func toggle_hall_route_recording() -> void:
+	if not GameState.developer_mode:
+		show_hall_notice(CaseLocale.text("hall.recording_requires_dev"))
+		return
+	_hall_route_recording_requested = not _hall_route_recording_requested
+	_sync_hall_route_recorder()
+	_sync_hall_knowledge_stop()
+	show_hall_notice(CaseLocale.text(
+		"hall.recording_started" if _is_recording_hall_route() else "hall.recording_cancelled"
+	))
+
+
 func _sync_hall_route_recorder() -> void:
-	if GameState.developer_mode:
+	if GameState.developer_mode and _hall_route_recording_requested:
+		if not _hall_navigation_ready:
+			return
 		if _hall_route_recorder != null and is_instance_valid(_hall_route_recorder):
 			return
 		if player == null or not is_instance_valid(player):
@@ -7698,7 +8053,9 @@ func _sync_hall_route_recorder() -> void:
 		_hall_route_recorder.route_saved.connect(_on_hall_route_recorded)
 		_hall_route_recorder.setup(player, CHEMISTRY_ROOM_DOOR_FOCUS_POSITION)
 		return
+	_hall_route_recording_requested = false
 	if _hall_route_recorder != null and is_instance_valid(_hall_route_recorder):
+		_hall_route_recorder.set_process(false)
 		_hall_route_recorder.queue_free()
 	_hall_route_recorder = null
 
@@ -7709,8 +8066,9 @@ func _on_hall_route_recorded(points: Array[Vector2]) -> void:
 	print("[HallRoute] 已保存 %d 个点 -> %s" % [
 		points.size(), HallRouteStore.ROUTE_PATH
 	])
-	if hall_arrival_step == HallArrivalStep.REACH_CHEMISTRY_DOOR:
+	if _is_hall_arrival_active() and hall_arrival_step != HallArrivalStep.STUDY_CHEMISTRY_CORE:
 		_build_hall_tutorial_route()
+	_sync_hall_knowledge_stop()
 	_refresh_hall_route_ui(false)
 
 

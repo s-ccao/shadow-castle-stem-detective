@@ -1,0 +1,240 @@
+{
+  "adapter": "Apple M3",
+  "api": {
+    "CHANGE_TIME": 2.6,
+    "allow_observation_marks": "false default; when true, marks still require AFTER and an actual verdict",
+    "audio": "No streams, audio bus access or sound hooks in renderer; controller-owned",
+    "before_after": "PackedStringArray; exact existing new_substances() set difference; glow excluded",
+    "hidden_behavior": "Only bounded phase bookkeeping continues; no effect-time advancement or uniform uploads; show synchronizes final/current state",
+    "methods": [
+      "play()",
+      "reset_dish()",
+      "is_playing()",
+      "new_substances()",
+      "effect_snapshot()"
+    ],
+    "phase": "BEFORE=0 / CHANGING=1 / AFTER=2",
+    "sample_id": "String; set before or after add_child; falls back to original before-set signature for legacy callers",
+    "time_lapse_presets": [
+      "rusting_iron",
+      "silver_tarnish",
+      "milk_souring",
+      "salt_crystallising"
+    ],
+    "verdict": "-1 ungraded / 0 wrong / 1 right; controller-owned; play and reset clear stale verdict"
+  },
+  "contract_validation": {
+    "checks": 299,
+    "coverage": "Original 16 science sets and bools; exact glow exclusion; all presets; reset/replay; inherited hiding; static uniforms; 24 free/restart cycles",
+    "headless_shutdown_note": "Headless CLI reports 3 pre-existing GameAudio music WAV resources plus their playback instances at exit; verbose log identifies music_bed/music_tension/music_chase only. Native capture exits cleanly; renderer node count does not grow over 24 cycles.",
+    "script": "tests/chemistry_sample_renderer_test.gd"
+  },
+  "evidence": "contact-{before,changing,after}.png; hero-<each of 16 sample IDs>.png; motion-{burning_paper,baking_soda_vinegar,stretching_spring}.png; performance-one-hero-six-thumbnails.png; integrated-<material>-<local milliseconds>.png when the focused controller is available",
+  "failures": [],
+  "integrated_hero": {
+    "available": true,
+    "samples": {
+      "baking_soda_vinegar": {
+        "draw_calls": 49.0,
+        "frames": 136,
+        "hero_size": [
+          644.0,
+          289.0
+        ],
+        "median_frame_ms": 6.543,
+        "p95_frame_ms": 11.761,
+        "timing_note": "Native render-frame wait intervals in actual focused UI; synchronous image writes outside the measured interval; not isolated GPU timings"
+      },
+      "burning_paper": {
+        "draw_calls": 46.0,
+        "frames": 136,
+        "hero_size": [
+          644.0,
+          289.0
+        ],
+        "median_frame_ms": 6.413,
+        "p95_frame_ms": 11.755,
+        "timing_note": "Native render-frame wait intervals in actual focused UI; synchronous image writes outside the measured interval; not isolated GPU timings"
+      },
+      "melting_ice": {
+        "draw_calls": 46.0,
+        "frames": 136,
+        "hero_size": [
+          644.0,
+          289.0
+        ],
+        "median_frame_ms": 6.701,
+        "p95_frame_ms": 11.501,
+        "timing_note": "Native render-frame wait intervals in actual focused UI; synchronous image writes outside the measured interval; not isolated GPU timings"
+      },
+      "melting_wax": {
+        "draw_calls": 52.0,
+        "frames": 136,
+        "hero_size": [
+          644.0,
+          289.0
+        ],
+        "median_frame_ms": 9.929,
+        "p95_frame_ms": 11.385,
+        "timing_note": "Native render-frame wait intervals in actual focused UI; synchronous image writes outside the measured interval; not isolated GPU timings"
+      }
+    }
+  },
+  "native_viewport": [
+    1024,
+    768
+  ],
+  "performance": {
+    "configuration": "1 active 600x220, 6 static 150x72; native GL Compatibility; vsync frame intervals, not isolated GPU timings",
+    "draw_calls": 9.0,
+    "frames": 159,
+    "median_frame_ms": 9.317,
+    "p95_frame_ms": 11.954,
+    "render_objects": 58.0,
+    "static_uniform_updates": 0
+  },
+  "project": "/Users/yaleshen/shadow-castle-stem-detective/",
+  "renderer": "gl_compatibility",
+  "samples": {
+    "baking_soda_vinegar": {
+      "before_after_changed_pixels": 4576,
+      "before_changing_changed_pixels": 9036,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "boiling_water": {
+      "before_after_changed_pixels": 21144,
+      "before_changing_changed_pixels": 22668,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "breaking_glass": {
+      "before_after_changed_pixels": 16048,
+      "before_changing_changed_pixels": 14892,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "bronze_reaction": {
+      "before_after_changed_pixels": 9504,
+      "before_changing_changed_pixels": 15308,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "burning_paper": {
+      "before_after_changed_pixels": 13732,
+      "before_changing_changed_pixels": 25836,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "cooking_egg": {
+      "before_after_changed_pixels": 15944,
+      "before_changing_changed_pixels": 15604,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "dissolving_sugar": {
+      "before_after_changed_pixels": 3620,
+      "before_changing_changed_pixels": 6820,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "magnet_attracting": {
+      "before_after_changed_pixels": 3612,
+      "before_changing_changed_pixels": 3684,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "melting_ice": {
+      "before_after_changed_pixels": 20996,
+      "before_changing_changed_pixels": 15076,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "melting_wax": {
+      "before_after_changed_pixels": 17704,
+      "before_changing_changed_pixels": 12884,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "milk_souring": {
+      "before_after_changed_pixels": 18720,
+      "before_changing_changed_pixels": 18720,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "rusting_iron": {
+      "before_after_changed_pixels": 10924,
+      "before_changing_changed_pixels": 6048,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "salt_crystallising": {
+      "before_after_changed_pixels": 21608,
+      "before_changing_changed_pixels": 15324,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "silver_tarnish": {
+      "before_after_changed_pixels": 7928,
+      "before_changing_changed_pixels": 5428,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    },
+    "stretching_spring": {
+      "before_after_changed_pixels": 0,
+      "before_changing_changed_pixels": 7504,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": true
+    },
+    "tearing_cloth": {
+      "before_after_changed_pixels": 27180,
+      "before_changing_changed_pixels": 23468,
+      "replay_pixel_differences": 0,
+      "reset_pixel_differences": 0,
+      "returns_to_same_material_shape": false
+    }
+  },
+  "source_files": [
+    "scripts/sample_dish_view.gd",
+    "assets/chemistry/sample_tray/materials.gdshader",
+    "assets/chemistry/sample_tray/specimens.svg",
+    "assets/chemistry/sample_tray/specimens.png",
+    "assets/chemistry/sample_tray/vessel_back.svg",
+    "assets/chemistry/sample_tray/vessel_back.png",
+    "assets/chemistry/sample_tray/vessel_front.svg",
+    "assets/chemistry/sample_tray/vessel_front.png",
+    "assets/chemistry/sample_tray/normalize_assets.gd",
+    "assets/chemistry/sample_tray/manifest.json",
+    "tests/chemistry_sample_renderer_test.gd",
+    "tests/chemistry_sample_renderer_capture.gd"
+  ],
+  "source_sha256": {
+    "assets/chemistry/sample_tray/manifest.json": "c4dca64d8886da7278cc8d2f79c0d30b5a18054ebadb01e39f7772eec360e4fe",
+    "assets/chemistry/sample_tray/materials.gdshader": "1fc654e374a5a965700482427ee0bbc4a9eb49ca644c1b66341fdfba998ae8d7",
+    "assets/chemistry/sample_tray/normalize_assets.gd": "17915e3d9d4019f482778bccd1cbc40786d34dfcc1d0649513dc87d9e044d640",
+    "assets/chemistry/sample_tray/specimens.png": "88dfd61aff281f6edbba8a2247fead5a0329a3057b0da4da8817a63c28c48e36",
+    "assets/chemistry/sample_tray/specimens.svg": "77e955c2836aeddebcbbf0b15c051c44c09210288c2f4e85402dc2f2395412af",
+    "assets/chemistry/sample_tray/vessel_back.png": "e1c4279d9d3ab67a3b7d05fa5d973cf8f4af2f110e329b3d9b28950533c5a1ab",
+    "assets/chemistry/sample_tray/vessel_back.svg": "d3dbf5cd19d46d0929d379721e236782dde0115179901a3dd2e3404278975e29",
+    "assets/chemistry/sample_tray/vessel_front.png": "b8ea51f7b683cdc7d84e32d31fc02ba821c841c6828d7944c3fe0db846bb0dfe",
+    "assets/chemistry/sample_tray/vessel_front.svg": "f9f0bcac48bb6b697486a7061b417b40b42b89c51dc0156082e963f1b70b1496",
+    "scripts/sample_dish_view.gd": "d3a3f1895d3ca67690824654df5dbad1496db7d4df17ad08d7af7c67c09e9ff2",
+    "tests/chemistry_sample_renderer_capture.gd": "6dcac835e5571d8875e38d4d0f2942d5b0cbad0e7cc4c900db4b7cad60ff442b",
+    "tests/chemistry_sample_renderer_test.gd": "930836d352bd2b34c3af7d2b2034eb1f387310e2c379d366bb9eefd16da354e6"
+  }
+}

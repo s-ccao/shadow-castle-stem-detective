@@ -15,6 +15,7 @@ var menu_dialog_close_button: Button
 var menu_dialog_english_button: Button
 var menu_dialog_chinese_button: Button
 var menu_dialog_guidance_button: Button
+var menu_dialog_mute_button: Button
 var volume_controls: Array[Control] = []
 var active_dialog := ""
 var case_archive_button: Button
@@ -253,7 +254,7 @@ func create_menu_dialog() -> void:
 
 	menu_dialog_guidance_button = Button.new()
 	menu_dialog_guidance_button.name = "FieldPromptsToggleButton"
-	menu_dialog_guidance_button.position = Vector2(324, 518)
+	menu_dialog_guidance_button.position = Vector2(262, 518)
 	menu_dialog_guidance_button.size = Vector2(190, 42)
 	ArchiveUi.apply_button(menu_dialog_guidance_button, ArchiveUi.ROLE_ACTION)
 	menu_dialog_guidance_button.pressed.connect(func() -> void:
@@ -261,8 +262,22 @@ func create_menu_dialog() -> void:
 		_show_settings_dialog()
 	)
 	menu_dialog_overlay.add_child(menu_dialog_guidance_button)
-	menu_dialog_guidance_button.focus_neighbor_right = menu_dialog_close_button.get_path()
-	menu_dialog_close_button.focus_neighbor_left = menu_dialog_guidance_button.get_path()
+
+	# The in-game pause menu can mute everything, so the menu must be able to undo it.
+	menu_dialog_mute_button = Button.new()
+	menu_dialog_mute_button.name = "MuteAllToggleButton"
+	menu_dialog_mute_button.position = Vector2(462, 518)
+	menu_dialog_mute_button.size = Vector2(150, 42)
+	ArchiveUi.apply_button(menu_dialog_mute_button, ArchiveUi.ROLE_ARCHIVE)
+	menu_dialog_mute_button.pressed.connect(func() -> void:
+		GameAudio.toggle_muted()
+		_refresh_mute_button()
+	)
+	menu_dialog_overlay.add_child(menu_dialog_mute_button)
+	menu_dialog_guidance_button.focus_neighbor_right = menu_dialog_mute_button.get_path()
+	menu_dialog_mute_button.focus_neighbor_left = menu_dialog_guidance_button.get_path()
+	menu_dialog_mute_button.focus_neighbor_right = menu_dialog_close_button.get_path()
+	menu_dialog_close_button.focus_neighbor_left = menu_dialog_mute_button.get_path()
 
 	_create_volume_sliders()
 
@@ -331,6 +346,12 @@ func _show_menu_dialog(title: String, text: String, language_picker: bool = fals
 	menu_dialog_english_button.visible = language_picker
 	menu_dialog_chinese_button.visible = language_picker
 	menu_dialog_guidance_button.visible = active_dialog == "settings"
+	menu_dialog_mute_button.visible = active_dialog == "settings"
+	# Settings seats three buttons; every other dialog keeps its original Close slot.
+	var settings_row := active_dialog == "settings"
+	menu_dialog_close_button.position = Vector2(622, 518) if settings_row else Vector2(530, 518)
+	menu_dialog_close_button.size = Vector2(140, 42) if settings_row else Vector2(170, 42)
+	_refresh_mute_button()
 	for control: Control in volume_controls:
 		control.visible = active_dialog == "settings"
 		if control is HSlider:
@@ -447,6 +468,7 @@ func _refresh_copy(_language: String = "") -> void:
 		if PlayerPreferences.field_prompts_enabled
 		else "menu.guidance_off"
 	)
+	_refresh_mute_button()
 	ArchiveUi.apply_label(menu_dialog_title, &"title")
 	ArchiveUi.apply_label(menu_dialog_text, &"body")
 	if not menu_dialog_overlay.visible:
@@ -455,6 +477,15 @@ func _refresh_copy(_language: String = "") -> void:
 		_show_settings_dialog()
 	elif active_dialog == "language":
 		_show_language_dialog()
+
+
+func _refresh_mute_button() -> void:
+	if menu_dialog_mute_button == null:
+		return
+	var muted: bool = GameAudio.is_muted()
+	menu_dialog_mute_button.text = CaseLocale.text("menu.mute_on" if muted else "menu.mute_off")
+	var mute_role := ArchiveUi.ROLE_ARCANE if muted else ArchiveUi.ROLE_ARCHIVE
+	ArchiveUi.apply_button(menu_dialog_mute_button, mute_role)
 
 
 func _dialog_panel_style(

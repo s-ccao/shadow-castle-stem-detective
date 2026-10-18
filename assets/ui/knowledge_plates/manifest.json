@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "family": "Shadow Castle illuminated science plates",
+  "created": "2026-09-07",
+  "authorship": {
+    "creator": "GitHub Copilot, original static pixel-grid drawing commissioned for Shadow Castle",
+    "method": "Individually authored editable SVG masters with deliberate integer-grid silhouettes, stepped contours and material shading. Offline Godot SVG rasterization, palette quantization, then nearest-neighbor integer enlargement.",
+    "image_generation_service": null,
+    "external_sources": [],
+    "source_art_reuse": "None. No scene props, inventory crops, downloaded icons, source artwork or third-party art were used.",
+    "rights": "Original project contribution; no third-party attribution or licensing obligation introduced. No repository-wide license grant is invented here.",
+    "restrictions": "No external asset-specific restrictions identified."
+  },
+  "technical_frame": {
+    "engine": "Godot 4.7",
+    "viewport": [1024, 768],
+    "source_grid": [96, 128],
+    "delivery_size": [192, 256],
+    "format": "PNG RGBA8, sRGB",
+    "alpha": "Binary 0/255; transparent outside the stepped plate silhouette, opaque illustration field",
+    "view": "Orthographic conceptual diagram, not a world prop; lit material rims from upper left",
+    "display": "192x256 exact native pixels, centered in KnowledgeArtwork; nearest filtering; no crop or fractional resize",
+    "mipmaps": false,
+    "compression": "Godot lossless texture import",
+    "repeat": "disabled",
+    "pivot": [96, 128],
+    "collision": "none",
+    "animation_frames": 1,
+    "text": "No rendered text, labels, numbers or functional UI copy. SVG title elements are non-rendered source metadata."
+  },
+  "visual_system": {
+    "palette": [
+      "#111321", "#1b2033", "#282940", "#393449", "#57506b", "#a7adb8",
+      "#594536", "#8d6846", "#b78b56", "#dcba7e", "#f6dfaa", "#fff0c5",
+      "#913c52", "#ca5665", "#f09472", "#f4b955",
+      "#28615a", "#3e8a70", "#81bb85", "#c5d894",
+      "#22435a", "#376783", "#69acba", "#a8d7d0", "#d1eee3",
+      "#4765b4", "#9a79b8", "#d6a2c6"
+    ],
+    "palette_roles": "Navy/violet field and ink; brass stepped keyline and separators; parchment lit surfaces; coral heat/oxygen/red light; jade leaf/green light; icy cyan water/current; sapphire blue light and a violet spectral endpoint.",
+    "shape_language": "Cut-corner plates, one-pixel brass inlay, confident stepped silhouettes, two-to-four shade clusters, localized glints rather than noise.",
+    "approved_seed": "chemical_physical.svg: split comparison diagram; inspected in the five-plate native-scale contact sheet.",
+    "iteration": "Enlarged the burning sheet's exposed parchment silhouette; corrected current arrows to conventional + to - flow; made additive blue explicitly sapphire rather than violet; replaced an ambiguous equal sign between timing processes with a comparison connector. Kept one integer grid and corrected contact-sheet alpha compositing."
+  },
+  "assets": [
+    {
+      "id": "chemistry",
+      "topic_id": "ChemistryRoomKnowledge",
+      "path": "assets/ui/knowledge_plates/chemical_physical.png",
+      "source": "assets/ui/knowledge_plates/sources/chemical_physical.svg",
+      "size": [192, 256],
+      "meaning": "Folded paper burns to ash above; faceted ice and liquid water are joined by opposing reversible arrows below. Burning does not reverse by cooling."
+    },
+    {
+      "id": "circuit",
+      "topic_id": "CircuitRoomKnowledge",
+      "path": "assets/ui/knowledge_plates/closed_circuit.png",
+      "source": "assets/ui/knowledge_plates/sources/closed_circuit.svg",
+      "size": [192, 256],
+      "meaning": "A closed knife-switch contact, battery terminals and a glowing filament share one complete wire loop. Arrowheads denote conventional current outside the battery, from positive to negative."
+    },
+    {
+      "id": "greenhouse",
+      "topic_id": "GreenhouseRoomKnowledge",
+      "path": "assets/ui/knowledge_plates/photosynthesis.png",
+      "source": "assets/ui/knowledge_plates/sources/photosynthesis.svg",
+      "size": [192, 256],
+      "meaning": "Sunlight, a water drop and an oxygen-carbon-oxygen molecule enter a veined leaf/root system; paired oxygen and sugar crystals leave. Molecules are schematic, not a balanced molecular equation."
+    },
+    {
+      "id": "time",
+      "topic_id": "DiningHallKnowledge",
+      "path": "assets/ui/knowledge_plates/independent_time.png",
+      "source": "assets/ui/knowledge_plates/sources/independent_time.svg",
+      "size": [192, 256],
+      "meaning": "A clock dial branches to falling sand and a partly consumed candle over a shared comparison rail. These are independent estimates, not perfectly interchangeable calibrated timers."
+    },
+    {
+      "id": "light",
+      "topic_id": "LibraryRoomKnowledge",
+      "path": "assets/ui/knowledge_plates/additive_light.png",
+      "source": "assets/ui/knowledge_plates/sources/additive_light.svg",
+      "size": [192, 256],
+      "meaning": "Red, green and blue light overlap to yellow, cyan and magenta, with a pale white triple overlap. A separated lower diagram shows white light dispersing through glass; it does not imply a prism combines RGB light."
+    }
+  ],
+  "rebuild": "Set isolated HOME and KNOWLEDGE_ART_EVIDENCE to the session .godot/knowledge-art-* directory, then run Godot --headless --path MAIN --script res://assets/ui/knowledge_plates/rasterize_plates.gd. This also rebuilds paired shoe prints from their separate SVG masters.",
+  "validation": {
+    "test": "tests/knowledge_plate_art_test.gd",
+    "contact_sheet": ".godot/knowledge-art-20260907-1333/contact-sheet.png in the session checkout",
+    "native_captures": ".godot/knowledge-art-20260907-1333/native/*-en.png and *-zh.png in the session checkout",
+    "approval": "Approved after native contact-sheet review and actual MAIN project 1024x768 dossier captures in EN/ZH. Automated dimensions, palette, binary alpha, pixel clusters, exact topic selection, filing and review passed in MAIN and SESSION. All seven original raster assets replace no pre-existing source files."
+  }
+}

@@ -1,0 +1,121 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PROJECT_UNDER_TEST: /Users/yaleshen/shadow-castle-stem-detective.worktrees/current-situation-update/
+PASS: The route fixture is isolated from the shipped file
+PASS: Scene startup does not automatically record or bypass guidance
+PASS: Developer recording starts after Hall setup
+PASS: Recording starts at the resolved spawn, not the scene's 512,384 placeholder
+PASS: Leaving developer mode also clears collision overlays
+PASS: The route targets the visible exhibit, including its edited child transform
+PASS: The first stage guides to knowledge, not past it to the door
+PASS: The stage connector has no reversing footstep corners
+PASS: Every travel marker is on physically walkable floor
+PASS: The shipped authored route is available
+PASS: Refreshing midway starts at the player, never at the Hall entrance
+PASS: Completed footsteps are not replayed
+PASS: The route segment is physically clear: (224.0, 984.0) -> (224.0, 1032.0)
+PASS: The route segment is physically clear: (224.0, 1032.0) -> (272.0, 1047.0)
+PASS: The route segment is physically clear: (272.0, 1047.0) -> (320.0, 1072.0)
+PASS: The route segment is physically clear: (320.0, 1072.0) -> (361.0, 1072.0)
+PASS: The route segment is physically clear: (361.0, 1072.0) -> (367.0, 1024.0)
+PASS: The route segment is physically clear: (367.0, 1024.0) -> (373.0, 976.0)
+PASS: The route segment is physically clear: (373.0, 976.0) -> (382.0, 928.0)
+PASS: The route segment is physically clear: (382.0, 928.0) -> (421.0, 898.0)
+PASS: The route segment is physically clear: (421.0, 898.0) -> (460.0, 928.0)
+PASS: The route segment is physically clear: (460.0, 928.0) -> (496.0, 961.0)
+PASS: The route segment is physically clear: (496.0, 961.0) -> (538.0, 988.0)
+PASS: The route segment is physically clear: (538.0, 988.0) -> (586.0, 988.0)
+PASS: The route segment is physically clear: (586.0, 988.0) -> (607.0, 1033.0)
+PASS: The route segment is physically clear: (607.0, 1033.0) -> (637.0, 1074.0)
+PASS: The route segment is physically clear: (637.0, 1074.0) -> (639.0, 1124.0)
+PASS: The route segment is physically clear: (639.0, 1124.0) -> (686.0, 1135.0)
+PASS: The route segment is physically clear: (686.0, 1135.0) -> (734.0, 1135.0)
+PASS: The route segment is physically clear: (734.0, 1135.0) -> (782.0, 1135.0)
+PASS: The route segment is physically clear: (782.0, 1135.0) -> (830.0, 1135.0)
+PASS: The route segment is physically clear: (830.0, 1135.0) -> (878.0, 1135.0)
+PASS: The route segment is physically clear: (878.0, 1135.0) -> (899.0, 1090.0)
+PASS: The route segment is physically clear: (899.0, 1090.0) -> (899.0, 1042.0)
+PASS: The route segment is physically clear: (899.0, 1042.0) -> (899.0, 994.0)
+PASS: The route segment is physically clear: (899.0, 994.0) -> (916.0, 947.0)
+PASS: The route segment is physically clear: (916.0, 947.0) -> (916.0, 899.0)
+PASS: The route segment is physically clear: (916.0, 899.0) -> (895.0, 855.0)
+PASS: The route segment is physically clear: (895.0, 855.0) -> (886.0, 807.0)
+PASS: The route segment is physically clear: (886.0, 807.0) -> (880.0, 800.0)
+PASS: The route segment is physically clear: (880.0, 800.0) -> (880.0, 784.0)
+PASS: The route segment is physically clear: (880.0, 784.0) -> (864.0, 784.0)
+PASS: The route segment is physically clear: (864.0, 784.0) -> (848.0, 784.0)
+PASS: The route segment is physically clear: (848.0, 784.0) -> (832.0, 784.0)
+PASS: The route segment is physically clear: (832.0, 784.0) -> (801.0, 761.0)
+PASS: The route segment is physically clear: (801.0, 761.0) -> (760.0, 735.0)
+PASS: The route segment is physically clear: (760.0, 735.0) -> (733.0, 693.0)
+PASS: The route segment is physically clear: (733.0, 693.0) -> (690.0, 666.0)
+PASS: The route segment is physically clear: (690.0, 666.0) -> (648.0, 638.0)
+PASS: The route segment is physically clear: (648.0, 638.0) -> (598.0, 628.0)
+PASS: The route segment is physically clear: (598.0, 628.0) -> (593.0, 578.0)
+PASS: The route segment is physically clear: (593.0, 578.0) -> (593.0, 530.0)
+PASS: The route segment is physically clear: (593.0, 530.0) -> (559.0, 496.0)
+PASS: The route segment is physically clear: (559.0, 496.0) -> (523.0, 463.0)
+PASS: The route segment is physically clear: (523.0, 463.0) -> (475.0, 463.0)
+PASS: The route segment is physically clear: (475.0, 463.0) -> (454.0, 418.0)
+PASS: The route segment is physically clear: (454.0, 418.0) -> (415.0, 388.0)
+PASS: The route segment is physically clear: (415.0, 388.0) -> (373.0, 364.0)
+PASS: The route segment is physically clear: (373.0, 364.0) -> (373.0, 316.0)
+PASS: The route segment is physically clear: (373.0, 316.0) -> (373.0, 268.0)
+PASS: The route segment is physically clear: (373.0, 268.0) -> (373.0, 220.0)
+PASS: The route segment is physically clear: (373.0, 220.0) -> (373.0, 188.0)
+PASS: Following the actual floor route reaches the mandatory knowledge stop (at (373.0003, 196.1082))
+PASS: Passed footsteps disappear as the player walks forward
+PASS: The knowledge stop has a physically clear interaction point
+PASS: Proximity automatically starts the study stage
+PASS: The mandatory stop cancels the queued walk
+PASS: Proximity does not auto-file knowledge
+PASS: No onward footsteps compete with the required interaction
+PASS: Refreshing localized UI cannot reveal the next stage early
+PASS: Keyboard movement cannot bypass the knowledge stop
+PASS: Direct navigation cannot queue movement during the stop
+PASS: The Guardian stays still while the player studies
+PASS: The mandatory stop cannot become a lethal trap
+PASS: Tracking chrome cannot cover the required filing button
+PASS: The stopped Guardian does not display a false urgent countdown
+PASS: The stopped player can interact immediately
+PASS: Clicking the highlighted core opens its knowledge
+PASS: Reading alone does not complete filing
+PASS: The tutorial opens the full illustrated knowledge dossier
+PASS: Knowledge content is visible before filing
+PASS: Closing without filing keeps the stop in force
+PASS: E can reopen the knowledge while movement is locked
+PASS: The dossier explicitly offers filing after its content
+PASS: The filing button receives pointer input at (825.0, 652.0) (hovered /root/GameWorld/HallKnowledgeDossier/@Control@168/KnowledgeDossierFrame/@MarginContainer@170/@VBoxContainer@171/@HBoxContainer@190/FileKnowledgeButton)
+PASS: A real mouse click on FILE KNOWLEDGE records the lesson
+PASS: Filing unlocks the Chemistry route
+PASS: Guardian tracking returns after knowledge is filed
+PASS: The knowledge actually exists in the notebook
+PASS: The final leg starts at the core
+PASS: The final leg does not replay the long Hall crossing (42 px)
+PASS: Movement resumes after filing, on the same clear floor
+PASS: The onward marker is on clear floor at (368.0, 173.1084)
+PASS: The onward marker is on clear floor at (368.0, 196.1082)
+PASS: Following the final footsteps reaches the usable Chemistry door
+PASS: An unfinished legacy save resumes the approach, not a remote freeze
+PASS: Returning before filing remains movable
+PASS: The real 0 shortcut enables developer mode
+PASS: Developer mode alone cannot bypass the knowledge stop
+PASS: Shift+0 controls recording without toggling developer mode
+PASS: Route recording can leave a mandatory study stop
+PASS: Leaving route recording restores the study stop
+PASS: Cancelling recording away from the core restores the approach
+PASS: Recording cannot strand the player with a remote interaction lock
+PASS: Recording can finish on real floor beside the door
+[HallRoute] 已保存 3 个点 -> res://data/hall_tutorial_route.json
+PASS: The recorder finishes at the door
+PASS: Finishing a recording away from the core also remains movable
+PASS: An already-filed legacy save skips repeated study
+PASS: Restoring filed knowledge releases movement
+PASS: A completed tutorial remains completed
+PASS: Completed guidance removes all markers
+PASS: The shipped route is byte-identical after testing
+staged_hall_guidance_test: PASS
+WARNING: 10 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 5 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

@@ -1,0 +1,158 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: Key Hub has a permanent label
+PASS: Note Hub has a permanent label
+PASS: Hub entries share a field-kit rail
+PASS: InventoryHud is lit by the shared archive atmosphere
+PASS: KeyHud is lit by the shared archive atmosphere
+PASS: Survey map keeps no light layer behind its blackout field
+PASS: Note dossier is lit by the shared archive atmosphere
+PASS: recipe_swift has a catalogued item model
+PASS: recipe_swift item model imports in Godot
+PASS: recipe_swift uses the approved raster pixel-art family
+PASS: recipe_vision has a catalogued item model
+PASS: recipe_vision item model imports in Godot
+PASS: recipe_vision uses the approved raster pixel-art family
+PASS: blue_blossom has a catalogued item model
+PASS: blue_blossom item model imports in Godot
+PASS: blue_blossom uses the approved raster pixel-art family
+PASS: moonleaf has a catalogued item model
+PASS: moonleaf item model imports in Godot
+PASS: moonleaf uses the approved raster pixel-art family
+PASS: distilled_water has a catalogued item model
+PASS: distilled_water item model imports in Godot
+PASS: distilled_water uses the approved raster pixel-art family
+PASS: iron_salt has a catalogued item model
+PASS: iron_salt item model imports in Godot
+PASS: iron_salt uses the approved raster pixel-art family
+PASS: prism_dust has a catalogued item model
+PASS: prism_dust item model imports in Godot
+PASS: prism_dust uses the approved raster pixel-art family
+PASS: swift_potion has a catalogued item model
+PASS: swift_potion item model imports in Godot
+PASS: swift_potion uses the approved raster pixel-art family
+PASS: vision_potion has a catalogued item model
+PASS: vision_potion item model imports in Godot
+PASS: vision_potion uses the approved raster pixel-art family
+PASS: green_potion has a catalogued item model
+PASS: green_potion item model imports in Godot
+PASS: green_potion uses the approved raster pixel-art family
+PASS: purification_potion has a catalogued item model
+PASS: purification_potion item model imports in Godot
+PASS: purification_potion uses the approved raster pixel-art family
+PASS: daze_potion has a catalogued item model
+PASS: daze_potion item model imports in Godot
+PASS: daze_potion uses the approved raster pixel-art family
+PASS: shroud_potion has a catalogued item model
+PASS: shroud_potion item model imports in Godot
+PASS: shroud_potion uses the approved raster pixel-art family
+PASS: recipe_purification has a catalogued item model
+PASS: recipe_purification item model imports in Godot
+PASS: recipe_purification uses the approved raster pixel-art family
+PASS: recipe_daze has a catalogued item model
+PASS: recipe_daze item model imports in Godot
+PASS: recipe_daze uses the approved raster pixel-art family
+PASS: recipe_shroud has a catalogued item model
+PASS: recipe_shroud item model imports in Godot
+PASS: recipe_shroud uses the approved raster pixel-art family
+PASS: cleaning_powder_sample has a catalogued item model
+PASS: cleaning_powder_sample item model imports in Godot
+PASS: cleaning_powder_sample uses the approved raster pixel-art family
+PASS: indicator_vial_sample has a catalogued item model
+PASS: indicator_vial_sample item model imports in Godot
+PASS: indicator_vial_sample uses the approved raster pixel-art family
+PASS: broken_glass_sample has a catalogued item model
+PASS: broken_glass_sample item model imports in Godot
+PASS: broken_glass_sample uses the approved raster pixel-art family
+PASS: recipe_swift renders artwork in the Bag
+PASS: recipe_vision renders artwork in the Bag
+PASS: recipe_purification renders artwork in the Bag
+PASS: recipe_daze renders artwork in the Bag
+PASS: recipe_shroud renders artwork in the Bag
+PASS: recipe_mire renders artwork in the Bag
+PASS: recipe_reveal renders artwork in the Bag
+PASS: recipe_dew_distill renders artwork in the Bag
+PASS: recipe_vine_salt renders artwork in the Bag
+PASS: recipe_ember_prism renders artwork in the Bag
+PASS: blue_blossom renders artwork in the Bag
+PASS: moonleaf renders artwork in the Bag
+PASS: emberroot renders artwork in the Bag
+PASS: dewcap renders artwork in the Bag
+PASS: ironvine renders artwork in the Bag
+PASS: distilled_water renders artwork in the Bag
+PASS: iron_salt renders artwork in the Bag
+PASS: prism_dust renders artwork in the Bag
+PASS: Note journal veil exists
+PASS: Note journal veil is dark, not white
+PASS: Note journal veil isolates the archive
+PASS: Map fog image exists
+PASS: Unpowered pursuit map reveals no architectural silhouette
+PASS: Guardian minimap cannot bypass the power-gated map fog
+PASS: Opening a Hub suppresses the Bag entry
+PASS: Opening a Hub suppresses the Key entry
+PASS: Opening a Hub suppresses the Note entry
+PASS: Closing a Hub restores the field-kit rail
+PASS: Start screen has a case metadata strip
+PASS: Start screen is lit by the shared archive atmosphere
+PASS: Start intake reads as a physical dossier
+PASS: Death screen has a recovery status stamp
+PASS: Interruption report is lit by the shared archive atmosphere
+PASS: Interruption report reads as a physical dossier
+PASS: Ending screen has a resolution status stamp
+PASS: Resolution record is lit by the shared archive atmosphere
+PASS: Resolution record reads as a physical dossier
+PASS: Each ending files the same record under its own accent
+PASS: Alchemy opens with Step 1 guidance
+PASS: Alchemy formula archive shows two distinct blueprint models
+PASS: recipe_swift blueprint is visible on the workbench
+PASS: recipe_vision blueprint is visible on the workbench
+PASS: Alchemy advances to Step 2 after selecting a formula
+PASS: blue_blossom model is visible in the reagent rack
+PASS: distilled_water model is visible in the reagent rack
+PASS: iron_salt model is visible in the reagent rack
+PASS: Alchemy rack shows both formula and reagent rows
+PASS: Alchemy row 'Formula_recipe_swift' clears its icon with reserved space, not padded text
+PASS: Alchemy row 'Formula_recipe_swift' starts its label past the icon (46.0 >= 39.7)
+PASS: Alchemy row 'Formula_recipe_swift' has room for its full name
+PASS: Alchemy row 'Formula_recipe_vision' clears its icon with reserved space, not padded text
+PASS: Alchemy row 'Formula_recipe_vision' starts its label past the icon (46.0 >= 39.7)
+PASS: Alchemy row 'Formula_recipe_vision' has room for its full name
+PASS: Alchemy row 'Reagent_blue_blossom' clears its icon with reserved space, not padded text
+PASS: Alchemy row 'Reagent_blue_blossom' starts its label past the icon (46.0 >= 39.7)
+PASS: Alchemy row 'Reagent_blue_blossom' has room for its full name
+PASS: Alchemy row 'Reagent_distilled_water' clears its icon with reserved space, not padded text
+PASS: Alchemy row 'Reagent_distilled_water' starts its label past the icon (46.0 >= 39.7)
+PASS: Alchemy row 'Reagent_distilled_water' has room for its full name
+PASS: Alchemy row 'Reagent_iron_salt' clears its icon with reserved space, not padded text
+PASS: Alchemy row 'Reagent_iron_salt' starts its label past the icon (46.0 >= 39.7)
+PASS: Alchemy row 'Reagent_iron_salt' has room for its full name
+PASS: Alchemy advances to Step 3 when extraction is ready
+PASS: Alchemy enters a guarded extraction phase
+PASS: Alchemy traces three reagent feeds to the product
+PASS: Alchemy reagents travel as visible energy packets
+PASS: Alchemy product socket pulses after all feeds arrive
+PASS: Alchemy closes only after extraction settles
+PASS: Final board labels evidence as Step 1
+PASS: Final board labels conclusions as Step 2
+PASS: Final board labels accusation as Step 3
+PASS: Final board owns a non-blocking connection effect layer
+PASS: Pinning evidence creates an impact ring
+PASS: Formed conclusion travels physically into its role slot
+PASS: Conclusion connection begins as a growing line
+PASS: Role slot waits visually for the conclusion token
+PASS: Role slot settles after conclusion impact
+PASS: Conclusion line reaches its role slot
+PASS: Case Archive stays sealed before any ending
+PASS: Ordinary ending unlocks the Case Archive
+PASS: Case Archive lists records under evidence
+PASS: Case Archive lists records under people
+PASS: Case Archive lists records under timeline
+PASS: Case Archive lists records under science
+PASS: Case Archive lists records under verdict
+PASS: Case Archive names evidence with the accusation table's vocabulary
+PASS: Case Archive files each ending under its own verdict stamp
+ui_design_contract_test: PASS
+WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

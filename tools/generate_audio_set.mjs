@@ -449,6 +449,69 @@ function buildGuardianAlert() {
   return buffer;
 }
 
+// Dry, short material cues. No looping voices survive a closed observation.
+function buildSampleFire() {
+  const buffer = makeBuffer(0.85);
+  const random = makeRandom(0x4348454d);
+  let low = 0;
+  for (let frame = 0; frame < buffer.frames; frame += 1) {
+    const t = frame / SAMPLE_RATE;
+    low += 0.12 * (random() - low);
+    addSample(buffer, frame, low * 0.22 * Math.sin(Math.PI * t / buffer.seconds));
+  }
+  for (let i = 0; i < 12; i += 1) {
+    strikeNoise(buffer, 0.03 + i * 0.057, 0.025 + Math.abs(random()) * 0.05,
+      { decay: 90, highpass: 0.35, seed: 700 + i, wrap: false });
+  }
+  return buffer;
+}
+
+function buildSampleBubbles() {
+  const buffer = makeBuffer(0.95);
+  const random = makeRandom(0x46495a5a);
+  strikeNoise(buffer, 0.02, 0.04, { decay: 3.8, highpass: 0.25, wrap: false });
+  for (let i = 0; i < 15; i += 1) {
+    const at = 0.025 + i * 0.055 + Math.abs(random()) * 0.015;
+    strikeDrum(buffer, at, 300 + Math.abs(random()) * 950, 100, 0.06, 60);
+  }
+  return buffer;
+}
+
+function buildSampleGlass() {
+  const buffer = makeBuffer(0.65);
+  strikeNoise(buffer, 0, 0.23, { decay: 100, highpass: 0.85, wrap: false });
+  for (let i = 0; i < 8; i += 1) {
+    strikeTone(buffer, i * 0.025, 1380 + i * 517, 0.04,
+      { decay: 12 + i, pan: (i % 2 ? 1 : -1) * 0.2, partials: [1, 0.2], wrap: false });
+  }
+  return buffer;
+}
+
+function buildSampleWater() {
+  const buffer = makeBuffer(0.7);
+  strikeNoise(buffer, 0, 0.08, { decay: 5, highpass: 0.2, wrap: false });
+  for (let i = 0; i < 5; i += 1) {
+    strikeDrum(buffer, 0.08 + i * 0.09, 720 - i * 55, 190, 0.04, 45);
+  }
+  return buffer;
+}
+
+function buildSampleGrains() {
+  const buffer = makeBuffer(0.65);
+  for (let i = 0; i < 14; i += 1) {
+    strikeNoise(buffer, i * 0.032, 0.045, { decay: 120, highpass: 0.45, seed: 900 + i, wrap: false });
+    strikeTone(buffer, i * 0.032, 1250 + (i % 4) * 270, 0.009, { decay: 90, wrap: false });
+  }
+  return buffer;
+}
+
+function buildSampleMetal() {
+  const buffer = makeBuffer(0.65);
+  strikeTone(buffer, 0, 185, 0.2, { decay: 8, partials: [1, 0.1, 0.4, 0.2], wrap: false });
+  strikeTone(buffer, 0.02, 737, 0.06, { decay: 14, wrap: false });
+  return buffer;
+}
+
 // -------------------------------------------------------------------- build
 
 const MUSIC = [
@@ -469,12 +532,21 @@ const SFX = [
   ["potion_extract.wav", buildPotionExtract, 0.76],
   ["guardian_alert.wav", buildGuardianAlert, 0.88],
 ];
+const CHEMISTRY_SFX = [
+  ["sample_fire.wav", buildSampleFire, 0.48],
+  ["sample_bubbles.wav", buildSampleBubbles, 0.48],
+  ["sample_glass.wav", buildSampleGlass, 0.52],
+  ["sample_water.wav", buildSampleWater, 0.42],
+  ["sample_grains.wav", buildSampleGrains, 0.40],
+  ["sample_metal.wav", buildSampleMetal, 0.44],
+];
+const chemistryOnly = process.argv.includes("--chemistry-only");
 
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 const musicDirectory = path.resolve(toolDirectory, "../assets/audio/music");
 const sfxDirectory = path.resolve(toolDirectory, "../assets/audio/sfx");
 
-for (const [name, build, peakTarget] of MUSIC) {
+for (const [name, build, peakTarget] of chemistryOnly ? [] : MUSIC) {
   const buffer = build();
   const outputPath = path.join(musicDirectory, name);
   const { peak, normalization } = writeWav(buffer, outputPath, peakTarget);
@@ -483,7 +555,7 @@ for (const [name, build, peakTarget] of MUSIC) {
   );
 }
 
-for (const [name, build, peakTarget] of SFX) {
+for (const [name, build, peakTarget] of chemistryOnly ? CHEMISTRY_SFX : [...SFX, ...CHEMISTRY_SFX]) {
   const buffer = build();
   const outputPath = path.join(sfxDirectory, name);
   const { peak, normalization } = writeWav(buffer, outputPath, peakTarget);
@@ -493,4 +565,6 @@ for (const [name, build, peakTarget] of SFX) {
 }
 
 console.log(`FORMAT: ${SAMPLE_RATE} Hz, stereo, 16-bit PCM`);
-console.log(`MUSIC LOOP: ${LOOP_SECONDS.toFixed(2)} s, ${(60 / BEAT).toFixed(1)} BPM, bar-aligned across all layers`);
+if (!chemistryOnly) {
+  console.log(`MUSIC LOOP: ${LOOP_SECONDS.toFixed(2)} s, ${(60 / BEAT).toFixed(1)} BPM, bar-aligned across all layers`);
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "family": "Shadow Castle raster shoe-print guidance",
+  "created": "2026-09-07",
+  "creator": "GitHub Copilot, original static pixel-grid drawings commissioned for this project",
+  "provenance": "Editable hand-placed SVG pixel shapes, rasterized offline with the existing Godot renderer. No image-generation service, external imagery, scene props or prior source art used.",
+  "rights": "Original project contribution; no third-party attribution or asset restrictions introduced. Repository-wide licensing remains the maintainer's decision.",
+  "assets": [
+    {
+      "id": "shoe_left",
+      "path": "assets/ui/guidance/footprints/shoe_left.png",
+      "source": "assets/ui/guidance/footprints/sources/shoe_left.svg",
+      "size": [24, 14],
+      "variant": "Left anatomical outsole: arch scallop on the upper edge; heel separated from larger forefoot"
+    },
+    {
+      "id": "shoe_right",
+      "path": "assets/ui/guidance/footprints/shoe_right.png",
+      "source": "assets/ui/guidance/footprints/sources/shoe_right.svg",
+      "size": [24, 14],
+      "variant": "Right anatomical outsole: opposing arch; independent upper-left glint rather than mirrored lighting"
+    }
+  ],
+  "view": "Top-down outsole impression, toe pointing +X at zero rotation",
+  "pivot": [12, 7],
+  "format": "PNG RGBA8, sRGB",
+  "alpha": "Binary 0/255, transparent background, no baked glow",
+  "palette": ["#376783", "#69acba", "#a8d7d0", "#fff0c5"],
+  "filtering": "nearest",
+  "mipmaps": false,
+  "compression": "Godot lossless import",
+  "repeat": "disabled",
+  "animation_frames": 1,
+  "collision": "none",
+  "prohibited_motifs": "No arrows, arrowheads, corner beams, text or decorative guides in these glyphs.",
+  "integration": "Parent-owned route presentation may alternate these textures, rotate +X to each route tangent and animate opacity. Raster shoe anatomy remains authoritative. Do not stretch the sole or change player/navigation collision.",
+  "rebuild": "assets/ui/knowledge_plates/rasterize_plates.gd",
+  "validation": "tests/knowledge_plate_art_test.gd; contact sheet includes native-size and 4x nearest previews."
+}

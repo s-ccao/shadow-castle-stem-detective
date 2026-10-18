@@ -137,6 +137,8 @@ var avatar_portrait: TextureRect
 var avatar_name_label: Label
 var evidence_overview_preview: TextureRect
 var red_stain_material_strip: Control
+var chemistry_case: ChemistryCaseState
+var chemistry_case_ui: ChemistryCaseUI
 
 var follow_camera: Camera2D
 var vision_demo_markers: Array[Node] = []
@@ -160,6 +162,8 @@ func _ready() -> void:
 		GameState.unlock_all_hubs()
 	GameState.current_room_id = "chemistry_room"
 	GameState.set_room_visited("chemistry_room")
+	chemistry_case = ChemistryCaseState.new(GameState)
+	chemistry_case.restore_legacy()
 
 	# Background and collisions now come from the scene.
 	create_exit_marker()
@@ -168,6 +172,11 @@ func _ready() -> void:
 	create_butler_collision()
 
 	create_room_ui()
+	chemistry_case_ui = ChemistryCaseUI.new()
+	chemistry_case_ui.name = "ChemistryCaseUI"
+	add_child(chemistry_case_ui)
+	chemistry_case_ui.closed.connect(_on_case_closed)
+	chemistry_case_ui.action_requested.connect(_on_case_action)
 	create_interaction_focus()
 	var parchment: Node = get_node_or_null("/root/ParchmentHud")
 	if parchment != null and parchment.has_signal("parchment_committed"):
@@ -449,7 +458,7 @@ func _open_change_sorting_minigame() -> void:
 	var launched: bool = MinigameLauncher.launch(
 		self,
 		ChangeSortingMinigame.new(),
-		_mg_text("Sample Tray", "样本分拣盘"),
+		_mg_text("Material Observation Lab", "变化观察实验台"),
 		_mg_text(
 			"Mrs. Lin left a tray of samples to be filed. A change is chemical"
 			+ " only when a new substance appears.",
@@ -465,17 +474,24 @@ func _open_change_sorting_minigame() -> void:
 func _on_change_sorting_finished(cleared_all: bool, stages: int) -> void:
 	if cleared_all:
 		GameState.set_story_flag("chemistry_change_sorted")
+		if chemistry_case.has("observed"):
+			_open_chemistry_case("analysis")
+			return
+		start_dialogue_pause()
 		show_message(
 			"You",
-			"Every sample filed. The red stain belongs with the chemical"
-			+ " changes — a new substance formed when the indicator met the"
-			+ " cleaning powder. It was never blood."
+			_mg_text(
+				"Every sample filed. Broken glass is a physical change; a reaction can form new substances. That rule is a tool, not a verdict on the red stain. Observe it and compare the samples.",
+				"样本分拣完成。玻璃破碎是物理变化；反应可以生成新物质。这条规则是调查工具，不是红渍的结论。请观察红渍并比较样本。"
+			)
 		)
-		return
-	show_message(
-		"You",
-		"You filed %d trays before setting the samples down." % stages
-	)
+	else:
+		start_dialogue_pause()
+		show_message("You", _mg_text(
+			"You filed %d trays. You can retry the sample tray without losing anything.",
+			"已完成 %d 盘。可以重新尝试分拣，不会损失任何物品。") % stages)
+	clear_message_buttons()
+	add_message_button(_mg_text("Continue", "继续"), close_message_panel)
 
 
 func _mg_text(english: String, chinese: String) -> String:
@@ -499,31 +515,18 @@ func show_alchemy_table_dialogue() -> void:
 		if parchment != null:
 			parchment.call(
 				"show_parchment",
-				"Mrs. Lin's Lab Notebook",
-				"From Mrs. Lin's notebook, left on this table:\n\n"
-				+ "\"Red liquid test — not blood.\n\n"
-				+ "Smell: rusty, metallic, with a sharp chemical undertone — "
-				+ "cleaning powder.\n\n"
-				+ "Do not taste unknown residue. Use a controlled indicator comparison instead; "
-				+ "the white powder and the cleaning agent produce the same red response under "
-				+ "this test.\n\n"
-				+ "Conclusion: the stain was staged.\n\n"
-				+ "I almost called it blood when I first saw it. You would have corrected me for jumping to conclusions. Perhaps I taught you something after all.\"",
+				_mg_text("Mrs. Lin's Lab Notebook", "林女士的实验笔记"),
+				_chemistry_protocol_text(),
 				"mrs_lin_lab_note",
 				{
-					"title": "Mrs. Lin's Lab Notebook",
+					"title": "Lin's Comparison Protocol",
+					"title_zh": "林女士的比较方案",
 					"icon": "icon_note",
-					"content": (
-						"[center][b]Mrs. Lin's Lab Notebook[/b][/center]\n\n"
-						+ "\"Red liquid test — not blood. Smell: rusty, metallic, "
-						+ "with a sharp chemical undertone — cleaning powder. "
-						+ "Do not taste unknown residue. Use a controlled indicator comparison: "
-						+ "the white powder and cleaning agent produce the same red response under "
-						+ "this test.\n\n"
-						+ "Conclusion: the stain was [color=#7a2e2e]staged[/color] "
-						+ "to look like a murder scene.\n\n"
-						+ "I almost called it blood when I first saw it. You would have corrected me for jumping to conclusions. Perhaps I taught you something after all.\""
-					),
+					"room_id": "chemistry_room",
+					"observed_detail": "A handwritten comparison protocol on the alchemy table.",
+					"observed_detail_zh": "炼金台上有一份手写的比较实验方案。",
+					"content": _chemistry_protocol_text("en"),
+					"content_zh": _chemistry_protocol_text("zh"),
 					"category": "investigation",
 				}
 			)
@@ -552,9 +555,20 @@ func show_alchemy_table_dialogue() -> void:
 		show_craft_panel
 	)
 	add_message_button(
+		_mg_text("Compare traces", "比较痕迹"),
+		_open_chemistry_case.bind("analysis")
+	)
+	add_message_button(
 		"Continue",
 		close_message_panel
 	)
+
+
+func _chemistry_protocol_text(language: String = "") -> String:
+	return ChemistryCaseState.text(
+		"From Mrs. Lin's notebook:\n\n\"I almost called the red liquid blood on sight. You would have corrected me for jumping to conclusions.\n\nCompare the indicator alone, then with the white powder and with the reference cleaning agent. Keep the separate samples as controls. Record when the red colour appears.\n\nA match can explain the colour; it cannot tell us who was here or prove a wound. Do not taste or directly smell unknown residue. Use the sealed comparison samples.\"\n\nFirst practise physical and chemical changes on the sample tray.",
+		"林女士的笔记：\n\n“我差点一眼就把红色液体认成血。你一定会提醒我，不要急着下结论。\n\n先查看单独的指示剂，再分别与白色粉末、清洁剂参照样本比较。保留分开的样本作为对照，记录红色在什么时候出现。\n\n颜色相同可以解释现象，却不能证明谁来过或有人受伤。不要品尝或直接嗅闻未知残留物；使用密封比较样本。”\n\n先用样本盘练习区分物理变化和化学变化。",
+		language)
 
 
 # ============================================================
@@ -1343,101 +1357,50 @@ func _craft_potion(recipe_id: String, produces: String, cost: Dictionary, materi
 
 func show_red_stain_intro() -> void:
 	start_dialogue_pause()
-
-	if GameState.has_evidence(
-		"fake_red_stain"
-	):
-		show_message(
-			"You",
-			"I already examined this stain.\n\n"
-			+ "It is not blood — the colour comes from an "
-			+ "indicator reacting with a basic cleaner."
-		)
-		_show_red_stain_samples()
-
-		clear_message_buttons()
-
-		add_message_button(
-			"Continue",
-			close_message_panel
-		)
-
+	if chemistry_case.has("observed"):
+		_open_chemistry_case("inspect")
 		return
-
 	show_message(
 		"You",
-		"I kneel beside the stain and inspect the edge with a clean swab.\n\n"
-		+ "The smell is rusty and metallic, but underneath it "
-		+ "there is something sharp and chemical, like the "
-		+ "cleaning solution used to scrub this room.\n\n"
-		+ "I will compare the powder, broken bottle, and indicator "
-		+ "under controlled conditions. Do not taste unknown residue."
+		_mg_text(
+			"Red liquid spreads beside the alchemy table. It looks alarming, but colour alone cannot tell me what it is.\n\nI can record what is visible before proposing an explanation. I will not taste or directly smell unknown residue.",
+			"炼金台旁有一片红色液体。它看起来令人不安，但仅凭颜色无法确定是什么。\n\n先记录看得见的痕迹，再提出解释。不品尝或直接嗅闻未知残留物。")
 	)
 	_show_red_stain_samples()
-
 	clear_message_buttons()
-
 	add_message_button(
-		"Check the powder and the broken bottle",
+		_mg_text("Inspect the nearby traces", "检查附近痕迹"),
 		_on_red_stain_examined
 	)
 
 
-## 血迹独白后：检查白色粉末与碎瓶 → 获得证据与调查笔记。
 func _on_red_stain_examined() -> void:
+	start_dialogue_pause()
 	show_message(
 		"You",
-		"Beside the stain lie white powder and a broken "
-		+ "bottle — the cleaner's residue.\n\n"
-		+ "Powder plus an indicator... the red colour is "
-		+ "a reaction, not a wound. Someone staged this "
-		+ "stain to look like blood."
+		_mg_text(
+			"OBSERVATIONS\nRed liquid. White powder. Broken glass and a small vial nearby.\n\nThe broken glass does not tell me how it broke. The powder has not yet been identified. Blood, dye, or a reaction could explain the colour.",
+			"观察\n红色液体、白色粉末，附近还有碎玻璃和一个小瓶。\n\n碎玻璃不能说明它是怎么碎的，粉末也尚未鉴定。血液、染料或反应都可能解释颜色。")
 	)
 	_show_red_stain_samples()
 	clear_message_buttons()
 	add_message_button(
-		"Record this finding",
+		_mg_text("Record observations", "记录观察"),
 		_on_red_stain_recorded
 	)
 
 
 func _on_red_stain_recorded() -> void:
-	collect_red_stain_evidence()
-	show_message(
-		"You",
-		"I have what I need. The Butler asked me to look "
-		+ "at this stain — time to tell him what it really is."
-	)
-	_show_red_stain_samples()
-	clear_message_buttons()
-	add_message_button(
-		"Talk to the Butler",
-		close_message_panel
-	)
+	chemistry_case.observe()
+	_sync_chemistry_case_note()
+	_open_chemistry_case("inspect")
 
 
-func collect_red_stain_evidence() -> void:
-	GameState.add_evidence(
-		"fake_red_stain"
-	)
+func collect_red_stain_evidence() -> bool:
+	if not chemistry_case.confirm():
+		return false
+	_sync_chemistry_case_note()
 	_refresh_case_objective(true)
-
-	# 剧情：红渍调查笔记（一次性写入侦探笔记）。
-	if NoteHud != null and not NoteHud.has_clue("chemistry_room_note"):
-		NoteHud.add_clue("chemistry_room_note", {
-			"title": "Chemistry Room Investigation Note",
-			"icon": "icon_note",
-			"content": (
-				"[center][b]Chemistry Room Investigation Note[/b][/center]\n\n"
-				+ "Mrs. Lin's note, written mid-investigation:\n\n"
-				+ "The [color=#7a2e2e]red stain[/color] by the alchemy table is not blood. "
-				+ "The colour matches an indicator reacting with a [color=#4a306d]basic cleaning substance[/color] — a staged stain.\n\n"
-				+ "The shattered glass and scattered reagents suggest someone "
-				+ "[color=#7a2e2e]deliberately destroyed the experiment[/color] to make the room look like the scene of a violent crime.\n\n"
-				+ "Who would want this room to look like a murder scene?"
-			),
-			"category": "investigation",
-		})
 
 	if clue_node != null:
 		clue_node.color = Color(
@@ -1449,6 +1412,70 @@ func collect_red_stain_evidence() -> void:
 
 	update_reputation_label()
 	update_room_completion()
+	return true
+
+
+func _sync_chemistry_case_note() -> void:
+	if NoteHud != null and chemistry_case.has("observed"):
+		NoteHud.add_clue(ChemistryCaseState.NOTE_ID, chemistry_case.journal_entry())
+	_refresh_case_objective(true)
+
+
+func _open_chemistry_case(context: String) -> void:
+	start_dialogue_pause()
+	message_panel.visible = false
+	clear_message_buttons(false)
+	chemistry_case_ui.open(chemistry_case, context)
+
+
+func _on_case_closed() -> void:
+	_sync_chemistry_case_note()
+	end_dialogue_pause()
+
+
+func _on_case_action(action_id: String, value: String) -> void:
+	match action_id:
+		"hypothesis":
+			if chemistry_case.choose_hypothesis(value):
+				_sync_chemistry_case_note()
+				chemistry_case_ui.show_feedback(_mg_text(
+					"Hypothesis recorded, not confirmed. You can revise it at any time.",
+					"已记录假设，尚未确认。随时可以修订。"))
+		"compare":
+			if chemistry_case.run_comparison(value):
+				_sync_chemistry_case_note()
+				chemistry_case_ui.show_feedback(
+					_mg_text("CONTROL: separate samples do not show the matching red. Now compare their combinations.",
+						"对照：分开的样本没有呈现相同红色。现在比较混合样本。")
+					if value == "control" else
+					_mg_text("RESULT: powder + indicator matches cleaner + indicator. This explains the colour, not who spilled it. Review the hypotheses.",
+						"结果：粉末加指示剂，与清洁剂加指示剂的反应一致。这能解释颜色，但不能确定是谁泼洒的。请复核假设。"), true)
+		"confirm":
+			if collect_red_stain_evidence():
+				chemistry_case_ui.show_feedback(_mg_text(
+					"Colour explanation filed. Now take the report to the Butler and compare it with his own words.",
+					"颜色解释已归档。现在把报告带给管家，与他的原话比较。"), true)
+			else:
+				chemistry_case_ui.show_feedback(_mg_text(
+					"This proposal is not supported by both comparisons. Review when the colour appeared; revise the hypothesis without losing any evidence.",
+					"这个假设尚未得到两组比较的支持。复核颜色出现的条件，再修订假设；已有证据不会丢失。"))
+		"present":
+			var result := chemistry_case.present(chemistry_case_ui.evidence_id, chemistry_case_ui.statement_id)
+			var responses: Dictionary = {
+				"linked": _mg_text("The chemical match connects to his supply duties. It does not prove guilt. A specific follow-up is now available.",
+					"化学比较与他的用品管理职责有关，但不能证明有罪。现在可以提出具体追问。"),
+				"corroborates_glass": _mg_text("The glass is consistent with his account, but does not identify the liquid or its source. Which report concerns cleaning supplies?",
+					"碎玻璃与陈述相符，但不能说明液体或其来源。哪份报告涉及清洁用品？"),
+				"wrong_link": _mg_text("That record does not test this statement. Try another pairing; nothing is lost.",
+					"这份记录不能检验这条陈述。可以换一种配对，没有任何损失。"),
+				"missing_report": _mg_text("A hypothesis is not a report. Complete and file the controlled comparison first.",
+					"假设不是报告。请先完成并归档受控比较。"),
+				"missing_statement": _mg_text("First listen to the Butler's account.", "请先听取管家的陈述。"),
+			}
+			_sync_chemistry_case_note()
+			chemistry_case_ui.show_feedback(str(responses[result]), result == "linked")
+		"follow_up":
+			on_butler_test_correct()
 
 
 # ============================================================
@@ -1457,145 +1484,54 @@ func collect_red_stain_evidence() -> void:
 
 func show_butler_dialogue() -> void:
 	start_dialogue_pause()
-
-	# 分支 1：首次交互 → Butler 考验。
-	if not GameState.has_story_flag("butler_challenge_given"):
-		GameState.set_story_flag("butler_challenge_given")
+	if not chemistry_case.has("statement"):
+		chemistry_case.record_statement()
+		_sync_chemistry_case_note()
 		show_message(
 			"Butler",
-			"A detective? You? I have served this castle "
-			+ "for twenty years, and I have never seen you "
-			+ "before in my life.\n\n"
-			+ "Very well — prove it. There is a red stain "
-			+ "by the alchemy table. Go and look at it. "
-			+ "Tell me what it really is, and then we can "
-			+ "talk."
+			_mg_text(
+				"A detective? I have served this castle for twenty years.\n\nI handle the cleaning supplies and part of the Dining Hall service. When the lights went out, I heard glass break in this room.\n\nYou want to ask about that red stain? Bring observations and a comparison, not just a guess.",
+				"侦探？我在这座城堡已经服务了二十年。\n\n我管理清洁用品，也负责部分餐厅服务。熄灯那晚，我听见这间房里玻璃破碎的声音。\n\n你想问红渍？带来观察和比较结果，不要只凭猜测。")
 		)
 		clear_message_buttons()
-		add_message_button(
-			"Examine the stain",
-			close_message_panel
-		)
+		add_message_button(_mg_text("Compare his statement", "比较他的陈述"), show_butler_red_stain_question)
+		add_message_button(_mg_text("Keep investigating", "继续调查"), close_message_panel)
 		return
-
-	# 分支 2：考验已给但还没看血迹。
-	if not GameState.has_evidence("fake_red_stain"):
-		show_message(
-			"Butler",
-			"Still here? The stain is by the alchemy "
-			+ "table. Look at it — smell it, even. "
-			+ "Then come back and tell me what it is."
-		)
-		clear_message_buttons()
-		add_message_button(
-			"Examine the stain",
-			close_message_panel
-		)
-		return
-
-	# 分支 3：看过血迹 → Butler 屏幕中心选择题。
-	if not GameState.has_story_flag("butler_challenge_complete"):
-		show_butler_red_stain_question()
-		return
-
-	# 分支 4：考验完成 → Butler 告知他知道的信息。
-	GameState.set_story_flag("chemistry_butler_interviewed")
-	_refresh_case_objective(true)
-	show_message(
-		"Butler",
-		"You were right. That stain is a mixture of "
-		+ "cleaning powder and indicator — it bleeds "
-		+ "red for show.\n\n"
-		+ "Then I will tell you what I know. That night, "
-		+ "the master's study was already dark when the "
-		+ "power failed. I heard glass break in this room, "
-		+ "and footsteps — quick, heavy ones — heading "
-		+ "toward the greenhouse wing.\n\n"
-		+ "Whoever staged this knew the castle's cleaning "
-		+ "supplies. I handle those supplies and supervise "
-		+ "part of the Dining Hall service. The Service Passage "
-		+ "should have been closed after service ended. The red "
-		+ "cloth you may find there is common service uniform "
-		+ "material, not mine alone. That is all I can say."
-	)
-	clear_message_buttons()
-	add_message_button(
-		"Continue",
-		close_message_panel
-	)
-
-	update_room_completion()
+	show_butler_red_stain_question()
 
 
-## Butler 考验：屏幕中心选择题（wake_room 大门同款 DoorPuzzleUI）。
 func show_butler_red_stain_question() -> void:
-	message_panel.visible = false
-	var door_puzzle: Node = get_node_or_null("/root/DoorPuzzleUI")
-	if door_puzzle != null:
-		door_puzzle.call(
-			"open",
-			"THE BUTLER'S TEST\n\nWhat is that red stain by the alchemy table?",
-			[
-				"It is real blood",
-				"An indicator reacted with a basic cleaner",
-				"Spilled wine from the feast",
-				"Paint from the walls",
-			],
-			1,
-			_on_butler_puzzle_answered
-		)
+	_open_chemistry_case("interview")
 
 
-## DoorPuzzleUI 回调：true=答对，false=玩家退出答题。
 func _on_butler_puzzle_answered(is_correct: bool) -> void:
 	if is_correct:
 		on_butler_test_correct()
 	else:
-		start_dialogue_pause()
-		show_message(
-			"Butler",
-			"Lost your nerve? The stain is still there. "
-			+ "Observe the powder, the bottle, and the controlled "
-			+ "test — then tell me what it truly is."
-		)
-		clear_message_buttons()
-		add_message_button(
-			"Answer the test",
-			show_butler_red_stain_question
-		)
-		add_message_button(
-			"Walk away",
-			close_message_panel
-		)
+		close_message_panel()
 
 
 func on_butler_test_correct() -> void:
-	# DoorPuzzleUI 关闭时会恢复暂停，这里重新暂停以显示消息面板。
+	var rewarded_before := GameState.has_story_flag("butler_challenge_complete")
+	if not chemistry_case.finish_interview():
+		return
+	chemistry_case_ui.close()
 	start_dialogue_pause()
-	GameState.add_reputation(10)
-	GameState.set_story_flag("butler_challenge_complete")
-
 	show_message(
 		"Butler",
-		"...Hmph. You really are a detective.\n\n"
-		+ "That stain is cleaning powder and indicator "
-		+ "mixed to bleed red for show. I have served "
-		+ "this castle long enough to know its tricks.\n\n"
-		+ "Now listen: the night the lights went out, I "
-		+ "heard glass break in this room, and footsteps "
-		+ "heading toward the greenhouse wing. I handle "
-		+ "cleaning supplies and part of the Dining Hall service; "
-		+ "the Service Passage should have been closed after service. "
-		+ "That red service cloth is common uniform material, not "
-		+ "a personal mark.\n\n"
-		+ "Reputation +10"
+		_mg_text(
+			"The comparison concerns the cleaning supplies I handle, yes.\n\nThe night the lights went out, I heard glass break here, then quick, heavy footsteps toward the greenhouse wing.\n\nThe Service Passage should have been closed after service. The red cloth there is common service uniform material, not a personal mark.",
+			"没错，比较结果涉及我管理的清洁用品。\n\n熄灯那晚，我听见这里玻璃破碎，随后有急促沉重的脚步声朝温室方向去了。\n\n服务结束后，服务通道本应关闭。那里的红布是常见的服务制服布料，并不是某个人独有的标记。")
+		+ ("\n\n" + _mg_text("Follow-up recorded · Reputation +10", "追问已记录 · 声望 +10") if not rewarded_before else "")
 	)
 	clear_message_buttons()
 	add_message_button(
-		"Continue",
+		_mg_text("Record and continue", "记录并继续"),
 		close_message_panel
 	)
 
+	_sync_chemistry_case_note()
+	update_reputation_label()
 	update_room_completion()
 
 
@@ -1623,6 +1559,8 @@ func update_room_completion() -> void:
 # ============================================================
 
 func apply_persistent_state() -> void:
+	chemistry_case.restore_legacy()
+	_sync_chemistry_case_note()
 	update_reputation_label()
 	_refresh_case_objective(false)
 
@@ -1833,8 +1771,10 @@ func update_interaction_focus() -> void:
 func _case_objective_interaction() -> String:
 	if not PlayerPreferences.field_prompts_enabled:
 		return ""
-	if not GameState.has_evidence("fake_red_stain"):
+	if not chemistry_case.has("observed") or chemistry_case.hypothesis().is_empty():
 		return "red_stain"
+	if not chemistry_case.has("confirmed"):
+		return "alchemy_table"
 	if not GameState.has_story_flag("chemistry_butler_interviewed"):
 		return "butler"
 	return "exit"
@@ -1850,6 +1790,9 @@ func _set_objective_focus(interaction_id: String) -> void:
 		"butler":
 			focus_title = "Butler"
 			fallback_position = BUTLER_POSITION
+		"alchemy_table":
+			focus_title = "Alchemy table"
+			fallback_position = ALCHEMY_TABLE_POSITION
 		"exit":
 			focus_title = "Castle Hall exit"
 			fallback_position = EXIT_POSITION
@@ -1932,15 +1875,25 @@ func _create_case_objective() -> void:
 
 
 func _case_objective_copy() -> Dictionary:
-	if not GameState.has_evidence("fake_red_stain"):
+	if not chemistry_case.has("observed"):
 		return {
-			"title": CaseLocale.text("guide.chem_stain_title"),
-			"body": CaseLocale.text("guide.chem_stain_body"),
+			"title": _mg_text("01 · OBSERVE", "01 · 观察"),
+			"body": _mg_text("Inspect the red liquid. Record facts, not a verdict.", "检查红色液体，记录事实，不急着下结论。"),
+		}
+	if chemistry_case.hypothesis().is_empty():
+		return {
+			"title": _mg_text("02 · PROPOSE", "02 · 假设"),
+			"body": _mg_text("At the stain, propose a revisable explanation.", "在红渍处提出一个可以修订的解释。"),
+		}
+	if not chemistry_case.has("confirmed"):
+		return {
+			"title": _mg_text("03 · COMPARE", "03 · 比较"),
+			"body": _mg_text("At the table: read Lin's protocol, sort, then compare.", "到炼金台：阅读林女士方案、分拣、比较。"),
 		}
 	if not GameState.has_story_flag("chemistry_butler_interviewed"):
 		return {
-			"title": CaseLocale.text("guide.chem_butler_title"),
-			"body": CaseLocale.text("guide.chem_butler_body"),
+			"title": _mg_text("04 · QUESTION", "04 · 追问"),
+			"body": _mg_text("Match a report to the Butler's words; ask a follow-up.", "把报告与管家原话配对，再追问。"),
 		}
 	return {
 		"title": CaseLocale.text("guide.chem_exit_title"),
@@ -2240,12 +2193,12 @@ var _pending_buttons: Array = []
 
 
 func _render_segment() -> void:
-	message_label.text = "%s:\n%s" % [_current_speaker, _dialogue_segments[_segment_index]]
+	message_label.text = "%s:\n%s" % [_speaker_label(_current_speaker), _dialogue_segments[_segment_index]]
 	clear_message_buttons(false)
 	if _segment_index < _dialogue_segments.size() - 1:
 		var continue_button := Button.new()
 		continue_button.name = "SegmentContinueButton"
-		continue_button.text = "Continue"
+		continue_button.text = _mg_text("Continue", "继续")
 		continue_button.add_theme_font_size_override("font_size", 15)
 		continue_button.pressed.connect(_advance_segment)
 		message_button_box.add_child(continue_button)
@@ -2287,10 +2240,18 @@ func _split_dialogue_segments(
 
 
 ## 对话头像：玩家保留色块，NPC 使用统一像素肖像。
+func _speaker_label(speaker: String) -> String:
+	if speaker == "You" or speaker == "Detective":
+		return _mg_text("You", "你")
+	if speaker == "Butler":
+		return _mg_text("Butler", "管家")
+	return CaseLocale.line(speaker)
+
+
 func _set_avatar(speaker: String) -> void:
 	if avatar_panel == null or avatar_portrait == null or avatar_name_label == null:
 		return
-	avatar_name_label.text = speaker
+	avatar_name_label.text = _speaker_label(speaker)
 	var portrait_path := str(NPC_DIALOGUE_PORTRAITS.get(speaker, ""))
 	avatar_portrait.texture = null
 	if not portrait_path.is_empty():
@@ -2318,7 +2279,7 @@ func add_message_button(
 	var button: Button = Button.new()
 	button.text = button_text
 	button.custom_minimum_size = Vector2(
-		330,
+		250,
 		34
 	)
 	button.pressed.connect(callback)
@@ -2332,6 +2293,7 @@ func clear_message_buttons(keep_continue: bool = true) -> void:
 		# 分段进行中：保留 Continue 按钮。
 		if keep_continue and child.name == "SegmentContinueButton":
 			continue
+		message_button_box.remove_child(child)
 		child.queue_free()
 
 

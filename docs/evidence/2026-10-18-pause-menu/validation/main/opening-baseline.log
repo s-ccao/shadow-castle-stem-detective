@@ -1,0 +1,17 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+BASELINE_WITHOUT_PAUSE_MENU: true
+PASS: Clearing the Wake Room lesson records a checkpoint
+PASS: A player who stops here resumes in the Wake Room, not at the start (got 'res://scenes/wake_room.tscn')
+PASS: The checkpoint names the Wake Room (got 'wake_room')
+PASS: Hall has a Guardian
+PASS: Reading the arrival dialogue never arms an unprotected Guardian
+PASS: Cinematic recovery leaves the guided protection in force
+WARNING: No collision-safe Hall guide between (304.0, 208.0) and (100.0, 206.0).
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+     GDScript backtrace (most recent call first):
+         [0] _collision_safe_hall_route (res://scripts/game_world.gd:7407)
+         [1] _get_hall_route_path (res://scripts/game_world.gd:7277)
+         [2] _test_the_first_crossing_is_actually_winnable (res://tests/opening_blockers_test.gd:162)
+FAIL: The guided route to Chemistry exists (0 points)
+opening_blockers_test: FAIL (1 assertion(s))

@@ -420,6 +420,18 @@ func _close_any_open_panel() -> bool:
 	return false
 
 
+## PauseMenu asks first: an open reading or inspection panel keeps Esc as "close".
+func can_open_pause_menu() -> bool:
+	return not (
+		(book_panel != null and book_panel.visible)
+		or (scroll_panel != null and scroll_panel.visible)
+		or (inspect_panel != null and inspect_panel.visible)
+		or (message_panel != null and message_panel.visible)
+		or puzzle_open
+		or knowledge_panel_open
+	)
+
+
 func create_room():
 	if USE_IMAGE_BACKGROUND:
 		create_room_background()

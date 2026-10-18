@@ -51,8 +51,284 @@ const ROLE_ARCHIVE := &"archive"
 const ROLE_ARCANE := &"arcane"
 const ROLE_DANGER := &"danger"
 const ROLE_MUTED := &"muted"
+const HUB_TOOL_ORDER: Array[String] = ["bag", "key", "note", "map"]
+const HUB_PREVIEW_POSITION := Vector2(0, 74)
 
 var _grabber_texture: Texture2D = null
+var _hub_entries: Dictionary = {}
+var _hub_rail: Panel
+var _hub_return_focus: Button
+var _hub_preview: Panel
+var _hub_preview_target: Button
+var _hub_preview_owner := ""
+var _hub_preview_tween: Tween
+var _hub_slot_hints: Dictionary = {}
+
+
+func create_hub_entry(host: Node, tool_id: String, entry_name: String) -> Button:
+	var entry := Button.new()
+	entry.set_script(load("res://scripts/hub_toolbar_entry.gd"))
+	entry.set("tool_id", tool_id)
+	entry.name = entry_name
+	host.add_child(entry)
+	_hub_entries[tool_id] = entry
+	if host is CanvasLayer:
+		(host as CanvasLayer).visibility_changed.connect(refresh_hub_toolbar)
+	refresh_hub_toolbar.call_deferred()
+	return entry
+
+
+func register_hub_rail(rail: Panel) -> void:
+	_hub_rail = rail
+	rail.position = Vector2(12, 58)
+	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rail.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rail.add_theme_stylebox_override("panel", hub_surface_style("belt"))
+	for index: int in range(HUB_TOOL_ORDER.size()):
+		var hint := Label.new()
+		hint.name = "ReservedToolSlot_" + HUB_TOOL_ORDER[index]
+		hint.position = Vector2(4 + index * 80, 40)
+		hint.size = Vector2(72, 20)
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.add_theme_font_override("font", ARCHIVE_FONT)
+		hint.add_theme_font_size_override("font_size", 12)
+		hint.add_theme_color_override("font_color", Color("#8f8391"))
+		hint.add_theme_color_override("font_outline_color", Color("#100d14"))
+		hint.add_theme_constant_override("outline_size", 2)
+		hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rail.add_child(hint)
+		_hub_slot_hints[HUB_TOOL_ORDER[index]] = hint
+	_hub_preview = Panel.new()
+	_hub_preview.name = "ToolPreview"
+	_hub_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hub_preview.add_theme_stylebox_override("panel", hub_surface_style("slip"))
+	rail.add_child(_hub_preview)
+	_hub_preview.position = HUB_PREVIEW_POSITION
+	_hub_preview.size = Vector2(332, 112)
+	_create_hub_preview_label("PreviewTitle", Rect2(22, 8, 288, 23), 17, Color("#34251c"))
+	_create_hub_preview_label("PreviewCount", Rect2(22, 31, 288, 19), 14, Color("#594066"))
+	var detail := _create_hub_preview_label("PreviewDetail", Rect2(22, 50, 288, 34), 12, Color("#493828"))
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_create_hub_preview_label("PreviewAction", Rect2(22, 89, 288, 15), 10, Color("#654c32"))
+	_hub_preview.hide()
+	CaseLocale.locale_changed.connect(func(_language: String) -> void: refresh_hub_toolbar())
+	GameState.state_changed.connect(refresh_hub_preview)
+	refresh_hub_toolbar.call_deferred()
+
+
+func hub_surface_style(surface: String) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	if surface in ["belt", "slip"]:
+		style.texture = load("res://assets/ui/tool_belt/%s.png" % ("leather_rail" if surface == "belt" else "preview_slip")) as Texture2D
+		style.set_texture_margin(SIDE_LEFT, 64 if surface == "belt" else 18)
+		style.set_texture_margin(SIDE_RIGHT, 64 if surface == "belt" else 18)
+		style.set_texture_margin(SIDE_TOP, 0 if surface == "belt" else 14)
+		style.set_texture_margin(SIDE_BOTTOM, 0 if surface == "belt" else 8)
+		return style
+	style.texture = load("res://assets/ui/hub_toolbar/%s.png" % ("instrument_metal" if surface == "metal" else "paper_inlay")) as Texture2D
+	for side: Side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		style.set_texture_margin(side, 9 if surface == "metal" else 4)
+	return style
+
+
+func _create_hub_preview_label(label_name: String, rect: Rect2, font_size: int, color: Color) -> Label:
+	var label := Label.new()
+	label.name = label_name
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_override("font", ARCHIVE_FONT)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	_hub_preview.add_child(label)
+	label.position = rect.position
+	label.size = rect.size
+	return label
+
+
+func refresh_hub_toolbar() -> void:
+	var visible_entries: Array[Button] = []
+	var focusable: Array[Button] = []
+	var last_visible_slot := -1
+	for tool_id: String in HUB_TOOL_ORDER:
+		var entry := _hub_entries.get(tool_id) as Button
+		if is_instance_valid(entry) and entry.is_visible_in_tree():
+			visible_entries.append(entry)
+			var slot := HUB_TOOL_ORDER.find(tool_id)
+			last_visible_slot = maxi(last_visible_slot, slot)
+			entry.global_position = Vector2(16 + slot * 80, 14)
+			if entry.disabled != (entry.get_meta("toolbar_visual_state", "") == "unavailable"):
+				entry.call("_update_feedback")
+			if not entry.disabled:
+				focusable.append(entry)
+	for index: int in range(focusable.size()):
+		var entry := focusable[index]
+		var previous := focusable[(index - 1 + focusable.size()) % focusable.size()].get_path()
+		var next := focusable[(index + 1) % focusable.size()].get_path()
+		entry.focus_neighbor_left = previous
+		entry.focus_neighbor_right = next
+		entry.focus_previous = previous
+		entry.focus_next = next
+	if is_instance_valid(_hub_rail):
+		_hub_rail.visible = not visible_entries.is_empty()
+		_hub_rail.size = Vector2(12 + (last_visible_slot + 1) * 80, 32)
+		for slot: int in range(HUB_TOOL_ORDER.size()):
+			var hint := _hub_slot_hints[HUB_TOOL_ORDER[slot]] as Label
+			var entry := _hub_entries.get(HUB_TOOL_ORDER[slot]) as Button
+			hint.visible = slot <= last_visible_slot and (not is_instance_valid(entry) or not entry.is_visible_in_tree())
+			hint.text = "未解锁" if CaseLocale.is_chinese() else "LOCKED"
+	refresh_hub_preview()
+
+
+func refresh_hub_preview(preferred_entry: Button = null) -> void:
+	if not is_instance_valid(_hub_preview):
+		return
+	if is_instance_valid(preferred_entry):
+		_hub_preview_target = preferred_entry
+	var selected: Button
+	if is_instance_valid(_hub_preview_target) and _hub_preview_target.is_visible_in_tree():
+		if _hub_preview_target.has_focus() or bool(_hub_preview_target.get("_hovered")):
+			selected = _hub_preview_target
+	if selected == null:
+		for tool_id: String in ["bag", "key", "note", "map"]:
+			var entry := _hub_entries.get(tool_id) as Button
+			if not is_instance_valid(entry) or not entry.is_visible_in_tree():
+				continue
+			if bool(entry.get("_hovered")):
+				selected = entry
+				break
+			if entry.has_focus():
+				selected = entry
+	if selected == null or not _hub_rail.is_visible_in_tree():
+		_hub_preview.hide()
+		_hub_preview_target = null
+		_hub_preview_owner = ""
+		return
+	var tool_id := str(selected.get("tool_id"))
+	var summary := hub_tool_summary(tool_id, not selected.disabled)
+	for suffix: String in ["Title", "Count", "Detail", "Action"]:
+		var label := _hub_preview.get_node("Preview" + suffix) as Label
+		label.add_theme_font_override("font", ARCHIVE_FONT)
+		label.text = str(summary[suffix.to_lower()])
+	_hub_preview.set_meta("tool_id", tool_id)
+	_hub_preview.show()
+	if tool_id != _hub_preview_owner:
+		_hub_preview_owner = tool_id
+		if _hub_preview_tween != null and _hub_preview_tween.is_valid():
+			_hub_preview_tween.kill()
+		_hub_preview.modulate.a = 0.0
+		_hub_preview.position = HUB_PREVIEW_POSITION
+		_hub_preview_tween = _hub_preview.create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		_hub_preview_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		if bool(selected.get("_hovered")) and not selected.has_focus():
+			_hub_preview_tween.tween_interval(0.10)
+		_hub_preview_tween.tween_property(_hub_preview, "modulate:a", 1.0, 0.12)
+
+
+func hub_tool_summary(tool_id: String, available: bool = true) -> Dictionary:
+	var zh := CaseLocale.is_chinese()
+	var result := {"title": "", "count": "", "detail": "", "action": ""}
+	match tool_id:
+		"bag":
+			var bag := get_node_or_null("/root/InventoryHud")
+			var carried: Array = bag.call("_build_entries", "all") if bag != null else []
+			result = {
+				"title": "随身背包" if zh else "Detective's satchel",
+				"count": "%d 类物品已收纳" % carried.size() if zh else "%d item %s carried" % [carried.size(), "type" if carried.size() == 1 else "types"],
+				"detail": "查看药剂、材料和图纸，选择物品了解用途或使用。" if zh else "Inspect potions, materials and papers.\nChoose an item to examine or use.",
+				"action": "Tab / 点击  ·  打开背包" if zh else "Tab / CLICK  ·  OPEN SATCHEL",
+			}
+		"key":
+			var held := 0
+			var keys := get_node_or_null("/root/KeyHud")
+			var key_ids: Array = keys.get("KEY_IDS") if keys != null else []
+			for key_id: String in key_ids:
+				if GameState.has_key(key_id):
+					held += 1
+			result = {
+				"title": "钥匙档案" if zh else "Keys & locks",
+				"count": "%d / %d 把钥匙已找回" % [held, key_ids.size()] if zh else "%d / %d keys recovered" % [held, key_ids.size()],
+				"detail": "核对已获得的钥匙和对应门锁。未找回的钥匙仍保密。" if zh else "Match recovered keys to their locks.\nUnrecovered profiles remain sealed.",
+				"action": "I / 点击  ·  查看钥匙" if zh else "I / CLICK  ·  REVIEW KEYS",
+			}
+		"note":
+			var notes := get_node_or_null("/root/NoteHud")
+			var records: Dictionary = notes.call("get_saved_clues") if notes != null else {}
+			var filed := 0
+			for record: Dictionary in records.values():
+				if bool(record.get("unlocked", false)):
+					filed += 1
+			result = {
+				"title": "调查笔记" if zh else "Field notes",
+				"count": "%d 条记录已归档" % filed if zh else "%d %s filed" % [filed, "record" if filed == 1 else "records"],
+				"detail": "重读已发现的线索和归档的知识，整理调查思路。" if zh else "Revisit discovered evidence and filed\nknowledge. Keep the case in context.",
+				"action": "K / 点击  ·  阅读笔记" if zh else "K / CLICK  ·  READ LEDGER",
+			}
+		"map":
+			var visited := 0
+			for known: Variant in GameState.visited_rooms.values():
+				if bool(known):
+					visited += 1
+			var powered := GameState.has_story_flag("circuit_power_restored")
+			result = {
+				"title": "城堡地图" if zh else "Castle survey",
+				"count": "%d 处地点已到访" % visited if zh else "%d %s visited" % [visited, "place" if visited == 1 else "places"],
+				"detail": ("查看已走过的路线与实时信号。\n未探索区域仍不会显示。" if powered else "路线记忆尚未供电。\n现在只显示实时信号，不显示建筑。") if zh else ("Review walked routes and live signals.\nUnexplored ground stays concealed." if powered else "Route memory is unpowered.\nLive signals only; no architecture."),
+				"action": "U / 点击  ·  展开地图" if zh else "U / CLICK  ·  OPEN SURVEY",
+			}
+	if not available:
+		result["count"] = "暂不可用" if zh else "UNAVAILABLE"
+		result["action"] = "当前无法打开此工具" if zh else "THIS TOOL CANNOT OPEN RIGHT NOW"
+	return result
+
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+
+func _input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused is LineEdit or focused is TextEdit:
+		return
+	var bag := get_node_or_null("/root/InventoryHud")
+	var keys := get_node_or_null("/root/KeyHud")
+	var map := get_node_or_null("/root/MapHud")
+	var notes := get_node_or_null("/root/NoteHud")
+	if bag == null or keys == null or map == null or notes == null:
+		return
+	var journal := notes.get("_journal") as CanvasLayer
+	var repair := map.get("repair_overlay") as Control
+	var any_open := (
+		bool(bag.get("_open")) or (keys.get("overlay") as Control).visible
+		or (map.get("overlay") as Control).visible
+		or (journal != null and journal.visible)
+		or (repair != null and repair.visible)
+	)
+	if not any_open:
+		return
+	# The rail is retracted while reading, but its shortcuts still switch tools.
+	# Handle Tab before Control focus navigation can swallow the Bag shortcut.
+	match event.keycode:
+		KEY_TAB:
+			bag.call("toggle_bag")
+		KEY_I:
+			if not GameState.has_any_key():
+				return
+			keys.call("toggle_hub")
+		KEY_K:
+			if not notes.call("is_unlocked"):
+				return
+			notes.call("toggle")
+		KEY_U:
+			if not GameState.is_map_hub_unlocked():
+				return
+			if repair != null and repair.visible:
+				map.call("close_repair_map")
+			else:
+				map.call("toggle_map")
+		_:
+			return
+	get_viewport().set_input_as_handled()
 
 
 func panel_style(
@@ -141,6 +417,12 @@ func wire_focus_cycle(buttons: Array[Button]) -> void:
 
 func set_hub_entries_suppressed(suppressed: bool) -> void:
 	if suppressed:
+		var focused := get_viewport().gui_get_focus_owner() as Button
+		if focused != null and focused.has_meta("hub_toolbar_entry"):
+			_hub_return_focus = focused
+		var bag := get_node_or_null("/root/InventoryHud")
+		if bag != null and bag.has_method("dismiss_use_feedback"):
+			bag.call("dismiss_use_feedback")
 		var dismissal_methods: Dictionary = {
 			"InventoryHud": "dismiss_feature_unlock",
 			"KeyHud": "dismiss_unlock_toast",
@@ -156,6 +438,78 @@ func set_hub_entries_suppressed(suppressed: bool) -> void:
 		var hub := get_node_or_null("/root/" + hub_name)
 		if hub != null and hub.has_method("set_entry_suppressed"):
 			hub.call("set_entry_suppressed", suppressed)
+	if not suppressed:
+		_restore_hub_entry_focus.call_deferred()
+
+
+func _restore_hub_entry_focus() -> void:
+	if is_instance_valid(_hub_return_focus) and _hub_return_focus.is_visible_in_tree():
+		_hub_return_focus.grab_focus()
+		_hub_return_focus = null
+
+
+func prepare_hub_open(destination: String) -> void:
+	# Close the old owner before the new one snapshots pause state.
+	for hub_name: String in ["InventoryHud", "KeyHud", "MapHud"]:
+		if hub_name == destination:
+			continue
+		var hub := get_node_or_null("/root/" + hub_name)
+		if hub == null:
+			continue
+		var hub_overlay := hub.get("overlay") as Control
+		if hub_overlay != null and hub_overlay.visible:
+			hub.call({"InventoryHud": "close_bag", "KeyHud": "close_hub", "MapHud": "close_map"}[hub_name])
+		if hub_name == "MapHud":
+			var repair := hub.get("repair_overlay") as Control
+			if repair != null and repair.visible:
+				hub.call("close_repair_map")
+	var notes := get_node_or_null("/root/NoteHud")
+	if destination != "NoteHud" and notes != null:
+		var journal := notes.get("_journal") as CanvasLayer
+		if journal != null and journal.visible:
+			journal.call("close")
+
+
+func begin_motion(control: Control) -> Tween:
+	settle_motion(control)
+	control.set_meta("archive_motion_rest", {
+		"position": control.position, "scale": control.scale,
+		"rotation": control.rotation, "modulate": control.modulate,
+		"pivot_offset": control.pivot_offset,
+	})
+	var tween := control.create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	control.set_meta("archive_motion_tween", tween)
+	tween.finished.connect(settle_motion.bind(control))
+	return tween
+
+
+func settle_motion(control: Control) -> void:
+	if not is_instance_valid(control):
+		return
+	var previous: Variant = control.get_meta("archive_motion_tween") if control.has_meta("archive_motion_tween") else null
+	if previous is Tween and (previous as Tween).is_valid():
+		(previous as Tween).kill()
+	if control.has_meta("archive_motion_rest"):
+		var rest: Dictionary = control.get_meta("archive_motion_rest")
+		control.position = rest["position"]
+		control.scale = rest["scale"]
+		control.rotation = rest["rotation"]
+		control.modulate = rest["modulate"]
+		control.pivot_offset = rest["pivot_offset"]
+		control.remove_meta("archive_motion_rest")
+	if control.has_meta("archive_motion_tween"):
+		control.remove_meta("archive_motion_tween")
+
+
+func settle_motion_tree(node: Node) -> void:
+	if node is Control:
+		settle_motion(node as Control)
+		if node is Button and node.has_meta("archive_ui_feedback_connected"):
+			_reset_button_feedback(node as Button)
+	for child: Node in node.get_children():
+		settle_motion_tree(child)
 
 
 func decorate_hub(frame: Control, config: Dictionary) -> Control:
@@ -904,6 +1258,12 @@ func _connect_button_feedback(button: Button) -> void:
 	button.button_down.connect(_on_button_down.bind(button))
 	button.button_up.connect(_on_button_up.bind(button))
 	button.focus_entered.connect(_on_button_focus.bind(button))
+	button.focus_exited.connect(_reset_button_feedback.bind(button))
+	button.visibility_changed.connect(
+		func() -> void:
+			if not button.is_visible_in_tree():
+				_reset_button_feedback(button)
+	)
 	# Every archive-styled button in the game passes through here, so this is the
 	# one place that has to know a press makes a sound. Wiring it per screen would
 	# guarantee some screens were missed.
@@ -949,3 +1309,10 @@ func _on_button_up(button: Button) -> void:
 
 func _on_button_focus(button: Button) -> void:
 	button.grab_click_focus()
+
+
+func _reset_button_feedback(button: Button) -> void:
+	var previous: Variant = button.get_meta("archive_ui_feedback_tween") if button.has_meta("archive_ui_feedback_tween") else null
+	if previous is Tween and (previous as Tween).is_valid():
+		(previous as Tween).kill()
+	button.scale = button.get_meta("archive_ui_base_scale", Vector2.ONE)

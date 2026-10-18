@@ -1,0 +1,142 @@
+{
+	"family": "Detective tool belt",
+	"generation": "No new item illustration or AI generation. Source crops normalized offline with Godot Image.",
+	"import": "Lossless RGBA PNG; no mipmaps; nearest filtering at native size.",
+	"native_viewport": [
+		1024,
+		768
+	],
+	"normalization": "Satchel source-frame removal with the retained tool silhouette mask; Lanczos downsample; nearest rotated placement; trim alpha below 0.16; separate one-pixel silhouette edge feedback.",
+	"reproduce": "With isolated hub-toolbar HOME: Godot --headless --path <empty Godot project> --script <checkout>/tools/derive_tool_belt_assets.gd. Output stays in the script's checkout; gameplay autoloads are forbidden.",
+	"rights": "Derived exclusively from existing project artwork; original rights and restrictions remain applicable.",
+	"sources": [
+		{
+			"art_size": [
+				64,
+				50
+			],
+			"canvas": [
+				72,
+				76
+			],
+			"crop": [
+				240,
+				284,
+				555,
+				433
+			],
+			"outputs": [
+				"satchel.png",
+				"satchel_edge.png"
+			],
+			"rotation_degrees": 0.0,
+			"source": "res://assets/ui/inventory/bag_satchel_icon.png",
+			"source_sha256": "f7a251657d9d023df9d01082a53d08eb4f28d171a10a82f62bd95acec44e2eb1"
+		},
+		{
+			"art_size": [
+				61,
+				64
+			],
+			"canvas": [
+				72,
+				76
+			],
+			"crop": [
+				132,
+				98,
+				758,
+				795
+			],
+			"outputs": [
+				"key.png",
+				"key_edge.png"
+			],
+			"rotation_degrees": 0.0,
+			"source": "res://assets/ui/icon_key.png",
+			"source_sha256": "e5b7376b850140fd75c03ccb7c6826e02603bd45de723309847aa98e92f7b1f3"
+		},
+		{
+			"art_size": [
+				54,
+				58
+			],
+			"canvas": [
+				72,
+				76
+			],
+			"crop": [
+				225,
+				196,
+				575,
+				606
+			],
+			"outputs": [
+				"notebook.png",
+				"notebook_edge.png"
+			],
+			"rotation_degrees": -7.0,
+			"source": "res://assets/ui/icon_book.png",
+			"source_sha256": "74298d9fee93a1592495947f1ab5ed1625a6707bd88ee1ca14225961cb6f67f1"
+		},
+		{
+			"art_size": [
+				62,
+				52
+			],
+			"canvas": [
+				72,
+				76
+			],
+			"crop": [
+				140,
+				168,
+				755,
+				635
+			],
+			"outputs": [
+				"map.png",
+				"map_edge.png"
+			],
+			"rotation_degrees": 6.0,
+			"source": "res://assets/ui/icon_note.png",
+			"source_sha256": "1be28642e68fcc44dcb3cf8ef8703467e4c80ee823722c5cd360f109ad1e46a8"
+		},
+		{
+			"canvas": [
+				332,
+				32
+			],
+			"crop": [
+				224,
+				834,
+				1084,
+				104
+			],
+			"edit": "Existing lower leather binding and its two buckles; five-pixel alpha taper at cut ends.",
+			"outputs": [
+				"leather_rail.png"
+			],
+			"source": "res://assets/ui/inventory/bag_inventory_board.png",
+			"source_sha256": "f9fa0de5dd894f1f9d86b4f95bc93db252beadcdf2cd2ae30192de410044a646"
+		},
+		{
+			"canvas": [
+				332,
+				130
+			],
+			"crop": [
+				212,
+				440,
+				612,
+				230
+			],
+			"edit": "Aspect-preserving paper extraction, transparent margins and clipped upper-right corner.",
+			"outputs": [
+				"preview_slip.png"
+			],
+			"source": "res://assets/ui/ui_note_parchment.png",
+			"source_sha256": "8f0d252dc5435c68cce12e327b79e6b9c85954877550ab8ecde64da3c1102f6f"
+		}
+	]
+}

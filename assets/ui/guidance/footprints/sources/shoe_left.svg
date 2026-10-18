@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="14" viewBox="0 0 24 14" shape-rendering="crispEdges">
+  <title>Left shoe sole, toe facing positive X — original pixel glyph</title>
+  <path fill="#376783" d="M3 3H7V4H8V10H7V11H3V10H2V4H3ZM11 3H14V2H19V3H21V4H22V6H23V9H22V11H20V12H14V11H11V9H10V5H11Z"/>
+  <path fill="#a8d7d0" d="M3 4H7V10H3ZM11 4H15V3H19V4H21V6H22V9H21V10H19V11H15V10H12V8H11Z"/>
+  <path fill="#fff0c5" d="M3 4H6V5H3ZM12 4H15V3H18V4H15V5H12Z"/>
+  <path fill="#376783" d="M3 7H7V8H3ZM14 5H15V9H14ZM18 4H19V10H18Z"/>
+  <path fill="#69acba" d="M11 8H13V9H16V10H19V11H15V10H12V9H11Z"/>
+</svg>

@@ -16,10 +16,11 @@ signal click_movement_blocked(target_position: Vector2)
 const WALK_CYCLE_DISTANCE: float = 84.0
 ## Seconds one cycle takes at speed_scale 1.0: eight frames at 5 fps.
 const WALK_CYCLE_SECONDS: float = 1.6
-## Slowest and fastest playback allowed. The floor keeps a crawl from freezing
-## mid-stride; the ceiling keeps a speed potion from strobing.
-const WALK_SCALE_MIN: float = 0.65
+## No cadence floor: a short arrival step must not play a full-speed stride.
+## The ceiling keeps a speed potion from strobing.
+const WALK_SCALE_MIN: float = 0.0
 const WALK_SCALE_MAX: float = 5.0
+const FACING_HYSTERESIS_ANGLE: float = PI / 30.0
 
 @export var speed: float = 180.0
 @export var click_stop_distance: float = 6.0
@@ -49,6 +50,7 @@ const ROOM_VISUAL_SCALE_PROFILES: Dictionary = {
 var click_target := Vector2.ZERO
 var click_destination := Vector2.ZERO
 var click_movement_active := false
+var movement_locked := false
 
 var click_path := PackedVector2Array()
 var click_path_index := 0
@@ -89,6 +91,10 @@ func _unhandled_input(event):
 func _physics_process(
 	delta: float
 ) -> void:
+	if movement_locked:
+		velocity = Vector2.ZERO
+		update_character_animation(velocity)
+		return
 	var keyboard_direction: Vector2 = (
 		Input.get_vector(
 			"move_left",
@@ -100,20 +106,19 @@ func _physics_process(
 
 	# 键盘移动优先于鼠标点击移动。
 	if keyboard_direction != Vector2.ZERO:
-		cancel_click_movement()
+		if click_movement_active:
+			cancel_click_movement()
 
 		velocity = (
 			keyboard_direction.normalized()
 			* _get_effective_speed()
 		)
 
-		update_character_animation(
-			velocity
-		)
-
+		var position_before := global_position
 		move_with_floor_constraint(
 			delta
 		)
+		update_character_animation((global_position - position_before) / maxf(delta, 0.0001))
 
 		return
 
@@ -174,14 +179,12 @@ func _physics_process(
 		* frame_limited_speed
 	)
 
-	update_character_animation(
-		velocity
-	)
-
+	var position_before := global_position
 	if _get_room_controller() != null:
 		move_with_floor_constraint(delta)
 	else:
 		move_and_slide()
+	update_character_animation((global_position - position_before) / safe_delta)
 
 	if not click_movement_active:
 		return
@@ -197,10 +200,20 @@ func _physics_process(
 	)
 
 
+func set_movement_locked(locked: bool) -> void:
+	movement_locked = locked
+	if locked:
+		cancel_click_movement()
+		update_character_animation(Vector2.ZERO)
+
+
 func move_along_path(path: PackedVector2Array):
 	clear_click_movement_state()
 
 	if path.is_empty():
+		return
+	if movement_locked:
+		click_movement_blocked.emit(path[path.size() - 1])
 		return
 
 	click_path = path
@@ -233,8 +246,11 @@ func skip_nearby_path_points():
 
 	while click_path_index < click_path.size():
 		var point = click_path[click_path_index]
+		var point_tolerance: float = (
+			click_stop_distance if click_path_index == click_path.size() - 1 else skip_distance
+		)
 
-		if global_position.distance_to(point) > skip_distance:
+		if global_position.distance_to(point) > point_tolerance:
 			break
 
 		click_path_index += 1
@@ -256,6 +272,7 @@ func cancel_click_movement():
 	var was_active := click_movement_active
 
 	clear_click_movement_state()
+	update_character_animation(Vector2.ZERO)
 
 	if was_active:
 		click_movement_cancelled.emit()
@@ -263,6 +280,7 @@ func cancel_click_movement():
 
 func finish_click_movement():
 	clear_click_movement_state()
+	update_character_animation(Vector2.ZERO)
 	click_target_reached.emit()
 
 
@@ -303,6 +321,7 @@ func stop_click_movement_as_blocked():
 	var blocked_destination := click_destination
 
 	clear_click_movement_state()
+	update_character_animation(Vector2.ZERO)
 
 	click_movement_blocked.emit(
 		blocked_destination
@@ -429,9 +448,12 @@ func update_character_animation(
 		if character_sprite.animation != (
 			animation_name
 		):
+			var previous_frame := character_sprite.frame
+			var previous_progress := character_sprite.frame_progress
 			character_sprite.play(
 				animation_name
 			)
+			character_sprite.set_frame_and_progress(previous_frame, previous_progress)
 		elif not character_sprite.is_playing():
 			character_sprite.play(
 				animation_name
@@ -449,6 +471,10 @@ func update_character_animation(
 func update_facing_direction(
 	movement_velocity: Vector2
 ) -> void:
+	if movement_velocity.is_zero_approx():
+		return
+	if absf(facing_direction.angle_to(movement_velocity)) <= PI / 8.0 + FACING_HYSTERESIS_ANGLE:
+		return
 	var angle: float = atan2(
 		movement_velocity.y,
 		movement_velocity.x

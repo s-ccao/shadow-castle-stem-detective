@@ -4,7 +4,7 @@
 
 ![Godot](https://img.shields.io/badge/Godot-4.7-478cbf?logo=godotengine&logoColor=white)
 ![GDScript](https://img.shields.io/badge/GDScript-51k_lines-355570)
-![Tests](https://img.shields.io/badge/tests-39_headless_suites-3fa46a)
+![Tests](https://img.shields.io/badge/tests-50_headless_suites-3fa46a)
 ![Platform](https://img.shields.io/badge/platform-Web_·_Desktop-8a63d2)
 
 A 2D pixel-art detective game about a blackout at a magical castle. You gather
@@ -57,6 +57,21 @@ Additive colour mixing is what reveals a hidden archive layer.
 
 - **Investigation loop** — evidence board, notes, objectives, and a final
   accusation that can be right for the wrong reasons.
+- **Chemistry field case** — record observations, revise a hypothesis, compare
+  controlled samples, then choose which report bears on the Butler's statement.
+  A colour match explains a reaction, not who committed the crime.
+- **Material Observation Lab** — inspect 16 raster-backed experiments on a large
+  glass bench: charring paper, melting ice, fizzing liquid, fracturing glass and
+  more. Replay before classifying; eight stages retain their original science and
+  rewards. Slow changes are labelled time-lapse, not presented as real-time chemistry.
+  Each observation states its physical conditions; impact sounds wait for contact,
+  while quiet melting, dissolution and crystallization have no invented noises.
+- **Esc settings anywhere in play** — pause the case to mute everything, adjust
+  music/effects, toggle field prompts, review controls, return to the title screen
+  or quit. Esc still closes an open panel first; return and quit are confirmed and
+  saved. Mute persists and can also be undone from the title-screen settings.
+- **Tactile investigation tools** — inspect items from the field kit, test a key's
+  teeth, turn dossier pages, and trace only known clues on an ink-revealed map.
 - **The Guardian** — a two-phase hunter. While a tracking serum runs in your
   blood it finds you anywhere and gains 12% speed per recovered key. Brew the
   Purification Potion and it falls back to a real sight cone, stakes out the
@@ -67,9 +82,21 @@ Additive colour mixing is what reveals a hidden archive layer.
 - **A renewable greenhouse** — ten segmented harvest points across four
   plantings, each growing its own herb on a real-time regrowth clock, feeding
   refining recipes that convert herbs into every reagent the potion list needs.
-- **A guided opening that never stops the game** — a six-step first lead, then a
-  Hall crossing paced to stay survivable whether you sprint or read every label,
-  ending on a scripted near-miss at the Chemistry door.
+- **A staged guided opening** — footprints lead to the visible knowledge core,
+  where a generous, wall-aware approach zone stops movement for an illustrated
+  lesson. File it to continue to Chemistry. Protection belongs to the footprint
+  corridor, not the entire Hall: leaving it starts real pursuit after a warning.
+- **Knowledge you can revisit** — all five Hall exhibits open illustrated
+  observation/principle/example dossiers. Reading comes before filing, and
+  collected knowledge remains available for review in both languages. Five
+  original pixel science plates explain the ideas instead of enlarging room props.
+- **A compact field-kit toolbar** — existing raster tools share a brass/violet
+  leather tool belt, without repeated cell cages or name bars. Hover/focus reveals
+  each tool's purpose and truthful live contents. Tool names and separate shortcut
+  hints stay readable; fixed slots prevent Map from jumping when Note unlocks.
+- **A real first door challenge** — the Chemistry lock asks its knowledge question
+  before entry. A correct answer leads to a skippable pixel-art near-miss sequence:
+  the Guardian approaches, the detective slips inside, and the door shuts in time.
 - **Five rooms of STEM locks** — alchemy, pollen evidence, an electrical repair
   sequence, timeline reasoning, and a three-stage optics laboratory.
 
@@ -115,14 +142,21 @@ Additive colour mixing is what reveals a hidden archive layer.
 
 ## Testing
 
-Gameplay is covered by **39 headless regression suites** that drive the real
+Gameplay is covered by **54 headless regression suites** that drive the real
 scenes rather than mocks — the chase suite instantiates the Hall, runs the
 Guardian, and asserts on what a player would actually experience.
 
 ```bash
-# Any suite; the exit code reports pass/fail.
-godot --headless --path . --script res://tests/potion_economy_test.gd
+# Use isolated saves; this path also satisfies the Chemistry test guards.
+mkdir -p .godot/chemistry-vfx-check/home
+HOME="$PWD/.godot/chemistry-vfx-check/home" \
+  godot --headless --path . --script res://tests/chemistry_presentation_test.gd
 ```
+
+Read each suite's HOME requirements before running reset-based tests. Check its
+PASS summary and script errors, not exit status alone: Godot can exit zero after
+a script parse failure. For native Chemistry evidence, omit `--headless` and add
+`-- --capture --zh`; `-- --preview --zh` opens an isolated playable experiment.
 
 Several suites exist to protect design guarantees that regress silently:
 
@@ -135,6 +169,15 @@ Several suites exist to protect design guarantees that regress silently:
 | `developer_mode_test.gd` | The developer clear credits every stage to the room, and stays hidden for normal players. |
 | `victim_voice_test.gd` | The murdered mentor never speaks; what she left behind stays in the case as evidence. |
 | `hall_route_authoring_test.gd` | The tutorial follows the route the author walked, and still falls back to pathfinding without one. |
+| `flame_presentation_test.gd` | Burn multipliers change one wick's thickness and one flame's intensity, not the wick count; prediction edits and actual extinction remain consistent. |
+| `character_motion_test.gd` | Turning preserves stride phase, blocked actors plant their feet, and animation follows actual travel. |
+| `minigame_ui_polish_test.gd` | All six minigames fit in both languages, feedback stays readable, and keyboard/close/restart behavior preserves progress and pause ownership. |
+| `chemistry_deduction_test.gd` | Observations never become verdicts automatically; revised hypotheses, evidence-gated questioning, rewards and old saves survive the complete room flow. |
+| `chemistry_presentation_test.gd` | Actual room launch, observation/replay, classification, retries, all eight stage sample sets and safe cancellation preserve modal/audio/reward ownership. |
+| `chemistry_sample_renderer_test.gd` | All 16 material presets retain exact substance sets, deterministic reset/replay and bounded hidden-state processing. |
+| `chemistry_material_motion_test.gd` | Source-pixel fracture partition, gravity/contact order, dissipative collisions, model melt-mass balance, resting fragments and 30/60/144 FPS invariance. |
+| `pause_menu_test.gd` | Esc closes open panels before opening settings, settings freeze the real room and Guardian, mute/faders/prompts persist, and return/quit are confirmed and saved. |
+| `instrument_hubs_test.gd` | Tool animations cancel cleanly, Hub switching preserves pause, and map clues never disclose unknown records or unvisited locations. |
 | `room_spatial_audit.gd` | Every interactable is reachable from walkable floor. |
 
 ### Developer mode
@@ -148,10 +191,11 @@ flags and the checkpoint all fire normally — only the manual solving is
 skipped. The mode is session-only, defaults off, and is never written to a
 save, so the button cannot appear for a player.
 
-Turning developer mode on inside the Hall also records the walk. Reaching
-the Chemistry door writes it to `data/hall_tutorial_route.json`, and the
-tutorial follows that line instead of a pathfound one — a taught route is a
-design decision, not a pathfinding result.
+Developer mode alone does not record routes or bypass the knowledge stop.
+In the Hall, **Shift+0** explicitly starts/cancels route recording. Reaching
+the Chemistry door writes it to `data/hall_tutorial_route.json`. The tutorial
+keeps that authored walk but clips completed sections and checks local connectors
+against the current collision geometry.
 
 [`docs/MINIGAME_ANSWERS.md`](docs/MINIGAME_ANSWERS.md) lists every stage's
 answer. It is generated, not written by hand: each entry is computed from the

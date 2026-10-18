@@ -252,6 +252,7 @@ func _answer_options(level: Dictionary) -> Array[int]:
 func _on_answer(picked: int) -> void:
 	if _running or _board == null:
 		return
+	clear_feedback()
 	_picked = picked
 	_running = true
 	_run_time = 0.0

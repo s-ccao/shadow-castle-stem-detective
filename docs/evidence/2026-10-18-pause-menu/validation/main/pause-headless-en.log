@@ -1,0 +1,148 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PROJECT_UNDER_TEST: /Users/yaleshen/shadow-castle-stem-detective/
+PASS: Chemistry free play can open settings
+PASS: Gameplay starts without the menu
+PASS: Control: the Bag is open and owns the pause
+PASS: Esc first closes the open Bag
+PASS: The Bag's closing Esc does not also open settings
+PASS: Play is free again after the Bag closes
+PASS: Esc opens settings and pauses play
+PASS: Resume receives keyboard focus
+PASS: Settings dossier fits 1024x768
+PASS: Settings: PauseKicker stays inside the dossier
+PASS: Settings: PauseKicker text fits
+PASS: Settings: PauseTitle stays inside the dossier
+PASS: Settings: PauseTitle text fits
+PASS: Settings: PauseAutosave stays inside the dossier
+PASS: Settings: PauseAutosave text fits
+PASS: Settings: ResumeButton stays inside the dossier
+PASS: Settings: ResumeButton text fits
+PASS: Settings: MainMenuButton stays inside the dossier
+PASS: Settings: MainMenuButton text fits
+PASS: Settings: QuitButton stays inside the dossier
+PASS: Settings: QuitButton text fits
+PASS: Settings: ResumeHint stays inside the dossier
+PASS: Settings: ResumeHint text fits
+PASS: Settings: SoundHeading stays inside the dossier
+PASS: Settings: SoundHeading text fits
+PASS: Settings: MuteToggle stays inside the dossier
+PASS: Settings: MuteToggle text fits
+PASS: Settings: VolumeCaption_Music stays inside the dossier
+PASS: Settings: VolumeCaption_Music text fits
+PASS: Settings: PauseVolume_Music stays inside the dossier
+PASS: Settings: PauseVolume_Music text fits
+PASS: Settings: VolumeValue_Music stays inside the dossier
+PASS: Settings: VolumeValue_Music text fits
+PASS: Settings: VolumeCaption_SFX stays inside the dossier
+PASS: Settings: VolumeCaption_SFX text fits
+PASS: Settings: PauseVolume_SFX stays inside the dossier
+PASS: Settings: PauseVolume_SFX text fits
+PASS: Settings: VolumeValue_SFX stays inside the dossier
+PASS: Settings: VolumeValue_SFX text fits
+PASS: Settings: GuidanceHeading stays inside the dossier
+PASS: Settings: GuidanceHeading text fits
+PASS: Settings: GuidanceToggle stays inside the dossier
+PASS: Settings: GuidanceToggle text fits
+PASS: Settings: ControlsHeading stays inside the dossier
+PASS: Settings: ControlsHeading text fits
+PASS: Settings: ControlsReference stays inside the dossier
+PASS: Settings: ControlsReference text fits
+PASS: Tab cannot open the Bag beneath settings
+PASS: Tab moves through settings controls
+PASS: Map shortcut cannot open beneath settings
+PASS: Mute silences the Master bus
+PASS: Mute toggle states that sound is muted
+PASS: Mute keeps every fader position
+PASS: Mute persists for the next session
+PASS: Unmute restores the existing mix
+PASS: Music fader moves the Music bus
+PASS: Music fader shows its level
+PASS: Effects fader moves the SFX bus
+PASS: Guidance prompts can be toggled in play
+PASS: Guidance toggle states its new value
+PASS: Changing settings keeps the game paused
+PASS: Main menu asks for confirmation
+PASS: Confirmation focuses the safe choice
+PASS: Return confirmation dossier fits 1024x768
+PASS: Return confirmation: PauseKicker stays inside the dossier
+PASS: Return confirmation: PauseKicker text fits
+PASS: Return confirmation: PauseTitle stays inside the dossier
+PASS: Return confirmation: PauseTitle text fits
+PASS: Return confirmation: PauseAutosave stays inside the dossier
+PASS: Return confirmation: PauseAutosave text fits
+PASS: Return confirmation: ConfirmTitle stays inside the dossier
+PASS: Return confirmation: ConfirmTitle text fits
+PASS: Return confirmation: ConfirmBody stays inside the dossier
+PASS: Return confirmation: ConfirmBody text fits
+PASS: Return confirmation: ConfirmButton stays inside the dossier
+PASS: Return confirmation: ConfirmButton text fits
+PASS: Return confirmation: CancelButton stays inside the dossier
+PASS: Return confirmation: CancelButton text fits
+PASS: Esc backs out of confirmation only
+PASS: Backing out returns focus to Main Menu
+PASS: Quit asks for confirmation
+PASS: Quit confirmation dossier fits 1024x768
+PASS: Quit confirmation: PauseKicker stays inside the dossier
+PASS: Quit confirmation: PauseKicker text fits
+PASS: Quit confirmation: PauseTitle stays inside the dossier
+PASS: Quit confirmation: PauseTitle text fits
+PASS: Quit confirmation: PauseAutosave stays inside the dossier
+PASS: Quit confirmation: PauseAutosave text fits
+PASS: Quit confirmation: ConfirmTitle stays inside the dossier
+PASS: Quit confirmation: ConfirmTitle text fits
+PASS: Quit confirmation: ConfirmBody stays inside the dossier
+PASS: Quit confirmation: ConfirmBody text fits
+PASS: Quit confirmation: ConfirmButton stays inside the dossier
+PASS: Quit confirmation: ConfirmButton text fits
+PASS: Quit confirmation: CancelButton stays inside the dossier
+PASS: Quit confirmation: CancelButton text fits
+PASS: Cancel returns to the main settings page
+PASS: Opening quit confirmation does not quit
+PASS: Esc closes settings
+PASS: Play resumes after the closing key's frame, not during it
+PASS: Closing settings restores normal play
+PASS: Wake Room free play can open settings
+PASS: Control: the Wake Room book is open
+PASS: An open Wake Room panel vetoes settings
+PASS: Esc closes the Wake Room book first
+PASS: The book's closing Esc does not also open settings
+PASS: Wake Room play is free after closing the book
+PASS: The next Esc opens settings in the Wake Room
+PASS: Esc resumes the Wake Room
+PASS: Hall guardian_entry_sequence_active vetoes settings
+PASS: Hall guardian_near_miss_active vetoes settings
+PASS: Hall power_route_scan_active vetoes settings
+PASS: Hall game_over vetoes settings
+PASS: Hall free play becomes pausable after scripted moments
+PASS: Esc pauses Hall play
+PASS: The Guardian is frozen beneath settings
+PASS: The detective is frozen beneath settings
+PASS: Hall shortcuts pressed in settings do not leave the Hall
+PASS: The main menu never offers in-game settings
+PASS: Esc on the main menu does not open in-game settings
+PASS: Main-menu settings can undo a mute
+PASS: Main-menu mute label fits
+PASS: FieldPromptsToggleButton label fits
+PASS: FieldPromptsToggleButton does not overlap Mute
+PASS: CloseMainMenuDialogButton label fits
+PASS: CloseMainMenuDialogButton does not overlap Mute
+PASS: Main-menu mute uses the same setting
+PASS: Main-menu unmute restores sound
+PASS: Closing the main-menu dialog stays in the main menu
+PASS: Chemistry is ready for the return test
+PASS: Confirmation names the real Continue room
+PASS: Confirming hides settings before the transition
+PASS: Main Menu returns to the title screen
+PASS: The title screen is not left paused
+PASS: The case is saved for Continue
+PASS: The saved Continue room is unchanged
+PASS: Chemistry is ready for the quit test
+PASS: Quit confirmation requests one engine quit
+PASS: Quit writes the autosave first
+PASS: Quitting dismisses settings
+pause_menu_test: PASS (140 checks)
+WARNING: 11 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 5 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

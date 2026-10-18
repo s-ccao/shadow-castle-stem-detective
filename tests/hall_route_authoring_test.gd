@@ -144,8 +144,10 @@ func _check_tutorial_prefers_the_authored_route() -> void:
 
 	# 没录过路的情况仍然要能开局，否则新检出第一次进大厅就没有引导。
 	HallRouteStore.clear_route()
+	var actual_player := hall.get("player") as Node2D
+	_expect(hall.call("is_player_position_walkable", actual_player.global_position), "The fallback test starts on actual walkable floor")
 	var fallback: Array = hall.call(
-		"_hall_route_points", Vector2(900.0, 700.0), Vector2(302.0, 87.0)
+		"_hall_route_points", actual_player.global_position, Vector2(302.0, 87.0)
 	)
 	_expect(
 		fallback.size() >= 2,
@@ -195,22 +197,21 @@ func _check_recording_is_not_dragged_back() -> void:
 		await process_frame
 		return
 
-	var leash: float = float(hall.get("TUTORIAL_ROUTE_LEASH"))
-	var far: Vector2 = (route[0] as Vector2) + Vector2(leash * 2.0, leash * 2.0)
+	var far: Vector2 = hall.call("_nearest_guardian_walkable_position", Vector2(1120, 1120))
 
 	walker.global_position = far
 	await _hold_off_route(hall, walker, far)
 	_expect(
-		walker.global_position.distance_to(far) > 1.0,
-		"Without developer mode, staying off the route still returns the player"
+		walker.global_position.distance_to(far) <= 1.0 and bool(hall.get("enemy").get("catch_enabled")),
+		"Without recording, leaving the route enables capture without teleporting"
 	)
 
-	# 开启开发者模式即进入录制，牵引必须让开。
+	# Explicit recording, rather than developer mode alone, releases the leash.
 	game_state.set("developer_mode", true)
-	hall.call("_sync_hall_route_recorder")
+	hall.call("toggle_hall_route_recording")
 	await process_frame
 	var recorder = hall.get("_hall_route_recorder")
-	_expect(recorder != null, "Developer mode starts the route recorder")
+	_expect(recorder != null, "The explicit command starts the route recorder")
 
 	walker.global_position = far
 	await _hold_off_route(hall, walker, far)
@@ -218,6 +219,7 @@ func _check_recording_is_not_dragged_back() -> void:
 		walker.global_position.distance_to(far) <= 1.0,
 		"While recording, walking off the old route is never dragged back"
 	)
+	_expect(not bool(hall.get("enemy").get("catch_enabled")), "Explicit author recording remains harmless")
 
 	# 录完之后牵引要回来，否则正式玩家会失去这条保护。
 	game_state.set("developer_mode", false)
@@ -226,8 +228,8 @@ func _check_recording_is_not_dragged_back() -> void:
 	walker.global_position = far
 	await _hold_off_route(hall, walker, far)
 	_expect(
-		walker.global_position.distance_to(far) > 1.0,
-		"Leaving developer mode restores the leash for real players"
+		walker.global_position.distance_to(far) <= 1.0 and bool(hall.get("enemy").get("catch_enabled")),
+		"Ending recording restores real pursuit outside the route"
 	)
 
 	hall.queue_free()
@@ -264,9 +266,8 @@ func _check_leaving_the_tracks_is_seen_not_silent() -> void:
 		await process_frame
 		return
 
-	var leash: float = float(hall.get("TUTORIAL_ROUTE_LEASH"))
 	var grace: float = float(hall.get("HALL_ROUTE_EXPOSURE_GRACE"))
-	var far: Vector2 = (route[0] as Vector2) + Vector2(leash * 2.0, leash * 2.0)
+	var far: Vector2 = hall.call("_nearest_guardian_walkable_position", Vector2(1120, 1120))
 
 	# 刚踏出去：只被警告，还站得住。
 	walker.global_position = far
@@ -274,7 +275,7 @@ func _check_leaving_the_tracks_is_seen_not_silent() -> void:
 	await process_frame
 	_expect(
 		walker.global_position.distance_to(far) <= 1.0,
-		"Stepping off the tracks warns before it moves the player"
+		"Stepping off the tracks warns without moving the player"
 	)
 	_expect(
 		float(hall.get("hall_route_exposure")) > 0.0,
@@ -297,8 +298,8 @@ func _check_leaving_the_tracks_is_seen_not_silent() -> void:
 	hall.call("_tick_hall_route_exposure", true, grace * 0.6)
 	await process_frame
 	_expect(
-		walker.global_position.distance_to(far) > 1.0,
-		"Staying off the tracks past the grace window returns the player"
+		walker.global_position.distance_to(far) <= 1.0 and bool(hall.get("enemy").get("catch_enabled")),
+		"Staying outside past the grace window enables actual capture"
 	)
 
 	# 守卫在路旁，不在路上——否则脚印看起来就不安全了。
@@ -322,7 +323,9 @@ func _hold_off_route(hall: Node, walker: Node2D, spot: Vector2) -> void:
 			return
 		walker.global_position = spot
 		hall.call("_update_hall_tutorial_chase")
-		elapsed += maxf(hall.get_process_delta_time(), 0.016)
+		if not hall.call("_is_recording_hall_route"):
+			hall.call("_tick_hall_route_exposure", true, 0.1)
+		elapsed += 0.1
 		await process_frame
 
 

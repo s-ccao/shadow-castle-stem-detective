@@ -84,8 +84,8 @@ func _test_chemistry_guides_until_the_room_is_solved(game_state: Node) -> void:
 
 	_expect(panel.visible, "Objective card is visible on arrival")
 	_expect(
-		body.text == str(case_locale.call("text", "guide.chem_stain_body")),
-		"First Chemistry objective points at the red stain"
+		body.text.contains("red liquid"),
+		"First Chemistry objective asks for observation rather than a verdict"
 	)
 	_expect(
 		str(room.call("_case_objective_interaction")) == "red_stain",
@@ -94,16 +94,37 @@ func _test_chemistry_guides_until_the_room_is_solved(game_state: Node) -> void:
 
 	room.call("collect_red_stain_evidence")
 	await process_frame
+	_expect(not game_state.call("has_evidence", "fake_red_stain"),
+		"An unexamined stain cannot skip the investigation guide")
+	room.call("_on_red_stain_recorded")
+	_expect(body.text.contains("revisable") and str(room.call("_case_objective_interaction")) == "red_stain",
+		"Recorded facts lead to a revisable hypothesis at the stain")
+	room.call("_on_case_action", "hypothesis", "reaction")
+	_expect(body.text.contains("table") and str(room.call("_case_objective_interaction")) == "alchemy_table",
+		"A hypothesis directs the guide to controlled comparison at the table")
+	# The dedicated case test plays the entire tray. Here only the guide's
+	# state transitions are under test.
+	game_state.call("set_story_flag", "mrs_lin_lab_note_seen")
+	game_state.call("set_story_flag", "chemistry_change_sorted")
+	room.call("_open_chemistry_case", "analysis")
+	room.call("_on_case_action", "compare", "control")
+	room.call("_on_case_action", "compare", "reaction")
+	room.call("_on_case_action", "confirm", "")
 	_expect(
-		body.text == str(case_locale.call("text", "guide.chem_butler_body")),
-		"Recording the stain advances the objective to the Butler"
+		body.text.contains("Butler") and game_state.call("has_evidence", "fake_red_stain"),
+		"Only a filed comparison advances the objective to the Butler"
 	)
 	_expect(
 		str(room.call("_case_objective_interaction")) == "butler",
 		"World marker follows the objective to the Butler"
 	)
 
-	game_state.call("set_story_flag", "chemistry_butler_interviewed")
+	var case_state: RefCounted = room.get("chemistry_case")
+	case_state.call("record_statement")
+	_expect(case_state.call("present", "comparison", "supplies") == "linked",
+		"Follow-up requires matching the report to the witness account")
+	room.call("on_butler_test_correct")
+	room.call("close_message_panel")
 	room.call("_refresh_case_objective", false)
 	_expect(
 		body.text == str(case_locale.call("text", "guide.chem_exit_body")),

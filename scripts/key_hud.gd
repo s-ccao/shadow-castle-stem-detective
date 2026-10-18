@@ -6,6 +6,7 @@ extends CanvasLayer
 const BOARD_TEXTURE_PATH: String = "res://assets/ui/keyhub/keyhub_board.png"
 const LOCK_TEXTURE_PATH: String = "res://assets/ui/keyhub/knowledge_lock.png"
 const BOARD_SIZE: Vector2 = Vector2(900.0, 600.0)
+const TEETH_SHADER: Shader = preload("res://scripts/hub_key_teeth.gdshader")
 # The redesigned cards use a wider 4×2 rhythm than the slots painted into the
 # original 1536×1024 board. Keep the complete board for its title and outer
 # frame, then enlarge these three authored regions underneath the new layout.
@@ -77,9 +78,8 @@ const KEY_DESCRIPTIONS: Array[String] = [
 	"A slim brass key stamped with the library's spiral archive seal."
 ]
 
-var icon_button: TextureButton
+var icon_button: Button
 var entry_label: Label
-var entry_backplate: Panel
 var overlay: Control
 var board_panel: Control
 var board_texture_rect: TextureRect
@@ -95,6 +95,9 @@ var toast_timer: Timer
 var _hub_was_unlocked: bool = false
 var _paused_before_hub: bool = false
 var _entry_suppressed: bool = false
+var key_specimen: TextureRect
+var lock_pins: Array[ColorRect] = []
+var teeth_tween: Tween
 
 
 func _ready() -> void:
@@ -124,57 +127,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _create_entry_button() -> void:
-	# 与 BagHub 一致的 72×72 暗铜圆背板，保证左上角 Hub 入口视觉大小统一。
-	entry_backplate = Panel.new()
-	entry_backplate.name = "KeyHubEntryBackplate"
-	# 背板间距统一 16px：BAG(18) → KEY(106) → NOTE(194) → MAP(282)。
-	entry_backplate.position = Vector2(106.0, 16.0)
-	entry_backplate.size = Vector2(72.0, 72.0)
-	entry_backplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	entry_backplate.z_index = -2
-	var backplate_style: StyleBoxFlat = StyleBoxFlat.new()
-	backplate_style.bg_color = Color(0.30, 0.18, 0.07, 0.94)
-	backplate_style.border_color = Color(1.0, 0.80, 0.36, 1.0)
-	backplate_style.set_border_width_all(1)
-	backplate_style.set_corner_radius_all(36)
-	backplate_style.shadow_color = Color(0.65, 0.35, 0.08, 0.34)
-	backplate_style.shadow_size = 8
-	entry_backplate.add_theme_stylebox_override("panel", backplate_style)
-	add_child(entry_backplate)
-
-	icon_button = TextureButton.new()
-	icon_button.name = "KeyHubEntry"
-	icon_button.ignore_texture_size = true
-	icon_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	icon_button.texture_normal = load(
-		"res://assets/ui/keyhub/wake_room_key.png"
-	) as Texture2D
-	# BagHub 占据最左侧；KeyHub 按解锁顺序放在 BagHub 后方。
-	icon_button.position = Vector2(110.0, 20.0)
-	icon_button.size = Vector2(64.0, 64.0)
-	icon_button.tooltip_text = "keys"
-	icon_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	icon_button = ArchiveUi.create_hub_entry(self, "key", "KeyHubEntry")
+	entry_label = icon_button.get_node("KeyHubLabel") as Label
 	icon_button.visible = false
-	icon_button.modulate = Color(0.88, 0.76, 0.48, 1.0)
-	icon_button.mouse_entered.connect(_on_entry_mouse_entered)
-	icon_button.mouse_exited.connect(_on_entry_mouse_exited)
 	icon_button.pressed.connect(toggle_hub)
-	add_child(icon_button)
-
-	entry_label = Label.new()
-	entry_label.name = "KeyHubLabel"
-	entry_label.text = CaseLocale.line("KEYS")
-	entry_label.position = Vector2(110.0, 82.0)
-	entry_label.size = Vector2(64.0, 20.0)
-	entry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	entry_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	entry_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	entry_label.visible = false
-	entry_label.add_theme_font_size_override("font_size", 10)
-	entry_label.add_theme_color_override("font_color", Color(0.96, 0.78, 0.36, 1.0))
-	entry_label.add_theme_color_override("font_outline_color", Color(0.05, 0.02, 0.01, 1.0))
-	entry_label.add_theme_constant_override("outline_size", 3)
-	add_child(entry_label)
 
 
 func _create_hub_overlay() -> void:
@@ -297,8 +253,8 @@ func _create_hub_overlay() -> void:
 	board_panel.add_child(detail_panel)
 	detail_label = Label.new()
 	detail_label.name = "KeyDetail"
-	detail_label.position = Vector2(26.0, 16.0)
-	detail_label.size = Vector2(628.0, 106.0)
+	detail_label.position = Vector2(176.0, 16.0)
+	detail_label.size = Vector2(478.0, 106.0)
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_label.clip_text = true
 	detail_label.max_lines_visible = 6
@@ -313,6 +269,7 @@ func _create_hub_overlay() -> void:
 	detail_label.add_theme_constant_override("outline_size", 2)
 	detail_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail_panel.add_child(detail_label)
+	_create_lock_inspection()
 	ArchiveUi.decorate_hub(board_panel, {
 		"role": "keys",
 		"accent": Color(0.92, 0.70, 0.30, 0.92),
@@ -379,6 +336,18 @@ func _create_key_slot(index: int) -> void:
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.pressed.connect(_on_slot_pressed.bind(index))
 	board_panel.add_child(button)
+	var artwork := TextureRect.new()
+	artwork.name = "KeyArtwork"
+	artwork.size = button.size
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(artwork)
+	button.mouse_entered.connect(_preview_key.bind(index))
+	button.focus_entered.connect(_preview_key.bind(index))
+	button.mouse_exited.connect(ArchiveUi.settle_motion.bind(artwork))
+	button.focus_exited.connect(ArchiveUi.settle_motion.bind(artwork))
 	var index_label := Label.new()
 	index_label.name = "KeyIndex"
 	index_label.text = "%02d" % (index + 1)
@@ -464,8 +433,6 @@ func _sync_key_state() -> void:
 		return
 	var unlocked: bool = GameState.has_any_key()
 	icon_button.visible = unlocked and not _entry_suppressed
-	entry_backplate.visible = unlocked and not _entry_suppressed
-	entry_label.visible = unlocked and not _entry_suppressed
 	var collected := 0
 	for index: int in range(KEY_IDS.size()):
 		var slot: TextureButton = board_panel.get_node_or_null(
@@ -480,19 +447,22 @@ func _sync_key_state() -> void:
 		if has_key:
 			slot.texture_normal = load(KEY_TEXTURE_PATHS[index]) as Texture2D
 			slot.modulate = Color.WHITE
-			slot.tooltip_text = KEY_NAMES[index]
+			slot.tooltip_text = CaseLocale.line(KEY_NAMES[index])
 			if state_label != null:
 				state_label.text = CaseLocale.line("RECOVERED")
 				state_label.add_theme_color_override("font_color", Color(0.72, 0.94, 0.62, 1.0))
 		else:
 			slot.texture_normal = load(LOCK_TEXTURE_PATH) as Texture2D
 			slot.modulate = Color(0.28, 0.30, 0.40, 0.48)
-			slot.tooltip_text = "Locked"
+			slot.tooltip_text = CaseLocale.line("Locked")
 			if state_label != null:
-				state_label.text = "LOCKED"
+				state_label.text = CaseLocale.line("LOCKED")
 				state_label.add_theme_color_override("font_color", Color(0.52, 0.50, 0.52, 1.0))
 		var selected := index == selected_index
-		slot.self_modulate = Color(1.12, 1.04, 0.82, 1.0) if selected else Color.WHITE
+		# Artwork moves independently of the stable click/focus rectangle.
+		slot.self_modulate.a = 0.0
+		var artwork := slot.get_node("KeyArtwork") as TextureRect
+		artwork.texture = slot.texture_normal
 		var plate := board_panel.get_node_or_null("KeySlotPlate_%02d" % index) as Panel
 		if plate != null:
 			plate.add_theme_stylebox_override(
@@ -506,7 +476,7 @@ func _sync_key_state() -> void:
 				)
 			)
 	if progress_label != null:
-		progress_label.text = "%d / %d KEYS RECOVERED" % [collected, KEY_IDS.size()]
+		progress_label.text = ("%d / %d 把钥匙已回收" if CaseLocale.is_chinese() else "%d / %d KEYS RECOVERED") % [collected, KEY_IDS.size()]
 	for index: int in range(progress_pips.size()):
 		progress_pips[index].color = (
 			Color(0.76, 0.88, 0.48, 1.0)
@@ -524,52 +494,115 @@ func _update_detail() -> void:
 		if GameState.has_key(key_id):
 			collected += 1
 	if collected == 0:
-		detail_label.text = "The castle's keys will appear here when you recover them."
+		_settle_key_inspection()
+		key_specimen.texture = load(LOCK_TEXTURE_PATH) as Texture2D
+		detail_label.text = CaseLocale.line("The castle's keys will appear here when you recover them.")
 		return
 	var selected_id: String = KEY_IDS[selected_index]
+	if key_specimen != null:
+		key_specimen.texture = load(KEY_TEXTURE_PATHS[selected_index] if GameState.has_key(selected_id) else LOCK_TEXTURE_PATH) as Texture2D
 	if GameState.has_key(selected_id):
 		detail_label.text = (
-			KEY_NAMES[selected_index]
+			CaseLocale.line(KEY_NAMES[selected_index])
 			+ "\n"
-			+ KEY_DESCRIPTIONS[selected_index]
+			+ CaseLocale.line(KEY_DESCRIPTIONS[selected_index])
 			+ "\n\n"
-			+ str(collected)
-			+ " / "
-			+ str(KEY_IDS.size())
-			+ " keys recovered"
+			+ (("%d / %d 把钥匙已回收" if CaseLocale.is_chinese() else "%d / %d keys recovered") % [collected, KEY_IDS.size()])
 		)
 		detail_label.add_theme_font_size_override("font_size", 13 if detail_label.text.length() > 150 else 14)
 	else:
 		detail_label.text = (
-			"The next lock has not yielded its key yet."
+			("这把锁的钥匙尚未找到。" if CaseLocale.is_chinese() else "The next lock has not yielded its key yet.")
 			+ "\n\n"
-			+ str(collected)
-			+ " / "
-			+ str(KEY_IDS.size())
-			+ " keys recovered"
+			+ (("%d / %d 把钥匙已回收" if CaseLocale.is_chinese() else "%d / %d keys recovered") % [collected, KEY_IDS.size()])
 		)
 		detail_label.add_theme_font_size_override("font_size", 14)
 
 
 func _on_slot_pressed(index: int) -> void:
+	if not overlay.visible:
+		return
+	_settle_key_inspection()
 	selected_index = index
 	_sync_key_state()
-	var slot := board_panel.get_node_or_null("KeySlot_%02d" % index) as TextureButton
-	if slot != null:
-		slot.pivot_offset = slot.size * 0.5
-		slot.scale = Vector2(1.07, 1.07)
-		var tween := create_tween()
-		tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-		tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(slot, "scale", Vector2.ONE, 0.18)
+	_play_key_inspection()
+	GameAudio.play(&"ui_select")
 
 
-func _on_entry_mouse_entered() -> void:
-	icon_button.modulate = Color(1.0, 0.92, 0.62, 1.0)
+func _create_lock_inspection() -> void:
+	var socket := Panel.new()
+	socket.name = "KeyTestSocket"
+	socket.position = Vector2(16.0, 10.0)
+	socket.size = Vector2(146.0, 118.0)
+	socket.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	socket.add_theme_stylebox_override("panel", ArchiveUi.panel_style(ArchiveUi.COLOR_VOID, ArchiveUi.COLOR_BRASS, 1, 3, 3))
+	detail_panel.add_child(socket)
+	key_specimen = TextureRect.new()
+	key_specimen.name = "KeyInspectionRaster"
+	key_specimen.position = Vector2(32.0, 12.0)
+	key_specimen.size = Vector2(112.0, 112.0)
+	key_specimen.pivot_offset = Vector2(56.0, 84.0)
+	key_specimen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	key_specimen.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	key_specimen.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	key_specimen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = TEETH_SHADER
+	material.set_shader_parameter("contact", 0.0)
+	key_specimen.material = material
+	detail_panel.add_child(key_specimen)
+	for index: int in range(3):
+		var pin := ColorRect.new()
+		pin.name = "LockFollower%d" % index
+		pin.position = Vector2(91.0 + index * 13.0, 98.0)
+		pin.size = Vector2(7.0, 15.0)
+		pin.color = ArchiveUi.COLOR_BRASS
+		pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		detail_panel.add_child(pin)
+		lock_pins.append(pin)
 
 
-func _on_entry_mouse_exited() -> void:
-	icon_button.modulate = Color(0.88, 0.76, 0.48, 1.0)
+func _preview_key(index: int) -> void:
+	if not overlay.visible or not GameState.has_key(KEY_IDS[index]):
+		return
+	var art := board_panel.get_node("KeySlot_%02d/KeyArtwork" % index) as Control
+	var motion := ArchiveUi.begin_motion(art)
+	art.pivot_offset = art.size * 0.5
+	motion.tween_property(art, "rotation", -0.07, 0.08)
+	motion.tween_property(art, "rotation", 0.0, 0.10)
+
+
+func _play_key_inspection() -> void:
+	var motion := ArchiveUi.begin_motion(key_specimen)
+	if not GameState.has_key(KEY_IDS[selected_index]):
+		motion.tween_property(key_specimen, "position:x", 28.0, 0.07)
+		motion.tween_property(key_specimen, "position:x", 32.0, 0.11)
+		return
+	key_specimen.position.y -= 20.0
+	motion.tween_property(key_specimen, "position:y", 12.0, 0.10)
+	motion.tween_property(key_specimen, "rotation", 0.25, 0.10)
+	motion.tween_property(key_specimen, "rotation", 0.0, 0.12)
+	for index: int in range(lock_pins.size()):
+		var pin := lock_pins[index]
+		var pin_motion := ArchiveUi.begin_motion(pin)
+		pin_motion.tween_interval(0.09 + index * 0.025)
+		pin_motion.tween_property(pin, "position:y", 88.0 - index * 2.0, 0.07)
+		pin_motion.tween_property(pin, "position:y", 98.0, 0.10)
+	teeth_tween = key_specimen.create_tween()
+	teeth_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	teeth_tween.tween_interval(0.10)
+	teeth_tween.tween_property(key_specimen.material, "shader_parameter/contact", 1.0, 0.08)
+	teeth_tween.tween_property(key_specimen.material, "shader_parameter/contact", 0.0, 0.14)
+
+
+func _settle_key_inspection() -> void:
+	if teeth_tween != null and teeth_tween.is_valid():
+		teeth_tween.kill()
+	if key_specimen != null:
+		ArchiveUi.settle_motion(key_specimen)
+		(key_specimen.material as ShaderMaterial).set_shader_parameter("contact", 0.0)
+	for pin: Control in lock_pins:
+		ArchiveUi.settle_motion(pin)
 
 
 func toggle_hub() -> void:
@@ -582,8 +615,9 @@ func toggle_hub() -> void:
 
 
 func open_hub() -> void:
-	if not GameState.has_any_key():
+	if not GameState.has_any_key() or overlay.visible:
 		return
+	ArchiveUi.prepare_hub_open("KeyHud")
 	_paused_before_hub = get_tree().paused
 	get_tree().paused = true
 	ArchiveUi.set_hub_entries_suppressed(true)
@@ -603,6 +637,12 @@ func open_hub() -> void:
 
 
 func close_hub() -> void:
+	if not overlay.visible:
+		return
+	if open_tween != null and open_tween.is_valid():
+		open_tween.kill()
+	_settle_key_inspection()
+	ArchiveUi.settle_motion_tree(overlay)
 	overlay.visible = false
 	board_panel.scale = Vector2.ONE
 	overlay.modulate = Color.WHITE
@@ -611,6 +651,8 @@ func close_hub() -> void:
 
 
 func _focus_selected_key() -> void:
+	if not overlay.visible:
+		return
 	var slot := board_panel.get_node_or_null("KeySlot_%02d" % selected_index) as TextureButton
 	if slot != null:
 		slot.grab_focus()

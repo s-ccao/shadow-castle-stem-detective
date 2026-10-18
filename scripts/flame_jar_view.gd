@@ -3,8 +3,8 @@ extends Control
 
 ## 烛火与空气里的一只玻璃罐。
 ##
-## 把三个参数画成看得见的东西：罐内空气画成底部的浅色气层，通气孔画成罐颈
-## 两侧的开口和向内的气流，灯芯倍率画成火焰的大小。这样"带孔的小罐能赢过
+## 把三个参数画成看得见的东西：空气量对应气体光点与刻度，通气孔画成罐颈
+## 两侧的开口和向内的气流，耗氧倍率对应一根灯芯的粗细与火焰强弱。这样"带孔的小罐能赢过
 ## 密封的大罐"是可以用眼睛比出来的，而不必先做除法。
 ##
 ## 火焰不是一张静止的图形：它每帧按几组不互相整除的正弦重新生成轮廓，所以
@@ -15,7 +15,7 @@ extends Control
 signal picked
 
 enum Phase {
-	COLD,     ## 未点火：只有余烬般的微光
+	COLD,     ## 未点火：可见灯芯，无火苗
 	IGNITING, ## 点火瞬间的爆燃
 	BURNING,  ## 正常燃烧，气层随剩余空气下降
 	GUTTERING,## 空气耗尽，火焰挣扎
@@ -67,15 +67,29 @@ var _pick_pop: float = 0.0
 var _hover: float = 0.0
 var _embers: Array[Dictionary] = []
 var _rng := RandomNumberGenerator.new()
+var _phase_label: Label
+var _actual_order: int = -1
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	clip_contents = true
 	_rng.randomize()
 	# 每只罐子一个固定相位，否则一排火焰会整整齐齐地同时摇同时闪。
 	_seed = _rng.randf() * TAU
 	for index: int in range(EMBER_COUNT):
 		_embers.append(_new_ember(_rng.randf()))
+	_phase_label = Label.new()
+	_phase_label.name = "FlameState"
+	_phase_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	_phase_label.offset_top = -18.0
+	_phase_label.add_theme_font_size_override("font_size", 11)
+	_phase_label.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.02))
+	_phase_label.add_theme_constant_override("outline_size", 2)
+	_phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_phase_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_phase_label)
+	_sync_phase_label()
 
 
 func _new_ember(life_start: float) -> Dictionary:
@@ -92,6 +106,8 @@ func ignite() -> void:
 	_phase = Phase.IGNITING
 	_phase_time = 0.0
 	fuel = 1.0
+	_actual_order = -1
+	_sync_phase_label()
 
 
 func extinguish() -> void:
@@ -99,6 +115,7 @@ func extinguish() -> void:
 		return
 	_phase = Phase.GUTTERING
 	_phase_time = 0.0
+	_sync_phase_label()
 
 
 ## 回到未点火状态。重排之后必须走这里，否则上一轮烧完的罐子会一直黑着。
@@ -107,6 +124,29 @@ func reset_flame() -> void:
 	_phase_time = 0.0
 	fuel = 1.0
 	verdict = -1
+	_actual_order = -1
+	_pick_pop = 0.0
+	_sync_phase_label()
+
+
+func reveal_order(order: int) -> void:
+	_actual_order = order
+	_sync_phase_label()
+
+
+func _sync_phase_label() -> void:
+	if not is_instance_valid(_phase_label):
+		return
+	var english := ["Unlit", "Igniting", "Burning", "Fading", "Out"]
+	var chinese := ["未点火", "正在点火", "燃烧中", "缺氧将熄", "已熄灭"]
+	var text := str(chinese[_phase] if CaseLocale.is_chinese() else english[_phase])
+	if eternal and _phase == Phase.BURNING:
+		text = "持续补气" if CaseLocale.is_chinese() else "Air sustained"
+	elif _actual_order >= 0 and _phase == Phase.DEAD:
+		text = ("实际第 %d 灭" if CaseLocale.is_chinese() else "Out: #%d") % (_actual_order + 1)
+	_phase_label.text = text
+	_phase_label.add_theme_color_override("font_color",
+		Color(0.60, 0.84, 0.94) if eternal else Color(0.91, 0.82, 0.60))
 
 
 func is_lit() -> bool:
@@ -142,10 +182,12 @@ func _process(delta: float) -> void:
 
 	if _phase == Phase.IGNITING and _phase_time >= IGNITE_TIME:
 		_phase = Phase.BURNING
-		_phase_time = 0.0
+		_phase_time -= IGNITE_TIME
+		_sync_phase_label()
 	elif _phase == Phase.GUTTERING and _phase_time >= GUTTER_TIME:
 		_phase = Phase.DEAD
-		_phase_time = 0.0
+		_phase_time -= GUTTER_TIME
+		_sync_phase_label()
 
 	if is_lit():
 		for ember: Dictionary in _embers:
@@ -201,79 +243,97 @@ func _draw_glow(centre: Vector2, radius: float, tint: Color, strength: float) ->
 		draw_circle(centre, ring, Color(tint.r, tint.g, tint.b, alpha))
 
 
+func wick_width() -> float:
+	return 2.0 + (clampf(burn, 1.0, 3.0) - 1.0) * 2.2
+
+
+func jar_rect() -> Rect2:
+	return Rect2(size.x * 0.15, size.y * 0.05, size.x * 0.70, size.y * 0.72)
+
+
+func _candle_height() -> float:
+	return jar_rect().size.y * (0.30 - 0.045 * (1.0 - clampf(fuel, 0.0, 1.0)))
+
+
+func wick_positions() -> PackedVector2Array:
+	var jar := jar_rect()
+	return PackedVector2Array([Vector2(jar.get_center().x, jar.end.y - _candle_height() - 8.0)])
+
+
 func _draw() -> void:
 	var w: float = size.x
 	var h: float = size.y
 	if w <= 0.0 or h <= 0.0:
 		return
 
-	var jar := Rect2(w * 0.15, h * 0.05, w * 0.70, h * 0.72)
+	var jar := jar_rect()
 	var base_y: float = jar.position.y + jar.size.y
 	var centre_x: float = jar.position.x + jar.size.x * 0.5
 
-	_draw_sigil(Vector2(centre_x, base_y + h * 0.085), jar.size.x * 0.52)
+	_draw_sigil(Vector2(centre_x, base_y + h * 0.04), jar.size.x * 0.43)
 	_draw_air(jar, base_y)
 
-	var candle_w: float = jar.size.x * 0.22
-	var candle_h: float = jar.size.y * 0.30
-	var wick := Vector2(centre_x, base_y - candle_h)
-	_draw_flame(wick, jar)
+	var candle_w: float = jar.size.x * 0.30
+	var candle_h: float = _candle_height()
+	var tips := wick_positions()
+	var wick := Vector2(centre_x, tips[0].y)
 	draw_rect(
 		Rect2(centre_x - candle_w * 0.5, base_y - candle_h, candle_w, candle_h),
 		WAX
 	)
+	draw_rect(Rect2(centre_x - candle_w * 0.5, base_y - candle_h, 3.0, candle_h),
+		Color(0.56, 0.46, 0.32))
+	draw_rect(Rect2(centre_x - candle_w * 0.5 + 3.0, base_y - candle_h,
+		candle_w - 6.0, 3.0), Color(1.0, 0.96, 0.81))
+	var cord_width := wick_width()
+	draw_line(wick + Vector2(0, 8), wick, Color(0.20, 0.14, 0.10), cord_width)
+	draw_line(wick + Vector2(-cord_width * 0.3, 7),
+		wick + Vector2(-cord_width * 0.3, 1), Color(0.75, 0.60, 0.36), 1.0)
+	for braid: int in range(3):
+		var y := 1.0 + float(braid) * 2.0
+		draw_line(wick + Vector2(-cord_width * 0.3, y),
+			wick + Vector2(cord_width * 0.3, y + 1.0), Color(0.46, 0.34, 0.20), 1.0)
+	_draw_flame(wick)
+	_draw_smoke(wick)
 	_draw_wax_light(centre_x, base_y, candle_w, candle_h)
 	_draw_embers(wick, jar)
-	_draw_smoke(wick)
 	_draw_glass(jar, base_y, wick)
 	_draw_numeral(jar)
 
 
-## 罐内空气。分几层画出上浅下深的渐变，顶面随火焰轻轻起伏，看起来像
-## 真的在被消耗，而不是一块贴上去的蓝色。
+## Air is gas, not a liquid surface: motes fade throughout the vessel as oxygen falls.
 func _draw_air(jar: Rect2, base_y: float) -> void:
 	draw_rect(jar, GLASS_FILL)
 	var shown: float = clampf(air / AIR_FULL, 0.05, 1.0) * clampf(fuel, 0.0, 1.0)
 	if eternal:
 		shown = maxf(shown, clampf(air / AIR_FULL, 0.05, 1.0) * 0.9)
-	var height: float = jar.size.y * shown
-	if height <= 0.5:
-		return
-	var bands: int = 10
-	for index: int in range(bands):
-		var k: float = float(index) / float(bands)
-		var top: float = base_y - height * (1.0 - k)
-		# 每一层都从自己的顶边一直铺到罐底，越靠下叠得越多，于是渐变是叠出
-		# 来的而不是拼出来的——分段画会在每条接缝上留下一道可见的横纹。
-		var alpha: float = AIR.a * (0.42 if index == 0 else 0.085)
-		draw_rect(
-			Rect2(jar.position.x, top, jar.size.x, base_y - top),
-			Color(AIR.r, AIR.g, AIR.b, alpha)
-		)
-	# 气层顶面的微澜。
-	var surface: float = base_y - height
-	var points := PackedVector2Array()
-	var steps: int = 10
-	for index: int in range(steps + 1):
-		var t: float = float(index) / float(steps)
-		var y: float = surface + sin(_time * 2.4 + _seed + t * 6.0) * 1.4
-		points.append(Vector2(jar.position.x + jar.size.x * t, y))
-	draw_polyline(points, Color(0.78, 0.94, 1.0, 0.42), 1.5)
+	draw_rect(jar.grow(-3.0), Color(AIR.r, AIR.g, AIR.b, shown * 0.12))
+	var meter := Rect2(jar.position.x + 5, jar.position.y + 12, 4, jar.size.y - 22)
+	draw_rect(meter, Color(0.04, 0.10, 0.15, 0.8))
+	draw_rect(Rect2(meter.position.x, meter.end.y - meter.size.y * shown,
+		meter.size.x, meter.size.y * shown), Color(0.45, 0.83, 0.95, 0.8))
+	for index: int in range(4):
+		var y := meter.end.y - meter.size.y * float(index) / 3.0
+		draw_line(Vector2(meter.position.x - 1, y), Vector2(meter.end.x + 2, y),
+			Color(0.57, 0.77, 0.81, 0.5), 1)
+	for index: int in range(30):
+		var opacity := clampf(shown * 30.0 - float(index), 0.0, 1.0)
+		if opacity <= 0.0:
+			break
+		var x := jar.position.x + 14.0 + fposmod(float(index) * 19.7, jar.size.x - 24.0)
+		var y := base_y - 8.0 - fposmod(float(index) * 23.1 + _time * 5.0, jar.size.y - 28.0)
+		draw_rect(Rect2(Vector2(x, y), Vector2(2, 2)), Color(0.54, 0.86, 1.0, 0.5 * opacity))
 
 
-func _draw_flame(wick: Vector2, jar: Rect2) -> void:
+func flame_dimensions() -> Vector2:
 	if _phase == Phase.DEAD or _phase == Phase.COLD:
-		if _phase == Phase.COLD:
-			# 未点火时留一点余烬的暗红，让罐子不像是空的。
-			_draw_glow(wick + Vector2(0.0, -3.0), jar.size.x * 0.20,
-				Color(1.0, 0.45, 0.18), 0.45)
-			draw_circle(wick + Vector2(0.0, -2.0), 2.2,
-				Color(1.0, 0.52, 0.22, 0.75))
-		return
+		return Vector2.ZERO
 
-	var strength: float = clampf(burn, 0.0, 3.0)
-	var height: float = jar.size.y * (0.16 + 0.055 * strength)
-	var width: float = jar.size.x * 0.20 * (0.72 + 0.16 * strength)
+	var jar := jar_rect()
+	var wick := wick_positions()[0]
+	var strength: float = clampf(burn, 1.0, 3.0)
+	var height: float = jar.size.y * (0.16 + 0.075 * (strength - 1.0))
+	var width: float = 9.0 + 7.0 * (strength - 1.0)
 
 	# 点火瞬间先爆一下再落回常态，这一下是"我按了点火"的确认。
 	if _phase == Phase.IGNITING:
@@ -299,6 +359,17 @@ func _draw_flame(wick: Vector2, jar: Rect2) -> void:
 		+ 0.045 * sin(_time * 7.1 + _seed * 1.9)
 	)
 	width *= 1.0 + 0.06 * sin(_time * 8.9 + _seed * 1.3)
+	if eternal and _phase == Phase.BURNING:
+		height *= 1.06
+	height = minf(height, (wick.y - jar.position.y - 28.0) / 1.34)
+	width = minf(width, jar.size.x * 0.42)
+	return Vector2(width, height)
+
+
+func _draw_flame(wick: Vector2) -> void:
+	var dimensions := flame_dimensions()
+	var width := dimensions.x
+	var height := dimensions.y
 	if height <= 1.0 or width <= 0.5:
 		return
 
@@ -308,7 +379,6 @@ func _draw_flame(wick: Vector2, jar: Rect2) -> void:
 	if eternal and _phase == Phase.BURNING:
 		# 通气孔持续补气，火苗被吹得偏向一侧且更稳。
 		lean += 0.10
-		height *= 1.06
 
 	# 熄灭过程中整支火焰（含光晕）一起淡出，否则火没了光还在。
 	var lit: float = 1.0
@@ -316,9 +386,9 @@ func _draw_flame(wick: Vector2, jar: Rect2) -> void:
 		lit = clampf(1.0 - _phase_time / GUTTER_TIME, 0.0, 1.0)
 	_draw_glow(
 		wick + Vector2(0.0, -height * 0.42),
-		height * 1.55,
+		minf(height * 1.10, 35.0),
 		Color(1.0, 0.62, 0.24),
-		(0.85 + 0.35 * _hover) * lit
+		(0.65 + clampf(burn, 1.0, 3.0) * 0.25 + 0.20 * _hover) * lit
 	)
 	for layer: Dictionary in FLAME_LAYERS:
 		var colour: Color = layer["color"]
@@ -337,7 +407,7 @@ func _draw_flame(wick: Vector2, jar: Rect2) -> void:
 func _draw_wax_light(centre_x: float, base_y: float, cw: float, ch: float) -> void:
 	if not is_lit():
 		return
-	var glow: float = 0.32 + 0.06 * sin(_time * 9.0 + _seed)
+	var glow: float = 0.24 + clampf(burn, 1.0, 3.0) * 0.08 + 0.06 * sin(_time * 9.0 + _seed)
 	draw_rect(
 		Rect2(centre_x - cw * 0.5, base_y - ch, cw, ch * 0.45),
 		Color(1.0, 0.72, 0.34, glow)
@@ -497,6 +567,8 @@ func _draw_sigil(centre: Vector2, radius: float) -> void:
 	var scale: float = pop * breathe
 	var rx: float = radius * scale
 	var ry: float = radius * 0.30 * scale
+	rx = minf(rx, size.x * 0.5 - 4.0)
+	ry = minf(ry, size.y - 23.0 - centre.y)
 	var alpha: float = 0.85 + 0.15 * sin(_time * 4.0 + _seed)
 
 	_draw_ellipse_ring(centre, rx, ry, _time * 0.8,
@@ -522,6 +594,8 @@ func _draw_ellipse_ring(
 	centre: Vector2, rx: float, ry: float, rotation: float,
 	colour: Color, width: float
 ) -> void:
+	rx = minf(rx, minf(centre.x, size.x - centre.x) - 2.0)
+	ry = minf(ry, size.y - 21.0 - centre.y)
 	if rx <= 0.5 or ry <= 0.2:
 		return
 	var points := PackedVector2Array()

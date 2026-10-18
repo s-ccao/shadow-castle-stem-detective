@@ -1,0 +1,76 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: Bus 'Master' exists in the layout
+PASS: Bus 'Music' exists in the layout
+PASS: Bus 'SFX' exists in the layout
+PASS: Bus 'UI' exists in the layout
+PASS: Bus 'Music' routes through Master so one fader governs everything
+PASS: Bus 'SFX' routes through Master so one fader governs everything
+PASS: Bus 'UI' routes through Master so one fader governs everything
+PASS: Sound catalog covers the game's feedback events
+PASS: Sound 'ui_select' resolves to a generated file
+PASS: Sound 'ui_select' names a real bus
+PASS: Sound 'ui_confirm' resolves to a generated file
+PASS: Sound 'ui_confirm' names a real bus
+PASS: Sound 'ui_back' resolves to a generated file
+PASS: Sound 'ui_back' names a real bus
+PASS: Sound 'item_pickup' resolves to a generated file
+PASS: Sound 'item_pickup' names a real bus
+PASS: Sound 'note_file' resolves to a generated file
+PASS: Sound 'note_file' names a real bus
+PASS: Sound 'switch_throw' resolves to a generated file
+PASS: Sound 'switch_throw' names a real bus
+PASS: Sound 'bench_pass' resolves to a generated file
+PASS: Sound 'bench_pass' names a real bus
+PASS: Sound 'bench_fail' resolves to a generated file
+PASS: Sound 'bench_fail' names a real bus
+PASS: Sound 'potion_extract' resolves to a generated file
+PASS: Sound 'potion_extract' names a real bus
+PASS: Sound 'guardian_alert' resolves to a generated file
+PASS: Sound 'guardian_alert' names a real bus
+PASS: Sound 'sample_fire' resolves to a generated file
+PASS: Sound 'sample_fire' names a real bus
+PASS: Sound 'sample_bubbles' resolves to a generated file
+PASS: Sound 'sample_bubbles' names a real bus
+PASS: Sound 'sample_glass' resolves to a generated file
+PASS: Sound 'sample_glass' names a real bus
+PASS: Sound 'sample_water' resolves to a generated file
+PASS: Sound 'sample_water' names a real bus
+PASS: Sound 'sample_grains' resolves to a generated file
+PASS: Sound 'sample_grains' names a real bus
+PASS: Sound 'sample_metal' resolves to a generated file
+PASS: Sound 'sample_metal' names a real bus
+PASS: Playing the whole catalog back to back is survivable
+PASS: Three music layers are installed
+PASS: Music layer 'bed' is playing
+PASS: Music layer 'bed' loops rather than running out
+PASS: Music layer 'tension' is playing
+PASS: Music layer 'tension' loops rather than running out
+PASS: Music layer 'chase' is playing
+PASS: Music layer 'chase' loops rather than running out
+PASS: Music layers share a playback position (spread 0.0000s)
+PASS: Calm leads with the bed layer
+PASS: Calm keeps the chase layer silent
+PASS: Escalation crossfades rather than snapping the chase layer on
+PASS: Escalation reaches the chase mix
+PASS: Layer 'bed' keeps playing across an intensity change
+PASS: Layer 'tension' keeps playing across an intensity change
+PASS: Layer 'chase' keeps playing across an intensity change
+PASS: A cleared hunt returns the score to calm
+PASS: An active hunt raises tension
+PASS: An active chase raises the chase layer
+PASS: Ducking pulls the music down for a stinger
+PASS: Music returns to level after the stinger
+PASS: Bus volume round-trips through linear gain
+PASS: Zero volume reads back as silence rather than a tiny gain
+PASS: Settings exposes a Music fader
+PASS: Music fader is visible on the settings dialog
+PASS: Moving the Music fader actually moves the Music bus
+PASS: Settings exposes a SFX fader
+PASS: SFX fader is visible on the settings dialog
+PASS: Moving the SFX fader actually moves the SFX bus
+audio_contract_test: PASS
+WARNING: 28 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 14 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

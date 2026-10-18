@@ -1,0 +1,59 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: DevTools autoload is registered
+PASS: Developer hotkey still runs while a minigame pauses the tree
+PASS: The bound key turns developer mode on
+PASS: The same key turns developer mode back off
+PASS: Developer badge exists
+PASS: Badge names the key that is actually bound (badge='● DEV MODE · 0 OFF
+Shift+0 · record Hall route', key=0)
+PASS: Typing the toggle key into a text field does not switch the mode
+PASS: Hall scene loads
+PASS: The toggle key reaches the player inside the Hall
+PASS: The toggle key switches back off inside the Hall
+PASS: Wake Room scene loads
+PASS: The toggle key reaches the player inside the Wake Room
+PASS: The toggle key switches back off inside the Wake Room
+PASS: Library scene loads
+PASS: The toggle key reaches the player inside the Library
+PASS: The toggle key switches back off inside the Library
+PASS: Greenhouse scene loads
+PASS: The toggle key reaches the player inside the Greenhouse
+PASS: The toggle key switches back off inside the Greenhouse
+PASS: flame_air_minigame.gd loads
+PASS: flame_air_minigame.gd reports its level count (8)
+PASS: flame_air_minigame.gd shows the developer clear button
+PASS: flame_air_minigame.gd reports a full clear to the room
+PASS: flame_air_minigame.gd credits every stage (8 of 8)
+PASS: change_sorting_minigame.gd loads
+PASS: change_sorting_minigame.gd reports its level count (8)
+PASS: change_sorting_minigame.gd shows the developer clear button
+PASS: change_sorting_minigame.gd reports a full clear to the room
+PASS: change_sorting_minigame.gd credits every stage (8 of 8)
+PASS: elapsed_time_minigame.gd loads
+PASS: elapsed_time_minigame.gd reports its level count (8)
+PASS: elapsed_time_minigame.gd shows the developer clear button
+PASS: elapsed_time_minigame.gd reports a full clear to the room
+PASS: elapsed_time_minigame.gd credits every stage (8 of 8)
+PASS: gear_train_minigame.gd loads
+PASS: gear_train_minigame.gd reports its level count (8)
+PASS: gear_train_minigame.gd shows the developer clear button
+PASS: gear_train_minigame.gd reports a full clear to the room
+PASS: gear_train_minigame.gd credits every stage (8 of 8)
+PASS: moonlight_harvest_minigame.gd loads
+PASS: moonlight_harvest_minigame.gd reports its level count (8)
+PASS: moonlight_harvest_minigame.gd shows the developer clear button
+PASS: moonlight_harvest_minigame.gd reports a full clear to the room
+PASS: moonlight_harvest_minigame.gd credits every stage (8 of 8)
+PASS: photosynthesis_minigame.gd loads
+PASS: photosynthesis_minigame.gd reports its level count (8)
+PASS: photosynthesis_minigame.gd shows the developer clear button
+PASS: photosynthesis_minigame.gd reports a full clear to the room
+PASS: photosynthesis_minigame.gd credits every stage (8 of 8)
+PASS: Developer clear button stays hidden for normal players
+PASS: Developer clear button appears when the mode is switched on mid-game
+developer_mode_test: PASS
+WARNING: 10 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 4 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

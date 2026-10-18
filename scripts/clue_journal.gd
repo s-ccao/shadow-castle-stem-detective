@@ -34,6 +34,7 @@ const CLUE_ICONS := {
 
 # 线索按钮模板场景（scenes/clue_list_item.tscn，可在编辑器调整样式）
 const CLUE_ITEM_SCENE: PackedScene = preload("res://scenes/clue_list_item.tscn")
+const TACTILE_RECORD_SCRIPT: Script = preload("res://scripts/hub_clue_list_item.gd")
 const SEALED_ARCHIVE_IDS: Array[String] = [
 	"sealed_archive_pressure",
 	"sealed_archive_instruction",
@@ -108,6 +109,10 @@ var _archive_pin_tween: Tween
 var _open_tween: Tween
 var _painted_uv_cache: Dictionary = {}
 var close_button: Button
+var _paused_before_journal := false
+var _page_underlay: TextureRect
+var _page_tween: Tween
+var _pending_filings: Dictionary = {}
 
 @onready var title_label: Label = %TitleLabel
 @onready var journal_subtitle: Label = %JournalSubtitle
@@ -150,6 +155,16 @@ func _ready() -> void:
 
 	# 按实际游戏窗口排版，避免固定大坐标把内容挤到屏幕边缘。
 	_fit_layout()
+	_page_underlay = TextureRect.new()
+	_page_underlay.name = "PreviousDossierSheet"
+	_page_underlay.texture = parchment.texture
+	_page_underlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_page_underlay.stretch_mode = TextureRect.STRETCH_SCALE
+	_page_underlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_page_underlay.modulate = Color(0.62, 0.55, 0.44, 1.0)
+	_page_underlay.visible = false
+	main_panel.add_child(_page_underlay)
+	main_panel.move_child(_page_underlay, parchment.get_index())
 	get_viewport().size_changed.connect(_fit_layout)
 
 	# Only the functional native bars remain. Styling them directly guarantees
@@ -237,6 +252,7 @@ func _set_x_hovered(is_over: bool) -> void:
 func _fit_layout() -> void:
 	if main_panel == null:
 		return
+	_settle_page()
 
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
 	var panel_w: float = clampf(vp_size.x - 64.0, 900.0, 1480.0)
@@ -446,6 +462,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## 解锁一条线索（供游戏其他系统调用）
 func add_clue(id: String, data: Dictionary = {}) -> void:
+	var was_known := has_clue(id)
 	var entry: Dictionary
 	if clues.has(id):
 		entry = clues[id]
@@ -463,7 +480,11 @@ func add_clue(id: String, data: Dictionary = {}) -> void:
 			entry["category"] = "evidence"
 		clues[id] = entry
 	entry["unlocked"] = true
+	if not was_known:
+		_pending_filings[id] = true
 	rebuild_list()
+	if id == _selected_id:
+		_select_clue(id)
 
 
 ## 查询某条线索是否已解锁
@@ -491,6 +512,10 @@ func toggle() -> void:
 ## 打开笔记（暂停游戏）
 ## 打开后默认显示主页欢迎语（不自动选中任何线索）；点击左侧条目才显示详情。
 func open() -> void:
+	if visible:
+		return
+	ArchiveUi.prepare_hub_open("NoteHud")
+	_paused_before_journal = get_tree().paused
 	ArchiveUi.set_hub_entries_suppressed(true)
 	visible = true
 	overlay.visible = true
@@ -506,12 +531,20 @@ func open() -> void:
 func close() -> void:
 	if not visible:
 		return
+	if _open_tween != null and _open_tween.is_valid():
+		_open_tween.kill()
+	if _archive_pin_tween != null and _archive_pin_tween.is_valid():
+		_archive_pin_tween.kill()
+	_settle_page()
+	ArchiveUi.settle_motion_tree(main_panel)
+	if archive_pin_button != null:
+		archive_pin_button.scale = Vector2.ONE
 	visible = false
 	overlay.visible = false
 	main_panel.modulate = Color(1, 1, 1, 1)
 	main_panel.scale = Vector2.ONE
 	_x_hovered = false
-	get_tree().paused = false
+	get_tree().paused = _paused_before_journal
 	ArchiveUi.set_hub_entries_suppressed(false)
 
 
@@ -523,6 +556,7 @@ func rebuild_list() -> void:
 	_rebuilding = true
 	# 清空旧按钮
 	for child in list_box.get_children():
+		ArchiveUi.settle_motion_tree(child)
 		child.queue_free()
 	_buttons.clear()
 	await get_tree().process_frame
@@ -533,6 +567,7 @@ func rebuild_list() -> void:
 			continue
 		# 实例化按钮模板（TextureButton 保持比例居中 + 图标 + 标题）
 		var btn: TextureButton = CLUE_ITEM_SCENE.instantiate()
+		btn.set_script(TACTILE_RECORD_SCRIPT)
 		btn.texture_normal = load(BTN_NORMAL)
 		btn.texture_hover = load(BTN_HOVER)
 		btn.texture_pressed = load(BTN_NORMAL)
@@ -544,11 +579,14 @@ func rebuild_list() -> void:
 		# 标题
 		(btn.get_node("Layout/Title") as Label).text = _localized_clue_title(id, entry)
 		# 点击 → 显示详情
-		btn.pressed.connect(func() -> void: _select_clue(id))
+		btn.pressed.connect(_on_record_pressed.bind(str(id)))
 		list_box.add_child(btn)
 		_buttons[id] = btn
 		# 恢复选中高亮
 		_update_button_visual(id)
+		if visible and _pending_filings.has(id):
+			_animate_filing(btn)
+			_pending_filings.erase(id)
 
 	_rebuilding = false
 	_refresh_chrome()
@@ -574,17 +612,69 @@ func _select_first_unlocked() -> void:
 
 ## 选中一条线索：右侧羊皮纸显示详情 + 按钮高亮
 func _select_clue(id: String) -> void:
-	if not clues.has(id):
+	if not has_clue(id):
 		return
+	var previous_index := clues.keys().find(_selected_id)
+	var direction := 1.0 if clues.keys().find(id) >= previous_index else -1.0
 	_selected_id = id
 	var entry: Dictionary = clues[id]
 	_apply_document_header(id, entry)
 	detail_text.text = _document_body(id, entry)
+	detail_text.visible_characters = -1
 	detail_text.scroll_to_line(0)
 	for btn_id in _buttons:
 		_update_button_visual(btn_id)
 	_refresh_archive_pin_button()
 	_wire_list_focus()
+	if visible:
+		_slide_page(direction)
+
+
+func _on_record_pressed(id: String) -> void:
+	_select_clue(id)
+	GameAudio.play(&"ui_select")
+
+
+func _slide_page(direction: float) -> void:
+	_settle_page()
+	var rest := parchment.position
+	_page_underlay.position = rest + Vector2(-4.0 * direction, 3.0)
+	_page_underlay.size = parchment.size
+	_page_underlay.visible = true
+	_page_tween = ArchiveUi.begin_motion(parchment)
+	parchment.position.x += 24.0 * direction
+	parchment.pivot_offset = Vector2(0.0, parchment.size.y * 0.5)
+	parchment.rotation = 0.012 * direction
+	_page_tween.tween_property(parchment, "position", rest, 0.24)
+	_page_tween.parallel().tween_property(parchment, "rotation", 0.0, 0.24)
+	_page_tween.finished.connect(func() -> void: _page_underlay.visible = false)
+	var underline := ArchiveUi.begin_motion(document_rule)
+	document_rule.scale.x = 0.08
+	underline.tween_property(document_rule, "scale:x", 1.0, 0.28)
+
+
+func _settle_page() -> void:
+	if is_instance_valid(parchment):
+		ArchiveUi.settle_motion(parchment)
+	if is_instance_valid(document_rule):
+		ArchiveUi.settle_motion(document_rule)
+	if is_instance_valid(_page_underlay):
+		_page_underlay.visible = false
+
+
+func _animate_filing(button: TextureButton) -> void:
+	var tab := Label.new()
+	tab.name = "EvidenceFilingTab"
+	tab.text = _text("FILED", "已归档")
+	tab.position = Vector2(14.0, 3.0)
+	tab.size = Vector2(70.0, 16.0)
+	tab.add_theme_font_size_override("font_size", 9)
+	tab.add_theme_color_override("font_color", ArchiveUi.COLOR_GOLD)
+	tab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(tab)
+	var filing := ArchiveUi.begin_motion(tab)
+	tab.position.x -= 14.0
+	filing.tween_property(tab, "position:x", 14.0, 0.30)
 
 
 func _create_archive_pin_button() -> void:
@@ -724,7 +814,8 @@ func _on_locale_changed(_language: String) -> void:
 func _localized_clue_title(id: String, entry: Dictionary) -> String:
 	if entry.has("title_key"):
 		return CaseLocale.text(str(entry["title_key"]))
-	return str(entry.get("title", id))
+	var locale_field := "title_zh" if CaseLocale.is_chinese() else "title_en"
+	return str(entry.get(locale_field, entry.get("title", id)))
 
 
 func _refresh_archive_pin_button() -> void:
@@ -782,6 +873,7 @@ func _toggle_selected_sealed_archive_pin() -> void:
 func _set_archive_pin_pressed(pressed: bool) -> void:
 	if archive_pin_button == null or archive_pin_button.disabled:
 		return
+	ArchiveUi.settle_motion(archive_pin_button)
 	if _archive_pin_tween != null and _archive_pin_tween.is_valid():
 		_archive_pin_tween.kill()
 	_archive_pin_tween = archive_pin_button.create_tween()
@@ -808,6 +900,7 @@ func all_sealed_archives_pinned() -> bool:
 
 
 func _show_home_page() -> void:
+	_settle_page()
 	_selected_id = ""
 	_clear_selection_visual()
 	document_kicker.text = _text("CASE LEDGER", "案件档案")
@@ -878,6 +971,8 @@ func _wire_list_focus() -> void:
 
 
 func _focus_first_record() -> void:
+	if not visible:
+		return
 	for child: Node in list_box.get_children():
 		if child is TextureButton:
 			(child as TextureButton).grab_focus()
@@ -887,13 +982,8 @@ func _focus_first_record() -> void:
 func _play_open_transition() -> void:
 	if _open_tween != null and _open_tween.is_valid():
 		_open_tween.kill()
-	main_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	main_panel.scale = Vector2(0.985, 0.985)
-	_open_tween = create_tween()
-	_open_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	_open_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_open_tween.tween_property(main_panel, "modulate:a", 1.0, 0.14)
-	_open_tween.parallel().tween_property(main_panel, "scale", Vector2.ONE, 0.18)
+	main_panel.modulate = Color.WHITE
+	_slide_page(1.0)
 
 
 func _pulse_control(control: Control, success: bool) -> void:
@@ -901,9 +991,10 @@ func _pulse_control(control: Control, success: bool) -> void:
 		return
 	var base := Vector2.ONE
 	var pulse := Vector2(1.028, 1.028) if success else Vector2(0.978, 1.018)
+	if _archive_pin_tween != null and _archive_pin_tween.is_valid():
+		_archive_pin_tween.kill()
 	control.scale = base
-	var tween := control.create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	var tween := ArchiveUi.begin_motion(control)
 	tween.tween_property(control, "scale", pulse, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(control, "scale", base, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
@@ -926,6 +1017,10 @@ func _document_body(id: String, entry: Dictionary) -> String:
 		var heading_end := content.find("[/center]")
 		if heading_end >= 0:
 			content = content.substr(heading_end + "[/center]".length()).strip_edges()
+	var observed := str(entry.get("observed_detail_zh", entry.get("observed_detail", ""))) if CaseLocale.is_chinese() else str(entry.get("observed_detail", ""))
+	if not observed.is_empty():
+		# The author supplies an observed fact, never an inferred conclusion.
+		content = "[color=#4a306d][b]" + _text("OBSERVED · ", "观察 · ") + observed.replace("[", "[lb]") + "[/b][/color]\n\n" + content
 	return "[center]" + content + "[/center]"
 
 
@@ -937,7 +1032,9 @@ func _localized_clue_content(id: String, entry: Dictionary) -> String:
 	if entry.has("content_key"):
 		return CaseLocale.text(str(entry["content_key"]))
 	if not CaseLocale.is_chinese():
-		return str(entry.get("content", ""))
+		return str(entry.get("content_en", entry.get("content", "")))
+	if entry.has("content_zh"):
+		return str(entry["content_zh"])
 	var chinese_content: Dictionary = {
 		"sealed_archive_pressure": "[center][b]密封档案 I — 私人服务附录[/b][/center]\n\n藏在服务账本下方的信件记录了管家多年前因一次安全事故被降职。机械办公室曾许诺帮他恢复职位，条件是完整执行一次紧急隔离命令，不许追问。\n\n命令声称阿什福德圆桌的力场会保护林博士。管家后来留下的笔记只写了一句：[color=#4a306d]“是我启动了装置。我以为自己是在保护她。”[/color]\n\n这说明了他的压力与行为，却没有说明命令的作者。",
 		"sealed_archive_instruction": "[center][b]密封档案 II — 伪造的紧急指令[/b][/center]\n\n设备柜的夹层里藏着一张复写指令：“将林博士带到分析圆桌。启动隔离力场。不得中断校准。”\n\n它的安全编码属于机械办公室，但手写的路由标记是在归档后添加的。压力印章被刮去，下面残留的紫色石墨痕迹与机械师工作台的铅笔一致。\n\n管家收到的是一份看似正式的命令。有人利用维修权限伪造了命令链。",

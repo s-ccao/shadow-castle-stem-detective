@@ -54,10 +54,19 @@ var _motes: Array[Dictionary] = []
 ## 土粒：xy 是花槽内的归一化位置，z 是半径。只摇一次，逐帧重摇会闪。
 var _specks: Array[Vector3] = []
 var _rng := RandomNumberGenerator.new()
+var _target_label: Label
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_target_label = Label.new()
+	_target_label.name = "TargetLabel"
+	_target_label.text = "目标" if CaseLocale.is_chinese() else "Target"
+	_target_label.add_theme_font_size_override("font_size", 11)
+	_target_label.add_theme_color_override("font_color", TARGET_LINE)
+	_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_target_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_target_label)
 	_rng.randomize()
 	for index: int in range(MOTE_COUNT):
 		_motes.append(_new_mote(_rng.randf()))
@@ -255,6 +264,7 @@ func _draw_planter(w: float, soil_y: float, planter_h: float) -> void:
 
 ## 目标高度：一条金色虚线。苗有没有够到它，一眼就知道。
 func _draw_target(w: float, soil_y: float, unit: float) -> void:
+	_target_label.visible = target > 0
 	if target <= 0:
 		return
 	var y: float = soil_y - unit * float(target)
@@ -263,11 +273,8 @@ func _draw_target(w: float, soil_y: float, unit: float) -> void:
 	while x < w - 8.0:
 		draw_line(Vector2(x, y), Vector2(minf(x + dash, w - 8.0), y), TARGET_LINE, 1.5)
 		x += dash * 2.0
-	var font := ThemeDB.fallback_font
-	draw_string(
-		font, Vector2(w - 46.0, y - 4.0), "目标",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, TARGET_LINE
-	)
+	_target_label.position = Vector2(w - 62.0, y - 20.0)
+	_target_label.size = Vector2(52.0, 16.0)
 
 
 func _draw_plant(stem_x: float, soil_y: float, unit: float) -> void:

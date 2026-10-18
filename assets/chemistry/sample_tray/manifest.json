@@ -1,0 +1,25 @@
+{
+  "family": "Chemistry / Sample Tray",
+  "source": "Original statically authored pixel SVG masters by Copilot for this project; no external services, reference images, or third-party artwork.",
+  "rights": "Original project artwork; no external attribution or license dependencies.",
+  "approval": "Inspected all 16 materials in native 1024x768 GL Compatibility contact sheets and 600x220 hero triptychs. Revised flame grounding, meniscus silhouette, fizz size and curd containment from actual first-pass captures.",
+  "refinement": "Native focused ExperimentHero inspection: three asymmetrical overlapping flame lobes with independent local-time curl; irregular char/ember edge; nine bounded drifting smoke billows; local warm glass reflection; 16 transparent bubbles with size-varying rise and surface rupture; scalloped foam; low-opacity glass walls and a broken double specular rim. Silver tarnish metadata now identifies time-lapse. No audio or scientific sets changed.",
+  "art_direction": "Brass-lit laboratory glass, violet shadow planes, parchment highlights, stepped pixel clusters. Distinct material palettes describe appearance, not scientific classification.",
+  "normalization": "Godot Image.load_svg_from_string at 1x, RGBA8 PNG; normalize_assets.gd. Runtime loads PNG only, nearest filtering, no mipmaps.",
+  "naturalness_stage": {
+    "id": "UX-20260907-36",
+    "glass": "Neutral transparent pane art replaces ice-like blue glass. Seven complementary source-pixel regions retain their area, fall together before impact at 0.60s, then use cached 240Hz gravity/contact/friction integration. Restitution 0.18, convex-hull tray support and sleep replace repeated triangle sprites and sine bounces.",
+    "ice": "A 257-state asymmetric inward erosion mask retains texture detail and grounds the surviving bottom. Similar-section volume estimate and reference densities 917/1000 conserve model mass; the final normalized water volume is 0.917.",
+    "other_materials": "Wax slumps without cyclic wobble; original cloth pixels separate progressively; nails accelerate and stop at contact; crystals and curds form at irregular stationary sites. Bubbles originate after emission onset and follow the changing liquid level. Visible boiling mist represents condensed droplets.",
+    "generated_data": "normalize_assets.gd creates physical_masks.png and physical_geometry.json plus an exportable physical_geometry.gd constant resource. The PNG mask is data, not replacement illustration; source SVG/PNG specimens remain the visual artwork.",
+    "validation": "302 renderer checks; 14788 model checks; all16 native reset/replay pixel comparisons match; native 1024x768 motion strips and real-room EN/ZH captures inspected.",
+    "limits": "Simplified educational model: gravity is in presentation units, volume is inferred from the raster section, heat transfer and fluid flow are not solved, and thin-shard tilt is a projected presentation model without inter-fragment collision. No claim of perfect physical simulation, calibrated reaction rates or experimental prediction."
+  },
+  "assets": [
+    {"file": "specimens.png", "size": [512, 256], "cell": [64, 64], "columns": 8, "frames": 32, "alpha": true, "collision": false},
+    {"file": "vessel_back.png", "size": [300, 110], "alpha": true, "collision": false},
+    {"file": "vessel_front.png", "size": [300, 110], "alpha": true, "collision": false},
+    {"file": "physical_masks.png", "size": [128, 64], "alpha": true, "role": "source-region IDs and melt-front data", "filter": "nearest"}
+  ],
+  "atlas_order": ["paper", "ice", "glass", "sugar", "iron", "wax", "powder", "egg_raw", "cloth", "silver", "magnet", "nail", "milk", "salt", "bronze_core", "spring", "ash", "shard", "cloth_left", "cloth_right", "curd", "water", "wax_pool", "egg_set", "flame", "vapor", "bubble", "ember", "cracks", "liquid", "foam", "core_window"]
+}

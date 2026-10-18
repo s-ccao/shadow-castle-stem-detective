@@ -1,7 +1,7 @@
 extends CanvasLayer
 
 ## NoteHud — 全局侦探笔记入口（autoload 单例）
-## 平时安静驻留；悬停显示柔和光圈和 "note"，点击有轻微回弹。
+## 工具入口由 ArchiveUi 统一排版；笔记内容与解锁状态仍由本节点拥有。
 
 const JOURNAL_SCENE: PackedScene = preload("res://scenes/clue_journal.tscn")
 const HUB_ENTRY_POSITION: Vector2 = Vector2(230.0, 52.0)
@@ -10,10 +10,10 @@ const FEATURE_PANEL_POSITION: Vector2 = Vector2(248.0, 8.0)
 var _journal: CanvasLayer = null
 # 默认隐藏：首次阅读书桌羊皮纸（unlock_notes_tool）后才解锁显示。
 var _unlocked := false
-var _hovered := false
 var _feature_sequence: int = 0
 var _feature_tween: Tween
 var _entry_suppressed := false
+var entry_button: Button
 
 @onready var icon_area: Area2D = $IconArea
 @onready var hub_rail: Panel = $HubRailBackplate
@@ -41,51 +41,14 @@ func _ready() -> void:
 		GameState.state_changed.connect(_sync_hub_rail_width)
 	if not get_tree().scene_changed.is_connected(_sync_hub_rail_width):
 		get_tree().scene_changed.connect(_sync_hub_rail_width)
-	_set_hovered(false)
-	icon_area.input_event.connect(_on_icon_input)
-
-
-func _process(_delta: float) -> void:
-	if not _unlocked:
-		return
-	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-	var dist: float = mouse_pos.distance_to(icon_area.global_position)
-	var is_over: bool = dist <= 42.0
-	if is_over != _hovered:
-		_set_hovered(is_over)
-
-
-func _set_hovered(is_over: bool) -> void:
-	_hovered = is_over
-	hover_halo.visible = is_over
-	hover_plate.visible = is_over
-	var target_scale := Vector2(0.071, 0.071) if is_over else Vector2(0.0625, 0.0625)
-	var target_color := Color(1.08, 1.04, 0.94, 1.0) if is_over else Color.WHITE
-	var tw := create_tween()
-	tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	tw.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(icon_sprite, "scale", target_scale, 0.12)
-	tw.parallel().tween_property(icon_sprite, "modulate", target_color, 0.12)
-
-
-func _on_icon_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	if not _unlocked:
-		return
-	if event is InputEventMouseButton \
-			and event.pressed \
-			and event.button_index == MOUSE_BUTTON_LEFT:
-		_play_click_feedback()
-		toggle()
-		get_viewport().set_input_as_handled()
-
-
-func _play_click_feedback() -> void:
-	var tw := create_tween()
-	tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	tw.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(icon_sprite, "scale", Vector2(0.056, 0.056), 0.06)
-	tw.tween_property(icon_sprite, "scale", Vector2(0.071, 0.071), 0.10)
-	tw.tween_property(icon_sprite, "scale", Vector2(0.071 if _hovered else 0.0625, 0.071 if _hovered else 0.0625), 0.10)
+	icon_area.input_pickable = false
+	for child: Node in icon_area.get_children():
+		if child is CanvasItem:
+			(child as CanvasItem).hide()
+	entry_button = ArchiveUi.create_hub_entry(icon_area, "note", "NoteHubEntry")
+	entry_button.pressed.connect(toggle)
+	ArchiveUi.register_hub_rail(hub_rail)
+	visibility_changed.connect(ArchiveUi.refresh_hub_toolbar)
 
 
 ## 显示一次性新功能提示：提示卡指向左上角 Note 图标，并让图标短暂脉冲。
@@ -97,7 +60,7 @@ func show_feature_unlock(title: String, message: String, duration: float = 4.5) 
 	feature_title.text = CaseLocale.line(title)
 	feature_description.text = CaseLocale.line(message)
 	feature_unlock_panel.visible = true
-	feature_ring.visible = true
+	feature_ring.visible = false
 	feature_unlock_panel.modulate = Color.WHITE
 	feature_ring.modulate = Color.WHITE
 	if _feature_tween != null and _feature_tween.is_valid():
@@ -148,7 +111,6 @@ func reset() -> void:
 	icon_area.visible = false
 	hub_rail.visible = false
 	hide_feature_unlock()
-	_set_hovered(false)
 	if _journal != null:
 		_journal.queue_free()
 		_journal = null
@@ -182,6 +144,7 @@ func add_clue(id: String, data: Dictionary = {}) -> void:
 		data["content"] = CaseLocale.line(str(data["content"]))
 	var is_new: bool = not get_journal().has_clue(id)
 	get_journal().add_clue(id, data)
+	ArchiveUi.refresh_hub_preview.call_deferred()
 	if is_new:
 		GameAudio.play(&"note_file")
 	if is_new and not bool(data.get("silent", false)) and GameState.current_room_id != "final_deduction_room":
@@ -212,6 +175,7 @@ func restore_saved_clues(data: Dictionary) -> void:
 	if data.is_empty():
 		return
 	get_journal().set_clues_data(data)
+	ArchiveUi.refresh_hub_preview.call_deferred()
 
 
 func all_sealed_archives_pinned() -> bool:
@@ -225,11 +189,4 @@ func set_entry_suppressed(suppressed: bool) -> void:
 
 
 func _sync_hub_rail_width() -> void:
-	if hub_rail == null:
-		return
-	# The full map entry is Hall-only. Safe rooms keep a compact three-tool rail
-	# instead of leaving an unexplained empty socket at the right edge.
-	hub_rail.size = Vector2(
-		354.0 if GameState.current_room_id == "floor_1_hub" else 266.0,
-		84.0
-	)
+	ArchiveUi.refresh_hub_toolbar.call_deferred()

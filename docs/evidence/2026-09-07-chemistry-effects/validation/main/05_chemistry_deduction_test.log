@@ -1,0 +1,209 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: Chemistry scene loads
+PASS: Cannot confirm without observation or analysis
+PASS: Legacy callback cannot bypass evidence gate
+PASS: World proximity selects butler
+PASS: Key Hub shortcut is available before testing modal ownership
+PASS: Case panel blocks hidden Hub opening instead of creating nested pause owners
+PASS: Follow-up is locked before evidence
+PASS: The interview does not preselect the correct evidence link
+PASS: Uncollected report cannot link
+PASS: Case action available: close
+PASS: Case close restores room input
+PASS: World proximity selects red_stain
+PASS: Inspection does not grant solved evidence
+PASS: Observation does not announce staging
+PASS: Record button files observations
+PASS: Recording observations still does not solve stain
+PASS: Notebook separates record types
+PASS: Comparison is knowledge-gated
+PASS: Case action available: hypothesis_reaction
+PASS: Even a correct initial guess cannot become solved evidence
+PASS: Case action available: hypothesis_blood
+PASS: Blood is a playable working hypothesis
+PASS: First proposal updates the actual journal body
+PASS: Case action available: hypothesis_dye
+PASS: Revising a hypothesis retains the player's keyboard position
+PASS: Hypothesis is freely revisable
+PASS: Revision replaces the old proposal in the same journal body
+PASS: Revising never creates duplicate journal entries
+PASS: Changing a hypothesis does not rewrite observed facts
+PASS: Wrong hypotheses cost no reputation
+PASS: Case board fits native viewport
+PASS: Feedback stays inside the case board
+PASS: Actions and feedback do not overlap
+PASS: observed hypothesis writes real save
+PASS: observed hypothesis loads real save
+PASS: observed hypothesis flags round-trip
+PASS: observed hypothesis notebook round-trips
+PASS: Revised hypothesis survives save/load
+PASS: Saved wrong hypothesis remains in the existing journal entry
+PASS: Case action available: close
+PASS: Chemistry scene loads
+PASS: World proximity selects red_stain
+PASS: Wrong-hypothesis save can be revisited and revised
+PASS: Revisiting a wrong-hypothesis save does not grant solved evidence
+PASS: Case action available: close
+PASS: World proximity selects alchemy_table
+PASS: Table exposes Lin's protocol
+PASS: Vision demo route remains intact
+PASS: Existing first potion reward survives
+PASS: Reading protocol alone does not bypass sample tray
+PASS: World proximity selects alchemy_table
+PASS: Real sample tray launches from table
+PASS: Sample animation finishes
+PASS: Wrong sample classification remains retryable
+PASS: Sample animation finishes
+PASS: Sample tray stage 1 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 2 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 3 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 4 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 5 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 6 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 7 clears
+PASS: Sample animation finishes
+PASS: Sample tray stage 8 clears
+PASS: Full tray unlocks comparison
+PASS: Tray returns directly to the case comparison
+PASS: Separate control must precede combination
+PASS: Case action available: compare_control
+PASS: Separate control recorded through UI
+PASS: A control alone cannot solve the stain
+PASS: Case action available: close
+PASS: Partial comparison can be left safely
+PASS: World proximity selects alchemy_table
+PASS: Reopening preserves the recorded control
+PASS: partial control writes real save
+PASS: partial control loads real save
+PASS: partial control flags round-trip
+PASS: partial control notebook round-trips
+PASS: Case action available: compare_reaction
+PASS: Both comparison records are available
+PASS: Players can test their interpretation without an answer-revealing disabled button
+PASS: The dossier does not pre-grade hypotheses before the player's interpretation
+PASS: Case action available: confirm
+PASS: Unsupported interpretation receives feedback instead of becoming a fact
+PASS: Test results require player interpretation
+PASS: Case action available: section_hypotheses
+PASS: Case board fits native viewport
+PASS: Feedback stays inside the case board
+PASS: Actions and feedback do not overlap
+PASS: Case action available: hypothesis_reaction
+PASS: Case action available: confirm
+PASS: Supported explanation grants original finale evidence ID
+PASS: Chemical result names no culprit
+PASS: Result retains scientific limits
+PASS: Analysis does not auto-complete interview
+PASS: Final deduction requires the new interview while retaining legacy record compatibility
+PASS: Finale labels the raw report without pre-judging deliberate staging
+PASS: Case board fits native viewport
+PASS: Feedback stays inside the case board
+PASS: Actions and feedback do not overlap
+PASS: Case action available: close
+PASS: World proximity selects butler
+PASS: Case action available: statement_supplies
+PASS: Case action available: evidence_glass
+PASS: Case action available: present
+PASS: Broken glass does not establish cleaner access
+PASS: Case action available: statement_glass
+PASS: Case action available: present
+PASS: Glass can corroborate without unlocking supply question
+PASS: Corroboration is not the requested evidence link
+PASS: Case action available: evidence_comparison
+PASS: Case action available: present
+PASS: Chemical report cannot establish sound or timing
+PASS: Case action available: statement_supplies
+PASS: Case action available: present
+PASS: Matching report and supply statement unlock follow-up
+PASS: Case board fits native viewport
+PASS: Feedback stays inside the case board
+PASS: Actions and feedback do not overlap
+PASS: linked testimony writes real save
+PASS: linked testimony loads real save
+PASS: linked testimony flags round-trip
+PASS: linked testimony notebook round-trips
+PASS: Case action available: follow_up
+PASS: Follow-up grants original reward once
+PASS: Follow-up records interview without needing a second visit
+PASS: Completed case guidance does not send the player into another mandatory interview
+PASS: Final deduction requires the new interview while retaining legacy record compatibility
+PASS: Finale labels the raw report without pre-judging deliberate staging
+PASS: Complete detective loop completes Chemistry
+PASS: World proximity selects butler
+PASS: Case action available: follow_up
+PASS: Repeated follow-up cannot farm reputation
+PASS: World proximity selects cabinet
+PASS: Hidden Greenhouse key route survives
+PASS: World proximity selects alchemy_table
+PASS: Crafting remains accessible
+PASS: World proximity selects alchemy_table
+PASS: Case action available: hypothesis_blood
+PASS: Revising working hypothesis never erases established evidence
+PASS: Case action available: hypothesis_reaction
+PASS: completed case writes real save
+PASS: completed case loads real save
+PASS: completed case flags round-trip
+PASS: completed case notebook round-trips
+PASS: Key persists alongside case flags
+PASS: Case action available: section_conclusions
+PASS: Case board fits native viewport
+PASS: Feedback stays inside the case board
+PASS: Actions and feedback do not overlap
+PASS: Case renders Chinese structured sections
+PASS: Language change does not leave stale English feedback
+PASS: Escape closes modal and restores pause
+PASS: Reasoning is the player's localized self-talk, not live Lin dialogue
+PASS: Case record associates with Chemistry on the Map
+PASS: Journal observation accent contains only observed facts
+PASS: Journal title follows current language
+PASS: Journal displays the localized structured body
+PASS: Chemistry scene loads
+PASS: Room reload retains completed case
+PASS: Chemistry scene loads
+PASS: Old solved-stain save restores confirmed evidence without redoing minigame
+PASS: Final deduction requires the new interview while retaining legacy record compatibility
+PASS: Finale labels the raw report without pre-judging deliberate staging
+PASS: World proximity selects butler
+PASS: Case action available: statement_supplies
+PASS: Case action available: evidence_comparison
+PASS: Case action available: present
+PASS: Case action available: follow_up
+PASS: Old rewarded Butler save never grants reward twice
+PASS: legacy migration writes real save
+PASS: legacy migration loads real save
+PASS: legacy migration flags round-trip
+PASS: legacy migration notebook round-trips
+PASS: Chemistry scene loads
+PASS: World proximity selects red_stain
+PASS: Case action available: hypothesis_dye
+PASS: Completed legacy save stays solved when its working hypothesis is revised
+PASS: Legacy journal entry accepts later revisions
+PASS: Case action available: hypothesis_reaction
+PASS: Case action available: close
+PASS: World proximity selects butler
+PASS: Case action available: follow_up
+PASS: Completed legacy save remains playable without repeating rewards
+PASS: World proximity selects exit
+PASS: Chemistry exit still changes scene through Hall transition
+PASS: Hall transition restores tree pause
+PASS: Case flags survive Hall return
+PASS: Hall player movement resumes
+PASS: Normal Chemistry door still requires its physical key
+PASS: Key alone does not bypass the Chemistry knowledge exhibit
+PASS: Tutorial presents knowledge before filing
+PASS: Tutorial brass core still grants Chemistry knowledge
+PASS: Tutorial knowledge is filed under its original journal ID
+PASS: Tutorial Chemistry entry requires its question
+PASS: Tutorial Chemistry door enters the actual upgraded room
+PASS: Tutorial completion and door unlock persist
+PASS: Hall entry preserves the Chemistry checkpoint route
+PASS: Upgraded Chemistry accepts normal tutorial entry with usable input
+PASS: Authored Hall tutorial route is unchanged
+chemistry_deduction_test: PASS

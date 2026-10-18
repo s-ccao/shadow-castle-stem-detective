@@ -6,29 +6,29 @@
 [ext_resource type="Texture2D" uid="uid://cl4d8rqyrdkp8" path="res://assets/props/Hall/final_key_machine_1.png" id="3_m1"]
 [ext_resource type="Texture2D" uid="uid://cnpe0hnsp5yin" path="res://assets/props/Hall/final_key_machine_2.png" id="4_m2"]
 [ext_resource type="Texture2D" uid="uid://dm6xn0faw4e02" path="res://assets/props/Hall/final_key_machine_3.png" id="5_m3"]
-[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_glowing_console.png" id="6_library_knowledge"]
-[ext_resource type="Texture2D" path="res://assets/props/DiningHall/dining_grandfather_clock.png" id="7_dining_knowledge"]
-[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_gauge_machine.png" id="8_circuit_knowledge"]
-[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_green_construct.png" id="9_greenhouse_knowledge"]
-[ext_resource type="Texture2D" path="res://assets/props/hall_knowledge/hall_knowledge_bronze_core.png" id="10_chemistry_knowledge"]
+[ext_resource type="Texture2D" uid="uid://cxkeygkbrht15" path="res://assets/props/hall_knowledge/hall_knowledge_glowing_console.png" id="6_library_knowledge"]
+[ext_resource type="Texture2D" uid="uid://b3v37oclbbhsh" path="res://assets/props/DiningHall/dining_grandfather_clock.png" id="7_dining_knowledge"]
+[ext_resource type="Texture2D" uid="uid://08x2x3w1p7di" path="res://assets/props/hall_knowledge/hall_knowledge_gauge_machine.png" id="8_circuit_knowledge"]
+[ext_resource type="Texture2D" uid="uid://lk5m1j0efqjm" path="res://assets/props/hall_knowledge/hall_knowledge_green_construct.png" id="9_greenhouse_knowledge"]
+[ext_resource type="Texture2D" uid="uid://38wkfdqxlwhq" path="res://assets/props/hall_knowledge/hall_knowledge_bronze_core.png" id="10_chemistry_knowledge"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rack"]
 size = Vector2(71, 64.5)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_m1"]
-size = Vector2(38, 118)
+size = Vector2(52, 120)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_m2"]
-size = Vector2(118, 54)
+size = Vector2(147, 60)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_m3"]
-size = Vector2(111, 50)
+size = Vector2(119, 50)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_knowledge_library"]
 radius = 65.00769
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_knowledge_dining"]
-radius = 68.94926
+radius = 48.259712
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_knowledge_circuit"]
 radius = 50.635956
@@ -37,7 +37,7 @@ radius = 50.635956
 radius = 49.0306
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_knowledge_chemistry"]
-radius = 63.505905
+radius = 55.00909
 
 [node name="WallCollisions" type="Node2D" unique_id=1742691660]
 
@@ -83,8 +83,8 @@ z_index = 5
 position = Vector2(222, 528)
 
 [node name="M1Sprite" type="Sprite2D" parent="FinalKeyMachine1" unique_id=203001012]
-position = Vector2(13.999992, -37.000015)
-scale = Vector2(0.1, 0.09)
+position = Vector2(-17.999992, -42.000015)
+scale = Vector2(0.08211683, 0.07580176)
 texture = ExtResource("3_m1")
 centered = false
 
@@ -92,7 +92,7 @@ centered = false
 position = Vector2(32, -46)
 
 [node name="M1Shape" type="CollisionShape2D" parent="FinalKeyMachine1/M1Collision" unique_id=203001014]
-position = Vector2(18, 68)
+position = Vector2(-27, 52)
 shape = SubResource("RectangleShape2D_m1")
 disabled = true
 
@@ -102,15 +102,15 @@ z_index = 5
 position = Vector2(1443, 131)
 
 [node name="M2Sprite" type="Sprite2D" parent="FinalKeyMachine2" unique_id=203001022]
-position = Vector2(-94.00001, -22.999996)
-scale = Vector2(0.09, 0.08)
+position = Vector2(-117.00001, -69)
+scale = Vector2(0.107919216, 0.10509031)
 texture = ExtResource("4_m2")
 centered = false
 
 [node name="M2Collision" type="StaticBody2D" parent="FinalKeyMachine2" unique_id=203001023]
 
 [node name="M2Shape" type="CollisionShape2D" parent="FinalKeyMachine2/M2Collision" unique_id=203001024]
-position = Vector2(-35, -2)
+position = Vector2(-48.5, -38)
 shape = SubResource("RectangleShape2D_m2")
 disabled = true
 
@@ -120,8 +120,8 @@ z_index = 5
 position = Vector2(1187, 1028)
 
 [node name="M3Sprite" type="Sprite2D" parent="FinalKeyMachine3" unique_id=203001032]
-position = Vector2(-33.000015, -62.000008)
-scale = Vector2(0.12, 0.12)
+position = Vector2(-77.000046, -32.000023)
+scale = Vector2(0.14365883, 0.13870242)
 texture = ExtResource("5_m3")
 centered = false
 
@@ -129,7 +129,7 @@ centered = false
 position = Vector2(39, -27)
 
 [node name="M3Shape" type="CollisionShape2D" parent="FinalKeyMachine3/M3Collision" unique_id=203001034]
-position = Vector2(-19, -9)
+position = Vector2(-54.5, 26)
 shape = SubResource("RectangleShape2D_m3")
 disabled = true
 
@@ -143,19 +143,19 @@ position = Vector2(1552, 260)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=1788309197]
 texture_filter = 1
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 scale = Vector2(0.0677, 0.0677)
 texture = ExtResource("6_library_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=551733701]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 
 [node name="InteractionArea" type="Area2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=263304055]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 collision_layer = 2
 
 [node name="InteractionShape" type="CollisionShape2D" parent="KnowledgeExhibits/LibraryRoomKnowledge/InteractionArea" unique_id=933643359]
-position = Vector2(0, 0)
+position = Vector2(-67, 65)
 shape = SubResource("CircleShape2D_knowledge_library")
 disabled = true
 
@@ -164,20 +164,20 @@ editor_description = "Dining Hall Knowledge。手动调整这个父节点的 Pos
 position = Vector2(1680, 738)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=1405027501]
-position = Vector2(0, -52.0)
 texture_filter = 1
-scale = Vector2(0.0586, 0.0586)
+position = Vector2(176.99997, 90.00007)
+scale = Vector2(0.06989866, 0.069898546)
 texture = ExtResource("7_dining_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=20417855]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 
 [node name="InteractionArea" type="Area2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=1615786008]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 collision_layer = 2
 
 [node name="InteractionShape" type="CollisionShape2D" parent="KnowledgeExhibits/DiningHallKnowledge/InteractionArea" unique_id=989799760]
-position = Vector2(0, 0)
+position = Vector2(179, 143)
 shape = SubResource("CircleShape2D_knowledge_dining")
 disabled = true
 
@@ -187,19 +187,19 @@ position = Vector2(187, 627)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=164785416]
 texture_filter = 1
-position = Vector2(0, -52.0)
-scale = Vector2(0.0677, 0.0677)
+position = Vector2(-106.4156, 334.2484)
+scale = Vector2(0.07307733, 0.084958896)
 texture = ExtResource("8_circuit_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=1433245640]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 
 [node name="InteractionArea" type="Area2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=1386674914]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 collision_layer = 2
 
 [node name="InteractionShape" type="CollisionShape2D" parent="KnowledgeExhibits/CircuitRoomKnowledge/InteractionArea" unique_id=1789221658]
-position = Vector2(0, 0)
+position = Vector2(-111, 382)
 shape = SubResource("CircleShape2D_knowledge_circuit")
 disabled = true
 
@@ -209,19 +209,18 @@ position = Vector2(301, 334)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=198594813]
 texture_filter = 1
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 scale = Vector2(0.0677, 0.0677)
 texture = ExtResource("9_greenhouse_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=731269012]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 
 [node name="InteractionArea" type="Area2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=392673595]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 collision_layer = 2
 
 [node name="InteractionShape" type="CollisionShape2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge/InteractionArea" unique_id=1619317925]
-position = Vector2(0, 0)
 shape = SubResource("CircleShape2D_knowledge_green")
 disabled = true
 
@@ -231,19 +230,19 @@ position = Vector2(419, 139)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=1283029770]
 texture_filter = 1
-position = Vector2(0, -52.0)
-scale = Vector2(0.0677, 0.0677)
+position = Vector2(207.16881, 334.9984)
+scale = Vector2(0.07193596, 0.11067501)
 texture = ExtResource("10_chemistry_knowledge")
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=686372712]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 
 [node name="InteractionArea" type="Area2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=1356225833]
-position = Vector2(0, -52.0)
+position = Vector2(0, -52)
 collision_layer = 2
 
 [node name="InteractionShape" type="CollisionShape2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge/InteractionArea" unique_id=1207819346]
-position = Vector2(0, 0)
+position = Vector2(210, 388)
 shape = SubResource("CircleShape2D_knowledge_chemistry")
 disabled = true
 

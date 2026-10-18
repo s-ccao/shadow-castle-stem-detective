@@ -1,0 +1,15 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: The rehearsal is actually running (no dialogue holding it)
+PASS: The guided crossing is broken into segments (51 waypoints)
+PASS: The Guardian opens the crossing at a safe distance (794 px)
+PASS: Leaving the footprint corridor enables real pursuit
+PASS: Exposure does not teleport the player
+PASS: Leaving the route warns and starts pursuit rather than instantly ending the run
+PASS: Walking the guided route never ends the run
+PASS: The Guardian never closes to contact during the rehearsal (158 px)
+guided_crossing_test: PASS
+WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

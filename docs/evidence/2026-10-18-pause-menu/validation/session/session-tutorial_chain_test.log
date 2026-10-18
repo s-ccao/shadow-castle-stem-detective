@@ -1,0 +1,20 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PASS: Guided chain has en copy for every step (missing: [])
+PASS: Guided chain has zh copy for every step (missing: [])
+PASS: Chemistry Room shows a running objective card
+PASS: Objective card is visible on arrival
+PASS: First Chemistry objective points at the red stain
+PASS: World marker points at the red stain before it is recorded
+PASS: Recording the stain advances the objective to the Butler
+PASS: World marker follows the objective to the Butler
+PASS: Clearing the Butler advances the objective to the exit
+PASS: World marker finally points back at the Castle Hall exit
+PASS: Room completion is recorded once both leads are done
+PASS: Objective card hides when field guidance is switched off
+PASS: World objective marker also respects the guidance setting
+tutorial_chain_test: PASS
+WARNING: 11 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 5 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

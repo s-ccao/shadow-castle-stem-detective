@@ -60,6 +60,16 @@ const WALK_REVEAL_RADIUS_MAP: float = 28.0
 const ROOM_REVEAL_RADIUS_MAP: float = 88.0
 const WAKE_REVEAL_RADIUS_MAP: float = 105.0
 const POWERED_MEMORY_DARKNESS: float = 0.66
+const INK_SHADER: Shader = preload("res://scripts/hub_map_ink.gdshader")
+const LEGACY_CLUE_ROOMS: Dictionary = {
+	"book_clue": "wake_room", "candle_note": "wake_room", "scroll_clue": "wake_room",
+	"cabinet_secret_note": "chemistry_room", "red_stain_note": "chemistry_room",
+	"gardener_irrigation_record": "greenhouse_room",
+	"violet_insulating_fiber_note": "circuit_room", "mechanic_missing_glove_record": "circuit_room",
+	"sealed_archive_instruction": "circuit_room", "sealed_archive_pressure": "dining_hall",
+	"mrs_lin_last_dining_note": "dining_hall", "sealed_archive_lin_decision": "library",
+	"ashford_archive_record": "library",
+}
 const GUARDIAN_MINIMAP_POSITION: Vector2 = Vector2(828.0, 594.0)
 const GUARDIAN_MINIMAP_SIZE: Vector2 = Vector2(178.0, 156.0)
 const GUARDIAN_MINIMAP_MAP_POSITION: Vector2 = Vector2(9.0, 27.0)
@@ -81,7 +91,6 @@ var guardian_minimap_status: Label
 var guardian_minimap_fog_rect: TextureRect
 var mini_guardian_marker: Control
 var mini_player_marker: Control
-var entry_tween: Tween
 var map_open_tween: Tween
 var player_marker_tween: Tween
 var room_points: Array[Panel] = []
@@ -93,6 +102,11 @@ var repair_overlay: Control
 var _entry_suppressed := false
 var _guardian_tracking_suppressed := false
 var _last_power_restored := false
+var location_picker: OptionButton
+var location_clues: RichTextLabel
+var room_buttons: Array[Button] = []
+var selected_room_id := ""
+var ink_tween: Tween
 
 
 func _ready() -> void:
@@ -107,7 +121,9 @@ func _ready() -> void:
 		GameState.guardian_tracking_changed.connect(_on_guardian_tracking_changed)
 	if not get_tree().scene_changed.is_connected(_on_scene_changed):
 		get_tree().scene_changed.connect(_on_scene_changed)
+	CaseLocale.locale_changed.connect(_on_map_locale_changed)
 	_sync_map_state()
+	_on_map_locale_changed("")
 
 
 func _process(_delta: float) -> void:
@@ -115,6 +131,9 @@ func _process(_delta: float) -> void:
 	if power_restored != _last_power_restored:
 		_last_power_restored = power_restored
 		_refresh_fog_texture()
+		_sync_map_state_light()
+		if overlay.visible:
+			_animate_known_ink()
 	# Route memory is withheld during the blackout. Once power is restored,
 	# only newly recorded cells are shaded incrementally for performance.
 	if power_restored:
@@ -160,92 +179,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _create_map_entry() -> void:
-	map_entry_button = Button.new()
-	map_entry_button.name = "MapHubEntry"
-	map_entry_button.text = ""
-	# 左上角 Hub 顺序：BAG(18) → KEY(106) → NOTE(194) → MAP(282)，间距 16px。
-	map_entry_button.position = Vector2(282.0, 14.0)
-	map_entry_button.size = Vector2(72.0, 72.0)
-	map_entry_button.pivot_offset = Vector2(36.0, 36.0)
+	map_entry_button = ArchiveUi.create_hub_entry(self, "map", "MapHubEntry")
 	map_entry_button.visible = false
-	map_entry_button.tooltip_text = "Route map  ·  U"
-	map_entry_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	map_entry_button.focus_mode = Control.FOCUS_ALL
-	_apply_entry_style()
-	map_entry_button.mouse_entered.connect(_set_map_entry_hover.bind(true))
-	map_entry_button.mouse_exited.connect(_set_map_entry_hover.bind(false))
 	map_entry_button.pressed.connect(toggle_map)
-	add_child(map_entry_button)
-
-	var glyph := Label.new()
-	glyph.name = "MapHubGlyph"
-	glyph.text = "◇"
-	glyph.position = Vector2(0.0, 7.0)
-	glyph.size = Vector2(72.0, 32.0)
-	glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	glyph.add_theme_font_size_override("font_size", 25)
-	glyph.add_theme_color_override("font_color", Color(0.58, 0.78, 1.0, 1.0))
-	glyph.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.08, 1.0))
-	glyph.add_theme_constant_override("outline_size", 3)
-	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_entry_button.add_child(glyph)
-
-	var label := Label.new()
-	label.name = "MapHubLabel"
-	label.text = "MAP"
-	label.position = Vector2(0.0, 41.0)
-	label.size = Vector2(72.0, 20.0)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", Color(0.88, 0.72, 0.36, 1.0))
-	label.add_theme_color_override("font_outline_color", Color(0.02, 0.01, 0.03, 1.0))
-	label.add_theme_constant_override("outline_size", 3)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_entry_button.add_child(label)
-
-
-func _apply_entry_style() -> void:
-	var normal_style: StyleBoxFlat = StyleBoxFlat.new()
-	normal_style.bg_color = Color(0.035, 0.035, 0.075, 0.94)
-	normal_style.border_color = Color(0.46, 0.62, 0.92, 0.90)
-	normal_style.set_border_width_all(1)
-	normal_style.set_corner_radius_all(36)
-	normal_style.shadow_color = Color(0.18, 0.34, 0.86, 0.28)
-	normal_style.shadow_size = 7
-	map_entry_button.add_theme_stylebox_override("normal", normal_style)
-
-	var hover_style: StyleBoxFlat = normal_style.duplicate()
-	hover_style.bg_color = Color(0.08, 0.12, 0.25, 0.98)
-	hover_style.border_color = Color(0.70, 0.88, 1.0, 1.0)
-	hover_style.set_border_width_all(2)
-	hover_style.shadow_color = Color(0.25, 0.56, 1.0, 0.52)
-	hover_style.shadow_size = 12
-	map_entry_button.add_theme_stylebox_override("hover", hover_style)
-	map_entry_button.add_theme_stylebox_override("focus", hover_style)
-	map_entry_button.add_theme_color_override(
-		"font_color",
-		Color(0.88, 0.72, 0.36, 1.0)
-	)
-	map_entry_button.add_theme_color_override(
-		"font_hover_color",
-		Color(0.92, 0.96, 1.0, 1.0)
-	)
-
-
-func _set_map_entry_hover(is_hovered: bool) -> void:
-	if entry_tween != null and entry_tween.is_valid():
-		entry_tween.kill()
-	entry_tween = create_tween()
-	entry_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	entry_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	entry_tween.tween_property(
-		map_entry_button,
-		"scale",
-		Vector2(1.08, 1.08) if is_hovered else Vector2.ONE,
-		0.14
-	)
 
 
 func _create_map_overlay() -> void:
@@ -319,13 +255,18 @@ func _create_map_overlay() -> void:
 	fog_texture_rect.stretch_mode = TextureRect.STRETCH_SCALE
 	fog_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fog_texture_rect.set_meta("hub_artwork_fit", "full_frame_coordinate_locked")
+	var ink := ShaderMaterial.new()
+	ink.shader = INK_SHADER
+	ink.set_shader_parameter("scan", 1.0)
+	fog_texture_rect.material = ink
 	map_panel.add_child(fog_texture_rect)
 	_create_fog_texture()
 
 	var close_button: Button = Button.new()
 	close_button.name = "MapCloseButton"
 	close_button.text = "×"
-	close_button.position = Vector2(954.0, 26.0)
+	# Active potion chips occupy the upper-right corner even while paused.
+	close_button.position = Vector2(736.0, 26.0)
 	close_button.size = Vector2(38.0, 38.0)
 	close_button.focus_mode = Control.FOCUS_ALL
 	close_button.add_theme_font_size_override("font_size", 27)
@@ -414,6 +355,23 @@ func _create_map_ledger() -> void:
 	map_detail.add_theme_constant_override("outline_size", 2)
 	map_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_ledger.add_child(map_detail)
+	location_picker = OptionButton.new()
+	location_picker.name = "KnownLocationPicker"
+	location_picker.position = Vector2(14.0, 254.0)
+	location_picker.size = Vector2(192.0, 34.0)
+	location_picker.add_theme_font_size_override("font_size", 11)
+	location_picker.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	location_picker.item_selected.connect(_on_location_picked)
+	map_ledger.add_child(location_picker)
+	ArchiveUi.apply_button(location_picker, ArchiveUi.ROLE_ARCHIVE)
+	location_clues = RichTextLabel.new()
+	location_clues.name = "KnownLocationClues"
+	location_clues.position = Vector2(14.0, 300.0)
+	location_clues.size = Vector2(192.0, 218.0)
+	location_clues.bbcode_enabled = true
+	location_clues.add_theme_font_size_override("normal_font_size", 11)
+	location_clues.add_theme_color_override("default_color", ArchiveUi.COLOR_PARCHMENT)
+	map_ledger.add_child(location_clues)
 
 
 func _create_player_marker() -> void:
@@ -631,6 +589,16 @@ func _create_room_point(index: int) -> void:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_panel.add_child(label)
 	room_labels.append(label)
+	var hit := Button.new()
+	hit.name = "KnownRoom_%s" % ROOM_IDS[index]
+	hit.position = panel_position - Vector2(14.0, 14.0)
+	hit.size = Vector2(28.0, 28.0)
+	hit.flat = true
+	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	hit.tooltip_text = CaseLocale.line(ROOM_LABELS[index])
+	hit.pressed.connect(_select_location.bind(ROOM_IDS[index]))
+	map_panel.add_child(hit)
+	room_buttons.append(hit)
 
 
 func _create_fog_texture() -> void:
@@ -824,18 +792,17 @@ func _refresh_map_ledger() -> void:
 		return
 	if not GameState.has_story_flag("circuit_power_restored"):
 		map_detail.text = (
+			"状态：完全断电\n\n目前只能读取你和守卫的实时信号。\n\n恢复供电，才能读取路径记忆。"
+			if CaseLocale.is_chinese() else
 			"STATUS: TOTAL BLACKOUT\n\n"
 			+ "Only live player and Guardian signals remain readable.\n\n"
 			+ "Restore power to recover route memory."
 		)
-		return
-	if GameState.chase_mode:
-		map_detail.text = (
-			"STATUS: PURSUIT / POWER ONLINE\n\n"
-			+ "Blue  •  your position\n"
-			+ "Red   •  Guardian signal\n\n"
-			+ "Walked routes remain in gray memory; room labels are hidden while the Guardian is pursuing you."
-		)
+		map_detail.size.y = 452.0
+		location_picker.visible = false
+		location_clues.visible = false
+		location_clues.text = ""
+		selected_room_id = ""
 		return
 	var visited_count := 0
 	var held_key_count := 0
@@ -846,26 +813,98 @@ func _refresh_map_ledger() -> void:
 		if not key_id.is_empty() and GameState.has_key(key_id):
 			held_key_count += 1
 	var explored_count: int = GameState.hall_explored_cells.size()
+	map_detail.size.y = 178.0
 	map_detail.text = (
-		(
-			"GUARDIAN SIGNAL\nPatrolling Castle Hall\n\n"
-			if GameState.is_guardian_hunt_active()
-			else ""
-		)
-		+
-		"RECORDED GROUND\n"
-		+ str(explored_count) + " / 2400 tiles\n\n"
-		+ "KNOWN ROOMS\n"
-		+ str(visited_count) + " / " + str(ROOM_IDS.size()) + " entered\n\n"
-		+ "KEYS IN HAND\n"
-		+ str(held_key_count) + " marked in gold\n\n"
-		+ "LEGEND\n"
-		+ "Blue  •  your position\n"
-		+ "Red   •  Guardian\n"
-		+ "Gold  •  key acquired\n"
-		+ "Ink   •  room entered\n"
-		+ "Black •  uncharted"
-	)
+		"供电已恢复%s\n\n已记录地面 · %d 格\n已进入房间 · %d\n持有钥匙 · %d\n\n蓝 · 你的位置　红 · 守卫\n灰 · 路径记忆　黑 · 未探索"
+		if CaseLocale.is_chinese() else
+		"POWER ONLINE%s\n\nRECORDED GROUND · %d tiles\nKNOWN ROOMS · %d entered\nKEYS IN HAND · %d\n\nBlue · you    Red · Guardian\nGray · memory    Black · uncharted"
+	) % [(" / 追逐中" if CaseLocale.is_chinese() else " / PURSUIT") if GameState.chase_mode else "", explored_count, visited_count, held_key_count]
+	_refresh_locations()
+
+
+func _refresh_locations() -> void:
+	location_picker.visible = true
+	location_clues.visible = true
+	location_picker.clear()
+	for index: int in range(ROOM_IDS.size()):
+		if not _is_room_visited(ROOM_IDS[index]):
+			continue
+		location_picker.add_item(_room_label(index))
+		location_picker.set_item_metadata(location_picker.item_count - 1, ROOM_IDS[index])
+		if selected_room_id == ROOM_IDS[index]:
+			location_picker.select(location_picker.item_count - 1)
+	if selected_room_id.is_empty() or not _is_room_visited(selected_room_id):
+		selected_room_id = str(location_picker.get_item_metadata(0))
+		location_picker.select(0)
+	_show_location_clues()
+
+
+func _on_location_picked(index: int) -> void:
+	_select_location(str(location_picker.get_item_metadata(index)))
+
+
+func _select_location(room_id: String) -> void:
+	if not overlay.visible or not GameState.has_story_flag("circuit_power_restored") or not _is_room_visited(room_id):
+		return
+	selected_room_id = room_id
+	_refresh_locations()
+	var motion := ArchiveUi.begin_motion(location_clues)
+	var rest := location_clues.position
+	location_clues.position.x += 10.0
+	motion.tween_property(location_clues, "position", rest, 0.18)
+	GameAudio.play(&"ui_select")
+
+
+func _known_clues_for_room(room_id: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if not GameState.has_story_flag("circuit_power_restored") or not _is_room_visited(room_id):
+		return result
+	var notes: Dictionary = NoteHud.get_saved_clues()
+	for clue_id: String in notes:
+		var entry: Dictionary = notes[clue_id]
+		if not bool(entry.get("unlocked", false)):
+			continue
+		var source := str(entry.get("room_id", LEGACY_CLUE_ROOMS.get(clue_id, "")))
+		if source.is_empty():
+			for prefix: String in ["chemistry_", "greenhouse_", "circuit_", "dining_", "library_", "final_"]:
+				if clue_id.begins_with(prefix):
+					source = {"chemistry_": "chemistry_room", "greenhouse_": "greenhouse_room", "circuit_": "circuit_room", "dining_": "dining_hall", "library_": "library", "final_": "final_deduction_room"}[prefix]
+					break
+		if source == "library_room":
+			source = "library"
+		if source == room_id:
+			result.append(entry)
+	return result
+
+
+func _show_location_clues() -> void:
+	var records := _known_clues_for_room(selected_room_id)
+	var lines := PackedStringArray()
+	lines.append("[b]" + ("已知线索" if CaseLocale.is_chinese() else "KNOWN CLUES") + "[/b]")
+	for entry: Dictionary in records:
+		var title := str(entry.get("title_zh" if CaseLocale.is_chinese() else "title_en", entry.get("title", "")))
+		if entry.has("title_key"):
+			title = CaseLocale.text(str(entry["title_key"]))
+		lines.append("• " + CaseLocale.line(title).replace("[", "[lb]"))
+	if records.is_empty():
+		lines.append("此地点尚无归档线索。" if CaseLocale.is_chinese() else "No clues filed at this location.")
+	location_clues.text = "\n\n".join(lines)
+	location_clues.scroll_to_line(0)
+
+
+func _room_label(index: int) -> String:
+	return CaseLocale.room_name(ROOM_IDS[index]) if CaseLocale.is_chinese() else ROOM_LABELS[index]
+
+
+func _on_map_locale_changed(_language: String) -> void:
+	(overlay.get_node("MapTitle") as Label).text = "林博士的勘察地图" if CaseLocale.is_chinese() else "DR. LIN'S SURVEY MAP"
+	(overlay.get_node("MapSubtitle") as Label).text = "只有核实的地面才会留下墨迹。记录你走过的路径。" if CaseLocale.is_chinese() else "Only verified ground is written in ink. Trace your own route through the hall."
+	(map_ledger.get_node("SurveyLedgerTitle") as Label).text = "勘察档案" if CaseLocale.is_chinese() else "SURVEY LEDGER"
+	(map_entry_button.get_node("MapHubLabel") as Label).text = "地图" if CaseLocale.is_chinese() else "MAP"
+	for index: int in range(ROOM_IDS.size()):
+		room_labels[index].text = _room_label(index)
+		room_buttons[index].tooltip_text = _room_label(index)
+	_refresh_map_ledger()
 
 
 func _is_room_visited(room_id: String) -> bool:
@@ -893,7 +932,8 @@ func _on_scene_changed() -> void:
 	# MapHub 是 Autoload，不会随房间场景释放；切换房间时必须关闭大厅地图，
 	# 否则新房间会显示在 Castle Hall 地图 Overlay 后面，造成画面混合。
 	if overlay != null:
-		overlay.visible = false
+		if overlay.visible:
+			close_map()
 	if repair_overlay != null:
 		repair_overlay.visible = false
 	_paused_before_map = false
@@ -919,6 +959,7 @@ func _sync_map_state_light() -> void:
 		for index: int in range(ROOM_IDS.size()):
 			room_labels[index].visible = false
 			room_points[index].visible = false
+			room_buttons[index].visible = false
 		_refresh_map_ledger()
 		_update_player_marker()
 		refresh_guardian_tracking()
@@ -926,6 +967,7 @@ func _sync_map_state_light() -> void:
 	for index: int in range(ROOM_IDS.size()):
 		var visited: bool = _is_room_visited(ROOM_IDS[index])
 		room_labels[index].visible = visited
+		room_buttons[index].visible = visited
 		var key_id: String = ROOM_KEY_IDS[index]
 		var has_key: bool = (
 			ROOM_IDS[index] == "wake_room"
@@ -934,7 +976,7 @@ func _sync_map_state_light() -> void:
 				and GameState.has_key(key_id)
 			)
 		)
-		room_points[index].visible = has_key
+		room_points[index].visible = has_key and visited
 		if visited:
 			room_points[index].modulate = Color(0.88, 0.68, 0.34, 1.0)
 		else:
@@ -945,41 +987,8 @@ func _sync_map_state_light() -> void:
 
 
 func _sync_map_state() -> void:
-	if map_entry_button == null:
-		return
-	map_entry_button.visible = (
-		GameState.is_map_hub_unlocked()
-		and GameState.current_room_id == "floor_1_hub"
-		and not _entry_suppressed
-	)
-	if GameState.chase_mode:
-		for index: int in range(ROOM_IDS.size()):
-			room_labels[index].visible = false
-			room_points[index].visible = false
-		_refresh_map_ledger()
-		_update_player_marker()
-		refresh_guardian_tracking()
-		return
-	for index: int in range(ROOM_IDS.size()):
-		var visited: bool = _is_room_visited(ROOM_IDS[index])
-		room_labels[index].visible = visited
-		var key_id: String = ROOM_KEY_IDS[index]
-		var has_key: bool = (
-			ROOM_IDS[index] == "wake_room"
-			or (
-				not key_id.is_empty()
-				and GameState.has_key(key_id)
-			)
-		)
-		room_points[index].visible = has_key
-		if visited:
-			room_points[index].modulate = Color(0.88, 0.68, 0.34, 1.0)
-		else:
-			room_points[index].modulate = Color.WHITE
 	_refresh_fog_texture()
-	_refresh_map_ledger()
-	_update_player_marker()
-	refresh_guardian_tracking()
+	_sync_map_state_light()
 
 
 func unlock_and_open() -> void:
@@ -997,8 +1006,11 @@ func toggle_map() -> void:
 
 
 func open_map() -> void:
-	if not GameState.is_map_hub_unlocked():
+	if not GameState.is_map_hub_unlocked() or overlay.visible:
 		return
+	if repair_overlay != null and repair_overlay.visible:
+		close_repair_map()
+	ArchiveUi.prepare_hub_open("MapHud")
 	if (
 		GameState.has_story_flag("power_map_objective_active")
 		and not GameState.has_story_flag("power_map_reviewed")
@@ -1016,27 +1028,39 @@ func open_map() -> void:
 	_update_player_marker()
 	refresh_guardian_tracking()
 	_animate_map_open()
+	location_picker.grab_focus() if location_picker.visible else (overlay.get_node("MapCloseButton") as Button).grab_focus()
 
 
 func _animate_map_open() -> void:
-	if map_open_tween != null and map_open_tween.is_valid():
-		map_open_tween.kill()
-	overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	map_panel.scale = Vector2(0.965, 0.965)
-	if map_ledger != null:
-		map_ledger.scale = Vector2(0.965, 0.965)
-	map_open_tween = create_tween()
-	map_open_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	map_open_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	map_open_tween.tween_property(overlay, "modulate:a", 1.0, 0.12)
-	map_open_tween.parallel().tween_property(map_panel, "scale", Vector2.ONE, 0.20)
-	if map_ledger != null:
-		map_open_tween.parallel().tween_property(map_ledger, "scale", Vector2.ONE, 0.20)
+	# Map art, fog and hit targets never move relative to one another.
+	overlay.modulate = Color.WHITE
+	map_open_tween = ArchiveUi.begin_motion(map_ledger)
+	map_ledger.position.y += 12.0
+	map_open_tween.tween_property(map_ledger, "position", MAP_LEDGER_POSITION, 0.20)
+	_animate_known_ink()
+
+
+func _animate_known_ink() -> void:
+	if ink_tween != null and ink_tween.is_valid():
+		ink_tween.kill()
+	var ink := fog_texture_rect.material as ShaderMaterial
+	ink.set_shader_parameter("scan", 1.0)
+	if not GameState.has_story_flag("circuit_power_restored"):
+		return
+	ink.set_shader_parameter("scan", 0.0)
+	ink_tween = fog_texture_rect.create_tween()
+	ink_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	ink_tween.tween_property(ink, "shader_parameter/scan", 1.0, 0.32)
 
 
 func show_repair_map() -> void:
 	if not GameState.has_map("circuit_repair_map"):
 		return
+	if repair_overlay != null and repair_overlay.visible:
+		return
+	if overlay.visible:
+		close_map()
+	ArchiveUi.prepare_hub_open("MapHud")
 	var bag_hud: Node = get_node_or_null("/root/InventoryHud")
 	if bag_hud != null:
 		var feature_panel: Panel = bag_hud.get("feature_panel") as Panel
@@ -1199,6 +1223,8 @@ func _create_repair_overlay() -> void:
 
 
 func close_repair_map() -> void:
+	if repair_overlay == null or not repair_overlay.visible:
+		return
 	if repair_overlay != null:
 		repair_overlay.visible = false
 	get_tree().paused = _paused_before_map
@@ -1206,6 +1232,12 @@ func close_repair_map() -> void:
 
 
 func close_map() -> void:
+	if not overlay.visible:
+		return
+	if ink_tween != null and ink_tween.is_valid():
+		ink_tween.kill()
+	(fog_texture_rect.material as ShaderMaterial).set_shader_parameter("scan", 1.0)
+	ArchiveUi.settle_motion_tree(overlay)
 	if map_open_tween != null and map_open_tween.is_valid():
 		map_open_tween.kill()
 	map_panel.scale = Vector2.ONE
@@ -1220,6 +1252,8 @@ func close_map() -> void:
 
 func set_entry_suppressed(suppressed: bool) -> void:
 	_entry_suppressed = suppressed
+	if suppressed and map_entry_button != null:
+		map_entry_button.scale = Vector2.ONE
 	if map_entry_button == null:
 		return
 	map_entry_button.visible = (

@@ -1,0 +1,22 @@
+{
+  "purpose": "Normalized, nine-slice-ready toolbar surfaces; no new illustration was generated.",
+  "method": "Godot Image.get_region then Image.resize with INTERPOLATE_NEAREST",
+  "assets": [
+    {
+      "file": "instrument_metal.png",
+      "source": "res://assets/ui/inventory/bag_square_frame_a.png",
+      "source_rect": [158, 140, 710, 710],
+      "output_size": [64, 64],
+      "usage": "Nine-slice metal enclosure, 9px borders"
+    },
+    {
+      "file": "paper_inlay.png",
+      "source": "res://assets/ui/ui_note_parchment.png",
+      "source_rect": [300, 270, 420, 300],
+      "output_size": [84, 60],
+      "usage": "Parchment label and preview insets"
+    }
+  ],
+  "rights": "Derived solely from existing project artwork; original source provenance and rights remain applicable.",
+  "preserved": "All existing source artwork is unchanged. Tool illustrations remain cropped AtlasTextures of existing assets."
+}

@@ -1,0 +1,151 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+PROJECT_UNDER_TEST: /Users/yaleshen/shadow-castle-stem-detective/
+PASS: The actual Chemistry table launches the paused sample tray
+PASS: The eight authored stages remain intact
+PASS: A large experiment view replaces tiny color-block dishes
+PASS: The player can replay the phenomenon before judging
+PASS: Every sample is directly selectable
+PASS: Replay starts actual specimen animation
+PASS: The experiment view is wired to the selected real sample
+PASS: Choosing a category does not erase the ongoing observation
+PASS: Watching or choosing does not award a stage
+PASS: Repeated replay never stacks observation sounds
+PASS: A wrong classification does not advance the stage
+PASS: Failed verification restores a usable retry label
+PASS: Correct choices survive a failed seal
+PASS: Fracture sound follows a real impact time
+PASS: The falling glass is silent before contact
+PASS: Sound cannot lead the visible collision
+PASS: Contact triggers its fracture sound
+PASS: An impact triggers once per observation
+PASS: Replay stops the old impact before a new fall
+PASS: Switching to a quiet process cancels the pending impact
+PASS: All samples remain in stage 1
+PASS: Physical conditions accompany burning_paper
+PASS: Condition text fits for burning_paper
+PASS: Compressed time is disclosed for burning_paper
+PASS: Physical conditions accompany melting_ice
+PASS: Condition text fits for melting_ice
+PASS: Compressed time is disclosed for melting_ice
+PASS: No invented material noise for melting_ice
+PASS: Complete choices enable sealing in stage 1
+PASS: All samples remain in stage 2
+PASS: Physical conditions accompany breaking_glass
+PASS: Condition text fits for breaking_glass
+PASS: Compressed time is disclosed for breaking_glass
+PASS: Physical conditions accompany baking_soda_vinegar
+PASS: Condition text fits for baking_soda_vinegar
+PASS: Compressed time is disclosed for baking_soda_vinegar
+PASS: Physical conditions accompany dissolving_sugar
+PASS: Condition text fits for dissolving_sugar
+PASS: Compressed time is disclosed for dissolving_sugar
+PASS: No invented material noise for dissolving_sugar
+PASS: Complete choices enable sealing in stage 2
+PASS: All samples remain in stage 3
+PASS: Physical conditions accompany rusting_iron
+PASS: Condition text fits for rusting_iron
+PASS: Compressed time is disclosed for rusting_iron
+PASS: Physical conditions accompany boiling_water
+PASS: Condition text fits for boiling_water
+PASS: Compressed time is disclosed for boiling_water
+PASS: Physical conditions accompany cooking_egg
+PASS: Condition text fits for cooking_egg
+PASS: Compressed time is disclosed for cooking_egg
+PASS: Complete choices enable sealing in stage 3
+PASS: All samples remain in stage 4
+PASS: Physical conditions accompany melting_wax
+PASS: Condition text fits for melting_wax
+PASS: Compressed time is disclosed for melting_wax
+PASS: Physical conditions accompany silver_tarnish
+PASS: Condition text fits for silver_tarnish
+PASS: Compressed time is disclosed for silver_tarnish
+PASS: Physical conditions accompany tearing_cloth
+PASS: Condition text fits for tearing_cloth
+PASS: Compressed time is disclosed for tearing_cloth
+PASS: Physical conditions accompany burning_paper
+PASS: Condition text fits for burning_paper
+PASS: Compressed time is disclosed for burning_paper
+PASS: Complete choices enable sealing in stage 4
+PASS: All samples remain in stage 5
+PASS: Physical conditions accompany magnet_attracting
+PASS: Condition text fits for magnet_attracting
+PASS: Compressed time is disclosed for magnet_attracting
+PASS: Physical conditions accompany milk_souring
+PASS: Condition text fits for milk_souring
+PASS: Compressed time is disclosed for milk_souring
+PASS: No invented material noise for milk_souring
+PASS: Physical conditions accompany salt_crystallising
+PASS: Condition text fits for salt_crystallising
+PASS: Compressed time is disclosed for salt_crystallising
+PASS: No invented material noise for salt_crystallising
+PASS: Physical conditions accompany rusting_iron
+PASS: Condition text fits for rusting_iron
+PASS: Compressed time is disclosed for rusting_iron
+PASS: Complete choices enable sealing in stage 5
+PASS: All samples remain in stage 6
+PASS: Physical conditions accompany bronze_reaction
+PASS: Condition text fits for bronze_reaction
+PASS: Compressed time is disclosed for bronze_reaction
+PASS: Physical conditions accompany stretching_spring
+PASS: Condition text fits for stretching_spring
+PASS: Compressed time is disclosed for stretching_spring
+PASS: Physical conditions accompany melting_wax
+PASS: Condition text fits for melting_wax
+PASS: Compressed time is disclosed for melting_wax
+PASS: Physical conditions accompany baking_soda_vinegar
+PASS: Condition text fits for baking_soda_vinegar
+PASS: Compressed time is disclosed for baking_soda_vinegar
+PASS: Complete choices enable sealing in stage 6
+PASS: All samples remain in stage 7
+PASS: Physical conditions accompany salt_crystallising
+PASS: Condition text fits for salt_crystallising
+PASS: Compressed time is disclosed for salt_crystallising
+PASS: No invented material noise for salt_crystallising
+PASS: Physical conditions accompany silver_tarnish
+PASS: Condition text fits for silver_tarnish
+PASS: Compressed time is disclosed for silver_tarnish
+PASS: Physical conditions accompany dissolving_sugar
+PASS: Condition text fits for dissolving_sugar
+PASS: Compressed time is disclosed for dissolving_sugar
+PASS: No invented material noise for dissolving_sugar
+PASS: Physical conditions accompany cooking_egg
+PASS: Condition text fits for cooking_egg
+PASS: Compressed time is disclosed for cooking_egg
+PASS: Physical conditions accompany breaking_glass
+PASS: Condition text fits for breaking_glass
+PASS: Compressed time is disclosed for breaking_glass
+PASS: Complete choices enable sealing in stage 7
+PASS: All samples remain in stage 8
+PASS: Physical conditions accompany melting_wax
+PASS: Condition text fits for melting_wax
+PASS: Compressed time is disclosed for melting_wax
+PASS: Physical conditions accompany rusting_iron
+PASS: Condition text fits for rusting_iron
+PASS: Compressed time is disclosed for rusting_iron
+PASS: Physical conditions accompany magnet_attracting
+PASS: Condition text fits for magnet_attracting
+PASS: Compressed time is disclosed for magnet_attracting
+PASS: Physical conditions accompany milk_souring
+PASS: Condition text fits for milk_souring
+PASS: Compressed time is disclosed for milk_souring
+PASS: No invented material noise for milk_souring
+PASS: Physical conditions accompany boiling_water
+PASS: Condition text fits for boiling_water
+PASS: Compressed time is disclosed for boiling_water
+PASS: Physical conditions accompany bronze_reaction
+PASS: Condition text fits for bronze_reaction
+PASS: Compressed time is disclosed for bronze_reaction
+PASS: Complete choices enable sealing in stage 8
+PASS: Unsealed choices still do not grant rewards
+PASS: Closing during effects releases the real room and modal owner
+PASS: Closing an unfinished effect does not grant completion
+PASS: Closing the experiment stops its owned sound
+PASS: A glass impact is pending before closing
+PASS: A closed but retained minigame has no stale submit-control reference
+PASS: Retained closed games cannot emit a delayed impact
+chemistry_presentation_test: PASS
+WARNING: 36 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2535)
+ERROR: 5 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

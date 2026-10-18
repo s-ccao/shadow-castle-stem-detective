@@ -2,6 +2,445 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261018-37
+
+- **Date:** 2026-10-18
+- **Status:** complete
+- **Request:** During play, Esc should open a settings screen for adjusting the game at any time, such as mute, return to the main menu, and quit.
+- **Delivery:** Actual main project and compatible session worktree. Existing room flows, Hub pause ownership, saves and authored Hall geometry are preserved. Local only; no commit, push or Web deployment.
+
+### Player-facing changes
+
+- **Esc settings dossier:** in free play, Esc (or controller Start) pauses the case and opens a centered brass/parchment dossier: Resume, Main Menu, Quit; Mute, Music and Effects faders; Field Prompts; and the controls list. Kicker and autosave lines show the current room and the real Continue room. EN/ZH copy is code-native.
+- **Esc ownership:** an Esc that closes an open Bag, Map, Note, door puzzle, minigame, dossier, Chemistry question or Wake Room panel never also opens settings; the next Esc does. Scripted Hall moments (Guardian reveal/near miss, power scan, Chemistry CG, game over) veto settings. Main menu and cutscenes never show it.
+- **Safe pause:** opening freezes the room, detective and Guardian; Hub/room shortcuts cannot act underneath. Esc resumes and backs out of confirmations first. Play resumes after the closing key's frame so polled room input cannot reuse it.
+- **Leaving safely:** Main Menu and Quit require confirmation with Cancel focused. Both use the existing recovery semantics (never saving a dead player or active chase), state where Continue resumes, and save. Quit writes synchronously and is hidden on Web/iOS, where an app cannot close itself.
+- **Persistent mute:** mute silences Master without moving faders and persists. Title-screen settings gained a matching Mute toggle so it can always be undone. Its Chinese field-prompt label is corrected to "引导提示"; the controls line now says Esc also opens settings.
+- Language remains a title-screen setting: several room scripts do not yet rebuild every static label after a live language change.
+
+### Exact files
+
+- New `autoload/pause_menu.gd` and UID; `project.godot` (autoload registered last and `pause_menu` Esc action).
+- `autoload/game_audio.gd` (`set_muted/toggle_muted/is_muted`, persistent `audio/muted`), `autoload/case_locale.gd` (pause/mute strings, field-prompt translation, controls line), `scripts/main_menu.gd` (Mute toggle and button row).
+- Veto hooks: `scripts/wake_room.gd` and `scripts/game_world.gd` (`can_open_pause_menu()`).
+- New `tests/pause_menu_test.gd` and UID (native `-- --capture [--zh]`, playable `-- --preview [--zh]`).
+- `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- Evidence: `docs/evidence/2026-10-18-pause-menu/` (14 native PNGs, validation logs, `.gdignore`).
+
+### Verification
+
+- Godot 4.7 headless editor parsing passes in both roots; `git diff --check` passes in both.
+- `pause_menu_test` passes **140 checks** headless EN and ZH and **155 checks** in native EN/ZH capture runs in actual main, and **141 checks** headless EN/ZH in the session worktree. It drives real Chemistry, Wake Room, Hall and title-screen scenes: Bag/book closing priority, Hall vetoes, Guardian/player freeze, swallowed Tab/U/M shortcuts, keyboard focus, mute persistence and fader preservation, Music/Effects/prompt toggles, confirmation focus/back-out, real return transition/save/HUD handoff and the quit save/handler.
+- **Full actual-main sweep: 53/54 suites pass** with fresh guarded HOMEs and no script/parse errors, including audio, Hub, minigame UI, deduction, overflow, localization, guidance and Guardian suites. The single failure, `opening_blockers_test` "The guided route to Chemistry exists (0 points)", is pre-existing: it fails identically with PauseMenu removed before the suite and in the session worktree. It concerns Hall route generation, not this feature, and needs a separate fix.
+- Session targeted suites pass: audio contract, room transitions, tutorial chain, panel overflow, UI design contract, staged guidance, guided crossing and Chemistry presentation.
+- Visually inspected [Chinese settings](evidence/2026-10-18-pause-menu/01-pause-menu-zh.png), [English settings](evidence/2026-10-18-pause-menu/01-pause-menu.png), [return confirmation](evidence/2026-10-18-pause-menu/03-return-confirm-zh.png), [quit confirmation](evidence/2026-10-18-pause-menu/04-quit-confirm.png), [Hall pause](evidence/2026-10-18-pause-menu/05-hall-pause-zh.png), [title-screen Mute](evidence/2026-10-18-pause-menu/06-main-menu-settings-zh.png) and the [clean returned title](evidence/2026-10-18-pause-menu/07-returned-title.png) at 1024x768. Pixel sampling confirmed HUD rails beneath the veil are dimmed to the same level in Hall and Chemistry.
+- A playable isolated Chinese preview of actual main is running (`PAUSE_MENU_PREVIEW_READY`) with HOME `.godot/pause-menu-preview/home`; the player's normal saves are untouched.
+
+### Limits / next stage
+
+- No on-screen touch button opens settings yet; touch players have no Esc. Physical gamepad Start/B and speaker listening were not hardware-tested.
+- Headless suites still report shutdown-only ObjectDB/resource retention; this is not a leak audit.
+- Proposed next stage: fix `opening_blockers_test` route generation, then add a touch-safe settings affordance.
+- **Exact GitHub documentation update proposed:** after reviewing the implementation and test files above, synchronize `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `docs/AGENT_STAGE_REPORT.md` (stage 37) and `docs/evidence/2026-10-18-pause-menu/`. Do not publish the Web build automatically.
+
+---
+
+## Stage: UX-20260907-36
+
+- **Date:** 2026-09-07
+- **Status:** complete
+- **Request:** Improve unnatural ice/breakage and other effects, respecting real physical laws rather than adding decorative noise.
+- **Delivery:** Actual main and compatible session updated. Existing eight stages, classifications, rewards, room callbacks, authored Hall geometry and unrelated dirty work remain intact. Local only; no commit, push or Web deployment.
+
+### What changed
+
+- **Ice:** a 257-state, asymmetric inward melt-front mask replaces whole-sprite scaling/fading. Surviving pixels remain grounded; the growing pool follows the model's lost ice mass using reference densities 917/1000. Initial normalized ice volume 1 becomes water volume 0.917.
+- **Glass:** neutral transparent artwork no longer resembles blue ice. Seven complementary source-pixel regions move as one pane until the 0.60-second impact, then follow cached 240Hz gravity/contact integration. Convex-hull support prevents tray penetration; restitution 0.18, friction and sleep replace sine bounces and cloned upright triangles. Original regions remain visible through separation and settling.
+- **Other materials:** wax slumps without rubber-like wobble; the original cloth texture tears progressively instead of swapping sprites; nails accelerate toward the magnet and stop on contact; salt/curds develop at irregular stationary sites. Liquid bottoms stay grounded, bubbles follow the falling liquid level, and emitted mist/smoke cannot begin with a fictitious pre-existing age.
+- **Causality and audio:** all 16 samples state physical conditions. Slow changes are labelled time-compressed; boiling mist is identified as condensed droplets and the bronze core as fictional. Glass audio waits for impact, magnetic contact and spring release have matching cues, and quiet melt/dissolution/souring/crystallization no longer produce invented splashes or rattles. Pending cues cancel on replay, switching and close.
+- **QA:** capture now explicitly draws before readback, avoiding indefinite `frame_post_draw` waits when macOS occludes a native window. The Chinese preview starts with an intact ice specimen, ready for Replay.
+
+### Exact stage files
+
+- New `scripts/sample_material_motion.gd` and UID; updated `scripts/sample_dish_view.gd`, `scripts/change_sorting_minigame.gd`.
+- `assets/chemistry/sample_tray/materials.gdshader`, `specimens.svg`, regenerated `specimens.png`, `normalize_assets.gd`, `manifest.json`.
+- New generated `assets/chemistry/sample_tray/physical_masks.png` and import metadata, `physical_geometry.json`, `physical_geometry.gd` and UID. The GDScript constant resource is preloaded for export; JSON is provenance, not a runtime dependency.
+- New `tests/chemistry_material_motion_test.gd` and UID; updated `tests/chemistry_sample_renderer_test.gd`, `tests/chemistry_sample_renderer_capture.gd`, `tests/chemistry_presentation_test.gd`.
+- `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `assets/audio/README.md`, this report.
+- Evidence in `docs/evidence/2026-09-07-material-naturalness/{before,after,validation}/` and `tests/captures/chemistry_material_motion/`, with ignore metadata. Stage35 evidence is preserved.
+
+### Verification
+
+- **Main 9/9 suites pass:** material motion, sample renderer, presentation, science contract, audio contract, Chemistry deduction, minigame UI polish, developer mode and room transitions.
+- **Session 5/5 suites pass:** material motion, sample renderer, presentation, science and audio.
+- Per root: **14,788 model checks** cover source partition, impact order, mass balance, contact energy loss, tray support, final rest and rendered 30/60/144 FPS invariance; **302 renderer checks** retain the 16 scientific presets and lifecycle contracts. No script/parse errors in final runs.
+- Actual-main native EN/ZH room runs each pass **219 assertions** and produce **34 final 1024x768 images**. The UI audit still covers **96 stage/language states**. The full Chemistry deduction suite preserves the actual eight-stage completion/reward flow.
+- **55 renderer PNGs** include all 16 before/changing/after comparisons and ten multi-time sequences; all 16 reset/replay pixel comparisons match exactly. Inspected [ice sequence](../tests/captures/chemistry_material_motion/motion-melting_ice.png), [glass sequence](../tests/captures/chemistry_material_motion/motion-breaking_glass.png), [cloth tear](evidence/2026-09-07-material-naturalness/after/11-cloth-tear-zh.png), [crystal growth](evidence/2026-09-07-material-naturalness/after/13-crystal-nucleation-zh.png), [fizz](evidence/2026-09-07-material-naturalness/after/15-gas-bubbles.png) and [boiling](evidence/2026-09-07-material-naturalness/after/16-boiling.png).
+- M3 / GL Compatibility focused-UI p95 intervals were approximately **8.5-15.8 ms** in the five-sample capture probe. This includes a process-frame interval plus explicit drawing; it is not isolated GPU time, refresh rate, a directly comparable stage35 benchmark, or a Web performance guarantee.
+- Godot headless editor parsing and `git diff --check` pass in both roots. Headless suites still report shutdown-only ObjectDB/resource retention, including existing audio resources; native captures exit cleanly. This is not a claim of a clean leak audit.
+
+### Reproduce / boundaries / next stage
+
+```bash
+mkdir -p .godot/chemistry-vfx-check/home
+HOME="$PWD/.godot/chemistry-vfx-check/home" \
+  /Users/yaleshen/Downloads/Godot.app/Contents/MacOS/Godot \
+  --headless --path . --script res://tests/chemistry_material_motion_test.gd
+# Native room evidence: remove --headless, use chemistry_presentation_test.gd,
+# and append: -- --capture --naturalness --zh
+# Playable initial ice view: -- --preview --naturalness --zh
+```
+
+- This is a **constrained educational approximation, not perfect physical simulation**. Gravity uses presentation units; melt volume is inferred from a similar-section thickness model; heat transfer, reaction kinetics and fluid dynamics are not solved. Thin-shard tilt is a presentation projection, and fragments do not collide with each other. Conservation checks prove the stated model, not laboratory accuracy.
+- Test saves are isolated. The actual-main preview uses `.godot/chemistry-vfx-motion-preview/home`; normal saves and existing editor/game processes are untouched.
+- Protected main hashes remain: route `ec3cf1c03300b5689ec0893843767b849ea44010897896adf16cfb1b54f15890`; wall scene `7a1f47c280c793d9f95e21b8d46cc1c72ab1f1b2179bbb6e80d2cc3b4977d85a`.
+- **Next:** human observation/readability and listening checks, then exported Web/mobile GPU validation. No physical gamepad or speaker/headphone listening claim is made.
+- **Exact GitHub documentation update proposed:** review and synchronize `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `docs/AGENT_STAGE_REPORT.md` (stage36), `assets/audio/README.md`, `assets/chemistry/sample_tray/manifest.json`, and the two stage36 evidence directories above with their reviewed source/assets/tests. Do not automatically publish the Web build.
+
+---
+
+## Stage: UX-20260907-35
+
+- **Date:** 2026-09-07
+- **Status:** complete
+- **Request:** Make the Chemistry classroom's minigame visually compelling, with observable, believable material effects rather than tiny generic colour blocks.
+- **Delivery:** Compatible changes are in the actual main project and session worktree. Main's newer investigation, shared-shell lifecycle, character, Hub, authored-route and collision work is preserved. No commit, push or Web deployment.
+
+### Player-facing changes
+
+- The room's existing launch now opens **Material Observation Lab / 变化观察实验台**. Only this minigame expands to a 940x704 panel: a large glass observation bench, sample selectors, replay, Chemical/Physical controls and explicit sealing replace the small simultaneous dish grid.
+- Sixteen distinct raster-backed material presentations replace the generic crossfade. Paper progressively chars with grounded flames, smoke, embers and local warm reflection; ice shrinks into a pool without steam; glass fractures and settles; sugar disperses without gas; wax melts without a burning wick. Fizz/foam, boiling/steam, corrosion, egg coagulation, cloth tearing, magnetic attraction, curdling, salt crystallization, core reaction and spring recoil remain distinct. Slow processes explicitly say time-lapse.
+- A 2.6-second observation can be replayed before classification. Selecting an answer does not erase the current animation. Sealing adds a 0.7-second result hold before judging; wrong submissions retain correct choices and restore the usable Seal label. Closing during observation or verification cancels owned effects/audio without granting completion.
+- Six original non-looping material cues use the existing SFX bus. Replay replaces the prior sample voice, and pool metadata prevents cancellation from stopping a voice subsequently reused for unrelated UI feedback. The three music layers are never restarted.
+- All eight authored stage sets, 16 classification booleans, substance sets, completion callbacks, evidence and rewards are retained. The cooked-egg explanation names protein change/coagulation rather than treating irreversibility alone as proof. Observation appearance never independently displays a classification badge.
+
+### Exact stage files
+
+- Both roots: `scripts/change_sorting_minigame.gd`, `scripts/sample_dish_view.gd`, `autoload/game_audio.gd`, `scenes/floor_1/chemistry_room.gd` (launch title only).
+- Session only: compatible `clear_feedback()` addition in `scripts/minigame_shell.gd`; main's newer shell is not replaced.
+- Both roots: `assets/chemistry/sample_tray/specimens.png`, `vessel_back.png`, `vessel_front.png`, their `.png.import` files, corresponding `.svg` masters and `.svg.import` files; `materials.gdshader` and UID, `normalize_assets.gd` and UID, `manifest.json`.
+- Both roots: `assets/audio/sfx/sample_fire.wav`, `sample_bubbles.wav`, `sample_glass.wav`, `sample_water.wav`, `sample_grains.wav`, `sample_metal.wav` and their `.import` files; `tools/generate_audio_set.mjs`, `assets/audio/README.md`. Existing music/SFX were not regenerated.
+- Both roots: new `tests/chemistry_presentation_test.gd`, `chemistry_sample_renderer_test.gd`, `chemistry_sample_renderer_capture.gd` and UIDs; updated `tests/minigame_science_contract_test.gd`. Main-only test updates: `tests/chemistry_deduction_test.gd`, `tests/minigame_ui_polish_test.gd`.
+- Both roots: `tools/generate_minigame_answers.gd`, regenerated `docs/MINIGAME_ANSWERS.md`, `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- Evidence: `docs/evidence/2026-09-07-chemistry-effects/{before,after,validation}/` and `tests/captures/chemistry_sample_tray/`, including ignore metadata, images, logs and renderer result JSON.
+
+### Verification and visual evidence
+
+- Godot 4.7 headless editor parsing and `git diff --check` pass in both roots. No script/parse errors occurred in final runs.
+- **Main 8/8 targeted suites pass:** `chemistry_presentation_test`, `chemistry_sample_renderer_test`, `minigame_science_contract_test`, `audio_contract_test`, `chemistry_deduction_test`, `minigame_ui_polish_test`, `developer_mode_test`, `room_transition_flow_test`.
+- **Session 4/4 targeted suites pass:** presentation, renderer, science and audio. Renderer contracts pass **299 checks per root**. The main UI audit measures all **96 stage/language states** across six minigames; it was rerun with the new actual launch title.
+- Actual-main native EN/ZH room-launched runs each pass **65 assertions**, producing **16 final 1024x768 screenshots**. Checks cover replay, sample switching, eight stage sample sets, no premature rewards, failed-seal retry, closing during effects, pause restoration and a retained closed node. The full Chemistry investigation test separately clears all eight stages and verifies room/save/reward progression.
+- Validation caught and fixed a freed/null Submit-label update and stale retry text. Test assumptions were updated for the previously restored door question and for initial keyboard focus on Replay; this stage did not replace the Hall door flow.
+- Renderer evidence includes **47 PNGs**, all 16 deterministic reset/replay pixel comparisons, and bounded hidden-view work. Actual focused-UI frame-wait p95 is approximately **11.8 ms** on Apple M3 / GL Compatibility; this is neither isolated GPU timing nor a Web performance claim.
+- Audio inspection confirms stereo 44.1 kHz PCM16, 0.65-0.95-second cues and peak amplitudes 0.40-0.52 without clipping. The answer generator validates **94 entries** in each root.
+- Visually inspected [paper burning](evidence/2026-09-07-chemistry-effects/after/04-paper-chars-flame-smoke-zh.png), [bubbles and foam](evidence/2026-09-07-chemistry-effects/after/06-gas-bubbles-and-foam-zh.png), [ice melting](evidence/2026-09-07-chemistry-effects/after/05-ice-pool-no-steam-zh.png), [glass fracture](evidence/2026-09-07-chemistry-effects/after/07-glass-fragments-zh.png), [crystallization](evidence/2026-09-07-chemistry-effects/after/08-time-lapse-crystals-zh.png), [English layout](evidence/2026-09-07-chemistry-effects/after/01-first-stage.png) and [six-sample final-stage layout](evidence/2026-09-07-chemistry-effects/after/02-final-stage-zh.png).
+- **Baseline caveat:** `before/` records the old grid layout with already-staged raster specimens. It is not a pure before-image of the old colour-block renderer.
+- Protected main hashes remain unchanged: Hall route `ec3cf1c03300b5689ec0893843767b849ea44010897896adf16cfb1b54f15890`; wall scene `7a1f47c280c793d9f95e21b8d46cc1c72ab1f1b2179bbb6e80d2cc3b4977d85a`.
+
+### Reproduction / limits / next stage
+
+```bash
+mkdir -p .godot/chemistry-vfx-check/home
+HOME="$PWD/.godot/chemistry-vfx-check/home" \
+  /Users/yaleshen/Downloads/Godot.app/Contents/MacOS/Godot \
+  --headless --editor --path . --quit
+HOME="$PWD/.godot/chemistry-vfx-check/home" \
+  /Users/yaleshen/Downloads/Godot.app/Contents/MacOS/Godot \
+  --headless --path . --script res://tests/chemistry_presentation_test.gd
+git diff --check
+# For native evidence, remove --headless and append: -- --capture --zh
+# For a playable isolated room launch, append instead: -- --preview --zh
+```
+
+- Final headless logs are under `validation/{main,session}/`; some CLI suites still report shutdown-only ObjectDB/resource retention (3-14 resources), including the existing music resources. Native presentation captures exit without errors. Do not call these shutdown diagnostics a clean leak audit.
+- A detached actual-main Chinese preview was verified through its running process, native renderer startup and `CHEMISTRY_PREVIEW_READY`. It uses `.godot/chemistry-preview-final/home`; the normal player's saves and existing editor/game processes are untouched.
+- These are stylized pixel-art material demonstrations, not a quantitative fluid/chemistry simulation. Headphone/speaker listening, unfamiliar-player reaction, physical gamepad and exported Web/mobile GPU performance were not newly tested.
+- **Proposed next stage:** human playtest of observation readability and pacing, followed by listening and exported-build performance checks before publication.
+- **Exact GitHub documentation update proposed:** synchronize `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `docs/AGENT_STAGE_REPORT.md` (stage 35), generated `docs/MINIGAME_ANSWERS.md`, `assets/audio/README.md`, `assets/chemistry/sample_tray/manifest.json`, and the two evidence directories listed above, alongside their reviewed implementation/assets/tests. The maintainer reviews and publishes; no automatic publication is authorized.
+
+---
+
+## Stage: UX-20260907-34
+
+- **Date:** 2026-09-07
+- **Status:** complete
+- **Request:** Specifically improve the top-left Hub layout and readability, not merely replace its artwork.
+- **Scope:** Only Hub entry layout/presentation in actual main and session. Existing artwork, gameplay, door/CG, knowledge flow and internal Hub panels are preserved.
+
+### Changes
+
+- Fixed Bag/Key/Note/Map semantic slots. Unlocking Note no longer shifts the already-visible Map entry; gaps for unavailable intermediate tools are explicit.
+- Permanent, outlined 14px function names replace the deliberately hidden labels. Key's state-refresh code no longer hides its caption. Shortcuts have a separate, non-overlapping region.
+- Hit targets are 72x106 with consistent slot spacing and a slightly inset top margin. Artwork size and hover lift are unchanged.
+- The preview is now a compact 332x112 paper region at `(12,132)`, below the caption row. Tool changes fade the preview without sliding it; pointer hover has a short dwell while keyboard focus remains immediate.
+
+### Exact files
+
+- `autoload/archive_ui.gd`, `scripts/hub_toolbar_entry.gd`, `scripts/key_hud.gd`.
+- `tests/hub_toolbar_test.gd`: semantic-position, unlock stability, caption/key separation and preview-region assertions; native before/after capture selector.
+- `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- `docs/evidence/2026-09-07-hub-layout/{before,after}/`: native main-project comparison images and ignore metadata.
+
+### Verification
+
+- New layout checks failed against the previous implementation, including Map movement on Note unlock and hidden names. The updated guarded Hub suite passes.
+- Main native EN/ZH Hub checks passed **324 assertions** with 14 final captures; all four opening/closing paths, pause ownership, keyboard/controller-event focus and suppression remain covered. The comparison gallery contains 28 before/after PNGs.
+- Session headless Hub suite passes **237 assertions**. Main existing `instrument_hubs_test` and `staged_hall_guidance_test` pass.
+- Godot headless editor parsing and `git diff --check` passed in both roots.
+- Inspected [Chinese layout](evidence/2026-09-07-hub-layout/after/06-hall-field-kit-zh.png), [fixed hover preview](evidence/2026-09-07-hub-layout/after/03-hall-bag-hover.png), and [previous layout](evidence/2026-09-07-hub-layout/before/06-hall-field-kit-zh.png) at 1024x768.
+
+### Limits / handoff
+
+- This stage adjusts the entry strip and its preview, not internal Bag/Key/Note/Map pages. Physical gamepad hardware and alternate resolutions were not newly tested.
+- Tests used isolated HOME directories; normal player saves were not used. Some existing headless shutdown-resource diagnostics remain.
+- A fresh actual-main Hub-layout preview was opened with an isolated test HOME and verified through its `GUIDANCE_PREVIEW_READY` output.
+- No commit, push or Web deployment. Proposed GitHub update: review the three implementation files and test delta, then synchronize the four documentation files and this comparison gallery.
+
+---
+
+## Stage: UX-20260907-33
+
+- **Date:** 2026-09-07
+- **Status:** complete
+- **Request:** Restore Chemistry's question, replace the false capture announcement with an almost-caught CG, draw original knowledge art, and redesign the footprint effects and Hub presentation.
+- **Delivery:** Compatible increments are in the actual main project and session. Existing animation, room content, authored route and collision edits are preserved. No Web deployment is implied.
+
+### Flow and presentation
+
+1. **Question before entry.** The first-arrival branch no longer grants the Chemistry unlock directly. The existing key/knowledge gate supplies a dedicated four-choice panel. Wrong answers stay locked and remain retryable; a correct answer persists `door_chemistry_question_answered` and enables explicit entry. Correct-answer rewards are not duplicated. Normal completed visits remain unlocked.
+2. **Near-miss CG, not failure text.** Entry shows a dedicated letterboxed scene with raster background/actor proxies: approach, lunge, the detective slipping inside, a closing door and Guardian recoil. The title is "ALMOST CAUGHT" / "差一点被抓住". Timed completion and skip both enter Chemistry without health loss; skip was also tested while the tree was paused. World collision/character scale is not animated by the CG.
+3. **Original concept plates.** Five hand-authored, text-free pixel science illustrations replace the scene-prop crops. Each has a 96x128 editable pixel-grid SVG master, a 192x256 PNG delivery, palette/alpha constraints and provenance. They depict chemical/physical change, circuits, photosynthesis, independent time indicators and additive light.
+4. **Actual small footprints.** New left/right 24x14 raster shoes replace polygon chevrons, large corner beams and expanding rings. Turn/stop pairs use the same small art; nearby straight/turn duplication is reduced. Only the next 480px are shown, passed marks retire, and a mild moving alpha shimmer replaces scale-bounce.
+5. **Physical tool belt.** Tool silhouettes now sit on a narrow leather rail, without repeated cell cages or name bars. Hover lift and silhouette-edge feedback are distinct; names, purpose and truthful contents appear on paper preview slips. Existing Hub internals, unlocking, pause ownership and keyboard/controller navigation remain intact.
+
+### Exact stage files
+
+- `scripts/game_world.gd`, `autoload/case_locale.gd`.
+- New `scripts/chemistry_door_question.gd`, `scripts/chemistry_near_miss_cg.gd`, `scripts/hall_footprint_marker.gd` and their UIDs.
+- Artwork-only changes in `scripts/hall_knowledge_dossier.gd`.
+- Toolbar changes in `autoload/archive_ui.gd`, `scripts/hub_toolbar_entry.gd`, `scripts/inventory_hud.gd`, `scripts/key_hud.gd`.
+- New original assets/sources/manifests in `assets/ui/knowledge_plates/` and `assets/ui/guidance/footprints/`; the plate directory also contains its offline rasterizer and UID.
+- New normalized belt assets/provenance in `assets/ui/tool_belt/`, plus `tools/derive_tool_belt_assets.gd` and UID. Original source item art is unchanged.
+- New `tests/chemistry_entry_sequence_test.gd`, `tests/footprint_presentation_test.gd`, `tests/knowledge_plate_art_test.gd` and UIDs; updates to `tests/guardian_tutorial_chase_test.gd`, `tests/staged_hall_guidance_test.gd`, `tests/hub_toolbar_test.gd`.
+- `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- Evidence directories: `2026-09-07-chemistry-entry/`, `2026-09-07-presentation/`, `2026-09-07-original-knowledge-art/`, `2026-09-07-tool-belt/` under `docs/evidence/`.
+
+### Verification
+
+- Actual-main reproduction initially failed **4 entry checks**: no question, premature unlock, premature near-miss, and false capture wording. These now pass.
+- Godot 4.7 editor parsing and `git diff --check` passed in both roots.
+- **13/13 targeted main suites** passed, including Chemistry entry, footprints, staged guidance, learning/review, Guardian tutorial/hunt, guided crossing, route authoring, capture recovery, room transitions, character motion, localization and panel bounds.
+- **3/3 targeted session suites** passed across the different geometry: Chemistry entry, footprints and staged guidance.
+- Guarded original-art and tool-belt tests were additionally rerun successfully in both roots with their required isolated HOME settings. Tool-belt delivery also passed its 217-check suites, native state captures and existing instrument-Hub regression.
+- Actual-main EN/ZH entry runs capture the question, wrong answer, correct answer, approach, lunge and closed-door escape. These run the complete timed sequence, not only a direct finish callback. The headless case verifies safe skipped entry while paused.
+- [Question](evidence/2026-09-07-chemistry-entry/01-chemistry-question-zh.png), [near-miss](evidence/2026-09-07-chemistry-entry/05-cg-near-miss-zh.png), [door closes](evidence/2026-09-07-chemistry-entry/06-door-closes-zh.png), [original knowledge plate](evidence/2026-09-07-presentation/03-file-knowledge-zh.png), [small footprints](evidence/2026-09-07-presentation/01-approach-knowledge-zh.png), [tool-belt hover](evidence/2026-09-07-tool-belt/after/03-hall-bag-hover.png).
+- Read-only review found no significant issue in the new entry/CG/footprint wiring. Earlier CG layering defects found in visual inspection were corrected: the background renders above the matte, and the Guardian remains in front of the closing door.
+- Main route and wall-scene hashes remain `ec3cf1c03300b5689ec0893843767b849ea44010897896adf16cfb1b54f15890` and `7a1f47c280c793d9f95e21b8d46cc1c72ab1f1b2179bbb6e80d2cc3b4977d85a`.
+
+### Limits / maintainer handoff
+
+- The CG is an in-engine animated composition of existing raster scene/character art, not a newly generated movie or newly painted character illustration. The five knowledge plates and footprint art are original new drawings.
+- Fresh cases and standalone tutorial previews require the answer; legitimate already-unlocked normal returns do not repeat it.
+- Hardware gamepad and non-native-resolution QA remain separate. Headless exits may emit the previously observed shutdown-resource diagnostics.
+- The old preview was stopped and a fresh actual-main preview emitted `GUIDANCE_PREVIEW_READY` using an isolated test HOME. Website export/deployment remains separate; no commit, push, credential or remote operation was performed.
+- Proposed GitHub update: review source/test deltas, then synchronize the four documentation files, asset manifests/provenance and these four evidence directories before a separately approved Web release.
+
+---
+
+## Stage: UX-20260907-32
+
+- **Date:** 2026-09-07
+- **Status:** complete
+- **Request:** Knowledge should trigger before hugging a prop; leaving the tutorial must expose the player to real capture; interactions need actual knowledge screens; the Hub presentation needs a more refined, inviting design.
+- **Scope:** Actual main project and compatible session changes. Previous work, authored route and wall geometry remain preserved. This supersedes the preceding stage's full-rehearsal protection and compact-tray presentation.
+
+### Player-visible result
+
+1. Hall knowledge uses a **72px approach margin**, with wall-visibility checks. Tests approach at a real clear point 36-64px from the exhibit. The tutorial stops queued motion and allows E/click there; doors keep 14px contact and prompt priority.
+2. All five Hall subjects open a dedicated **illustrated knowledge dossier**: observation, scientific principle, two examples and an explicit filing action. Nothing is awarded merely by opening it. Collected exhibits reopen for review. New notebook records carry `content_key`; all five principles were verified in Chinese as well as English.
+3. Protection is an **80px corridor around the continuous route**, not a global tutorial flag. After **1.1s outside**, the Guardian leaves scripted presentation, actually moves toward the player and can trigger capture/recovery. The player is not teleported back. Returning to the corridor restores guidance protection; compulsory reading and explicit route recording remain safe.
+4. The Hub surface now has proportionate raster hero icons, nine-sliced instrument metal, parchment names and separate keycaps. Hover/focus reveals each tool's purpose and truthful live counts. The generic stretched button-frame tray is gone; internal Hub panels and input/pause ownership remain unchanged.
+
+### Exact files changed this stage
+
+- Guide/knowledge/pursuit: `scripts/game_world.gd`, `autoload/case_locale.gd`; new `scripts/hall_knowledge_dossier.gd` and its UID.
+- Toolbar: `autoload/archive_ui.gd`, `autoload/note_hud.gd`, `scripts/hub_toolbar_entry.gd`.
+- New derived surfaces: `assets/ui/hub_toolbar/instrument_metal.png`, `paper_inlay.png`, their `.import` files and `provenance.json`. These are normalized crops of existing project artwork, not newly generated illustrations.
+- Tests: new `tests/hall_learning_experience_test.gd` and UID; updated `tests/staged_hall_guidance_test.gd`, `tests/guided_crossing_test.gd`, `tests/hall_route_authoring_test.gd`, `tests/hub_toolbar_test.gd`.
+- Documentation: `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- Evidence: `docs/evidence/2026-09-07-learning-experience/` (16 native PNGs plus `.gdignore`) and `docs/evidence/2026-09-07-hub-refinement/` (21 before/after native PNGs and ignore metadata).
+
+### Verification
+
+- The initial actual-main reproduction failed **8 experience checks**, not just screenshots or a synthetic callback. Those failures are now resolved.
+- Godot 4.7 headless editor parsing passed in main and session. The broader main selection exercised 13 targeted suites; a capture-recovery regression caused by an overbroad early return was corrected, and capture recovery reran successfully without weakening its test.
+- Final focused run: **9/9 main invocations passed** (learning EN and ZH, staged guide, capture recovery, Guardian hunt/tutorial, guided crossing, route authoring, localization); **2/2 session tests passed** (learning and staged guide).
+- Refined toolbar: **170 assertions per root**, native capture checks and the existing main instrument-Hub regression passed. The parent also reran the guarded toolbar test with matching isolated `HOME` / `HUB_TOOLBAR_TEST_HOME` in both roots.
+- Native EN/ZH learning runs passed at **1024x768**: wide approach, injected wall rejection, substantive content before filing, real pointer filing, review, all five subjects, actual off-route Guardian displacement, fatal contact and visible recovery.
+- Checked [the Chinese knowledge page](evidence/2026-09-07-learning-experience/02-chemistry-knowledge-dossier-zh.png), [comfortable approach](evidence/2026-09-07-learning-experience/01-comfortable-knowledge-stop-zh.png), [real pursuit](evidence/2026-09-07-learning-experience/08-real-off-route-pursuit-zh.png), and [the Hub's useful hover preview](evidence/2026-09-07-hub-refinement/after/03-hall-bag-hover.png).
+- Read-only review found no additional significant issue in the new knowledge/protection wiring. `git diff --check` passed in both roots.
+- Main authored route remains SHA-256 `ec3cf1c03300b5689ec0893843767b849ea44010897896adf16cfb1b54f15890`; wall scene remains `7a1f47c280c793d9f95e21b8d46cc1c72ab1f1b2179bbb6e80d2cc3b4977d85a`.
+
+### Limits / next step
+
+- Returning to the guide intentionally restores protection; it does not protect the player elsewhere. Explicit Shift+0 authoring is still harmless, while plain developer mode does not bypass the lesson.
+- Physical controller hardware and non-native resolutions remain untested. Some test exits retain prior ObjectDB/resource shutdown diagnostics; no gameplay/script errors remain in the final checks.
+- Local changes are applied in the actual main project. The old preview was stopped and a fresh learning/pursuit preview emitted `GUIDANCE_PREVIEW_READY` for that main path. It uses a separate test HOME and an initial Hall checkpoint. Website export/deployment is not part of this stage.
+- Maintainer proposal: review the listed source/test changes, then synchronize the four documentation files, derived-surface provenance and the two evidence directories. No commit, push, remote change or credentials were used.
+
+---
+
+## Stage: UX-20260907-31
+
+- **Date:** 2026-09-07
+- **Status:** complete
+- **Request:** Fix the still-visible wall-crossing/backward footsteps and missing knowledge stop in the user's running game; improve the top-left Hub artwork and layout.
+- **Delivery correction:** The earlier route validation ran only in the session worktree. Both inspected Godot editors actually used `/Users/yaleshen/shadow-castle-stem-detective`, which also contained newer unsynchronized artwork, collision, animation and Hub changes. This stage applies compatible increments to that actual main project and verifies it directly. Prior dirty work is preserved.
+
+### What the player now gets
+
+- The route targets the visible knowledge sprite's feet, including the user's moved child transform: approximately `(627.46, 535.09)`, not the old parent origin `(419, 139)`.
+- Completed route prefixes are omitted, including the recorded placeholder-to-spawn jump. Local connectors and marker positions are checked against real player collision; the route ends at a usable interaction edge rather than inside door art.
+- A single queued automatic walk stops at approximately `(593.78, 547.22)`. E/click opens the knowledge, and explicit filing releases the onward route. Reading/closing without filing cannot release movement. The Guardian and its obstructing urgency chrome stand down during the required stop.
+- The final queued leg is approximately 557px in this main layout and reaches an actually usable Chemistry-door prompt. The last navigation target uses the real 6px stopping tolerance rather than the 12px intermediate-waypoint shortcut.
+- General developer mode (`0`) no longer automatically starts recording or bypasses the lesson. The named `record_hall_route` action uses **Shift+0** for explicit recording; it starts after spawn resolution and restores approach guidance if ended away from the knowledge.
+- Bag/Key/Note/Map now share a compact 322x92 dark-brass/violet tray with consistent 72x64 raster-icon entries, bilingual labels, shortcut keycaps and hover/pressed/focus feedback. Locked tools, existing internal panels, shortcuts, cinematic suppression and pause ownership remain intact.
+
+### Exact stage files
+
+- Guide/input: `scripts/game_world.gd`, `scripts/player.gd`, `scripts/hall_route_recorder.gd` (usage comment), `autoload/dev_tools.gd`, `autoload/case_locale.gd`.
+- Toolbar: `autoload/archive_ui.gd`, `autoload/note_hud.gd`, `scripts/inventory_hud.gd`, `scripts/key_hud.gd`, `scripts/map_hud.gd`; new `scripts/hub_toolbar_entry.gd` and its UID.
+- Tests: new `tests/staged_hall_guidance_test.gd`, `tests/hub_toolbar_test.gd` and their UIDs; updated `tests/guardian_hunt_flow_test.gd`, `tests/hall_route_authoring_test.gd`. The fallback fixture now starts on real walkable floor, not an arbitrary point inside a wall.
+- Documentation: `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- Evidence: `docs/evidence/2026-09-07-main-guidance/` (nine PNGs, two runtime-provenance JSONs and `.gdignore`) and `docs/evidence/2026-09-07-hub-toolbar/` (eight PNGs and `.gdignore`).
+
+### Preserved inputs and implementation
+
+- The main project's authored route is unchanged: SHA-256 `ec3cf1c03300b5689ec0893843767b849ea44010897896adf16cfb1b54f15890`.
+- Its edited wall scene is unchanged: SHA-256 `7a1f47c280c793d9f95e21b8d46cc1c72ab1f1b2179bbb6e80d2cc3b4977d85a`.
+- Existing player post-collision stride logic and Guardian `present_scripted_step()` presentation were retained. Internal Chemistry-case and tactile Hub work was not replaced.
+- No raster artwork was repainted. The toolbar crops/reuses existing raster icons and ornament. The UI pass verified protected-art/geometry hashes in both checkouts.
+
+### Verification and evidence
+
+- Both checkouts: Godot 4.7 headless editor parsing and `git diff --check` passed.
+- Actual main: **12/12 targeted suites passed**: staged guidance, route authoring, guided crossing, Guardian hunt, Guardian tutorial, character motion, interaction stopping, room transitions, developer mode, toolbar, instrument Hubs and localization.
+- Session worktree: **4/4 targeted suites passed**: staged guidance, route authoring, toolbar and developer mode. Its different older geometry remains supported.
+- The toolbar suite was run with its required isolated HOME and matching `HUB_TOOLBAR_TEST_HOME`; its safety guard was not counted as a successful test. Toolbar assertions cover actual clicks, focus/controller events, suppression, localization and pause restoration.
+- Actual-main native EN/ZH runs of `tests/staged_hall_guidance_test.gd -- --capture --main-evidence [--zh]` passed. The test checks continuous queued walking, physical route segments and marker locations, visible exhibit coordinates, an actual pointer click on the filing button, notebook state and the usable final door.
+- [Required knowledge filing, Chinese](evidence/2026-09-07-main-guidance/03-file-knowledge-zh.png), [onward guide and full toolbar](evidence/2026-09-07-main-guidance/04-continue-to-chemistry-zh.png), [toolbar overview](evidence/2026-09-07-hub-toolbar/06-hall-field-kit-zh.png).
+- [Runtime provenance](evidence/2026-09-07-main-guidance/runtime-zh.json) records the actual project path, source/route/wall hashes and 1024x768 viewport. This prevents mistaking a screenshot from another worktree for the user's build.
+- A fresh native main-project preview was opened with an isolated test HOME and emitted `GUIDANCE_PREVIEW_READY` for the actual main path. It does not use the player's normal save directory.
+
+### Limits and next step
+
+- Stop any old debug run and rerun from the main project to load changed scripts; an already-running old instance is not evidence that disk changes failed.
+- The website has not been re-exported or deployed. This is verified local delivery, not publication.
+- Physical controller hardware and non-native resolutions remain untested. Some headless suites retain prior shutdown-only ObjectDB/resource diagnostics; native combined captures exited cleanly.
+- Maintainer proposal: review the exact incremental source/test changes, then synchronize the documentation and evidence listed above. Export/deploy only as a separate approved action. No commit, push, remote or credential change was performed.
+
+---
+
+## Stage: DETECTIVE-20260905-30
+
+- **Date:** 2026-09-05
+- **Request:** Correct the candle multiplier metaphor, give all four Hubs tactile tool feedback, and implement a Chemistry investigation pilot rather than more quiz questions.
+- **Outcome:** All three are implemented. Existing prior-stage dirty changes are preserved; local synchronization is incremental, not a reset or replacement of the user's checkout.
+
+### Gameplay and presentation
+
+1. **One candle, one wick, one flame.** `burn` remains the original oxygen-consumption multiplier. Thickness, flame width/height and light distinguish x1/x2/x3; it no longer means three separate wicks. Fuel exhaustion, smoke and sustained ventilation remain driven by the actual game. Eight-stage answers are unchanged, and the generated answer sheet uses the corrected terminology.
+2. **Four distinct tools.** Bag artwork unfolds, the clicked item travels to the inspection plate, and a used bottle uncorks using slices of its existing raster. Keys insert into a test socket, turn, and move three lock followers. Dossier pages slide/turn with filing tabs and author-provided observed-detail accents; all text remains immediately readable. The Map writes known memory with an ink scan and allows selecting a visited location's already-filed clues. The ink shader only adds darkness; uncharted areas, hidden records and unvisited locations are not disclosed.
+3. **Chemistry field case.** Inspect red liquid/powder/glass/vial → record observations → propose/revise blood, dye or reaction → read the physical protocol and complete the existing sample tray → compare controls/combinations → submit an interpretation → choose a report and the Butler statement it bears on → ask a follow-up. Hypotheses can be wrong without losing evidence or reputation. The UI does not preselect the useful evidence pair, pre-grade hypotheses, or expose the correct interpretation through a disabled submit button.
+4. **Epistemic boundaries.** The comparison supports a chemical explanation of the colour, not a biological blood test, identity or intent. Reasoning is the detective's self-talk; Lin's writing remains physical evidence. Facts, revisable hypotheses and confirmed conclusions are separate journal sections. Revisions replace the existing record rather than adding duplicates.
+5. **Persistence and progression.** Existing `fake_red_stain`, key/crafting and reputation IDs stay intact. New `chemistry_case_*` flags use the existing story-flag save mechanism. Old solved cases migrate without redoing the experiment or repeating rewards. The final board calls the raw evidence a comparison report; new cases must actually earn the interview, while old evidence-only saves keep their compatibility fallback.
+6. **Input lifecycle.** Hub switching transfers pause ownership, and cancelled motion restores pivot as well as position/scale/rotation/modulation. Text fields do not lose typed shortcut letters to Hub switching. The case modal blocks hidden Hub opening, preserves keyboard focus on revised controls, and completed-case guidance sends the player onward rather than into another compulsory interview.
+
+### Exact files changed in this stage
+
+- `autoload/archive_ui.gd`.
+- `scenes/floor_1/chemistry_room.gd`.
+- `scripts/flame_air_minigame.gd`, `scripts/flame_jar_view.gd`, `scripts/inventory_hud.gd`, `scripts/key_hud.gd`, `scripts/clue_journal.gd`, `scripts/map_hud.gd`, `scripts/final_case_board.gd`.
+- New `scripts/chemistry_case_state.gd`, `scripts/chemistry_case_ui.gd`, `scripts/hub_clue_list_item.gd`, `scripts/hub_key_teeth.gdshader`, `scripts/hub_map_ink.gdshader`, plus their `.uid` files.
+- `tests/flame_presentation_test.gd`, `tests/tutorial_chain_test.gd`; new `tests/chemistry_deduction_test.gd`, `tests/instrument_hubs_test.gd` and their `.uid` files.
+- `tools/generate_minigame_answers.gd`, `docs/MINIGAME_ANSWERS.md`, `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report, and the nine PNGs plus `.gdignore` under `docs/evidence/2026-09-05-detective-tools/`.
+
+### Evidence (native 1024x768)
+
+- [Single flame at each multiplier](evidence/2026-09-05-detective-tools/01-single-flame.png).
+- [Bag specimen transfer](evidence/2026-09-05-detective-tools/02-bag-inspection.png), [key test socket](evidence/2026-09-05-detective-tools/03-key-test.png), [dossier turn](evidence/2026-09-05-detective-tools/04-dossier-turn.png), [known-location clues](evidence/2026-09-05-detective-tools/05-known-location.png).
+- [An unsupported hypothesis stays revisable](evidence/2026-09-05-detective-tools/06-hypothesis-review.png), [evidence-linked questioning](evidence/2026-09-05-detective-tools/07-evidence-questioning.png), [Chinese case board](evidence/2026-09-05-detective-tools/08-case-zh.png), [persistent structured notebook](evidence/2026-09-05-detective-tools/09-case-notebook.png).
+
+### Verification
+
+- Headless editor parse and `git diff --check`: pass.
+- **18 targeted suites pass**, covering the complete case, four tools, single-flame model, all minigame science/layout, Hub/UI design, localization, victim voice, room transitions, blackout/power restoration, save recovery, tutorial chain/opening, guided crossing, panel containment and update notice.
+- The new Chemistry test uses actual focused Enter events for case controls, plays the existing eight-stage tray, tests unsupported/revised hypotheses, wrong evidence links, earned follow-up, fresh/partial/completed/legacy save round-trips, crafting/key access and Hall return. Native captures were refreshed after parent review.
+- The obsolete tutorial-chain test formerly granted solved evidence directly on observation; it now verifies every step of the new objective sequence instead of bypassing the investigation.
+- The generator verifies 94 checks and retains every answer. The 48-point authored Hall route remains byte-identical: SHA256 `8f6e11e3c88e8648616157901d9fcbb4b8f57d09bf4a6d2975ef148a5bea79bb`.
+- Tests use isolated `HOME` directories. Unexpected engine/runtime errors are failures even if a test prints PASS. The corruption-recovery fixture intentionally emits a JSON parse diagnostic before proving backup recovery; existing audio shutdown-resource diagnostics are recorded separately, not treated as gameplay errors.
+- Local delivery is complete: 41 stage-delta files were backed up where applicable, copied and byte-verified against the worktree. The user's 10 unrelated local changes and 48-point route were unchanged. The local checkout then passed editor parsing plus Chemistry, instrument Hubs, flame presentation, tutorial-chain, UI/finale and blackout tests (6/6).
+
+### Limits / next stage
+
+- This is one complete investigation pilot, not a rewrite of every room's narrative. The Butler comparison earns a relevant follow-up; it is not presented as proof of guilt.
+- Effects retain existing raster artwork and use short code/shader motion; no new character/item illustrations were generated.
+- EN/ZH and native desktop resolution were checked. Web export and other aspect ratios have not been revalidated in this stage.
+- Suggested next step: unfamiliar-player Chemistry playtest, measuring whether players can explain why their hypothesis or evidence pairing is supported before extending the pattern to another room.
+- No commit or remote publication is part of this stage.
+
+---
+
+## Stage: PLAY-20260905-29
+
+- **Date:** 2026-09-05
+- **Outcome:** A measured gameplay/UI polish pass, not a claim that every possible defect is eliminated. Reviewed the eight-room flow and a 15-screen menu/Hub/alchemy/finale gallery; fixed reproducible candle, shared-minigame and locomotion issues. Retained the authored route, puzzle answers, reward rules, artwork, collision sizes and save flow.
+
+### Player-visible changes
+
+- **Candle experiments:** 1/2/3 wicks now have distinct stems, candle widths and independent flames before and after ignition. Gas motes and an oxygen meter replace the water-like air surface. Ignition, depletion, smoke, sustained air and actual extinction order are explicit. A chosen jar can be removed from the prediction without clearing every other choice. Success copy also remains true when a flame never goes out.
+- **All six shared-shell minigames:** failures persist until the next meaningful action; fresh attempts clear stale text; successes allow reading time plus an immediate **Next stage / Finish** button. Tab/Shift-Tab, Enter and Escape have visible focus/feedback. Animation unlock restores each button's prior disabled state instead of enabling impossible purchases. Closing, restarting or removing a hosting room cancels pending work and restores the pause state without awarding duplicate progress.
+- **Timed harvest / plant bench:** keyboard harvest, visible bloom closure on timeout, unavailable refunds disabled, localized native target label.
+- **Movement:** actual displacement drives cadence, blocked actors stand still, turns retain stride phase, and a reached Guardian waypoint no longer inserts a stationary tick. All eight Guardian direction rows are used. NPC gaze has a small direction deadband and acknowledgement scales around the feet. Interview NPCs remain stationary. Scripted Hall marks preserve the Guardian's stride pose instead of calling the idle reset every frame; safety positions are unchanged.
+
+### Exact files
+
+- Gameplay: `scripts/animated_npc.gd`, `scripts/player.gd`, `scripts/enemy.gd`, `scripts/game_world.gd`.
+- Minigames: `scripts/flame_air_minigame.gd`, `scripts/flame_jar_view.gd`, `scripts/minigame_shell.gd`, `scripts/minigame_launcher.gd`, `scripts/change_sorting_minigame.gd`, `scripts/elapsed_time_minigame.gd`, `scripts/gear_train_minigame.gd`, `scripts/photosynthesis_minigame.gd`, `scripts/plant_bed_view.gd`, `scripts/moonlight_harvest_minigame.gd`, `scripts/moonleaf_pod.gd`.
+- Tests: new `tests/flame_presentation_test.gd`, `tests/character_motion_test.gd`, `tests/minigame_ui_polish_test.gd`, `tests/character_motion_visual_capture.gd`, and their `.uid` files; updated `tests/minigame_science_contract_test.gd`.
+- Documentation: `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report, and `docs/evidence/2026-09-05-gameplay-polish/` (`.gdignore` and seven PNGs below).
+
+### Visual evidence
+
+All captures are 1024x768. Evidence is kept out of game imports with `.gdignore`.
+
+1. [Old identical cold candles](evidence/2026-09-05-gameplay-polish/01-candle-before.png).
+2. [Distinct unlit wicks](evidence/2026-09-05-gameplay-polish/02-candle-wicks.png).
+3. [Separate flames and oxygen supply](evidence/2026-09-05-gameplay-polish/03-candle-burning.png).
+4. [Snuffed/sustained results and immediate Finish](evidence/2026-09-05-gameplay-polish/04-candle-outcome.png).
+5. [Actual-motion animation with unchanged raster sheets](evidence/2026-09-05-gameplay-polish/05-locomotion.png).
+6. [Readable sorting failure](evidence/2026-09-05-gameplay-polish/06-sorting-feedback.png).
+7. [Harvest timeout visibly closes blooms](evidence/2026-09-05-gameplay-polish/07-harvest-timeout.png).
+
+### Verification
+
+- Godot 4.7 headless editor parsing and `git diff --check`: pass.
+- **26 distinct targeted SceneTree suites passed**, including the three new contracts, all minigame science, layout, developer-mode, actor scale/presence, Guardian hunt/awareness/guided crossing, authored-route isolation, opening/tutorial chain, power restoration, room transitions, capture/save recovery, Library optics, Circuit benches, Hub/UI design and localization.
+- UI contract measures **96 stage/language layouts** (six games, eight stages, EN/ZH), plus real keyboard input, timeout/retry, early close, auto/manual next stage and exactly-once final completion. Flame tests drive every stage's actual ignition and wrong-answer playback, not just a banner string.
+- Tests run under separate isolated `HOME` directories. Both nonzero process exits and runtime/compile errors are treated as failures even if the script prints PASS. This exposed and corrected an existing eager-preload failure in the science suite.
+- The 48-point authored route SHA256 remains `8f6e11e3c88e8648616157901d9fcbb4b8f57d09bf4a6d2975ef148a5bea79bb` before and after verification.
+- Local synchronization completed with a backup and byte checks: 20 modified files and 16 new files copied to the user's Godot checkout. All 10 original local changes and the route were preserved. Headless parsing plus five focused tests (flame, character motion, minigame UI, guided crossing and room transitions) also passed in that checkout.
+- No speculative dialogue-state resets were added: actual opening/power callers and existing flow tests already restore their own input state. The gallery's empty post-extraction frame was caused by an absent room backdrop after the bench closed, not a reproduced game freeze.
+
+### Risks and next check
+
+- Native 1024x768 and EN/ZH were checked; other aspect ratios, controllers and Web rendering need their own pass. This stage does not replace character art or rewrite the authored tutorial choreography.
+- Some existing engine shutdown resource warnings remain in the test environment; no script errors were accepted as passing tests.
+- Local Godot synchronization must preserve the user's modified `project.godot`, `scenes/wall_collisions.tscn`, eight untracked wall-art/provenance files and authored route. No commit or remote publication is part of this stage.
+- Suggested next check: an unfamiliar-player run of the full opening and Chemistry transition, followed by a Web-specific input/render pass.
+
+---
+
 ## Stage
 
 - **Stage ID:** `ROUTE-20260904-28`

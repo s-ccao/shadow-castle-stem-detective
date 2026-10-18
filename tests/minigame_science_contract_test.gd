@@ -14,11 +14,11 @@ extends SceneTree
 ##
 ## 全部是纯数据断言，不建场景、不碰 UI，所以跑得快也不会因为布局改动而假红。
 
-const FLAME := preload("res://scripts/flame_air_minigame.gd")
-const PHOTO := preload("res://scripts/photosynthesis_minigame.gd")
-const SORTING := preload("res://scripts/change_sorting_minigame.gd")
-const GEARS := preload("res://scripts/gear_train_minigame.gd")
-const TIMELINE := preload("res://scripts/elapsed_time_minigame.gd")
+var FLAME: GDScript
+var PHOTO: GDScript
+var SORTING: GDScript
+var GEARS: GDScript
+var TIMELINE: GDScript
 const DISH := preload("res://scripts/sample_dish_view.gd")
 
 ## 样本皿视图画得出来的纹理。数据里出现别的纹理不会报错，只会画不出东西，
@@ -36,6 +36,19 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# The minigames depend on autoloads, which do not exist while this CLI
+	# SceneTree script is preloading. Load them after the tree is initialized.
+	FLAME = load("res://scripts/flame_air_minigame.gd")
+	PHOTO = load("res://scripts/photosynthesis_minigame.gd")
+	SORTING = load("res://scripts/change_sorting_minigame.gd")
+	GEARS = load("res://scripts/gear_train_minigame.gd")
+	TIMELINE = load("res://scripts/elapsed_time_minigame.gd")
+	for script: GDScript in [FLAME, PHOTO, SORTING, GEARS, TIMELINE]:
+		if not script.can_instantiate():
+			_expect(false, "Minigame compiled: " + script.resource_path)
+	if not failures.is_empty():
+		_finish()
+		return
 	_check_sorting()
 	_check_photosynthesis()
 	_check_gears()
@@ -44,13 +57,9 @@ func _run() -> void:
 	_finish()
 
 
-## 变化分拣：编码就是判据。
-##
-## "封盘之后有没有出现新颜色"必须逐条等价于作者标注的 chemical。这一条塌了，
-## 亮起来的色标就会指着物理变化说它是化学变化——而那枚色标是玩家唯一的依据。
+## Classification follows substance identity, not a color change in the artwork.
 func _check_sorting() -> void:
 	var samples: Dictionary = SORTING.SAMPLES
-	var palette: Dictionary = DISH.SUBSTANCE
 	for id: String in samples:
 		var sample: Dictionary = samples[id]
 		_expect(
@@ -66,12 +75,7 @@ func _check_sorting() -> void:
 			"sorting sample %s draws something in both states" % id
 		)
 		for entry: String in (before + after):
-			var key: String = entry.get_slice(":", 0)
 			var texture: String = entry.get_slice(":", 1)
-			_expect(
-				palette.has(key),
-				"sorting sample %s uses substance '%s', which the palette defines" % [id, key]
-			)
 			_expect(
 				DRAWABLE_TEXTURES.has(texture),
 				"sorting sample %s uses texture '%s', which the dish can draw" % [id, texture]
@@ -88,8 +92,16 @@ func _check_sorting() -> void:
 				produced_new = true
 		_expect(
 			produced_new == bool(sample["chemical"]),
-			"sorting sample %s: a new colour appears exactly when a new substance does" % id
+			"sorting sample %s: new substance identity matches the authored classification" % id
 		)
+		var view := DISH.new()
+		view.before = PackedStringArray(before)
+		view.after = PackedStringArray(after)
+		view.sample_id = id
+		_expect(not view.new_substances().is_empty() == bool(sample["chemical"]), "Renderer preserves the substance model for " + id)
+		_expect(view.effect_snapshot()["preset"] == id, "Every sample has its own material presentation: " + id)
+		_expect(not view.effect_snapshot()["observation_marks"], "Observation does not pre-label the answer: " + id)
+		view.free()
 
 	for level: int in range(SORTING.LEVELS.size()):
 		var ids: Array = SORTING.LEVELS[level]

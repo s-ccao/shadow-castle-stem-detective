@@ -18,6 +18,7 @@ const TOGGLE_KEY: Key = KEY_0
 ## 小键盘的 0 一并接受，外接键盘上顺手。
 const TOGGLE_KEY_ALT: Key = KEY_KP_0
 const BADGE_LAYER: int = 96
+const ROUTE_RECORD_ACTION := &"record_hall_route"
 
 var _badge: Label
 
@@ -26,6 +27,12 @@ func _ready() -> void:
 	layer = BADGE_LAYER
 	# 小游戏面板期间树是暂停的，按键和角标都要照常工作。
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if not InputMap.has_action(ROUTE_RECORD_ACTION):
+		InputMap.add_action(ROUTE_RECORD_ACTION)
+		var binding := InputEventKey.new()
+		binding.physical_keycode = KEY_0
+		binding.shift_pressed = true
+		InputMap.action_add_event(ROUTE_RECORD_ACTION, binding)
 	_build_badge()
 	if not GameState.state_changed.is_connected(_sync_badge):
 		GameState.state_changed.connect(_sync_badge)
@@ -41,7 +48,7 @@ func _build_badge() -> void:
 	_badge.add_theme_constant_override("outline_size", 4)
 	_badge.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_badge.offset_left = 12.0
-	_badge.offset_top = -28.0
+	_badge.offset_top = -44.0
 	_badge.offset_bottom = -8.0
 	# 角标只是状态提示，不能挡住它下面的任何交互。
 	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -54,9 +61,9 @@ func _sync_badge() -> void:
 		return
 	# 角标同时是这个开关的唯一说明书，所以按键名写在上面，而不是只画个点。
 	_badge.text = (
-		"● 开发者模式　按 0 关闭"
+		"● 开发模式 · 0 关闭\nShift+0 · 录制大厅路线"
 		if CaseLocale != null and CaseLocale.is_chinese()
-		else "● DEV MODE　press 0 to exit"
+		else "● DEV MODE · 0 OFF\nShift+0 · record Hall route"
 	)
 	_badge.visible = GameState.developer_mode
 
@@ -69,12 +76,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
-	if key.keycode != TOGGLE_KEY and key.keycode != TOGGLE_KEY_ALT:
-		return
 	# 数字键比功能键容易误触：只要焦点在能收字符的控件上就让开，
 	# 否则在输入框里打一个 0 会顺手把开发者模式切掉。
 	var focused: Control = get_viewport().gui_get_focus_owner()
 	if focused is LineEdit or focused is TextEdit:
+		return
+	if event.is_action_pressed(ROUTE_RECORD_ACTION, false, true):
+		var scene := get_tree().current_scene
+		if GameState.developer_mode and scene != null and scene.has_method("toggle_hall_route_recording"):
+			scene.call("toggle_hall_route_recording")
+			get_viewport().set_input_as_handled()
+		return
+	if key.keycode != TOGGLE_KEY and key.keycode != TOGGLE_KEY_ALT:
 		return
 	GameState.toggle_developer_mode()
 	get_viewport().set_input_as_handled()

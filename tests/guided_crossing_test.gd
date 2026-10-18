@@ -75,22 +75,23 @@ func _run() -> void:
 		"The Guardian opens the crossing at a safe distance (%.0f px)" % opening_gap
 	)
 
-	# 偏离必须在**走完之前**测。走到化学室门口这一步本身就结束了这段排练，
-	# 之后再偏离，没有牵引才是对的——在那个时刻断言"应该被拉回来"，测的是
-	# 一个已经不存在的阶段。
 	var checkpoint: Vector2 = hall.call("hall_tutorial_checkpoint_position")
-	player.global_position = checkpoint + Vector2(900.0, 700.0)
-	var recovered := false
+	var off_route: Vector2 = hall.call("_nearest_guardian_walkable_position", Vector2(1120, 1120))
+	player.global_position = off_route
+	var exposed := false
 	for _frame: int in range(240):
 		await physics_frame
-		if player.global_position.distance_to(checkpoint + Vector2(900.0, 700.0)) > 64.0:
-			recovered = true
+		if bool(guardian.get("catch_enabled")):
+			exposed = true
 			break
-	_expect(recovered, "Straying off the guided route returns the player to it")
+	_expect(exposed, "Leaving the footprint corridor enables real pursuit")
+	_expect(player.global_position.distance_to(off_route) < 1.0, "Exposure does not teleport the player")
 	_expect(
 		not bool(hall.get("game_over")),
-		"Straying off the guided route does not end the run"
+		"Leaving the route warns and starts pursuit rather than instantly ending the run"
 	)
+	player.global_position = checkpoint
+	hall.call("_tick_hall_route_exposure", false, 0.0)
 
 	# Walk the route. The Guardian should follow, never lead, and never catch.
 	var closest := 99999.0

@@ -82,6 +82,7 @@ var _level: Dictionary = {}
 var _bars: Dictionary = {}
 var _value_labels: Dictionary = {}
 var _plus_buttons: Dictionary = {}
+var _minus_buttons: Dictionary = {}
 var _budget_label: Label
 var _growth_label: Label
 var _limiting_label: Label
@@ -103,6 +104,7 @@ func build_level(index: int) -> void:
 	_bars = {}
 	_value_labels = {}
 	_plus_buttons = {}
+	_minus_buttons = {}
 	_running = false
 
 	set_instruction(_text(
@@ -195,6 +197,7 @@ func _build_lane(channel: String) -> Control:
 	minus.custom_minimum_size = Vector2(48.0, 28.0)
 	minus.pressed.connect(_on_adjust.bind(channel, -1))
 	buttons.add_child(minus)
+	_minus_buttons[channel] = minus
 	var plus := make_button("+")
 	plus.custom_minimum_size = Vector2(48.0, 28.0)
 	plus.pressed.connect(_on_adjust.bind(channel, 1))
@@ -264,6 +267,7 @@ func _on_adjust(channel: String, delta: int) -> void:
 	if _spent() > int(_level["budget"]):
 		_bought[channel] = previous
 		return
+	clear_feedback()
 	# 改了供给，上一轮长出来的苗就不再作数，收回种子状态重新培育。
 	if _bed != null:
 		_bed.reset_plant()
@@ -302,6 +306,7 @@ func _refresh() -> void:
 			remaining < cost
 			or supply >= int(_level["cap"][channel])
 		)
+		_minus_buttons[channel].disabled = int(_bought[channel]) <= 0
 	if _bed != null:
 		_bed.light = _supply("light")
 		_bed.water = _supply("water")
@@ -314,6 +319,7 @@ func _refresh() -> void:
 func _on_cultivate() -> void:
 	if _running or _bed == null:
 		return
+	clear_feedback()
 	_running = true
 	_run_time = 0.0
 	_set_buttons_disabled(content, true)
