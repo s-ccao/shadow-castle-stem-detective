@@ -15,6 +15,7 @@
 - **Props:** all nine Hall props are crisp 1.25px/texel pixel art with contact shadows and true proportions.
 - **Next step:** the 2D wall redraw is paused in favour of a Blender HD Hall prototype.
 - **Evidence:** see the latest [stage report](AGENT_STAGE_REPORT.md) and [comparisons](evidence/2026-10-21-hall-visual/).
+- **Published:** this build is live at https://play.shadowcastledetective.com (deployed 2026-10-21; the live package matches the local export byte for byte).
 
 ## Previous actual-project update (2026-10-18)
 
