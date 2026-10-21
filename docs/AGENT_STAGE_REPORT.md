@@ -2,6 +2,83 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-39
+
+- **Date:** 2026-10-21
+- **Status:** prototype complete, direction decision pending. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** after stage 38 shipped, "现在进行下一步的搭建": build the Blender 3D→2D Hall prototype the user chose (HD style, one screen, characters deferred), to judge whether it beats the current hand-painted AI art.
+- **Follow-up:** the user chose "improve 3D". They had found no 3D in the game; until then it had only appeared inside the capture tool. Two responses:
+  - a playable preview launcher, `tools/blender/play_prototype.gd`;
+  - a quality pass with CC0 photo materials and visible wall lanterns.
+
+### What was built
+
+- **`tools/blender/export_hall_region.gd`** (Godot, headless) exports the Hall layout:
+  - `wall_mask.png`: the real wall collision of the whole map, sampled on the collision's own 4 px grid with physics point queries.
+  - `outside_mask.png`: floor outside the castle, from the floor art's alpha.
+  - `region.json`: the prototype region (x 0–1024, y 768–1280, around the Wake spawn), spawn, doors, exhibits and the opening route.
+- **`tools/blender/hall_prototype.py`** (Blender 5.2 `bpy`, Cycles on the M3 Metal GPU) builds and renders the Hall in 3D:
+  - **Camera:** orthographic, tilted 40° from vertical. The scene's Y axis is pre-stretched by 1/cos 40°, so the floor lands 1:1 on game coordinates and heights show as z·sin 40°.
+  - **Walls:** each wall column run gets a top cap plus a camera-facing south face. Its height is chosen so the two cover exactly the run's collision cells. Runs sharing a south edge share one face height, so caps don't step.
+  - **Galleries:** large wall masses get a stone rim around a sunken machinery gallery, echoing the current art's pale outlines around dark machinery.
+  - **Wake gate:** a taller gatehouse face carrying an arched oak door, with pale stone frame, brass straps, violet keystone and twin lanterns. It is shaped in screen proportions so the arch reads round after the tilt.
+  - **Materials:** CC0 photo texture sets from Poly Haven at 1k, with per-face planar UVs so the normal maps shade correctly. Each is graded toward the castle's violet-grey and brass palette:
+    - `large_floor_tiles_02` for the floor;
+    - `castle_wall_slates` for the wall faces, with brass bands;
+    - `large_grey_tiles` for the capstones;
+    - `metal_plate` under the brass pipes and violet crystals of the galleries;
+    - `rough_pine_door` for the gate door.
+    - The first four are by Rob Tuytel, the door by Dimitrios Savva. Licence, source URLs and SHA-256 are in `prototypes/blender_hall/textures/sources.json`.
+    - Without the textures folder the script falls back to its original procedural materials.
+  - **Lighting:** moonlight, violet ambient, and iron-bracketed wall lanterns.
+    - The lanterns hang on the nearest full-height south face, so the light has a visible source and never looks like an obstacle on the floor.
+    - Dim floor fills, violet glows and the gate lights complete it.
+  - **Output:** a 2048×1024 render (2 px per game px), 128 samples, about 35 s.
+- **`tools/blender/capture_prototype.gd`** (native Godot) replays the real Wake Room exit. It then captures the same gameplay moments with the current art and with the render laid over it (a visual-only Sprite2D at z −40; collision, fog, route and nodes untouched).
+- **`tools/blender/play_prototype.gd`** (native Godot) runs the real game and lays the render over the Hall region whenever the Hall loads.
+  - `-- --hall` jumps straight to the Hall arrival.
+  - Usage: `HOME="$PWD/.godot/blender-proto-play/home" godot --path . --script res://tools/blender/play_prototype.gd -- --hall`.
+  - This is the only way to see the prototype in play: the normal game and the Web build do not include it.
+
+### Findings
+
+- **Gameplay unchanged by construction.** The rendered wall outline matches the collision: IoU 0.9938 and **0 missing px** at 2048×1024. All 5,972 extra px are accounted for:
+  - 5,760 are 308 enclosed floor cells inside wall masses. No body fits or reaches them, and drawn as floor they became black crevices, so they are drawn as wall.
+  - 212 are one-cell lips and the lanterns' few-pixel overhang on their faces.
+  - With a matching outline, the player can never stand behind a wall, so no occluder layer is needed.
+- **Better than the current art:** one consistent projection, with real wall height, lit south faces, cast shadows, brass detail and a gate that reads as a door. With the CC0 materials it reads as a real stone castle, and the violet footprints stand out more clearly on the darker stone.
+- **Worse than the current art:**
+  - It is darker and cooler than the warm current art. The procedural first pass was also plainer; the CC0 pass largely closes that gap.
+  - The collision's 4 px stair-steps show as jaggies on diagonal edges.
+  - The pixel-art player and exhibit now sit on an HD background.
+
+### Exact files
+
+- New tools: `tools/blender/export_hall_region.gd` (+UID), `tools/blender/hall_prototype.py`, `tools/blender/capture_prototype.gd` (+UID), `tools/blender/play_prototype.gd` (+UID).
+- Texture provenance: `tools/blender/cc0_textures.json` (assets, authors, licence, URLs, SHA-256) and `tools/blender/fetch_textures.py`, which downloads and verifies the maps. The binaries are not committed.
+- `.gitignore` now ignores `/prototypes/`, the regenerable outputs.
+- Evidence: `docs/evidence/2026-10-21-blender-hall-prototype/`, containing 6 side-by-side comparisons at native 1024×768 (arrival with real fog, first corridor, Wake gate, two fog-lifted views, region overview) and `silhouette-diff.png`.
+- Local only, regenerable and gdignored: `prototypes/blender_hall/`, containing the masks, `region.json`, `render.png`, `hall_prototype.blend` (open it in Blender to inspect the 3D scene), the raw EN/ZH captures, and `textures/` (15 CC0 maps, 8.2 MB, with `sources.json`).
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+
+### Verification
+
+- **Silhouette check:** rendered by Blender's Workbench engine with anti-aliasing off, compared pixel by pixel with the collision. Result as above. The textured final render takes about 38 s (2048×1024, 128 samples, M3 Metal).
+- **Preview:** the playable preview was launched and its log confirms the overlay is added to the Hall.
+- **Native captures:** `capture_prototype` passes in EN and ZH; all shots are 1024×768 and were inspected.
+- **Static checks:** Godot headless editor parse has 0 script errors. `tools/check_static.py` reports only the 15 pre-existing issues. gdlint is clean on both new GDScript tools, `hall_prototype.py` compiles, and `git diff --check` is clean.
+
+### Limits / next stage
+
+- **Scope:** one region only, and the render is not integrated into the game.
+- **Quality:** a richer pass would use CC0 PBR texture sets with provenance, decorative 3D props (pipes, braziers, rubble), and chamfered diagonals where the collision allows.
+- **Style:** the characters and pixel props would need the same treatment for one style.
+- **Proposed next stage:** the user decides between three options: raise the 3D quality and extend it to the whole Hall; a hybrid that uses the 3D pass for depth and lighting under the painted texture; or stay 2D.
+- **GitHub:** the user approved committing `tools/blender/`, `docs/evidence/2026-10-21-blender-hall-prototype/`, `.gitignore` and these doc updates. `prototypes/` stays local. No Web deployment.
+- **User verdict on this pass:** still too plain and half-finished, without enough pull to explore or sense of mystery. The user wants this region tuned before anything is extended (see the next stage).
+
+---
+
 ## Stage: UX-20261021-38
 
 - **Date:** 2026-10-21

@@ -6,6 +6,10 @@
 
 ## Latest actual-project update (2026-10-21)
 
+- **Blender HD Hall prototype (not shipped):** one Hall region around the Wake spawn was rebuilt in Blender from the real collision and rendered as an HD 2D image.
+  - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
+  - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/). The user is choosing whether to pursue it.
+
 - **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.
   - The authored recording still chooses the corridors, but its through-wall first segment and hand wobble are no longer replayed.
   - `opening_blockers_test` (a 0-point route since before stage 37) passes again.

@@ -1,0 +1,137 @@
+{
+  "purpose": "CC0 photo textures used by tools/blender/hall_prototype.py. Fetch them with tools/blender/fetch_textures.py; the binaries are not committed.",
+  "license": "CC0 1.0 Universal (public domain dedication), Poly Haven",
+  "destination": "prototypes/blender_hall/textures",
+  "assets": [
+    {
+      "asset": "large_floor_tiles_02",
+      "name": "Large Floor Tiles 02",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/large_floor_tiles_02",
+      "maps": {
+        "diff": {
+          "file": "large_floor_tiles_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_floor_tiles_02/large_floor_tiles_02_diff_1k.jpg",
+          "sha256": "3865ed2510bad61c7c62fe9f854d5af57f1bc37e4b6d8931f03b12d033f9e17c"
+        },
+        "nor_gl": {
+          "file": "large_floor_tiles_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_floor_tiles_02/large_floor_tiles_02_nor_gl_1k.jpg",
+          "sha256": "80eed7cdd3eedaf0e348f0388eb47bed183b025165433ba0eef2bf2bd2546e47"
+        },
+        "rough": {
+          "file": "large_floor_tiles_02_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_floor_tiles_02/large_floor_tiles_02_rough_1k.jpg",
+          "sha256": "b1b6f5ebdf29610065ad69f75df37b84da3b384ddd3d394547ddcbb95f4cea33"
+        }
+      }
+    },
+    {
+      "asset": "castle_wall_slates",
+      "name": "Castle Wall Slates",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/castle_wall_slates",
+      "maps": {
+        "diff": {
+          "file": "castle_wall_slates_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/castle_wall_slates/castle_wall_slates_diff_1k.jpg",
+          "sha256": "1c42fe616560553caf8f61f298750e6a2cee06bf2a4af9156a930057d02da003"
+        },
+        "nor_gl": {
+          "file": "castle_wall_slates_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/castle_wall_slates/castle_wall_slates_nor_gl_1k.jpg",
+          "sha256": "9be1475eb6dde811e8cea0f950f2700ed75bc23c7b3fd66b6d7731c639b7faba"
+        },
+        "rough": {
+          "file": "castle_wall_slates_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/castle_wall_slates/castle_wall_slates_rough_1k.jpg",
+          "sha256": "57f07432fea65e2282b31fc730978d5ae98a3cb432c3f7e48f5b9892c3104d6d"
+        }
+      }
+    },
+    {
+      "asset": "large_grey_tiles",
+      "name": "Large Grey Tiles",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/large_grey_tiles",
+      "maps": {
+        "diff": {
+          "file": "large_grey_tiles_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_grey_tiles/large_grey_tiles_diff_1k.jpg",
+          "sha256": "2cd00e2ddd516fdc165169252c194bf67b3ee483f2925442dc428cbae5fd04c8"
+        },
+        "nor_gl": {
+          "file": "large_grey_tiles_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_grey_tiles/large_grey_tiles_nor_gl_1k.jpg",
+          "sha256": "9185560cc045b0c90434c1bfe64922759a5bebfdad18a1b6af860ed0e332cfc8"
+        },
+        "rough": {
+          "file": "large_grey_tiles_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_grey_tiles/large_grey_tiles_rough_1k.jpg",
+          "sha256": "2042fd8d9775e4e91ca6474549e504ec08ded4664cb6b59890142d6fe97709c8"
+        }
+      }
+    },
+    {
+      "asset": "metal_plate",
+      "name": "Metal Plate",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/metal_plate",
+      "maps": {
+        "diff": {
+          "file": "metal_plate_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate/metal_plate_diff_1k.jpg",
+          "sha256": "c6b6739eac2c75ccc898e753d7833df24eafbdb9aa92fb6eabfb92abd1a680a5"
+        },
+        "nor_gl": {
+          "file": "metal_plate_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate/metal_plate_nor_gl_1k.jpg",
+          "sha256": "994f851a84d52b51e97906021a1b7070ee6eac9a789fef041132268de47d8e6b"
+        },
+        "rough": {
+          "file": "metal_plate_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate/metal_plate_rough_1k.jpg",
+          "sha256": "756308485ce742a52831453c296452f48cf0adead7d85adfffd34c08dce23ec1"
+        }
+      }
+    },
+    {
+      "asset": "rough_pine_door",
+      "name": "Rough Pine Door",
+      "authors": [
+        "Dimitrios Savva"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/rough_pine_door",
+      "maps": {
+        "diff": {
+          "file": "rough_pine_door_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_pine_door/rough_pine_door_diff_1k.jpg",
+          "sha256": "1a9b6a8a75d299a52fbfdcadeb71dcac8915503cb88fc817ccb2d24dd1086d07"
+        },
+        "nor_gl": {
+          "file": "rough_pine_door_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_pine_door/rough_pine_door_nor_gl_1k.jpg",
+          "sha256": "0ddb4e16752e9dd443918f63d07c8a23c04fd0da2a907f6717b071650e587557"
+        },
+        "rough": {
+          "file": "rough_pine_door_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_pine_door/rough_pine_door_rough_1k.jpg",
+          "sha256": "ff2e2058c19e963619df52880c224f589a1b68cbe7a0245121c9ceeed3789d3a"
+        }
+      }
+    }
+  ]
+}

@@ -263,12 +263,15 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD).** The user chose to prototype one screen of the Hall (around the Wake entrance) in Blender 5.2.2 (`/Applications/Blender.app`, scriptable via bpy).
-   - Build it from the existing collision layout.
-   - Use an orthographic oblique camera locked to the 1920×1280 Hall coordinates.
-   - Output layers: floor, wall base below the player, and a wall-top occluder above.
-   - Compare it side by side with the current art at 1024×768 before any wider adoption.
-   - Keep collision, doors, fog, route and saves valid. Characters stay as they are until the prototype is judged.
+1. **Blender Hall prototype (HD): built, decision pending.** See stage UX-20261021-39 and `docs/evidence/2026-10-21-blender-hall-prototype/`.
+   - Pipeline:
+     - `tools/blender/export_hall_region.gd` (headless Godot) exports the real collision as `wall_mask.png`, plus `outside_mask.png` and `region.json`.
+     - `tools/blender/hall_prototype.py` (Blender 5.2 bpy, Cycles Metal) builds walls whose cap plus south face exactly covers the collision. It uses a 40° orthographic camera with a 1/cos Y pre-stretch, so the floor maps 1:1 onto game coordinates.
+     - `tools/blender/capture_prototype.gd` (native Godot) overlays the render visually and captures paired shots.
+     - `tools/blender/play_prototype.gd` (native Godot, `-- --hall`) is a playable preview. The normal game does not include the render.
+   - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
+   - The outputs in `prototypes/blender_hall/` are local and regenerable.
+   - Open questions for the user: raise quality (CC0 PBR textures, 3D props, chamfered diagonals) and extend it to the whole Hall; use a hybrid 3D lighting/depth pass under the painted texture; or stay 2D. Characters stay as they are until this is decided.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
 4. **Room spatial audit drift.** `tests/room_spatial_audit.gd` still expects a 14px contact band for the five Hall knowledge exhibits and `arrival_chemistry_core`, but those deliberately use the 72px wall-aware approach zone. The six failures predate the 2026-10-21 stage; update the expectation rather than the margin.
