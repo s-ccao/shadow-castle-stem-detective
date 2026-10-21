@@ -2,6 +2,84 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-38
+
+- **Date:** 2026-10-21
+- **Status:** complete
+- **Request:** After the Wake Room, the tutorial route is "completely wrong" and passes through walls; many Hall textures (map art and item art) look like odd stickers. The user chose six fixes: smooth fog, redraw the Hall walls, remake the Hall props, readable footprints and arrival framing, fix the overlapping card text, align navigation. They asked mid-stage about rebuilding maps and characters in Blender, then chose an **HD Blender one-screen Hall prototype** as the next step. Characters are deferred, and the 2D wall/floor redraw is paused (superseded).
+- **Delivery:** actual main project, plus code mirrored to the session worktree. Not committed, pushed or deployed: the live site is still the August build, and Web deployment waits for the user's confirmation.
+
+### Diagnosis
+
+- **Route start:** the shipped authored route (`data/hall_tutorial_route.json`) begins at the old scene placeholder (512,384), not at the Wake spawn (224,984). Its first segment is a teleport through the stone.
+- **Old connectors:** the route was copied point by point. The connectors to it used the coarse 32px grid, and collision repair then added zigzags. Stage 1 measured 1867px against a 1557px shortest path.
+- **Why it looked like wall-walking:** the route centreline touched 0 of 936 wall samples. The visible problem was presentation:
+  - the first prints were hidden under the arrival dialogue;
+  - later prints were drawn above the fog past corners, so the trail glowed through walls;
+  - the rehearsal Guardian was placed a fixed 190px beside the trail, which is inside the stone in most corridors.
+- **`opening_blockers_test`:** returned a 0-point route because the Chemistry door's grid cell is solid. This failure predates stage 37.
+- **Props:** 548–1774px AI images were shown at 0.07–0.14 scale without mipmaps, so they aliased. Two exhibits were stretched (Chemistry core 54% too tall, Circuit 16%), and M1 carried an opaque backdrop box.
+
+### Player-facing changes
+
+- **Route:** new `HallRoutePlanner` plans on the Guardian's existing 16px collision lattice.
+  - The trail starts where the player stands and keeps to corridor centrelines in long straight legs, never nearer the stone than the search was.
+  - Corners sit where there is more room, and sub-node 16px jogs become slight drifts.
+  - The authored recording now only selects corridors; its wobble and through-wall start are not replayed. The file itself is unchanged.
+  - Stage 1 is 1800px in 15 legs, down from 1867px with 38 points.
+- **Footprints:**
+  - Raster shoe prints now sit in a small additive violet glow, matching the "glowing footprints" copy.
+  - They show only up to the first print that is out of sight and far nearer in a straight line than along the trail, so no print glows through a wall the trail goes round.
+  - Prints under the character are hidden, and new prints fade in.
+  - The compass names the heading of the next leg rather than the goal's bearing (the old card said NORTH-EAST while the trail went south).
+- **Rehearsal Guardian:** follows by distance walked, not waypoint index. Its step aside is limited to the open floor on the roomier side with a 24px wall gap, and eases at turns.
+- **Fog:** a smoothing shader replaces 32px black blocks with soft rounded falloff. Flashlight, memory and power gating are unchanged.
+- **Survival card:** rows are stacked by measured line count; the English "RUN —or click a clear route" no longer overprints "USE a marked door or exhibit".
+- **Props:** all nine Hall props are deterministic pixel art at 1.25 world px per texel, matching the walls.
+  - Uniform scale, nearest filtering, lossless import and contact shadows.
+  - Visual feet moved ≤0.62px. The stretch is removed while keeping visible area, and M1's backdrop is gone.
+
+### Exact files
+
+- **New code:** `scripts/hall_route_planner.gd`, `scripts/hall_fog_smooth.gdshader` (+UIDs), `tests/hall_visual_capture.gd` (+UID), `tools/pixelize_hall_props.gd` (+UID).
+- **Changed code:**
+  - `scripts/game_world.gd`: route builder, goal candidates, start squaring, jog folding, footprint visibility/fade, guardian mark, compass, fog material, lint-ordered constants.
+  - `scripts/hall_footprint_marker.gd` (violet glow).
+  - `scripts/hall_route_store.gd` (contract comment).
+  - `scripts/onboarding_hud.gd` (measured rows).
+- **Changed tests:** `tests/hall_route_authoring_test.gd` (corridor-hint contract, wall-safe Guardian aside), `tests/footprint_presentation_test.gd` (no print through walls or on the character, compass heading), `tests/tutorial_onboarding_test.gd` (Hall card rows, EN/ZH).
+- **Scene and assets:**
+  - `scenes/wall_collisions.tscn`: nine prop sprites (texture/scale/position/filter), `ContactShadow` children, new texture ext_resources only.
+  - New `assets/props/hall_pixel/`: 9 prop PNGs, the shadow atlas, imports, `manifest.json`, `PROVENANCE.md`.
+- **Docs:** `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, this report.
+- **Evidence:** `docs/evidence/2026-10-21-hall-visual/`, which contains `compare/` (before/after card EN/ZH, route start, route 1/3) and `props/` (contact sheet, in-game before/after, M1 backdrop mask).
+- **Raw native captures** (34 before, 34 after EN/ZH, WIP and prop runs) were moved out of the repo to the session files to keep 49 MB of frames out of the checkout. `tests/hall_visual_capture.gd` regenerates them.
+
+### Verification
+
+- **Parsing:** Godot 4.7 headless editor parsing passes in both roots. `git diff --check` passes in both.
+- **Full main sweep:** 54/54 `tests/*_test.gd` suites passed with fresh guarded HOMEs and no script/parse errors. This includes `opening_blockers_test`, which now passes; it was the single stage-37 failure. After the final bare-point endpoint fix the sweep was 53/54 at a load average of ~20. The only failure was `fog_performance_test`'s absolute 3ms budget (4.92ms), and it passes at 1.85ms when rerun after the load fell.
+- **Route suites (main and session worktree):** opening blockers, authoring, footprints, staged guidance, guided crossing, onboarding and tutorial chase all pass.
+- **Authoring test:** a hand-walked recording with ±5px wobble that starts with a through-wall teleport is followed by corridor (the route passes within 64px of the authored detour) while using fewer than half its points. Every leg is wall-clear and axis-aligned within one jog, and clearing the recording returns the plain corridor.
+- **Footprint check:** walking the whole opening route in 96px stops shows 0 visible prints through walls and 0 prints on the character.
+- **Guardian aside:** in 41 samples along the route, the Guardian's step aside is never in stone.
+- **Pressure audit** on the planned trail: 2528px/14.04s, 384px/2.13s and 287px/1.59s, 17.77s total, minimum reaction 4.32s, PASS. On the same layout the previous builder measured 2725/320/286px.
+- **Fog cost:** the CPU fog update is unchanged. An interleaved same-process A/B measures 1.97/1.97ms and 1.82/1.83ms with and without the smoothing material. Budget overruns came only from machine load: at a load average of ~90 the session worktree, which did not yet have the shader, also measured 3.26–3.30ms.
+- **Props:** the feet probe passes for all 9 props, imports are lossless without mipmaps, and two runs of the generator produce byte-identical output.
+- **Native evidence:** `hall_visual_capture` passes in EN and ZH (the real Wake exit, card, route, nine props, four fog-free areas, overview), and the images were inspected at 1024×768.
+- **gdlint:** the CI scope total is 1301, against 1302 before this stage. The new planner and the edited tests add no issues.
+
+### Limits / next stage
+
+- **Wall/floor art:** unchanged; the 2D redraw is paused. The remaining "sticker" feel of the walls (mixed projection, the wall-top drawn under the player, AI lighting) is the target of the Blender HD prototype.
+- **`tests/room_spatial_audit.gd`:** still reports the pre-existing 6 contact-band failures for knowledge exhibits, which now deliberately use the 72px approach zone. The expectation needs updating separately.
+- **Old grid:** the 32px `CASTLE_LAYOUT` grid is still stale for click-to-move and legacy Guardian queries. The trail no longer uses it.
+- **Worktree:** prop textures were not mirrored into the session worktree, whose scene predates the user's prop placement edits in main.
+- **Proposed next stage:** a Blender 5.2.2 (bpy) one-screen HD Hall prototype from the existing collision layout, with an orthographic oblique camera, floor/wall-base/wall-top occluder layers, and a side-by-side comparison at 1024×768.
+- **Exact GitHub documentation update proposed:** after reviewing the files above, synchronize `README.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `docs/AGENT_STAGE_REPORT.md` (stage 38), `assets/props/hall_pixel/PROVENANCE.md`, `assets/props/hall_pixel/manifest.json` and `docs/evidence/2026-10-21-hall-visual/`. Publish the Web build only after the user confirms.
+
+---
+
 ## Stage: UX-20261018-37
 
 - **Date:** 2026-10-18

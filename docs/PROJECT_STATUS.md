@@ -1,14 +1,26 @@
 # Project status
 
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-21
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
-## Latest actual-project update (2026-10-18)
+## Latest actual-project update (2026-10-21)
+
+- **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.
+  - The authored recording still chooses the corridors, but its through-wall first segment and hand wobble are no longer replayed.
+  - `opening_blockers_test` (a 0-point route since before stage 37) passes again.
+- **Footprints:** violet glowing prints show only as far as the player can see along the trail, so they no longer glow through walls. The route card names the direction of the next stretch.
+- **Tutorial Guardian:** it never stands inside a wall beside the trail.
+- **Fog and card:** fog edges are smooth instead of 32px blocks, and the English survival card no longer overprints its own rows.
+- **Props:** all nine Hall props are crisp 1.25px/texel pixel art with contact shadows and true proportions.
+- **Next step:** the 2D wall redraw is paused in favour of a Blender HD Hall prototype.
+- **Evidence:** see the latest [stage report](AGENT_STAGE_REPORT.md) and [comparisons](evidence/2026-10-21-hall-visual/).
+
+## Previous actual-project update (2026-10-18)
 
 - Esc now opens an in-game settings dossier during free play: Resume, global mute, Music/Effects faders, field prompts, controls, and confirmed Main Menu/Quit actions. An Esc that closes an open panel never opens it as well; settings freeze the room and Guardian. Mute persists and title-screen settings can undo it. See the latest [stage report](AGENT_STAGE_REPORT.md).
 
-## Previous actual-project update (2026-09-07)
+## Earlier actual-project update (2026-09-07)
 
 - Material naturalness now uses a source-pixel glass partition with gravity, tray contact and dissipative settling; ice erodes asymmetrically into a density-accounted pool. Wax, cloth, nucleation sites, liquid-level bubbles and emission timing no longer use the previous repeated decorative motion. [Stage36 evidence](evidence/2026-09-07-material-naturalness/) preserves the earlier comparison frames.
 - Chemistry observations now state physical conditions and compressed time explicitly. Contact sounds wait for the material event, quiet changes do not invent splashes/rattles, and the fictional bronze device is not represented as a real chemical prediction.
@@ -64,7 +76,7 @@
 - Bag now exposes exactly four files aligned to the four metal tabs in its authored board: ALL, POTIONS, MATERIALS and PAPERS. Materials merges herbs, reagents, dishes and key fragments; Papers merges formula blueprints and route/repair maps. No second category row exists.
 - Before `circuit_power_restored`, Castle Hall has no persistent visual memory: only the current 230px wall-occluded flashlight is visible and crossed walls return to pure black. The full Map and Guardian minimap also remain architecturally black. Hall walking is recorded invisibly, so restoring Circuit power immediately converts all walked ground to dim gray memory while unwalked ground stays black across the world, full Map and minimap.
 - Master-switch success now plays a reproducible original 1.65s electrical surge alongside generator impact rings, eased machinery motion, a restrained camera hit and two workshop light flickers. First Hall return restores recorded gray routes progressively over 1.20s, reports `POWER RESTORED · ROUTE MEMORY ONLINE`, and activates an immediate Map objective that clears when Map opens.
-- The measured Wake→Chemistry→Greenhouse→Circuit Hall route contains three safe-room-separated darkness exposures of 14.76s, 16.53s and 7.64s. Guardian Tier 2 nearly equals player speed, so Hall-return separation is now 800px: worst-case reaction is 4.32s while +12% per-key escalation remains unchanged.
+- The measured Wake→Chemistry→Greenhouse→Circuit Hall route on the current layout (2026-10-21, planned trail) contains three safe-room-separated darkness exposures of 14.04s, 2.13s and 1.59s; the August layout measured 14.76s, 16.53s and 7.64s. Guardian Tier 2 nearly equals player speed, so Hall-return separation is now 800px: worst-case reaction is 4.32s while +12% per-key escalation remains unchanged.
 - Wake Room bookshelf interaction is restored. Its focus/contact rectangle remains identical to visible art; an independent approach resolver selects a walkable point on that exact 14px band, preventing both misleading oversized highlights and unreachable click targets.
 - The Guardian hunt now has two phases with an in-fiction cause. Phase one: the tracking serum in the player's blood lets the Guardian find the player anywhere, and each recovered room key adds 12% chase speed up to a six-tier cap (145 → 249 px/s). Phase two: examining the Dining Hall evidence yields Mrs. Lin's Purification, Daze and Shroud blueprints; drinking the Purification Potion permanently removes tracking, after which the Guardian stakes out the doorway of the player's next objective room at 44 px/s.
 - Post-purification detection is a real sight model: a 300px cone with a ±46° half-angle, a 78px proximity radius, and a grid line-of-sight sample so walls block vision but doorways do not. Sighting restores the full escalated chase speed; losing sight starts a six-second, 96 px/s search of the last known position before the Guardian returns to its stakeout. The Daze Potion stuns it for 7s and the Shroud Potion makes the player unsightable for 12s.

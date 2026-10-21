@@ -82,10 +82,12 @@ Additive colour mixing is what reveals a hidden archive layer.
 - **A renewable greenhouse** — ten segmented harvest points across four
   plantings, each growing its own herb on a real-time regrowth clock, feeding
   refining recipes that convert herbs into every reagent the potion list needs.
-- **A staged guided opening** — footprints lead to the visible knowledge core,
-  where a generous, wall-aware approach zone stops movement for an illustrated
-  lesson. File it to continue to Chemistry. Protection belongs to the footprint
-  corridor, not the entire Hall: leaving it starts real pursuit after a warning.
+- **A staged guided opening** — glowing violet footprints lead down the middle of
+  each corridor to the visible knowledge core, revealed only as far as you can see
+  along the trail, so they never shine through a wall. A generous, wall-aware
+  approach zone stops movement for an illustrated lesson. File it to continue to
+  Chemistry. Protection belongs to the footprint corridor, not the entire Hall:
+  leaving it starts real pursuit after a warning.
 - **Knowledge you can revisit** — all five Hall exhibits open illustrated
   observation/principle/example dossiers. Reading comes before filing, and
   collected knowledge remains available for review in both languages. Five
@@ -113,7 +115,7 @@ Additive colour mixing is what reveals a hidden archive layer.
 - A staged Circuit-restoration milestone with generator impact, workshop light
   flicker, synthesized electrical audio, progressive Hall route scanning, and an
   immediate Map reward.
-- Measured pre-Circuit pacing on the real A* route: three safe-room-separated
+- Measured pre-Circuit pacing on the real planned Hall route: three safe-room-separated
   darkness exposures and at least 4.32 seconds of Hall-return reaction at Tier 2
   Guardian escalation.
 - Five animated pixel NPCs: Dr. Lin, Butler, Gardener, Mechanic, Castle Guardian.
@@ -168,7 +170,7 @@ Several suites exist to protect design guarantees that regress silently:
 | `interaction_stops_walk_test.gd` | Interacting always halts a click-move, so the character never walks off on its own. |
 | `developer_mode_test.gd` | The developer clear credits every stage to the room, and stays hidden for normal players. |
 | `victim_voice_test.gd` | The murdered mentor never speaks; what she left behind stays in the case as evidence. |
-| `hall_route_authoring_test.gd` | The tutorial follows the route the author walked, and still falls back to pathfinding without one. |
+| `hall_route_authoring_test.gd` | An authored walk chooses the tutorial's corridors without its wobble or through-wall start being replayed; without one the planner still finds a straight, wall-clear route. |
 | `flame_presentation_test.gd` | Burn multipliers change one wick's thickness and one flame's intensity, not the wick count; prediction edits and actual extinction remain consistent. |
 | `character_motion_test.gd` | Turning preserves stride phase, blocked actors plant their feet, and animation follows actual travel. |
 | `minigame_ui_polish_test.gd` | All six minigames fit in both languages, feedback stays readable, and keyboard/close/restart behavior preserves progress and pause ownership. |

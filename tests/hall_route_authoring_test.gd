@@ -1,13 +1,13 @@
 extends SceneTree
 
-## 教程路线必须是人走出来的那条，而不是 A* 现算的。
+## 教程路线走哪条走廊，由作者在开发者模式下走一遍来决定。
 ##
-## A* 只保证能走到，不保证走得像话：它贴墙角切、在空地上走对角线，于是脚下
-## 路标的指向和玩家看到的通路对不上——这就是"方位全是错的"。作者在开发者
-## 模式下走一遍，那条路才是教学要教的路。
+## 纯 A* 只保证能走到，不保证走得像话：它贴墙角切、在空地上走对角线。可逐
+## 点照搬手走的线同样不行：手会抖，录制还常从玩家被摆到出生点之前开始，第
+## 一段就是穿墙的瞬移。所以录下的路线只选走廊，线由规划器沿走廊中线画。
 ##
-## 这里验三件事，缺一条这个工具就等于没做：录下来的点存得进去、读得出来、
-## 而且教程和地面路标真的改用了它（只存不用是最容易发生也最难发现的失败）。
+## 这里验：录下来的点存得进去、读得出来，教程和地面路标真的采用了录下的走
+## 廊（只存不用是最容易发生也最难发现的失败），而抖动和穿墙段没有被照搬。
 
 var failures: Array[String] = []
 var _shipped_digest_at_start: String = ""
@@ -110,14 +110,12 @@ func _check_recorder_captures_a_walk() -> void:
 	await process_frame
 
 
-## 存下来却没人用，是这类工具最常见也最难察觉的失败。
+## 存下来却没人用，是这类工具最常见也最难察觉的失败；逐点照搬同样是失败：
+## 手走的线带着抖动，录制还常从玩家被摆到出生点之前开始，第一段就穿墙。所以
+## 录下的路线决定走哪条走廊，线由规划器沿走廊中线画。这里验三件事：录下的
+## 走廊真的被采用、抖动和穿墙的那一段没有被照搬、没录过时仍能开局。
 func _check_tutorial_prefers_the_authored_route() -> void:
-	var authored: Array[Vector2] = [
-		Vector2(900.0, 700.0), Vector2(900.0, 400.0), Vector2(600.0, 400.0),
-		Vector2(600.0, 150.0), Vector2(302.0, 87.0),
-	]
-	HallRouteStore.save_route(authored)
-
+	HallRouteStore.clear_route()
 	var packed := load("res://scenes/game_world.tscn") as PackedScene
 	_expect(packed != null, "The Hall scene loads")
 	if packed == null:
@@ -127,35 +125,148 @@ func _check_tutorial_prefers_the_authored_route() -> void:
 	for _frame: int in range(45):
 		await process_frame
 
-	var used: Array = hall.call(
-		"_hall_route_points", Vector2(900.0, 700.0), Vector2(302.0, 87.0)
+	var door: Vector2 = hall.get("CHEMISTRY_ROOM_DOOR_FOCUS_POSITION")
+	var actual_player := hall.get("player") as Node2D
+	var start: Vector2 = actual_player.global_position
+	_expect(
+		hall.call("is_player_position_walkable", start),
+		"The route check starts on actual walkable floor"
+	)
+	var plain: Array[Vector2] = hall.call("_hall_route_points", start, door)
+	_expect(plain.size() >= 2, "Without an authored route the Hall still plans a route")
+	if plain.size() < 2:
+		hall.queue_free()
+		await process_frame
+		return
+	var plain_length: float = hall.call("_hall_route_length", plain)
+
+	# An authored walk that takes a different corridor: through the reachable
+	# waypoint furthest from the plain line, within a detour the hint can win.
+	var detour := Vector2.ZERO
+	var authored_walk: Array[Vector2] = []
+	var best_gap := 0.0
+	for y: int in range(96, 1216, 64):
+		for x: int in range(96, 1856, 64):
+			var waypoint := Vector2(x, y)
+			if not hall.call("_is_hall_route_node_open", Vector2i(x / 16, y / 16)):
+				continue
+			var gap := _distance_to_polyline(waypoint, plain)
+			if gap <= best_gap or gap < 160.0:
+				continue
+			var first_leg: Array[Vector2] = hall.call("_get_hall_route_path", start, waypoint)
+			if first_leg.size() < 2:
+				continue
+			var second_leg: Array[Vector2] = hall.call("_get_hall_route_path", waypoint, door)
+			if second_leg.size() < 2:
+				continue
+			var walk: Array[Vector2] = first_leg.duplicate()
+			walk.append_array(second_leg.slice(1))
+			if float(hall.call("_hall_route_length", walk)) > plain_length * 1.45:
+				continue
+			# A pocket the walk enters and backs out of is not a corridor anyone
+			# would take; only a genuine second way round counts.
+			if _doubles_back(first_leg, second_leg, waypoint):
+				continue
+			best_gap = gap
+			detour = waypoint
+			authored_walk = walk
+	_expect(
+		detour != Vector2.ZERO,
+		"A second corridor to the door exists for the check (gap %.0f px)" % best_gap
+	)
+	if detour == Vector2.ZERO:
+		hall.queue_free()
+		await process_frame
+		return
+
+	# Record it the way a hand walk comes out: a point every 48 px with a few
+	# pixels of wobble, starting with the teleport from where the player stood
+	# before being placed at the entrance.
+	var recorded: Array[Vector2] = [Vector2(1500.0, 300.0)]
+	var wobble := 1.0
+	for index: int in range(1, authored_walk.size()):
+		var from_point := authored_walk[index - 1]
+		var to_point := authored_walk[index]
+		var steps := maxi(1, int(from_point.distance_to(to_point) / 48.0))
+		for step: int in range(steps):
+			var point := from_point.lerp(to_point, float(step) / steps)
+			var jittered := point + (to_point - from_point).normalized().orthogonal() * 5.0 * wobble
+			recorded.append(jittered if hall.call("is_player_position_walkable", jittered) else point)
+			wobble = -wobble
+	recorded.append(door)
+	HallRouteStore.save_route(recorded)
+
+	var used: Array[Vector2] = hall.call("_hall_route_points", start, door)
+	_expect(used.size() >= 2, "The Hall plans a route along the authored corridor")
+	_expect(
+		not used.is_empty() and used[0].distance_to(start) < 1.0,
+		"The authored route is joined from where the player stands, not from its own first point"
 	)
 	_expect(
-		used.size() == authored.size(),
-		"The Hall takes its tutorial line from the authored route (%d of %d)" % [
-			used.size(), authored.size()
+		_distance_to_polyline(detour, used) <= 64.0,
+		"The Hall takes the corridor the author walked (passes %.0f px from it)" % (
+			_distance_to_polyline(detour, used)
+		)
+	)
+	_expect(
+		used.size() < recorded.size() / 2,
+		"The hand-walked wobble is not replayed point by point (%d of %d)" % [
+			used.size(), recorded.size()
 		]
 	)
-	var same := used.size() == authored.size()
-	for index: int in range(mini(used.size(), authored.size())):
-		if (used[index] as Vector2).distance_to(authored[index]) > 0.6:
-			same = false
-	_expect(same, "The authored corners survive into the route the Guardian follows")
+	var blocked := 0
+	var slanted := 0
+	for index: int in range(1, used.size()):
+		if not hall.call("_hall_route_segment_is_walkable", used[index - 1], used[index]):
+			blocked += 1
+		var leg := used[index] - used[index - 1]
+		if index > 1 and minf(absf(leg.x), absf(leg.y)) > float(hall.get("HALL_ROUTE_MAX_JOG")):
+			slanted += 1
+	_expect(
+		blocked == 0,
+		"No leg of the route crosses stone, the recorder's teleport included (%d)" % blocked
+	)
+	_expect(
+		slanted == 0,
+		"Every leg after the first runs along an axis, drifting at most one jog (%d)" % slanted
+	)
 
 	# 没录过路的情况仍然要能开局，否则新检出第一次进大厅就没有引导。
 	HallRouteStore.clear_route()
-	var actual_player := hall.get("player") as Node2D
-	_expect(hall.call("is_player_position_walkable", actual_player.global_position), "The fallback test starts on actual walkable floor")
-	var fallback: Array = hall.call(
-		"_hall_route_points", actual_player.global_position, Vector2(302.0, 87.0)
-	)
+	var fallback: Array[Vector2] = hall.call("_hall_route_points", start, door)
 	_expect(
 		fallback.size() >= 2,
-		"Without an authored route the Hall still falls back to pathfinding"
+		"Without an authored route the Hall still falls back to planning"
+	)
+	_expect(
+		_distance_to_polyline(detour, fallback) > 64.0,
+		"Clearing the recording returns the plain corridor"
 	)
 
 	hall.queue_free()
 	await process_frame
+
+
+func _distance_to_polyline(point: Vector2, line: Array[Vector2]) -> float:
+	var best := INF
+	for index: int in range(1, line.size()):
+		var closest := Geometry2D.get_closest_point_to_segment(point, line[index - 1], line[index])
+		best = minf(best, point.distance_to(closest))
+	return best
+
+
+func _doubles_back(
+	first_leg: Array[Vector2], second_leg: Array[Vector2], waypoint: Vector2
+) -> bool:
+	for index: int in range(1, second_leg.size()):
+		var from_point := second_leg[index - 1]
+		var to_point := second_leg[index]
+		var steps := maxi(1, int(from_point.distance_to(to_point) / 16.0))
+		for step: int in range(steps + 1):
+			var sample := from_point.lerp(to_point, float(step) / steps)
+			if sample.distance_to(waypoint) > 96.0 and _distance_to_polyline(sample, first_leg) < 40.0:
+				return true
+	return false
 
 
 ## 一条只能沿旧路线走的录制器是没用的：作者每次试图走对的那条路，都会被
@@ -302,11 +413,22 @@ func _check_leaving_the_tracks_is_seen_not_silent() -> void:
 		"Staying outside past the grace window enables actual capture"
 	)
 
-	# 守卫在路旁，不在路上——否则脚印看起来就不安全了。
-	var side: Vector2 = hall.call("_hall_route_side_offset", 0)
+	# 守卫在路旁，不在路上——否则脚印看起来就不安全了；也不在墙里——否则
+	# 它就是贴着玩家穿墙走。
+	var aside_seen := false
+	var marks_in_stone := 0
+	var route_length: float = hall.call("_hall_route_length", route)
+	for step: int in range(41):
+		var sample: Dictionary = hall.call("_hall_route_sample", route, route_length * float(step) / 40.0)
+		var aside: Vector2 = hall.call("_hall_route_patrol_aside", sample["point"], sample["direction"])
+		if aside.length() > 8.0:
+			aside_seen = true
+		if not hall.call("is_player_position_walkable", (sample["point"] as Vector2) + aside):
+			marks_in_stone += 1
+	_expect(aside_seen, "The Guardian keeps a step aside from the tracks where the corridor allows")
 	_expect(
-		side.length() > 0.9,
-		"The Guardian has a side to stand on beside the tracks"
+		marks_in_stone == 0,
+		"The Guardian's step aside never stands it in the stone (%d)" % marks_in_stone
 	)
 
 	hall.queue_free()

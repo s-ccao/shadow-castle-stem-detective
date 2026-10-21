@@ -9,6 +9,7 @@ const DISABLE_FOG_DURING_ALIGNMENT := true
 # Fog uses smaller cells than the wall grid.
 # Walls are 32x32, but fog is 16x16, so the light looks more circular.
 const FOG_CELL_SIZE := 16
+const HALL_FOG_SMOOTH_SHADER := preload("res://scripts/hall_fog_smooth.gdshader")
 const FOG_COLS := MAP_PIXEL_WIDTH / FOG_CELL_SIZE
 const FOG_ROWS := MAP_PIXEL_HEIGHT / FOG_CELL_SIZE
 
@@ -174,6 +175,38 @@ const WANDER_ROUTE_ATTEMPTS: int = 4
 ## so a slow frame cannot cut a sequence short.
 const GUARDIAN_HOLD_WATCHDOG_TIMEOUT: float = 6.0
 
+# Hall tutorial trail. Kept with the other constants, ahead of every var, so the
+# file's definition order stays lint-clean; they are used by the route builder,
+# the footprint presentation and the rehearsal Guardian further down.
+## Goal preference per pixel from the target. A bare point must win over the
+## centre-line pull: a node one lattice step nearer it saves more than the most
+## a wall-hugging step can cost, so the route reaches the point instead of
+## stopping where the corridor is widest. An interaction accepts any edge that
+## triggers it and only breaks ties toward the nearer one.
+const HALL_ROUTE_GOAL_DISTANCE_COST: float = 64.0
+const HALL_ROUTE_EDGE_DISTANCE_COST: float = 0.25
+const HALL_ROUTE_GOAL_CANDIDATES: int = 24
+## How far the planner's first node may sit from the player and still count as
+## the player's own spot rather than a leg of the trail.
+const HALL_ROUTE_START_SNAP: float = 24.0
+## Sideways steps no longer than this, and no more than this fraction of the
+## legs beside them, are walked as a drift rather than two turns.
+const HALL_ROUTE_MAX_JOG: float = 24.0
+const HALL_ROUTE_MAX_DRIFT: float = 0.2
+## Seconds a footprint takes to fade in when it comes into view.
+const HALL_ROUTE_REVEAL_TIME: float = 0.35
+## A print out of the player's line of sight still shows while it is at least
+## this fraction as far in a straight line as along the trail.
+const HALL_ROUTE_SIGHT_RATIO: float = 0.7
+## How far ahead of the player's progress the route card reads the heading, so
+## it names the next leg a moment before the corner rather than after.
+const HALL_ROUTE_COMPASS_LOOKAHEAD: float = 40.0
+## Gap kept between the Guardian's mark and the stone beside the trail, how
+## finely that room is probed, and how fast the step aside may swing.
+const HALL_ROUTE_PATROL_WALL_GAP: float = 24.0
+const HALL_ROUTE_PATROL_PROBE_STEP: float = 8.0
+const HALL_ROUTE_PATROL_ASIDE_SPEED: float = 220.0
+
 # 开发期间先设为 true。
 # 正式发布时改成 false。
 
@@ -185,6 +218,11 @@ var camera_target_zoom: Vector2 = (
 var wall_visual: Sprite2D
 var intro_seen := false
 var intro_reviewing_objectives := false
+## The eased step aside the rehearsal Guardian currently keeps from the trail.
+var hall_route_patrol_aside_current: Vector2 = Vector2.ZERO
+var _hall_route_planner: HallRoutePlanner = null
+var _hall_route_hint_points: Array[Vector2] = []
+var _hall_route_hint_loaded := false
 @onready var player = $player
 
 var wall_cells := {}
@@ -739,7 +777,7 @@ const HALL_KNOWLEDGE_INTERACTION_MARGIN: float = 72.0
 ## 踏出踪迹到被看清之间的宽限。给玩家一拍时间自己走回来——规则要能学，
 ## 不是只能被惩罚。
 const HALL_ROUTE_EXPOSURE_GRACE: float = 1.1
-## 守卫在踪迹旁徘徊的横向距离。它不在路上，它在路边。
+## 守卫在踪迹旁徘徊的横向距离上限。它不在路上，它在路边——但不在墙里。
 const HALL_ROUTE_PATROL_OFFSET: float = 190.0
 
 var hall_tutorial_route: Array[Vector2] = []
@@ -1387,7 +1425,12 @@ func create_fog_cells():
 	fog_sprite.position = Vector2.ZERO
 	fog_sprite.scale = Vector2(FOG_CELL_SIZE, FOG_CELL_SIZE)
 	fog_sprite.z_index = 100
-	fog_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# Smoothed sampling: the fog is a 16 px grid, and drawn with nearest
+	# filtering every cell edge was a hard black block at gameplay zoom.
+	fog_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var fog_material := ShaderMaterial.new()
+	fog_material.shader = HALL_FOG_SMOOTH_SHADER
+	fog_sprite.material = fog_material
 	add_child(fog_sprite)
 
 
@@ -6272,6 +6315,7 @@ func _build_hall_tutorial_route() -> void:
 		push_warning("Could not build the active Hall tutorial segment.")
 		return
 	hall_tutorial_route = built
+	hall_route_patrol_aside_current = Vector2.ZERO
 	if enemy != null and is_instance_valid(enemy):
 		hall_tutorial_guardian_origin = enemy.global_position
 		enemy.global_position = _hall_tutorial_guardian_position()
@@ -6287,31 +6331,80 @@ func hall_tutorial_checkpoint_position() -> Vector2:
 	)]
 
 
-## The Guardian's scripted mark: a shrinking number of waypoints behind whatever
-## the player has actually reached.
+## The Guardian's scripted mark: a shrinking distance behind how far the player
+## has actually walked along the trail, and a step aside from it. Measured by
+## distance along the trail rather than by waypoint, because the trail is now a
+## handful of long legs and a waypoint-to-waypoint mark would jump whole
+## corridors at a time.
 func _hall_tutorial_guardian_position() -> Vector2:
-	if hall_tutorial_route.is_empty():
-		return ENEMY_START_POSITION
-	var progress := (
-		float(hall_tutorial_reached) / float(maxi(hall_tutorial_route.size() - 1, 1))
-	)
-	var trail := lerpf(
-		TUTORIAL_TRAIL_START_DISTANCE,
-		TUTORIAL_TRAIL_END_DISTANCE,
-		clampf(progress, 0.0, 1.0)
-	)
-	var index := _hall_route_index_behind(hall_tutorial_reached, trail)
+	var mark := _hall_tutorial_guardian_mark()
+	return (mark["on_route"] as Vector2) + (mark["aside"] as Vector2)
+
+
+func _hall_tutorial_guardian_mark() -> Dictionary:
+	if hall_tutorial_route.size() < 2:
+		var resting := ENEMY_START_POSITION if hall_tutorial_route.is_empty() else hall_tutorial_route[0]
+		return {"on_route": resting, "aside": Vector2.ZERO}
+	var length := _hall_route_length(hall_tutorial_route)
+	var progress := clampf(hall_route_distance_travelled / maxf(length, 1.0), 0.0, 1.0)
+	var trail := lerpf(TUTORIAL_TRAIL_START_DISTANCE, TUTORIAL_TRAIL_END_DISTANCE, progress)
+	var behind := hall_route_distance_travelled - trail
 	# Until the player has walked far enough for the trailing gap to reach into
 	# the route, the Guardian waits at the mark it entered on.
-	if index < 0:
-		return hall_tutorial_guardian_origin
-	var on_route: Vector2 = hall_tutorial_route[
-		clampi(index, 0, hall_tutorial_route.size() - 1)
-	]
+	if behind < 0.0:
+		return {"on_route": hall_tutorial_guardian_origin, "aside": Vector2.ZERO}
+	var sample := _hall_route_sample(hall_tutorial_route, behind)
 	# 它在踪迹**旁边**走，不在踪迹上。守卫踩着同一串脚印跟在后面，看起来像
 	# 在沿路巡逻，那条路就不再显得是安全的；让开一个身位，脚印才读作"这里
-	# 它走不到"。
-	return on_route + _hall_route_side_offset(index) * HALL_ROUTE_PATROL_OFFSET
+	# 它走不到"。让开多远要看那一处的走廊有多宽：固定 190px 在比它窄的走廊
+	# 里都会把守卫摆进墙里，于是教程里的守卫贴着玩家穿墙走。
+	return {
+		"on_route": sample["point"] as Vector2,
+		"aside": _hall_route_patrol_aside(sample["point"] as Vector2, sample["direction"] as Vector2),
+	}
+
+
+func _hall_route_length(points: Array[Vector2]) -> float:
+	var length := 0.0
+	for index: int in range(1, points.size()):
+		length += points[index - 1].distance_to(points[index])
+	return length
+
+
+## The point `offset` pixels along `points`, and the direction of the leg it is
+## on. Offsets past either end clamp to the end.
+func _hall_route_sample(points: Array[Vector2], offset: float) -> Dictionary:
+	var travelled := 0.0
+	for index: int in range(1, points.size()):
+		var leg := points[index] - points[index - 1]
+		var leg_length := leg.length()
+		if leg_length <= 0.001:
+			continue
+		if travelled + leg_length >= offset or index == points.size() - 1:
+			var along := clampf((offset - travelled) / leg_length, 0.0, 1.0)
+			return {"point": points[index - 1] + leg * along, "direction": leg / leg_length}
+		travelled += leg_length
+	return {"point": points[0], "direction": Vector2.RIGHT}
+
+
+## How far beside the trail the Guardian stands: up to HALL_ROUTE_PATROL_OFFSET
+## on whichever side has more open floor, keeping a body's gap from the stone.
+func _hall_route_patrol_aside(on_route: Vector2, direction: Vector2) -> Vector2:
+	if _hall_route_planner == null or direction.is_zero_approx():
+		return Vector2.ZERO
+	var normal := direction.orthogonal().normalized()
+	var best := Vector2.ZERO
+	for side: float in [1.0, -1.0]:
+		var room := 0.0
+		while room < HALL_ROUTE_PATROL_OFFSET + HALL_ROUTE_PATROL_WALL_GAP:
+			var probe := on_route + normal * side * (room + HALL_ROUTE_PATROL_PROBE_STEP)
+			if not _hall_route_planner.is_open(_hall_route_planner.index_of(probe)):
+				break
+			room += HALL_ROUTE_PATROL_PROBE_STEP
+		var step := minf(maxf(room - HALL_ROUTE_PATROL_WALL_GAP, 0.0), HALL_ROUTE_PATROL_OFFSET)
+		if step > best.length():
+			best = normal * side * step
+	return best
 
 
 ## Drive the rehearsal. The Guardian is placed rather than steered, so it can
@@ -6365,7 +6458,16 @@ func _update_hall_tutorial_chase() -> void:
 	if hall_route_exposure > 0.0:
 		return
 
-	enemy.present_scripted_step(_hall_tutorial_guardian_position(), player.global_position)
+	# Ease the step aside rather than snapping it: at a turn the side the
+	# Guardian keeps to swings a quarter turn, and placing it outright would make
+	# it hop across the junction.
+	var mark := _hall_tutorial_guardian_mark()
+	hall_route_patrol_aside_current = hall_route_patrol_aside_current.move_toward(
+		mark["aside"] as Vector2, HALL_ROUTE_PATROL_ASIDE_SPEED * get_process_delta_time()
+	)
+	enemy.present_scripted_step(
+		(mark["on_route"] as Vector2) + hall_route_patrol_aside_current, player.global_position
+	)
 	GameState.update_guardian_hall_position(enemy.global_position)
 
 
@@ -7120,19 +7222,54 @@ func _refresh_hall_route_trail(route_copy: Dictionary) -> void:
 		corner.set_meta("route_offset", _project_onto_hall_route(path_points, path_points[corner_index])["offset"])
 		hall_route_trail.add_child(corner)
 		hall_route_marker_nodes.append(corner)
+	# Visibility walks the trail in order and stops at the first print out of
+	# sight, so the list has to be in route order, corners included.
+	hall_route_marker_nodes.sort_custom(func(first: Node2D, second: Node2D) -> bool:
+		return float(first.get_meta("route_offset", 0.0)) < float(second.get_meta("route_offset", 0.0)))
 	_update_hall_route_marker_visibility()
 
 
+## The trail is drawn above the fog so it can lead into the dark — which also
+## means a print past a corner can show straight through the wall beside the
+## player, and the trail reads as walking through stone. So the trail is only
+## revealed as far as it stays in sight: the first print that is neither in the
+## player's line of sight nor roughly as near in a straight line as it is along
+## the trail hides itself and every print after it, until the player rounds the
+## corner. The second test keeps a print just round a bend, which a ray from the
+## feet grazing a wall cap would hide; a trail that has looped back behind a wall
+## is far shorter in a straight line than along the trail, so it still hides.
+## A print that comes into view fades in rather than popping.
 func _update_hall_route_marker_visibility() -> void:
 	var time := float(Time.get_ticks_msec()) * 0.001
+	var fade_step := get_process_delta_time() / HALL_ROUTE_REVEAL_TIME
+	var viewer: Vector2 = player.global_position if player != null else Vector2.ZERO
+	var player_visual_rect := Rect2()
+	if player != null:
+		player_visual_rect = spatial.grow_rect(spatial.get_visual_rect(player), Vector2(4.0, 2.0))
+	var in_sight := player != null
 	for marker: Node2D in hall_route_marker_nodes:
 		var offset := float(marker.get_meta("route_offset", 0.0))
 		var ahead := offset - hall_route_distance_travelled
-		marker.visible = ahead >= -12.0 and ahead <= HALL_ROUTE_VISIBLE_AHEAD
-		if marker.visible:
-			var proximity := 1.0 - clampf(ahead / HALL_ROUTE_VISIBLE_AHEAD, 0.0, 1.0)
-			var shimmer := 0.88 + 0.12 * sin(time * 2.4 - offset / 96.0)
-			marker.modulate = Color(0.93, 0.86, 1.0, (0.22 + 0.56 * proximity) * shimmer)
+		var in_window := ahead >= -12.0 and ahead <= HALL_ROUTE_VISIBLE_AHEAD
+		if in_window and in_sight:
+			var straight := viewer.distance_to(marker.global_position)
+			var near_as_walked := straight >= maxf(ahead, 0.0) * HALL_ROUTE_SIGHT_RATIO
+			if not near_as_walked and not has_world_line_of_sight(viewer, marker.global_position):
+				in_sight = false
+		marker.visible = in_window and in_sight
+		# The trail is drawn above the fog, so a print on the floor behind the
+		# character would stamp across their body; the character hides it.
+		if marker.visible and player_visual_rect.has_point(marker.global_position):
+			marker.visible = false
+		if not marker.visible:
+			marker.set_meta("reveal", 0.0)
+			continue
+		var reveal := minf(float(marker.get_meta("reveal", 0.0)) + fade_step, 1.0)
+		marker.set_meta("reveal", reveal)
+		var proximity := 1.0 - clampf(ahead / HALL_ROUTE_VISIBLE_AHEAD, 0.0, 1.0)
+		var shimmer := 0.9 + 0.1 * sin(time * 2.4 - offset / 96.0)
+		var eased := reveal * reveal * (3.0 - 2.0 * reveal)
+		marker.modulate = Color(0.96, 0.9, 1.0, (0.4 + 0.55 * proximity) * shimmer * eased)
 
 
 func _clear_hall_route_trail() -> void:
@@ -7145,10 +7282,13 @@ func _clear_hall_route_trail() -> void:
 	hall_route_trail = null
 
 
-## 教程路线的唯一来源。开发者模式下走出来的那条路优先；没录过才回落到 A*。
-##
-## 放在一个函数里，是因为守卫跟的线和玩家看到的路标必须是同一条——分开取
+## 教程路线的唯一来源：守卫跟的线和玩家看到的脚印必须是同一条——分开取
 ## 的话，改了一处忘了另一处，玩家会跟着路标走却被判定偏离航道。
+##
+## 路线由 HallRoutePlanner 在真实碰撞网格上沿走廊中线规划，永远从玩家当前
+## 位置出发。开发者模式录下的路线只用来选走廊（走哪条路），不再逐点照搬：
+## 手走的线带着抖动，而且录制常从玩家被摆到出生点之前开始，第一步就是一
+## 条穿墙的瞬移线。
 func _hall_route_points(from_position: Vector2, target: Vector2) -> Array[Vector2]:
 	var core := _get_hall_knowledge_position("ChemistryRoomKnowledge")
 	var interaction_id := ""
@@ -7156,31 +7296,6 @@ func _hall_route_points(from_position: Vector2, target: Vector2) -> Array[Vector
 		interaction_id = "arrival_chemistry_core"
 	elif target.distance_to(CHEMISTRY_ROOM_DOOR_FOCUS_POSITION) <= 96.0:
 		interaction_id = "arrival_chemistry_door"
-	if not interaction_id.is_empty():
-		var authored: Array[Vector2] = HallRouteStore.load_route()
-		if authored.size() >= 2 and from_position.distance_to(target) > 256.0:
-			var start := _project_onto_hall_route(authored, from_position)
-			var finish := _project_onto_hall_route(authored, target)
-			if float(start["offset"]) < float(finish["offset"]):
-				var route: Array[Vector2] = [from_position]
-				var start_point: Vector2 = start["point"]
-				if from_position.distance_to(start_point) > 1.0:
-					var entry := _get_hall_route_path(from_position, start_point)
-					if entry.is_empty():
-						return entry
-					route = entry
-				for index: int in range(int(start["index"]) + 1, int(finish["index"]) + 1):
-					if route[-1].distance_to(authored[index]) > 1.0:
-						route.append(authored[index])
-				var finish_point: Vector2 = finish["point"]
-				if route[-1].distance_to(finish_point) > 1.0:
-					route.append(finish_point)
-				if finish_point.distance_to(target) > 1.0:
-					var exit := _get_hall_route_path(finish_point, target, interaction_id)
-					if exit.is_empty():
-						return exit
-					route.append_array(exit.slice(1))
-				return route
 	return _get_hall_route_path(from_position, target, interaction_id)
 
 
@@ -7202,146 +7317,193 @@ func _project_onto_hall_route(points: Array[Vector2], position_on_floor: Vector2
 	return best
 
 
+## A trail from `from_position` to `target`: axis-aligned legs down the middle
+## of each corridor, every one of which the body can walk in a straight line.
+## With an interaction the trail ends on an edge that triggers it, not on the
+## target itself — the painted centre can be behind a wall.
 func _get_hall_route_path(
 	from_position: Vector2, target: Vector2, interaction_id: String = ""
 ) -> Array[Vector2]:
-	var start_cell: Vector2i = world_to_cell(from_position)
-	var target_cell: Vector2i = world_to_cell(target)
+	var planner := _hall_route_planner_ready()
+	if planner == null:
+		return []
+	var goals := _hall_route_goal_candidates(planner, target, interaction_id)
+	var goal_points: Array[Vector2] = goals["points"]
+	var goal_costs: Array[float] = goals["costs"]
+	var walk: Array[Vector2] = planner.plan(
+		from_position, goal_points, goal_costs,
+		Callable(self, "_hall_route_segment_is_walkable")
+	)
+	if walk.is_empty():
+		return []
+	var route_points: Array[Vector2] = [from_position]
+	# The walk leaves from the lattice node nearest the player. When that node is
+	# only the player's own spot snapped to the lattice, it is not a leg of the
+	# trail; keeping it would put a stub and a corner under the player's feet.
+	var first_leg := 0
+	if walk.size() > 1 and walk[0].distance_to(from_position) <= HALL_ROUTE_START_SNAP:
+		first_leg = 1
+	for index: int in range(first_leg, walk.size()):
+		if not route_points[-1].is_equal_approx(walk[index]):
+			route_points.append(walk[index])
+	# A bare point is the destination itself, not a band around it: finish on it
+	# when the last node is only the lattice's rounding away.
+	if (
+		interaction_id.is_empty()
+		and route_points[-1].distance_to(target) <= HALL_ROUTE_START_SNAP
+		and not route_points[-1].is_equal_approx(target)
+		and _hall_route_segment_is_walkable(route_points[-1], target)
+	):
+		route_points.append(target)
+	route_points = _square_hall_route_start(route_points)
+	route_points = _absorb_hall_route_jogs(route_points)
+	var safe := _collision_safe_hall_route(route_points)
+	if safe.size() <= 1 and not interaction_id.is_empty():
+		# Already at a usable edge: show a destination beacon, not a false detour.
+		return [from_position, from_position]
+	return safe
+
+
+## Where the trail may end: lattice nodes near `target` the body can stand on.
+## With an interaction only nodes from which it actually triggers count — in
+## reach of its rect and, for knowledge, in sight of it — so following the last
+## footprint is always enough. Without one the nearest open floor wins.
+func _hall_route_goal_candidates(
+	planner: HallRoutePlanner, target: Vector2, interaction_id: String
+) -> Dictionary:
 	var interaction_rect := get_interaction_rect(interaction_id)
 	var body_rect := spatial.get_player_collision_rect(player)
 	# Click movement stops short of its destination; keep that whole tolerance
 	# inside the interaction band so following the last footprint is sufficient.
 	var contact_margin := maxf(1.0, _hall_interaction_margin(interaction_id) - float(player.get("click_stop_distance")) - 1.0)
-	var best_path: Array = []
-	var best_score: float = INF
-	for radius: int in range(HALL_ROUTE_TARGET_SEARCH_RADIUS + 1):
-		for offset_y: int in range(-radius, radius + 1):
-			for offset_x: int in range(-radius, radius + 1):
-				if max(abs(offset_x), abs(offset_y)) != radius:
-					continue
-				var candidate: Vector2i = target_cell + Vector2i(offset_x, offset_y)
-				if not is_inside_map(candidate) or astar_grid.is_point_solid(candidate):
-					continue
-				var candidate_position := cell_nav_point(candidate)
-				if not interaction_id.is_empty():
-					var candidate_body := Rect2(
-						body_rect.position + candidate_position - player.global_position,
-						body_rect.size
-					)
-					if spatial.rect_gap(candidate_body, interaction_rect) > contact_margin:
-						continue
-					if not is_player_position_walkable(candidate_position):
-						continue
-					if _is_knowledge_interaction(interaction_id) and not _knowledge_sight_clear(candidate_position, interaction_rect):
-						continue
-				var candidate_path: Array = find_path(start_cell, candidate)
-				if candidate_path.is_empty():
-					continue
-				var candidate_score: float = (
-					candidate_position.distance_squared_to(target)
-					+ float(candidate_path.size()) * 0.01
-				)
-				# The painted centre can be behind a wall. Reach the nearest usable
-				# edge instead of taking a long detour toward an unreachable centre.
-				if not interaction_id.is_empty():
-					candidate_score = float(candidate_path.size()) * CELL_SIZE + (
-						candidate_position.distance_squared_to(target) * 0.0001
-					)
-				if candidate_score < best_score:
-					best_score = candidate_score
-					best_path = candidate_path
-	if best_path.is_empty():
-		return []
-
-	var route_points: Array[Vector2] = [from_position]
-	var smoothed_cells := _smooth_hall_route_cells(best_path)
-	var first_forward_index := 1 if smoothed_cells.size() > 1 else 0
-	for cell_index: int in range(first_forward_index, smoothed_cells.size()):
-		route_points.append(cell_nav_point(smoothed_cells[cell_index]))
-	if route_points.size() >= 2:
-		var first_grid_point := route_points[1]
-		if (
-			not is_equal_approx(from_position.x, first_grid_point.x)
-			and not is_equal_approx(from_position.y, first_grid_point.y)
-		):
-			var horizontal_corner := Vector2(first_grid_point.x, from_position.y)
-			var vertical_corner := Vector2(from_position.x, first_grid_point.y)
-			for corner: Vector2 in [horizontal_corner, vertical_corner]:
-				if (
-					_hall_route_segment_is_walkable(from_position, corner)
-					and _hall_route_segment_is_walkable(corner, first_grid_point)
-				):
-					route_points.insert(1, corner)
-					break
-	var simplified := _simplify_hall_route_path(route_points)
-	simplified = _collision_safe_hall_route(simplified)
-	if simplified.size() == 1 and not interaction_id.is_empty():
-		# Already at a usable edge: show a destination beacon, not a false detour.
-		return [from_position, from_position]
-	return simplified
-
-
-func _smooth_hall_route_cells(raw_path: Array) -> Array[Vector2i]:
-	var cells: Array[Vector2i] = []
-	for cell_variant: Variant in raw_path:
-		cells.append(cell_variant as Vector2i)
-	if cells.size() < 3:
-		return cells
-	var smoothed: Array[Vector2i] = [cells[0]]
-	var cursor := 0
-	while cursor < cells.size() - 1:
-		var chosen_index := cursor + 1
-		var chosen_link: Array[Vector2i] = [cells[chosen_index]]
-		for candidate_index: int in range(cells.size() - 1, cursor, -1):
-			var link := _orthogonal_route_link(cells[cursor], cells[candidate_index])
-			if link.is_empty():
+	var reach := float((HALL_ROUTE_TARGET_SEARCH_RADIUS + 1) * CELL_SIZE)
+	var centre := planner.index_of(target)
+	var steps := ceili(reach / planner.spacing)
+	var ranked: Array[Dictionary] = []
+	for offset_y: int in range(-steps, steps + 1):
+		for offset_x: int in range(-steps, steps + 1):
+			var node := centre + Vector2i(offset_x, offset_y)
+			if not planner.is_open(node):
 				continue
-			chosen_index = candidate_index
-			chosen_link = link
-			break
-		for linked_cell: Vector2i in chosen_link:
-			if smoothed[smoothed.size() - 1] != linked_cell:
-				smoothed.append(linked_cell)
-		cursor = chosen_index
-	return smoothed
+			var candidate := planner.point_of(node)
+			var distance := candidate.distance_to(target)
+			if distance > reach:
+				continue
+			var preference := distance * HALL_ROUTE_GOAL_DISTANCE_COST
+			if not interaction_id.is_empty():
+				var candidate_body := Rect2(
+					body_rect.position + candidate - player.global_position, body_rect.size
+				)
+				if spatial.rect_gap(candidate_body, interaction_rect) > contact_margin:
+					continue
+				var knowledge := _is_knowledge_interaction(interaction_id)
+				if knowledge and not _knowledge_sight_clear(candidate, interaction_rect):
+					continue
+				preference = distance * HALL_ROUTE_EDGE_DISTANCE_COST
+			ranked.append({"point": candidate, "cost": preference})
+	ranked.sort_custom(func(first: Dictionary, second: Dictionary) -> bool:
+		return float(first["cost"]) < float(second["cost"]))
+	var points: Array[Vector2] = []
+	var costs: Array[float] = []
+	for entry: Dictionary in ranked.slice(0, HALL_ROUTE_GOAL_CANDIDATES):
+		points.append(entry["point"] as Vector2)
+		costs.append(float(entry["cost"]))
+	return {"points": points, "costs": costs}
 
 
-func _orthogonal_route_link(from_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2i]:
-	if (
-		(from_cell.x == to_cell.x or from_cell.y == to_cell.y)
-		and _axis_route_clear(from_cell, to_cell)
-	):
-		return [to_cell]
-	var horizontal_corner := Vector2i(to_cell.x, from_cell.y)
-	if (
-		_axis_route_clear(from_cell, horizontal_corner)
-		and _axis_route_clear(horizontal_corner, to_cell)
-	):
-		return [horizontal_corner, to_cell]
-	var vertical_corner := Vector2i(from_cell.x, to_cell.y)
-	if (
-		_axis_route_clear(from_cell, vertical_corner)
-		and _axis_route_clear(vertical_corner, to_cell)
-	):
-		return [vertical_corner, to_cell]
-	return []
+## Footprints are laid along legs, so a first leg that sets off at a slant reads
+## as the trail cutting through whatever the player is standing beside. Move the
+## first corner onto the player's own line when the next leg allows it, which
+## keeps every leg straight without adding a stub; otherwise square the slant
+## with one corner.
+func _square_hall_route_start(route_points: Array[Vector2]) -> Array[Vector2]:
+	if route_points.size() < 2:
+		return route_points
+	var from_position := route_points[0]
+	var corner := route_points[1]
+	if is_equal_approx(from_position.x, corner.x) or is_equal_approx(from_position.y, corner.y):
+		return route_points
+	if route_points.size() >= 3:
+		var following := route_points[2]
+		var shifted := corner
+		if is_equal_approx(corner.x, following.x):
+			shifted = Vector2(corner.x, from_position.y)
+		elif is_equal_approx(corner.y, following.y):
+			shifted = Vector2(from_position.x, corner.y)
+		if (
+			not shifted.is_equal_approx(corner)
+			and _hall_route_segment_is_walkable(from_position, shifted)
+			and _hall_route_segment_is_walkable(shifted, following)
+		):
+			var moved := route_points.duplicate()
+			moved[1] = shifted
+			return _simplify_hall_route_path(moved)
+	for elbow: Vector2 in [Vector2(corner.x, from_position.y), Vector2(from_position.x, corner.y)]:
+		if (
+			_hall_route_segment_is_walkable(from_position, elbow)
+			and _hall_route_segment_is_walkable(elbow, corner)
+		):
+			var squared := route_points.duplicate()
+			squared.insert(1, elbow)
+			return _simplify_hall_route_path(squared)
+	return route_points
 
 
-func _axis_route_clear(from_cell: Vector2i, to_cell: Vector2i) -> bool:
-	if from_cell.x != to_cell.x and from_cell.y != to_cell.y:
-		return false
-	var step := Vector2i(
-		0 if from_cell.x == to_cell.x else (1 if to_cell.x > from_cell.x else -1),
-		0 if from_cell.y == to_cell.y else (1 if to_cell.y > from_cell.y else -1)
-	)
-	var cell := from_cell
-	while true:
-		if not is_inside_map(cell) or astar_grid.is_point_solid(cell):
-			return false
-		if cell == to_cell:
-			return true
-		cell += step
-	return false
+## The lattice is 16 px, so where a corridor's centre shifts by less than a node
+## the trail steps sideways by a whole one, and the two turns of a 16 px step
+## stamp turning footprints on top of each other. Fold such a step into the legs
+## either side as one slight drift instead, when the body can walk the drift.
+func _absorb_hall_route_jogs(route_points: Array[Vector2]) -> Array[Vector2]:
+	var result: Array[Vector2] = route_points.duplicate()
+	var index := 1
+	while index < result.size() - 2:
+		var before := result[index] - result[index - 1]
+		var jog := result[index + 1] - result[index]
+		var after := result[index + 2] - result[index + 1]
+		var parallel := (
+			_cardinal_route_direction(before) == _cardinal_route_direction(after)
+			and is_zero_approx(_cardinal_route_direction(before).dot(_cardinal_route_direction(jog)))
+		)
+		if (
+			parallel
+			and jog.length() <= HALL_ROUTE_MAX_JOG
+			and jog.length() <= (before.length() + after.length()) * HALL_ROUTE_MAX_DRIFT
+			and _hall_route_segment_is_walkable(result[index - 1], result[index + 2])
+		):
+			result.remove_at(index)
+			result.remove_at(index)
+			continue
+		index += 1
+	return result
+## and the Guardian agree on where the body fits. The authored recording is
+## re-read every time and re-applied when it changes, so a fresh recording takes
+## effect without a restart.
+func _hall_route_planner_ready() -> HallRoutePlanner:
+	if nav_graph.get_point_count() == 0:
+		return null
+	if _hall_route_planner == null:
+		_hall_route_planner = HallRoutePlanner.new()
+		_hall_route_planner.build(
+			float(NAV_LATTICE_SPACING), NAV_LATTICE_COLUMNS, NAV_LATTICE_ROWS,
+			Callable(self, "_is_hall_route_node_open"),
+			Callable(self, "_lattice_step_exists")
+		)
+		_hall_route_hint_loaded = false
+	var authored: Array[Vector2] = HallRouteStore.load_route()
+	if not _hall_route_hint_loaded or authored != _hall_route_hint_points:
+		_hall_route_planner.set_corridor_hint(
+			authored, Callable(self, "_hall_route_segment_is_walkable")
+		)
+		_hall_route_hint_points = authored
+		_hall_route_hint_loaded = true
+	return _hall_route_planner
+
+
+## A lattice node exists only where the body clears the stone; the player's own
+## rule also keeps every corner of the body inside the map and off door cells,
+## which the lattice checks only at the centre.
+func _is_hall_route_node_open(index: Vector2i) -> bool:
+	return _lattice_has(index) and is_player_position_walkable(lattice_point(index))
 
 
 func _simplify_hall_route_path(
@@ -7575,6 +7737,14 @@ func _update_hall_route_compass() -> void:
 	if delta.length_squared() < 1.0:
 		hall_route_compass.text = ""
 		return
+	# Name the way the footprints go next, not the bearing of the goal: in a
+	# maze those disagree, and a card reading NORTH-EAST over a trail that sets
+	# off south tells the player the trail is wrong.
+	if hall_tutorial_route.size() >= 2:
+		var ahead := _hall_route_sample(
+			hall_tutorial_route, hall_route_distance_travelled + HALL_ROUTE_COMPASS_LOOKAHEAD
+		)
+		delta = _cardinal_route_direction(ahead["direction"] as Vector2) * 100.0
 	hall_route_compass.text = CaseLocale.text(
 		"hall.route_compass",
 		{"direction": _hall_route_direction(delta)}
@@ -8097,21 +8267,6 @@ func _hall_footprint_toe(side: float) -> PackedVector2Array:
 	return points
 
 
-## 踪迹在某一点的侧向。守卫沿这个方向让开一个身位，所以它始终贴着路走，
-## 而不是走在路上。
-func _hall_route_side_offset(index: int) -> Vector2:
-	if hall_tutorial_route.size() < 2:
-		return Vector2.RIGHT
-	var here: int = clampi(index, 0, hall_tutorial_route.size() - 1)
-	var next: int = clampi(here + 1, 0, hall_tutorial_route.size() - 1)
-	if here == next:
-		next = maxi(here - 1, 0)
-	var along: Vector2 = hall_tutorial_route[next] - hall_tutorial_route[here]
-	if along.length() < 0.001:
-		return Vector2.RIGHT
-	return along.normalized().orthogonal()
-
-
 ## 踪迹是怎么出现的。规则本身（踩着走安全、离开会被看见）从这两句里就能
 ## 推出来，所以后面不必再用一条教程提示去讲它。
 func _announce_hall_route_reveal() -> void:
@@ -8124,18 +8279,3 @@ func _announce_hall_route_rule() -> void:
 	if not _is_hall_arrival_active():
 		return
 	show_hall_notice(CaseLocale.text("hall.route_rule"))
-
-
-## 从某个航点沿路线往回退指定像素距离，返回落到的航点下标。
-## 退不够远（路线还没那么长）就返回 -1，让守卫留在入场点。
-func _hall_route_index_behind(from_index: int, distance: float) -> int:
-	var walked: float = 0.0
-	var index: int = clampi(from_index, 0, hall_tutorial_route.size() - 1)
-	while index > 0 and walked < distance:
-		walked += hall_tutorial_route[index].distance_to(
-			hall_tutorial_route[index - 1]
-		)
-		index -= 1
-	if walked < distance:
-		return -1
-	return index

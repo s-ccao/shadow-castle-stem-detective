@@ -1,0 +1,1585 @@
+{
+  "alpha": "Binary 0/255 (coverage threshold 0.5); contact shadow uses one 60% violet-black tone",
+  "assets": [
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.156,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 2,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 55,
+        "position": [
+          27.0,
+          51.0
+        ],
+        "region": [
+          0,
+          34,
+          56,
+          10
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            55,
+            52
+          ],
+          "uniform_source_scale": 0.08,
+          "wall_overlap_world_px": 3945
+        },
+        "width": {
+          "size": [
+            55,
+            52
+          ],
+          "uniform_source_scale": 0.08,
+          "wall_overlap_world_px": 3945
+        }
+      },
+      "id": "storage_rack",
+      "layout": {
+        "centered": false,
+        "position": [
+          3.0,
+          -47.0
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          68.75,
+          65.0
+        ],
+        "wall_overlap_world_px": 3945
+      },
+      "node": "scenes/wall_collisions.tscn:StorageRack/RackSprite",
+      "object_crop_px": [
+        0,
+        0,
+        861,
+        812
+      ],
+      "old_layout": {
+        "centered": false,
+        "position": [
+          2.99998474121094,
+          -47.0
+        ],
+        "scale": [
+          0.0799999982118607,
+          0.0799999982118607
+        ],
+        "texture_filter": "linear",
+        "visible_world_size": [
+          68.88,
+          64.96
+        ],
+        "wall_overlap_world_px": 3994
+      },
+      "palette": [
+        "030204",
+        "090507",
+        "0e090b",
+        "0f0811",
+        "130d0d",
+        "160d13",
+        "1a1110",
+        "1e141a",
+        "221713",
+        "281c20",
+        "2c241f",
+        "2e1c11",
+        "3a2513",
+        "3b3127",
+        "472d14",
+        "48443d",
+        "4d3a26",
+        "583512",
+        "585850",
+        "5f4d35",
+        "694216",
+        "745d3d",
+        "787264",
+        "8e5b19",
+        "968f81",
+        "b3aba0"
+      ],
+      "palette_count": 26,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 22,
+        "fit": "uniform",
+        "fit_rule": "uniform"
+      },
+      "path": "assets/props/hall_pixel/storage_rack_pixel.png",
+      "sample_window_px": [
+        0.81,
+        -0.5,
+        859.38,
+        812.5
+      ],
+      "size": [
+        55,
+        52
+      ],
+      "source": "assets/props/Hall/storage_rack_final.png",
+      "source_px_per_texel": 15.625,
+      "source_sha256": "469a1fc276dcc20f28cb4d8de596083ea92035d6690574143727c0ef8fcf530d",
+      "source_size": [
+        861,
+        812
+      ],
+      "visual_feet": {
+        "after": [
+          1624.375,
+          985.0
+        ],
+        "delta_object_px": 0.076,
+        "delta_runtime_px": 0.076,
+        "object_before": [
+          1624.44,
+          984.96
+        ],
+        "runtime_before": [
+          1624.44,
+          984.96
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 0,
+        "regions": 0,
+        "removed_px": 0
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": true,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 25,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.541,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 2,
+          "right": 25,
+          "top": 0
+        },
+        "flood_candidates_px": 32462,
+        "removed_px": 32462
+      },
+      "contact_shadow": {
+        "footprint_texels": 34,
+        "position": [
+          17.0,
+          89.0
+        ],
+        "region": [
+          0,
+          25,
+          40,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            33,
+            87
+          ],
+          "uniform_source_scale": 0.078896,
+          "wall_overlap_world_px": 3368
+        },
+        "width": {
+          "size": [
+            34,
+            90
+          ],
+          "uniform_source_scale": 0.082117,
+          "wall_overlap_world_px": 3445
+        }
+      },
+      "id": "final_key_machine_1",
+      "layout": {
+        "centered": false,
+        "position": [
+          -17.0,
+          -50.5
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          42.5,
+          112.5
+        ],
+        "wall_overlap_world_px": 3483
+      },
+      "node": "scenes/wall_collisions.tscn:FinalKeyMachine1/M1Sprite",
+      "object_crop_px": [
+        0,
+        0,
+        523,
+        1372
+      ],
+      "old_layout": {
+        "centered": false,
+        "position": [
+          -17.9999923706055,
+          -42.0000152587891
+        ],
+        "scale": [
+          0.0821168273687363,
+          0.0758017599582672
+        ],
+        "texture_filter": "linear",
+        "visible_world_size": [
+          42.95,
+          104.0
+        ],
+        "wall_overlap_world_px": 3652
+      },
+      "palette": [
+        "060307",
+        "0a070b",
+        "0f0c0f",
+        "140c14",
+        "16100f",
+        "1c1819",
+        "1e141a",
+        "251912",
+        "291d20",
+        "292320",
+        "342a2c",
+        "372516",
+        "37312a",
+        "47301a",
+        "473e31",
+        "564c3b",
+        "593918",
+        "685d49",
+        "6b451e",
+        "7c735d",
+        "7d5322",
+        "976726",
+        "978567",
+        "ac9978",
+        "b3ad9f",
+        "b88b3c"
+      ],
+      "palette_count": 26,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 22,
+        "fit": "width",
+        "fit_rule": "width"
+      },
+      "path": "assets/props/hall_pixel/final_key_machine_1_pixel.png",
+      "sample_window_px": [
+        2.72,
+        2.0,
+        517.56,
+        1370.0
+      ],
+      "size": [
+        34,
+        90
+      ],
+      "source": "assets/props/Hall/final_key_machine_1.png",
+      "source_px_per_texel": 15.222,
+      "source_sha256": "273e74995498ba31d30e3219b1fd8dcc46fd56635dcfb7eb8f4aac9841c86d7e",
+      "source_size": [
+        548,
+        1372
+      ],
+      "visual_feet": {
+        "after": [
+          226.25,
+          590.0
+        ],
+        "delta_object_px": 0.776,
+        "delta_runtime_px": 0.25,
+        "object_before": [
+          225.474,
+          590.0
+        ],
+        "runtime_before": [
+          226.5,
+          590.0
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 0,
+        "regions": 0,
+        "removed_px": 0
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.063,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 81,
+        "position": [
+          40.0,
+          52.0
+        ],
+        "region": [
+          0,
+          56,
+          96,
+          12
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            110,
+            52
+          ],
+          "uniform_source_scale": 0.106495,
+          "wall_overlap_world_px": 5653
+        },
+        "width": {
+          "size": [
+            111,
+            53
+          ],
+          "uniform_source_scale": 0.107919,
+          "wall_overlap_world_px": 5781
+        }
+      },
+      "id": "final_key_machine_2",
+      "layout": {
+        "centered": false,
+        "position": [
+          -116.75,
+          -71.0
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          138.75,
+          66.25
+        ],
+        "wall_overlap_world_px": 5781
+      },
+      "node": "scenes/wall_collisions.tscn:FinalKeyMachine2/M2Sprite",
+      "object_crop_px": [
+        0,
+        0,
+        1288,
+        609
+      ],
+      "old_layout": {
+        "centered": false,
+        "position": [
+          -117.000007629395,
+          -69.0
+        ],
+        "scale": [
+          0.107919216156006,
+          0.10509031265974
+        ],
+        "texture_filter": "linear",
+        "visible_world_size": [
+          139.0,
+          64.0
+        ],
+        "wall_overlap_world_px": 5662
+      },
+      "palette": [
+        "030204",
+        "090307",
+        "0a0606",
+        "0e0a0e",
+        "100912",
+        "140d0b",
+        "140d14",
+        "191617",
+        "1f161c",
+        "20150e",
+        "252222",
+        "2b2022",
+        "2d1e11",
+        "34302a",
+        "3d2814",
+        "403f3b",
+        "4d3318",
+        "544d3b",
+        "633f16",
+        "636359",
+        "775522",
+        "7c7d79",
+        "936524",
+        "99998e",
+        "a68540",
+        "c2b084"
+      ],
+      "palette_count": 26,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 22,
+        "fit": "width",
+        "fit_rule": "width"
+      },
+      "path": "assets/props/hall_pixel/final_key_machine_2_pixel.png",
+      "sample_window_px": [
+        1.16,
+        -4.89,
+        1285.68,
+        613.89
+      ],
+      "size": [
+        111,
+        53
+      ],
+      "source": "assets/props/Hall/final_key_machine_2.png",
+      "source_px_per_texel": 11.583,
+      "source_sha256": "6042a643c16134f2703e57672385ee3bd76867a7376638cf6adf0f68216e6e9c",
+      "source_size": [
+        1288,
+        609
+      ],
+      "visual_feet": {
+        "after": [
+          1395.625,
+          126.25
+        ],
+        "delta_object_px": 0.28,
+        "delta_runtime_px": 0.28,
+        "object_before": [
+          1395.5,
+          126.0
+        ],
+        "runtime_before": [
+          1395.5,
+          126.0
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 0,
+        "regions": 5,
+        "removed_px": 5831
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.191,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 2,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 29,
+        "position": [
+          87.0,
+          102.0
+        ],
+        "region": [
+          0,
+          16,
+          32,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            101,
+            101
+          ],
+          "uniform_source_scale": 0.141159,
+          "wall_overlap_world_px": 7192
+        },
+        "width": {
+          "size": [
+            102,
+            103
+          ],
+          "uniform_source_scale": 0.143659,
+          "wall_overlap_world_px": 7528
+        }
+      },
+      "id": "final_key_machine_3",
+      "layout": {
+        "centered": false,
+        "position": [
+          -77.0,
+          -36.75
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          127.5,
+          128.75
+        ],
+        "wall_overlap_world_px": 7528
+      },
+      "node": "scenes/wall_collisions.tscn:FinalKeyMachine3/M3Sprite",
+      "object_crop_px": [
+        0,
+        0,
+        891,
+        894
+      ],
+      "old_layout": {
+        "centered": false,
+        "position": [
+          -77.0000457763672,
+          -32.0000228881836
+        ],
+        "scale": [
+          0.143658831715584,
+          0.138702422380447
+        ],
+        "texture_filter": "linear",
+        "visible_world_size": [
+          128.0,
+          124.0
+        ],
+        "wall_overlap_world_px": 7225
+      },
+      "palette": [
+        "030204",
+        "080406",
+        "0b0807",
+        "0b080c",
+        "110c0d",
+        "130b13",
+        "181213",
+        "1b131a",
+        "211711",
+        "21191f",
+        "221f20",
+        "2b1e14",
+        "2e2b29",
+        "312425",
+        "3a2816",
+        "3d3a34",
+        "513519",
+        "524c3d",
+        "6b6451",
+        "6d491d",
+        "7b8078",
+        "8f5e1e",
+        "937b55",
+        "a7a79e",
+        "bb975e",
+        "c3bfb1"
+      ],
+      "palette_count": 26,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 22,
+        "fit": "width",
+        "fit_rule": "width"
+      },
+      "path": "assets/props/hall_pixel/final_key_machine_3_pixel.png",
+      "sample_window_px": [
+        1.74,
+        -2.22,
+        887.52,
+        896.22
+      ],
+      "size": [
+        102,
+        103
+      ],
+      "source": "assets/props/Hall/final_key_machine_3.png",
+      "source_px_per_texel": 8.701,
+      "source_sha256": "bc8ccdf83adf23330694fc067f16fc09762d211721034b084b63b36bacd166fd",
+      "source_size": [
+        891,
+        894
+      ],
+      "visual_feet": {
+        "after": [
+          1173.75,
+          1120.0
+        ],
+        "delta_object_px": 0.25,
+        "delta_runtime_px": 0.25,
+        "object_before": [
+          1174.0,
+          1120.0
+        ],
+        "runtime_before": [
+          1174.0,
+          1120.0
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 0,
+        "regions": 5,
+        "removed_px": 3787
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.0,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 22,
+        "position": [
+          0.0,
+          33.0
+        ],
+        "region": [
+          0,
+          7,
+          24,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            24,
+            68
+          ],
+          "uniform_source_scale": 0.0677,
+          "wall_overlap_world_px": 1102
+        },
+        "width": {
+          "size": [
+            24,
+            68
+          ],
+          "uniform_source_scale": 0.0677,
+          "wall_overlap_world_px": 1102
+        }
+      },
+      "id": "library_console",
+      "layout": {
+        "centered": true,
+        "position": [
+          -0.75,
+          -55.0
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          30.0,
+          85.0
+        ],
+        "wall_overlap_world_px": 1102
+      },
+      "node": "scenes/wall_collisions.tscn:KnowledgeExhibits/LibraryRoomKnowledge/Sprite",
+      "object_crop_px": [
+        287,
+        91,
+        441,
+        1254
+      ],
+      "old_layout": {
+        "centered": true,
+        "position": [
+          0.0,
+          -52.0
+        ],
+        "scale": [
+          0.0676999986171722,
+          0.0676999986171722
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          29.86,
+          84.9
+        ],
+        "wall_overlap_world_px": 1036
+      },
+      "palette": [
+        "030204",
+        "090507",
+        "0f0a0a",
+        "130b13",
+        "19120e",
+        "1e1317",
+        "241c14",
+        "291c1d",
+        "323227",
+        "332523",
+        "372510",
+        "484832",
+        "4b3517",
+        "645c32",
+        "6a4514",
+        "7d7338",
+        "92621f",
+        "9f9746",
+        "b98429",
+        "ddaa3b",
+        "e1d87b",
+        "f5f8e7"
+      ],
+      "palette_count": 22,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 18,
+        "fit": "uniform",
+        "fit_rule": "uniform"
+      },
+      "path": "assets/props/hall_pixel/library_console_pixel.png",
+      "sample_window_px": [
+        285.93,
+        89.46,
+        443.13,
+        1255.54
+      ],
+      "size": [
+        24,
+        68
+      ],
+      "source": "assets/props/hall_knowledge/hall_knowledge_glowing_console.png",
+      "source_px_per_texel": 18.464,
+      "source_sha256": "b13c8ea077736b5f27bd4a813905325a1a8ae365fa1c03825ef21a733f34b587",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "visual_feet": {
+        "after": [
+          1551.25,
+          247.5
+        ],
+        "delta_object_px": 0.624,
+        "delta_runtime_px": 0.624,
+        "object_before": [
+          1551.695,
+          247.063
+        ],
+        "runtime_before": [
+          1551.695,
+          247.063
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 4,
+        "regions": 0,
+        "removed_px": 0
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.0,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 32,
+        "position": [
+          0.0,
+          42.5
+        ],
+        "region": [
+          0,
+          16,
+          32,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            32,
+            87
+          ],
+          "uniform_source_scale": 0.069899,
+          "wall_overlap_world_px": 3478
+        },
+        "width": {
+          "size": [
+            32,
+            87
+          ],
+          "uniform_source_scale": 0.069899,
+          "wall_overlap_world_px": 3478
+        }
+      },
+      "id": "dining_clock",
+      "layout": {
+        "centered": true,
+        "position": [
+          177.5,
+          87.625
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          40.0,
+          108.75
+        ],
+        "wall_overlap_world_px": 3478
+      },
+      "node": "scenes/wall_collisions.tscn:KnowledgeExhibits/DiningHallKnowledge/Sprite",
+      "object_crop_px": [
+        162,
+        70,
+        570,
+        1557
+      ],
+      "old_layout": {
+        "centered": true,
+        "position": [
+          176.999969482422,
+          90.0000686645508
+        ],
+        "scale": [
+          0.0698986575007439,
+          0.0698985457420349
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          39.84,
+          108.83
+        ],
+        "wall_overlap_world_px": 3489
+      },
+      "palette": [
+        "040205",
+        "090608",
+        "0f0808",
+        "110912",
+        "160b08",
+        "160c13",
+        "1d0e0a",
+        "1d1219",
+        "23120d",
+        "271b20",
+        "291710",
+        "311b12",
+        "392d27",
+        "3a2214",
+        "453b34",
+        "492b18",
+        "59361a",
+        "62452d",
+        "69543e",
+        "7b4d10",
+        "7d6146",
+        "9d9086",
+        "a47136",
+        "beb6ab"
+      ],
+      "palette_count": 24,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 20,
+        "fit": "uniform",
+        "fit_rule": "uniform"
+      },
+      "path": "assets/props/hall_pixel/dining_clock_pixel.png",
+      "sample_window_px": [
+        160.87,
+        71.18,
+        572.26,
+        1555.82
+      ],
+      "size": [
+        32,
+        87
+      ],
+      "source": "assets/props/DiningHall/dining_grandfather_clock.png",
+      "source_px_per_texel": 17.883,
+      "source_sha256": "3e0fccb47b925d7b9db4eb2b76103d98e9346892d63a6f006f4ef1e5bede3c19",
+      "source_size": [
+        887,
+        1774
+      ],
+      "visual_feet": {
+        "after": [
+          1857.5,
+          880.0
+        ],
+        "delta_object_px": 0.375,
+        "delta_runtime_px": 0.375,
+        "object_before": [
+          1857.245,
+          879.725
+        ],
+        "runtime_before": [
+          1857.245,
+          879.725
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 0,
+        "regions": 0,
+        "removed_px": 0
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.0,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 29,
+        "position": [
+          0.0,
+          36.0
+        ],
+        "region": [
+          0,
+          16,
+          32,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            30,
+            74
+          ],
+          "uniform_source_scale": 0.078794,
+          "wall_overlap_world_px": 2598
+        },
+        "width": {
+          "size": [
+            28,
+            69
+          ],
+          "uniform_source_scale": 0.073077,
+          "wall_overlap_world_px": 2241
+        }
+      },
+      "id": "circuit_gauge",
+      "layout": {
+        "centered": true,
+        "position": [
+          -105.75,
+          331.75
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          37.5,
+          92.5
+        ],
+        "wall_overlap_world_px": 2598
+      },
+      "node": "scenes/wall_collisions.tscn:KnowledgeExhibits/CircuitRoomKnowledge/Sprite",
+      "object_crop_px": [
+        283,
+        105,
+        471,
+        1177
+      ],
+      "old_layout": {
+        "centered": true,
+        "position": [
+          -106.415603637695,
+          334.248413085938
+        ],
+        "scale": [
+          0.0730773285031319,
+          0.0849588960409164
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          34.42,
+          100.0
+        ],
+        "wall_overlap_world_px": 2834
+      },
+      "palette": [
+        "040205",
+        "0c090c",
+        "130c15",
+        "171212",
+        "1e171f",
+        "241a15",
+        "242122",
+        "29242c",
+        "2c2d30",
+        "38291b",
+        "393632",
+        "3a3640",
+        "3f4546",
+        "4c3a25",
+        "4f595b",
+        "5e7279",
+        "644d2f",
+        "7c8e8f",
+        "7daac0",
+        "846a45",
+        "af8a52",
+        "b1ada5",
+        "b7cfd3",
+        "e0e6db"
+      ],
+      "palette_count": 24,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 20,
+        "fit": "area",
+        "fit_rule": "area_or_width"
+      },
+      "path": "assets/props/hall_pixel/circuit_gauge_pixel.png",
+      "sample_window_px": [
+        280.54,
+        108.06,
+        475.92,
+        1173.94
+      ],
+      "size": [
+        30,
+        74
+      ],
+      "source": "assets/props/hall_knowledge/hall_knowledge_gauge_machine.png",
+      "source_px_per_texel": 15.864,
+      "source_sha256": "84e7e3e4577356911d6ea98fe222b0fadaf0f02e3204be30c4bb049cfe8305d7",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "visual_feet": {
+        "after": [
+          81.25,
+          1005.0
+        ],
+        "delta_object_px": 0.208,
+        "delta_runtime_px": 0.208,
+        "object_before": [
+          81.059,
+          1004.917
+        ],
+        "runtime_before": [
+          81.059,
+          1004.917
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 6,
+        "regions": 21,
+        "removed_px": 35690
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.0,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 27,
+        "position": [
+          -1.0,
+          34.5
+        ],
+        "region": [
+          0,
+          16,
+          32,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            31,
+            72
+          ],
+          "uniform_source_scale": 0.0677,
+          "wall_overlap_world_px": 32
+        },
+        "width": {
+          "size": [
+            31,
+            72
+          ],
+          "uniform_source_scale": 0.0677,
+          "wall_overlap_world_px": 32
+        }
+      },
+      "id": "greenhouse_construct",
+      "layout": {
+        "centered": true,
+        "position": [
+          -1.0,
+          -53.375
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          37.5,
+          88.75
+        ],
+        "wall_overlap_world_px": 32
+      },
+      "node": "scenes/wall_collisions.tscn:KnowledgeExhibits/GreenhouseRoomKnowledge/Sprite",
+      "object_crop_px": [
+        213,
+        71,
+        567,
+        1326
+      ],
+      "old_layout": {
+        "centered": true,
+        "position": [
+          0.0,
+          -52.0
+        ],
+        "scale": [
+          0.0676999986171722,
+          0.0676999986171722
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          38.39,
+          89.77
+        ],
+        "wall_overlap_world_px": 26
+      },
+      "palette": [
+        "08090a",
+        "0d100c",
+        "141a0f",
+        "151215",
+        "1b2710",
+        "20201c",
+        "243613",
+        "2a2d22",
+        "2d4511",
+        "34550c",
+        "3e6605",
+        "3f3e31",
+        "4a7600",
+        "4c5832",
+        "558a07",
+        "5fa52c",
+        "708044",
+        "719800",
+        "89b000",
+        "9cb84f",
+        "9ea497",
+        "a9c606",
+        "d5e55a",
+        "f1f2cb"
+      ],
+      "palette_count": 24,
+      "parameters": {
+        "clarity": 0.3,
+        "colors": 20,
+        "fit": "uniform",
+        "fit_rule": "uniform"
+      },
+      "path": "assets/props/hall_pixel/greenhouse_construct_pixel.png",
+      "sample_window_px": [
+        210.31,
+        67.61,
+        572.38,
+        1329.39
+      ],
+      "size": [
+        30,
+        71
+      ],
+      "source": "assets/props/hall_knowledge/hall_knowledge_green_construct.png",
+      "source_px_per_texel": 18.464,
+      "source_sha256": "52d00b8e46e2e9b6cb2af994bc525a56f2bf00c1296a3d28945fbb0b9d99d097",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "visual_feet": {
+        "after": [
+          300.0,
+          325.0
+        ],
+        "delta_object_px": 0.42,
+        "delta_runtime_px": 0.42,
+        "object_before": [
+          299.951,
+          324.583
+        ],
+        "runtime_before": [
+          299.951,
+          324.583
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 2,
+        "regions": 8,
+        "removed_px": 16320
+      }
+    },
+    {
+      "backdrop_check": {
+        "applied": false,
+        "backdrop_margins_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "border_opaque_fraction": 0.0,
+        "dark_margin_px": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "flood_candidates_px": 0,
+        "removed_px": 0
+      },
+      "contact_shadow": {
+        "footprint_texels": 21,
+        "position": [
+          -3.5,
+          39.5
+        ],
+        "region": [
+          0,
+          7,
+          24,
+          8
+        ]
+      },
+      "fit_candidates": {
+        "area": {
+          "size": [
+            27,
+            81
+          ],
+          "uniform_source_scale": 0.089227,
+          "wall_overlap_world_px": 2648
+        },
+        "width": {
+          "size": [
+            22,
+            65
+          ],
+          "uniform_source_scale": 0.071936,
+          "wall_overlap_world_px": 1763
+        }
+      },
+      "id": "chemistry_core",
+      "layout": {
+        "centered": true,
+        "position": [
+          207.875,
+          345.375
+        ],
+        "scale": [
+          1.25,
+          1.25
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          33.75,
+          101.25
+        ],
+        "wall_overlap_world_px": 2648
+      },
+      "node": "scenes/wall_collisions.tscn:KnowledgeExhibits/ChemistryRoomKnowledge/Sprite",
+      "object_crop_px": [
+        342,
+        190,
+        376,
+        1130
+      ],
+      "old_layout": {
+        "centered": true,
+        "position": [
+          207.168807983398,
+          334.998413085938
+        ],
+        "scale": [
+          0.0719359591603279,
+          0.110675007104874
+        ],
+        "texture_filter": "nearest",
+        "visible_world_size": [
+          27.05,
+          125.06
+        ],
+        "wall_overlap_world_px": 2737
+      },
+      "palette": [
+        "09060b",
+        "0f0b10",
+        "130c15",
+        "151115",
+        "1d181a",
+        "1f161c",
+        "272325",
+        "2a1d1f",
+        "2a1e17",
+        "33302f",
+        "3a2724",
+        "3b2818",
+        "413c38",
+        "523315",
+        "52493e",
+        "665c4c",
+        "6a3d0e",
+        "7e705b",
+        "854b0b",
+        "a29277",
+        "a5620f",
+        "c0a57b",
+        "d18717",
+        "d6d0c4"
+      ],
+      "palette_count": 24,
+      "parameters": {
+        "clarity": 0.6,
+        "colors": 20,
+        "fit": "area",
+        "fit_rule": "area_or_width"
+      },
+      "path": "assets/props/hall_pixel/chemistry_core_pixel.png",
+      "sample_window_px": [
+        340.88,
+        185.26,
+        378.25,
+        1134.74
+      ],
+      "size": [
+        27,
+        81
+      ],
+      "source": "assets/props/hall_knowledge/hall_knowledge_bronze_core.png",
+      "source_px_per_texel": 14.009,
+      "source_sha256": "8162ea4db10d6029d75c5717cadb7438802466743bf57af3d8eedbfcd71c14f3",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "visual_feet": {
+        "after": [
+          626.875,
+          535.0
+        ],
+        "delta_object_px": 0.596,
+        "delta_runtime_px": 0.596,
+        "object_before": [
+          627.464,
+          535.091
+        ],
+        "runtime_before": [
+          627.464,
+          535.091
+        ]
+      },
+      "white_remnants": {
+        "kept_bright_regions": 0,
+        "regions": 3,
+        "removed_px": 4740
+      }
+    }
+  ],
+  "compression": "Godot lossless import",
+  "contact_shadow": {
+    "dither": "Solid core inside normalised radius^2 0.45, 50% checkerboard edge",
+    "integration": "Child Sprite2D 'ContactShadow' of each prop sprite, show_behind_parent, region_rect selects the ellipse matching the footprint",
+    "path": "assets/props/hall_pixel/hall_contact_shadow.png",
+    "regions": [
+      [
+        0,
+        0,
+        16,
+        6
+      ],
+      [
+        0,
+        7,
+        24,
+        8
+      ],
+      [
+        0,
+        16,
+        32,
+        8
+      ],
+      [
+        0,
+        25,
+        40,
+        8
+      ],
+      [
+        0,
+        34,
+        56,
+        10
+      ],
+      [
+        0,
+        45,
+        72,
+        10
+      ],
+      [
+        0,
+        56,
+        96,
+        12
+      ],
+      [
+        0,
+        69,
+        120,
+        12
+      ]
+    ],
+    "size": [
+      120,
+      81
+    ],
+    "tone": "#140c18 at alpha 0.6"
+  },
+  "created": "2026-10-21",
+  "creator": "GitHub Copilot, offline processing with tools/pixelize_hall_props.gd (Godot Image API)",
+  "family": "Shadow Castle Hall prop pixel pass",
+  "filtering": "nearest",
+  "format": "PNG RGBA8, sRGB",
+  "mipmaps": false,
+  "pipeline": [
+    "Backdrop scan: per side, a run of >=90% near-black lines (plus a neutral frame line on the outer ring) at least 16 px thick marks a backdrop margin; it is flood filled from the border (its few brighter noise specks included), then isolated specks under 300 px are dropped (applied where backdrop_check.applied is true; every source is scanned)",
+    "White-remnant removal: enclosed neutral white regions (min channel >= 228, >= 40 px) left from the generator's paper background are cleared with their light fringe when their surroundings are dark; white glow cores in bright light are kept (white_remnants)",
+    "Crop to the object's opaque bounds",
+    "Exact area-average downsample in linear light with premultiplied alpha; texel = visible world size / 1.25, bottom-centre anchored",
+    "Binary alpha at 0.5 coverage",
+    "Gentle OKLab clarity on lightness: 3x3 unsharp (parameters.clarity) plus 0.3 x 7x7 local contrast, over opaque neighbours only",
+    "Harmonisation: 1.1 chroma gain (x parameters.chroma); near-neutral shadows lean to #33243d violet and highlights to #ead9b3 parchment, saturated glows keep their hue; blacks lift toward #140c18; parameters.lift brightens mid-tones",
+    "1 px selective outline: silhouette pixels take a darker shade of the adjacent interior colour anchored at #140c18, darkest on the two base rows, with a 4-colour outline ramp",
+    "Deterministic median-cut + k-means palette (parameters.colors) built from the harmonised cleaned source pixels in hue-weighted OKLab; nearest mapping without dithering; isolated low-contrast single pixels merge into their neighbours"
+  ],
+  "placement": "Uniform Sprite2D scale 1.25; top-left snapped to the walls' 1.25 texel lattice; world bottom-centre (RoomSpatialRuntime visual feet) preserved",
+  "provenance": "Processed derivatives of the project's existing AI-generated Hall prop PNGs. No new image generation, external imagery or hand repaint; the source PNGs are unchanged and remain in use elsewhere (dining_grandfather_clock.png in the Dining Hall).",
+  "reproduce": "HOME=\"$PWD/.godot/hall-props-home\" godot --headless --path . --script res://tools/pixelize_hall_props.gd [-- --contact-sheet], then godot --headless --editor --path . --quit to import.",
+  "rights": "Derived exclusively from existing project artwork; the source images' rights and restrictions remain applicable. Repository-wide licensing remains the maintainer's decision.",
+  "schema_version": 1,
+  "sprite_scale": [
+    1.25,
+    1.25
+  ],
+  "texel_world_size": 1.25,
+  "tool": "tools/pixelize_hall_props.gd"
+}

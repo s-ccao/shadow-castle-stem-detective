@@ -8,6 +8,11 @@ const PANEL_INLAY := Color(0.086, 0.049, 0.025, 0.98)
 const PANEL_BORDER := Color(0.75, 0.52, 0.20, 0.98)
 const MUTED_INK := Color(0.73, 0.64, 0.47, 1.0)
 const LIGHT_INK := Color(0.96, 0.88, 0.70, 1.0)
+## The move hint runs up to the column divider at x=370.
+const MOVE_DETAIL_WIDTH := 156.0
+const CONTROL_ROW_MIN_HEIGHT := 30.0
+const CONTROL_ROW_GAP := 10.0
+const INSPECT_ROW_TOP := 195.0
 
 var overlay: Control
 var veil: ColorRect
@@ -143,7 +148,7 @@ func _create_overlay() -> void:
 
 	move_detail_label = _make_label("MoveDetail", 13, MUTED_INK)
 	move_detail_label.position = Vector2(206.0, 151.0)
-	move_detail_label.size = Vector2(134.0, 30.0)
+	move_detail_label.size = Vector2(MOVE_DETAIL_WIDTH, 30.0)
 	move_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	field_card.add_child(move_detail_label)
 
@@ -259,6 +264,25 @@ func _refresh_copy(_language: String = "") -> void:
 		begin_button.text = CaseLocale.text(
 			"guide.hall_begin" if _orientation_context == &"hall" else "guide.begin"
 		)
+	_stack_control_rows()
+
+
+## The control rows are stacked by measured height. They used to sit at fixed
+## offsets, so a hint that wrapped one line more than its translation in the
+## other language printed straight over the row beneath it.
+func _stack_control_rows() -> void:
+	if move_detail_label == null or inspect_keycap == null or inspect_detail_label == null:
+		return
+	var lines := maxi(move_detail_label.get_line_count(), 1)
+	var move_height := maxf(
+		CONTROL_ROW_MIN_HEIGHT, float(lines) * float(move_detail_label.get_line_height())
+	)
+	move_detail_label.size.y = move_height
+	var inspect_top := maxf(
+		INSPECT_ROW_TOP, move_detail_label.position.y + move_height + CONTROL_ROW_GAP
+	)
+	inspect_keycap.position.y = inspect_top
+	inspect_detail_label.position.y = inspect_top + 2.0
 
 
 func _play_appearance() -> void:

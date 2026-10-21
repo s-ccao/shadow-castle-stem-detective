@@ -112,6 +112,7 @@ func _run() -> void:
 				"The dual-lock rule has %s copy (%s)" % [language, key]
 			)
 	locale.call("set_language", "en")
+	_check_hall_card_rows(hud, locale)
 
 	if current_scene == wake:
 		current_scene = null
@@ -120,6 +121,38 @@ func _run() -> void:
 	gs.call("reset_new_game")
 	gs.game_started = false
 	_finish()
+
+
+## The Hall card's English move hint wrapped to a third line and printed over
+## the inspect row beneath it. Each row must clear the one above in both
+## languages and stay inside the card.
+func _check_hall_card_rows(hud: Node, locale: Node) -> void:
+	if hud == null:
+		_expect(false, "The onboarding HUD exists for the Hall card check")
+		return
+	var previous_context: StringName = hud.get("_orientation_context")
+	hud.set("_orientation_context", &"hall")
+	for language: String in ["en", "zh"]:
+		locale.call("set_language", language)
+		hud.call("_refresh_copy")
+		var move := hud.get("move_detail_label") as Label
+		var keycap := hud.get("inspect_keycap") as Label
+		var inspect := hud.get("inspect_detail_label") as Label
+		var card := hud.get("field_card") as Control
+		var move_bottom := move.position.y + float(move.get_line_count() * move.get_line_height())
+		_expect(
+			keycap.position.y >= move_bottom and inspect.position.y >= move_bottom,
+			"%s Hall card: the inspect row clears the move hint (%.0f >= %.0f)" % [
+				language, inspect.position.y, move_bottom
+			]
+		)
+		_expect(
+			keycap.position.y + keycap.size.y <= card.size.y - 12.0,
+			"%s Hall card: the inspect row stays inside the card" % language
+		)
+	hud.set("_orientation_context", previous_context)
+	hud.call("_refresh_copy")
+	locale.call("set_language", "en")
 
 
 func _expect(condition: bool, description: String) -> void:

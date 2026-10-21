@@ -2,15 +2,16 @@
 
 [ext_resource type="Texture2D" uid="uid://dx47y7s1a4ti3" path="res://assets/backgrounds/hall_floor_bg.png" id="1_floor"]
 [ext_resource type="Texture2D" uid="uid://cn1ouex5358qp" path="res://assets/backgrounds/hall_walls.png" id="1_walls"]
-[ext_resource type="Texture2D" uid="uid://m6tiv710vgnb" path="res://assets/props/Hall/storage_rack_final.png" id="2_rack"]
-[ext_resource type="Texture2D" uid="uid://cl4d8rqyrdkp8" path="res://assets/props/Hall/final_key_machine_1.png" id="3_m1"]
-[ext_resource type="Texture2D" uid="uid://cnpe0hnsp5yin" path="res://assets/props/Hall/final_key_machine_2.png" id="4_m2"]
-[ext_resource type="Texture2D" uid="uid://dm6xn0faw4e02" path="res://assets/props/Hall/final_key_machine_3.png" id="5_m3"]
-[ext_resource type="Texture2D" uid="uid://cxkeygkbrht15" path="res://assets/props/hall_knowledge/hall_knowledge_glowing_console.png" id="6_library_knowledge"]
-[ext_resource type="Texture2D" uid="uid://b3v37oclbbhsh" path="res://assets/props/DiningHall/dining_grandfather_clock.png" id="7_dining_knowledge"]
-[ext_resource type="Texture2D" uid="uid://08x2x3w1p7di" path="res://assets/props/hall_knowledge/hall_knowledge_gauge_machine.png" id="8_circuit_knowledge"]
-[ext_resource type="Texture2D" uid="uid://lk5m1j0efqjm" path="res://assets/props/hall_knowledge/hall_knowledge_green_construct.png" id="9_greenhouse_knowledge"]
-[ext_resource type="Texture2D" uid="uid://38wkfdqxlwhq" path="res://assets/props/hall_knowledge/hall_knowledge_bronze_core.png" id="10_chemistry_knowledge"]
+[ext_resource type="Texture2D" uid="uid://c717xctbneybv" path="res://assets/props/hall_pixel/storage_rack_pixel.png" id="11_rack_pixel"]
+[ext_resource type="Texture2D" uid="uid://dagw3kyiisu8m" path="res://assets/props/hall_pixel/final_key_machine_1_pixel.png" id="12_m1_pixel"]
+[ext_resource type="Texture2D" uid="uid://bynjeifhvmlxv" path="res://assets/props/hall_pixel/final_key_machine_2_pixel.png" id="13_m2_pixel"]
+[ext_resource type="Texture2D" uid="uid://2msyilukc8yo" path="res://assets/props/hall_pixel/final_key_machine_3_pixel.png" id="14_m3_pixel"]
+[ext_resource type="Texture2D" uid="uid://uurhpqu2cbj" path="res://assets/props/hall_pixel/library_console_pixel.png" id="15_library_pixel"]
+[ext_resource type="Texture2D" uid="uid://b706yh5qf61sy" path="res://assets/props/hall_pixel/dining_clock_pixel.png" id="16_dining_pixel"]
+[ext_resource type="Texture2D" uid="uid://b0u1qv7nplsi4" path="res://assets/props/hall_pixel/circuit_gauge_pixel.png" id="17_circuit_pixel"]
+[ext_resource type="Texture2D" uid="uid://dr6wvj8ten3oc" path="res://assets/props/hall_pixel/greenhouse_construct_pixel.png" id="18_greenhouse_pixel"]
+[ext_resource type="Texture2D" uid="uid://cm5nf7753j41j" path="res://assets/props/hall_pixel/chemistry_core_pixel.png" id="19_chemistry_pixel"]
+[ext_resource type="Texture2D" uid="uid://ced1si78185bk" path="res://assets/props/hall_pixel/hall_contact_shadow.png" id="20_contact_shadow"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rack"]
 size = Vector2(71, 64.5)
@@ -62,10 +63,20 @@ position = Vector2(1587, 967)
 
 [node name="RackSprite" type="Sprite2D" parent="StorageRack" unique_id=203001002]
 editor_description = "只想调整图片显示时修改这里；通常优先调整父节点 StorageRack。"
-position = Vector2(2.9999847, -47)
-scale = Vector2(0.08, 0.08)
-texture = ExtResource("2_rack")
+texture_filter = 1
+position = Vector2(3, -47)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("11_rack_pixel")
 centered = false
+
+[node name="ContactShadow" type="Sprite2D" parent="StorageRack/RackSprite" unique_id=203001101]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(27, 51)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 34, 56, 10)
 
 [node name="RackCollision" type="StaticBody2D" parent="StorageRack" unique_id=203001003]
 editor_description = "不需要单独移动来调整整体大小；父节点 StorageRack 的 Scale 会同步缩放碰撞体。"
@@ -83,10 +94,20 @@ z_index = 5
 position = Vector2(222, 528)
 
 [node name="M1Sprite" type="Sprite2D" parent="FinalKeyMachine1" unique_id=203001012]
-position = Vector2(-17.999992, -42.000015)
-scale = Vector2(0.08211683, 0.07580176)
-texture = ExtResource("3_m1")
+texture_filter = 1
+position = Vector2(-17, -50.5)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("12_m1_pixel")
 centered = false
+
+[node name="ContactShadow" type="Sprite2D" parent="FinalKeyMachine1/M1Sprite" unique_id=203001102]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(17, 89)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 25, 40, 8)
 
 [node name="M1Collision" type="StaticBody2D" parent="FinalKeyMachine1" unique_id=203001013]
 position = Vector2(32, -46)
@@ -102,10 +123,20 @@ z_index = 5
 position = Vector2(1443, 131)
 
 [node name="M2Sprite" type="Sprite2D" parent="FinalKeyMachine2" unique_id=203001022]
-position = Vector2(-117.00001, -69)
-scale = Vector2(0.107919216, 0.10509031)
-texture = ExtResource("4_m2")
+texture_filter = 1
+position = Vector2(-116.75, -71)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("13_m2_pixel")
 centered = false
+
+[node name="ContactShadow" type="Sprite2D" parent="FinalKeyMachine2/M2Sprite" unique_id=203001103]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(40, 52)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 56, 96, 12)
 
 [node name="M2Collision" type="StaticBody2D" parent="FinalKeyMachine2" unique_id=203001023]
 
@@ -120,10 +151,20 @@ z_index = 5
 position = Vector2(1187, 1028)
 
 [node name="M3Sprite" type="Sprite2D" parent="FinalKeyMachine3" unique_id=203001032]
-position = Vector2(-77.000046, -32.000023)
-scale = Vector2(0.14365883, 0.13870242)
-texture = ExtResource("5_m3")
+texture_filter = 1
+position = Vector2(-77, -36.75)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("14_m3_pixel")
 centered = false
+
+[node name="ContactShadow" type="Sprite2D" parent="FinalKeyMachine3/M3Sprite" unique_id=203001104]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(87, 102)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 16, 32, 8)
 
 [node name="M3Collision" type="StaticBody2D" parent="FinalKeyMachine3" unique_id=203001033]
 position = Vector2(39, -27)
@@ -143,9 +184,18 @@ position = Vector2(1552, 260)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=1788309197]
 texture_filter = 1
-position = Vector2(0, -52)
-scale = Vector2(0.0677, 0.0677)
-texture = ExtResource("6_library_knowledge")
+position = Vector2(-0.75, -55)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("15_library_pixel")
+
+[node name="ContactShadow" type="Sprite2D" parent="KnowledgeExhibits/LibraryRoomKnowledge/Sprite" unique_id=203001105]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(0, 33)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 7, 24, 8)
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/LibraryRoomKnowledge" unique_id=551733701]
 position = Vector2(0, -52)
@@ -165,9 +215,18 @@ position = Vector2(1680, 738)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=1405027501]
 texture_filter = 1
-position = Vector2(176.99997, 90.00007)
-scale = Vector2(0.06989866, 0.069898546)
-texture = ExtResource("7_dining_knowledge")
+position = Vector2(177.5, 87.625)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("16_dining_pixel")
+
+[node name="ContactShadow" type="Sprite2D" parent="KnowledgeExhibits/DiningHallKnowledge/Sprite" unique_id=203001106]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(0, 42.5)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 16, 32, 8)
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/DiningHallKnowledge" unique_id=20417855]
 position = Vector2(0, -52)
@@ -187,9 +246,18 @@ position = Vector2(187, 627)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=164785416]
 texture_filter = 1
-position = Vector2(-106.4156, 334.2484)
-scale = Vector2(0.07307733, 0.084958896)
-texture = ExtResource("8_circuit_knowledge")
+position = Vector2(-105.75, 331.75)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("17_circuit_pixel")
+
+[node name="ContactShadow" type="Sprite2D" parent="KnowledgeExhibits/CircuitRoomKnowledge/Sprite" unique_id=203001107]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(0, 36)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 16, 32, 8)
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/CircuitRoomKnowledge" unique_id=1433245640]
 position = Vector2(0, -52)
@@ -209,9 +277,18 @@ position = Vector2(301, 334)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=198594813]
 texture_filter = 1
-position = Vector2(0, -52)
-scale = Vector2(0.0677, 0.0677)
-texture = ExtResource("9_greenhouse_knowledge")
+position = Vector2(-1, -53.375)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("18_greenhouse_pixel")
+
+[node name="ContactShadow" type="Sprite2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge/Sprite" unique_id=203001108]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(-1, 34.5)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 16, 32, 8)
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/GreenhouseRoomKnowledge" unique_id=731269012]
 position = Vector2(0, -52)
@@ -230,9 +307,18 @@ position = Vector2(419, 139)
 
 [node name="Sprite" type="Sprite2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=1283029770]
 texture_filter = 1
-position = Vector2(207.16881, 334.9984)
-scale = Vector2(0.07193596, 0.11067501)
-texture = ExtResource("10_chemistry_knowledge")
+position = Vector2(207.875, 345.375)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("19_chemistry_pixel")
+
+[node name="ContactShadow" type="Sprite2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge/Sprite" unique_id=203001109]
+editor_description = "接触阴影（纯视觉）。保持为道具 Sprite 的子节点：get_visual_feet 只读取第一个 Sprite2D 子节点。"
+show_behind_parent = true
+texture_filter = 1
+position = Vector2(-3.5, 39.5)
+texture = ExtResource("20_contact_shadow")
+region_enabled = true
+region_rect = Rect2(0, 7, 24, 8)
 
 [node name="InteractionFocusPoint" type="Node2D" parent="KnowledgeExhibits/ChemistryRoomKnowledge" unique_id=686372712]
 position = Vector2(0, -52)

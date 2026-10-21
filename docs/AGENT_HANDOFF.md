@@ -32,6 +32,35 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
 
 ## Recent completed work
 
+### Hall route, footprints and props (2026-10-21)
+
+- **Route planning:** `scripts/hall_route_planner.gd` (`HallRoutePlanner`) plans the tutorial trail on the Guardian's own 16px collision lattice (`build_navigation_lattice()`), so it needs no collision queries of its own.
+  - Costs: node cost grows near stone (`CENTRE_WEIGHT`), which keeps the walk on corridor centrelines.
+  - Straightening: the walk becomes axis-aligned legs that never come nearer the stone than the search did.
+  - `_get_hall_route_path()` joins it from the player's real position, squares the first leg, folds 16px jogs into slight drifts (`HALL_ROUTE_MAX_JOG`) and still runs `_collision_safe_hall_route()`.
+  - Endpoints: interaction routes end on an edge that triggers the interaction (reach and knowledge sight). Bare-point routes now reach the point itself.
+- **Authored route:** `data/hall_tutorial_route.json` now only chooses corridors (`set_corridor_hint()`); it is no longer replayed point by point.
+  - The shipped recording starts at the old placeholder (512,384), and a through-wall first segment like that is ignored.
+  - Corridors off the recording cost `OFF_HINT_PENALTY` (3x).
+  - The file is unchanged; tests verify it stays byte-identical.
+  - The 60×40 `CASTLE_LAYOUT` and 32px `astar_grid` remain only for click-to-move and the Guardian's legacy queries. The trail no longer uses them.
+- **Footprints:** prints stay above the fog (z 108), but only up to the first print that is neither in line of sight nor about as near in a straight line as along the trail (`HALL_ROUTE_SIGHT_RATIO`).
+  - Prints under the character are hidden, and revealed prints fade in.
+  - `hall_footprint_marker.gd` adds a shared additive violet glow under the authored shoe PNGs.
+  - The compass names the heading of the next leg, not the goal's bearing.
+- **Rehearsal Guardian:** placed by distance walked along the trail (`_hall_tutorial_guardian_mark()`). Its step aside is capped by the open floor on the roomier side, keeps a 24px wall gap, and eases at turns.
+- **Fog:** `scripts/hall_fog_smooth.gdshader` (linear filtering plus smoothstep-eased bilinear weights) replaces the nearest-filtered 16px blocks. The fog logic, memory and power gating are unchanged.
+- **Survival card:** `onboarding_hud.gd::_stack_control_rows()` stacks the move/inspect rows by measured line count. The English move hint no longer overprints the inspect row.
+- **Props (actual main checkout only):** all nine Hall props now use `assets/props/hall_pixel/*_pixel.png`. The session worktree's older `wall_collisions.tscn` predates the user's prop placement and keeps the previous textures.
+  - Rendering: 1.25 world px per texel, uniform 1.25 scale, nearest filtering, lossless import, plus a `ContactShadow` child (shared atlas `hall_contact_shadow.png`).
+  - `tools/pixelize_hall_props.gd` regenerates them deterministically from the unchanged AI sources; see `PROVENANCE.md` and `manifest.json`.
+  - Visual feet moved ≤0.62px. The Chemistry/Circuit stretch was removed while keeping the visible area, and M1's opaque backdrop box was removed.
+  - The exhibit's first `Sprite2D` child must stay `Sprite`, because `get_visual_feet()` reads it.
+- **Paused:** the 2D wall/floor redraw is paused. The user chose a Blender 3D→2D **HD** one-screen Hall prototype as the next art step (characters deferred).
+- **QA:**
+  - `tests/hall_visual_capture.gd` (native only; HOME under `.godot/hall-visual-`; `-- --out=<label> [--zh]`) replays the real Wake exit and captures card, route, props, fog-free areas and overview.
+  - Curated comparisons are in `docs/evidence/2026-10-21-hall-visual/`.
+
 ### In-game Esc settings (2026-10-18)
 
 - `autoload/pause_menu.gd` is the last autoload (`PauseMenu`, CanvasLayer 94, process-always). The `pause_menu` action is Esc; a controller's Start is added at runtime. It opens only during free play: the tree must be unpaused, a `player` node must exist, and the current scene's optional `can_open_pause_menu()` must agree. A previous-frame snapshot prevents the Esc that closes a Bag, Map, Note, door puzzle, minigame, dossier or room panel from also opening settings.
@@ -133,7 +162,7 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
 
 ### Orthogonal route and item models
 
-- The first Hall route still uses the real A* grid, but its presentation is collision-safely smoothed into horizontal/vertical L segments. Arrows are snapped to cardinal directions, every turn gets a dedicated 90-degree glyph, the useless start-cell U-turn is removed, and marker spacing is now `96px`.
+- The first Hall route is planned by `HallRoutePlanner` (see the 2026-10-21 notes above): axis-aligned legs on corridor centrelines, drawn as alternating raster shoe prints every 64px, with turning prints at each corner.
 - `GameState.ITEM_VISUAL_INFO` is the single item-art catalog used by Bag, alchemy, Chemistry reference views, and reward cards. It covers both formula blueprints, five ingredients, three potions, and the castle ration.
 - New text-free models live under `assets/ui/item_models/`: two formula sheets plus Distilled Water, Iron Salt, and Prism Dust. Existing Blue Blossom, Moonleaf, Swiftness Potion, and Vision Potion art remains because it already met the visual target.
 - Bag slots now present catalogued items on accent-backed specimen plates; recipe glyph placeholders are gone. The alchemy archive displays blueprint art beside formula names and uses the same ingredient textures in the reagent rack and reaction sockets.
@@ -163,7 +192,7 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
 - `assets/audio/sfx/power_restore_surge.wav` is original deterministic synthesis, not a downloaded sample. Regenerate it with `node tools/generate_power_restore_sfx.mjs`; provenance and format are in `assets/audio/README.md`. Its Godot player is -7dB to preserve headroom.
 - First powered Hall return calls `_begin_power_restoration_return_sequence()` instead of `_begin_guardian_entry_sequence()`. It sorts saved 32px route keys radially from `CIRCUIT_DOOR_POSITION`, reveals them over `POWER_ROUTE_SCAN_DURATION` (1.20s), and drives `PowerRestorationStatus` plus `PowerRouteScanWave`.
 - Scanning and the 1.15s completion hold disable Guardian catch/physics and hide ETA/awareness UI. The player and Hub rail return at scan completion so Map can be opened immediately. `power_restoration_sequence_seen` prevents replay; `power_map_reviewed` clears the temporary route-panel/objective copy.
-- `tests/standard_flow_pressure_audit.gd` uses the real Hall A* path and current speeds. Pre-Circuit Hall exposures are 14.76s, 16.53s and 7.64s (38.93s total, separated by two safe rooms). Worst return reaction is 4.32s at Tier 2 with the 800px separation. Raw evidence lives in `docs/evidence/2026-08-14-power-restoration/STANDARD_FLOW_PRESSURE_AUDIT.md`.
+- `tests/standard_flow_pressure_audit.gd` measures the real planned Hall route (`_get_hall_route_path`) at current speeds. On the current Hall layout (2026-10-21) the pre-Circuit legs are 2528px/14.04s, 384px/2.13s and 287px/1.59s (17.77s total, separated by two safe rooms). Worst return reaction is 4.32s at Tier 2 with the 800px separation. The 38.93s figures in `docs/evidence/2026-08-14-power-restoration/STANDARD_FLOW_PRESSURE_AUDIT.md` describe the older August layout.
 - `tests/power_restoration_milestone_test.gd` is the state/timing contract; `tests/power_restoration_visual_capture.gd` owns four native captures. Keep the Map-visible assertion: it caught an old-save/toolkit condition hiding the whole Map CanvasLayer despite successful state acknowledgement.
 - The staged red-stain flow uses three catalogued trace models—Cleaning Powder, Indicator, Broken Glass—in the dialogue's evidence rack. Tests prove the Bag feature card remains hidden through inspection and evidence recording.
 - Final Case Board still validates evidence combinations and slot roles, but the lever now reads `SEAL ACCUSATION` / `TRACE COMMAND` rather than naming either suspect before the resolution.
@@ -189,7 +218,8 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
 | --- | --- |
 | Persistent state/save/checkpoint | `autoload/game_state.gd` |
 | Player movement and visual scale | `scripts/player.gd`, `scenes/player.tscn` |
-| Castle Hall and first-arrival route | `scripts/game_world.gd`, `scenes/game_world.tscn`, `scenes/wall_collisions.tscn` |
+| Castle Hall and first-arrival route | `scripts/game_world.gd`, `scenes/game_world.tscn`, `scenes/wall_collisions.tscn`, `scripts/hall_route_planner.gd`, `scripts/hall_footprint_marker.gd`, `scripts/hall_fog_smooth.gdshader` |
+| Hall prop pixel art | `assets/props/hall_pixel/` (`PROVENANCE.md`, `manifest.json`), `tools/pixelize_hall_props.gd` |
 | Shared interaction/depth/spawn geometry | `scripts/room_spatial_runtime.gd`, `scripts/room_interaction_runtime.gd` |
 | Wake Room tutorial | `scripts/wake_room.gd`, `scenes/wake_room.tscn` |
 | Chemistry / Butler / alchemy | `scenes/floor_1/chemistry_room.gd`, `scenes/floor_1/chemistry_room.tscn`, `scripts/alchemy_workbench_ui.gd`, `scenes/ui/alchemy_workbench_ui.tscn` |
@@ -233,12 +263,19 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
-2. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
-3. **Resolution-screen Archive entry.** The postgame Case Archive now exists (`scripts/case_archive_ui.gd`) and is reachable from the main menu once either ending flag is set. Decide whether the resolution screen should also offer a direct entry; its three actions currently occupy fixed measured regions, so a fourth needs its own layout pass.
-4. **Adaptive BGM and release audio.** Add Music/SFX/UI/Voice buses, menu/explore/pursuit/powered/ending music states, settings and dialogue ducking. Keep provenance explicit as with the generated power surge.
-5. **Cross-platform release preparation.** Add responsive touch controls, safe-area QA, Web/desktop/Android/iOS presets, platform SDK/signing checklist and real exported-build smoke tests.
-6. **Release cleanup and portfolio handoff.** Gate remaining developer output; verify Continue/Retry/Checkpoint behavior; then select final screenshots/GIFs and preserve art provenance.
+1. **Blender Hall prototype (HD).** The user chose to prototype one screen of the Hall (around the Wake entrance) in Blender 5.2.2 (`/Applications/Blender.app`, scriptable via bpy).
+   - Build it from the existing collision layout.
+   - Use an orthographic oblique camera locked to the 1920×1280 Hall coordinates.
+   - Output layers: floor, wall base below the player, and a wall-top occluder above.
+   - Compare it side by side with the current art at 1024×768 before any wider adoption.
+   - Keep collision, doors, fog, route and saves valid. Characters stay as they are until the prototype is judged.
+2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
+3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
+4. **Room spatial audit drift.** `tests/room_spatial_audit.gd` still expects a 14px contact band for the five Hall knowledge exhibits and `arrival_chemistry_core`, but those deliberately use the 72px wall-aware approach zone. The six failures predate the 2026-10-21 stage; update the expectation rather than the margin.
+5. **Resolution-screen Archive entry.** The postgame Case Archive now exists (`scripts/case_archive_ui.gd`) and is reachable from the main menu once either ending flag is set. Decide whether the resolution screen should also offer a direct entry; its three actions currently occupy fixed measured regions, so a fourth needs its own layout pass.
+6. **Adaptive BGM and release audio.** Add Music/SFX/UI/Voice buses, menu/explore/pursuit/powered/ending music states, settings and dialogue ducking. Keep provenance explicit as with the generated power surge.
+7. **Cross-platform release preparation.** Add responsive touch controls, safe-area QA, Web/desktop/Android/iOS presets, platform SDK/signing checklist and real exported-build smoke tests.
+8. **Release cleanup and portfolio handoff.** Gate remaining developer output; verify Continue/Retry/Checkpoint behavior; then select final screenshots/GIFs and preserve art provenance.
 
 ## Version publication
 
