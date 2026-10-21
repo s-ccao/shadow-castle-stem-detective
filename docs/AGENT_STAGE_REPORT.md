@@ -7,7 +7,10 @@
 - **Date:** 2026-10-21
 - **Status:** complete
 - **Request:** After the Wake Room, the tutorial route is "completely wrong" and passes through walls; many Hall textures (map art and item art) look like odd stickers. The user chose six fixes: smooth fog, redraw the Hall walls, remake the Hall props, readable footprints and arrival framing, fix the overlapping card text, align navigation. They asked mid-stage about rebuilding maps and characters in Blender, then chose an **HD Blender one-screen Hall prototype** as the next step. Characters are deferred, and the 2D wall/floor redraw is paused (superseded).
-- **Delivery:** actual main project, plus code mirrored to the session worktree. At the user's request it is committed and pushed to `origin/main` as `8084ff2` ("Lead the Hall trail down corridor centres and redraw its props"). The Web build is **not** deployed: the live site is still the August build, and the user is playtesting locally (isolated profile `.godot/stage38-playtest/`) before confirming deployment.
+- **Delivery:** actual main project, plus code mirrored to the session worktree. Committed and pushed to `origin/main` as `8084ff2` ("Lead the Hall trail down corridor centres and redraw its props"). After the user's local playtest (the full Wake → Hall → Chemistry opening at full health, no script errors), it was **deployed to production on 2026-10-21**.
+  - Deployment: `shadow-castle-detective-play-ick3tv2wl-cyc4.vercel.app` → https://play.shadowcastledetective.com.
+  - Verification: the live `index.pck` (98,455,444 bytes) has the same SHA-256 as the local export (`371311bd…`); the service-worker cache version is `1792622131|5145128`; the browser boot shows the title screen with no console errors or failed requests.
+  - Rollback target: the previous production deployment `shadow-castle-detective-play-eo9jos5ib-cyc4.vercel.app`.
 
 ### Diagnosis
 
