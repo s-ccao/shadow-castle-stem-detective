@@ -7,7 +7,7 @@
 - **Date:** 2026-10-21
 - **Status:** complete
 - **Request:** After the Wake Room, the tutorial route is "completely wrong" and passes through walls; many Hall textures (map art and item art) look like odd stickers. The user chose six fixes: smooth fog, redraw the Hall walls, remake the Hall props, readable footprints and arrival framing, fix the overlapping card text, align navigation. They asked mid-stage about rebuilding maps and characters in Blender, then chose an **HD Blender one-screen Hall prototype** as the next step. Characters are deferred, and the 2D wall/floor redraw is paused (superseded).
-- **Delivery:** actual main project, plus code mirrored to the session worktree. Not committed, pushed or deployed: the live site is still the August build, and Web deployment waits for the user's confirmation.
+- **Delivery:** actual main project, plus code mirrored to the session worktree. At the user's request it is committed and pushed to `origin/main` as `8084ff2` ("Lead the Hall trail down corridor centres and redraw its props"). The Web build is **not** deployed: the live site is still the August build, and the user is playtesting locally (isolated profile `.godot/stage38-playtest/`) before confirming deployment.
 
 ### Diagnosis
 
