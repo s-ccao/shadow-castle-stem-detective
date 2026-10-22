@@ -6,7 +6,10 @@ extends RefCounted
 ## region, the ground y of the wall seen there (R high byte, G low byte; A where
 ## a wall is seen). A nearer surface has the larger ground y, so a shader on
 ## each character, footprint and HD prop hides what a wall in front covers.
-## Characters keep a faint silhouette there, so they are never lost.
+## Characters and footprints still show there as faint ghosts, so neither the
+## player nor the route is ever lost behind a wall. The Hall's figures are
+## shown at 50 px instead of 66 so the 40 px walls read as walls; only the
+## visual nodes change, never the collision.
 
 const SHADER_CODE := """
 shader_type canvas_item;
@@ -17,7 +20,8 @@ uniform vec2 depth_origin;
 uniform vec2 depth_size;
 uniform float feet_y = 0.0;
 uniform bool feet_from_origin = false;
-uniform vec4 xray = vec4(0.72, 0.62, 1.0, 0.0);
+uniform vec4 tint = vec4(0.0);
+uniform float ghost = 0.0;
 
 varying vec2 world_position;
 varying float origin_y;
@@ -35,15 +39,19 @@ void fragment() {
 		float wall_y = floor(depth.r * 255.0 + 0.5) * 256.0 + floor(depth.g * 255.0 + 0.5);
 		float feet = feet_from_origin ? origin_y : feet_y;
 		if (depth.a > 0.5 && wall_y > feet + 0.5) {
-			color = vec4(xray.rgb, xray.a * color.a);
+			color.rgb = mix(color.rgb, tint.rgb, tint.a);
+			color.a *= ghost;
 		}
 	}
 	COLOR = color;
 }
 """
-const PLAYER_XRAY := Color(0.55, 0.48, 0.9, 0.26)
-const GUARDIAN_XRAY := Color(0.95, 0.36, 0.36, 0.3)
-const HIDDEN := Color(0.0, 0.0, 0.0, 0.0)
+## How a hidden part still shows: a tint (rgb, amount) and what opacity is left.
+const PLAYER_GHOST := {"tint": Color(0.55, 0.48, 0.9, 0.35), "alpha": 0.45}
+const GUARDIAN_GHOST := {"tint": Color(0.95, 0.36, 0.36, 0.45), "alpha": 0.45}
+const FOOTPRINT_GHOST := {"tint": Color(0.0, 0.0, 0.0, 0.0), "alpha": 0.35}
+const HIDDEN := {"tint": Color(0.0, 0.0, 0.0, 0.0), "alpha": 0.0}
+const FIGURE_SCALE := 1.1 / 1.45
 const GUARDIAN_SCENE := "res://scenes/enemy.tscn"
 const FOOTPRINT_SCRIPT := "hall_footprint_marker.gd"
 const SHADOW_NAME := "PrototypeContactShadow"
@@ -58,6 +66,8 @@ var add_shader := Shader.new()
 var entries: Dictionary = {}
 var fixed: Array[Dictionary] = []
 var shadows: Array[Sprite2D] = []
+## Visual nodes shrunk to FIGURE_SCALE, with the scale and position they had.
+var shrunk: Array[Dictionary] = []
 var active := false
 var rescan_in := 0.0
 
@@ -99,6 +109,12 @@ func restore() -> void:
 		if is_instance_valid(shadow):
 			shadow.queue_free()
 	shadows.clear()
+	for item: Dictionary in shrunk:
+		var node: Variant = item["node"]
+		if is_instance_valid(node):
+			(node as Node2D).scale = item["scale"]
+			(node as Node2D).position = item["position"]
+	shrunk.clear()
 
 
 ## Keeps the characters' feet current and picks up footprints as they appear.
@@ -108,6 +124,12 @@ func advance(delta: float) -> void:
 	rescan_in -= delta
 	if rescan_in <= 0.0:
 		_rescan()
+	# The game may set its own visual scale again; the preview keeps its own.
+	for item: Dictionary in shrunk:
+		var node: Variant = item["node"]
+		var target: Vector2 = (item["scale"] as Vector2) * FIGURE_SCALE
+		if is_instance_valid(node) and not (node as Node2D).scale.is_equal_approx(target):
+			(node as Node2D).scale = target
 	for sprite: Variant in entries:
 		var entry: Dictionary = entries[sprite]
 		var body: Variant = entry["body"]
@@ -123,16 +145,18 @@ func _rescan() -> void:
 		return
 	var player := hall.get_node_or_null("player") as Node2D
 	if player != null:
-		_track(player.get_node_or_null("VisualRoot/CharacterSprite") as CanvasItem, player, PLAYER_XRAY)
+		_shrink(player.get_node_or_null("VisualRoot") as Node2D)
+		_track(player.get_node_or_null("VisualRoot/CharacterSprite") as CanvasItem, player, PLAYER_GHOST)
 	for node: Node in hall.find_children("*", "CharacterBody2D", true, false):
 		if node.scene_file_path == GUARDIAN_SCENE:
-			_track(node.get_node_or_null("GuardianCore") as CanvasItem, node as Node2D, GUARDIAN_XRAY)
+			_shrink(node.get_node_or_null("GuardianCore") as Node2D)
+			_track(node.get_node_or_null("GuardianCore") as CanvasItem, node as Node2D, GUARDIAN_GHOST)
 	for node: Node in hall.find_children("*", "Node2D", true, false):
 		var script := node.get_script() as Script
 		if script != null and script.resource_path.ends_with(FOOTPRINT_SCRIPT):
 			for child: Node in node.get_children():
 				if child is Sprite2D:
-					_track(child as CanvasItem, null, HIDDEN)
+					_track(child as CanvasItem, null, FOOTPRINT_GHOST)
 	for item: Dictionary in fixed:
 		var sprite := item["sprite"] as Sprite2D
 		if is_instance_valid(sprite) and not entries.has(sprite):
@@ -142,7 +166,18 @@ func _rescan() -> void:
 			material.set_shader_parameter("feet_y", float(item["feet"]))
 
 
-func _track(sprite: CanvasItem, body: Node2D, xray: Color) -> void:
+func _shrink(node: Node2D) -> void:
+	if node == null:
+		return
+	for item: Dictionary in shrunk:
+		if item["node"] == node:
+			return
+	shrunk.append({"node": node, "scale": node.scale, "position": node.position})
+	node.scale *= FIGURE_SCALE
+	node.position *= FIGURE_SCALE
+
+
+func _track(sprite: CanvasItem, body: Node2D, look: Dictionary) -> void:
 	if sprite == null or entries.has(sprite):
 		return
 	var original := sprite.material
@@ -155,7 +190,8 @@ func _track(sprite: CanvasItem, body: Node2D, xray: Color) -> void:
 	material.set_shader_parameter("depth_map", depth_texture)
 	material.set_shader_parameter("depth_origin", origin)
 	material.set_shader_parameter("depth_size", size)
-	material.set_shader_parameter("xray", xray)
+	material.set_shader_parameter("tint", look["tint"])
+	material.set_shader_parameter("ghost", look["alpha"])
 	material.set_shader_parameter("feet_from_origin", body == null)
 	if body != null:
 		material.set_shader_parameter("feet_y", body.global_position.y)
@@ -182,7 +218,7 @@ func _add_shadow(body: Node2D) -> void:
 	var shadow := Sprite2D.new()
 	shadow.name = SHADOW_NAME
 	shadow.texture = texture
-	shadow.scale = Vector2(28.0, 9.0) / 32.0
+	shadow.scale = Vector2(22.0, 7.0) / 32.0
 	shadow.position = Vector2(0.0, -1.0)
 	shadow.z_index = -1
 	body.add_child(shadow)

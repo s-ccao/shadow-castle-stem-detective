@@ -29,6 +29,7 @@
     - A player behind a wall has their legs hidden (with a faint silhouette), and characters have soft shadows.
     - Floor no one can reach is solid castle, and the Wake Room door is a stair down seen from the player's side.
     - The clock-like compass and the 3D floor clutter are gone.
+    - A follow-up raised the walls to 40 px and showed the Hall figures at 50 px instead of 66 in the preview. Whatever a wall hides now shows as a faint ghost, so neither the player nor the footprint route is lost.
   - The user is reviewing it in the playable preview before it is extended to the rest of the Hall.
 
 - **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.

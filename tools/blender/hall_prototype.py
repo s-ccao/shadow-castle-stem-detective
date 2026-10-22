@@ -48,10 +48,11 @@ SMOOTH_TOLERANCE_PX = 2
 # Blender units per game px. 1 unit = 100 px keeps light falloff in sane ranges.
 PX = 0.01
 ALPHA_DEGREES = 40.0
-# Wall height on screen. A wall's top covers this much of the floor behind it:
-# at 24 px the player's feet stay in view on 94% of the opening route, and a
-# player hugging a wall's north side keeps head and shoulders (66 px tall).
-FACE_PX = 24
+# Wall height on screen, and so how much floor behind a wall its top covers.
+# The user found 24 px walls too low beside a 66 px figure; at 40 px beside a
+# 50 px figure they read as walls. The feet stay in view on 74% of the opening
+# route, and the preview shows whatever a wall hides as a faint ghost.
+FACE_PX = 40
 PLAYER_BODY_PX = (14, 8)
 # A prop that stands inside a wall mass gets a floor-level niche this deep.
 ALCOVE_DEPTH_PX = 18
@@ -1652,8 +1653,8 @@ def material_banner(name, cloth, aspect):
     return _material(name, build)
 
 
-BANNER_WIDTH_PX = 12.0
-BANNER_DROP_PX = 17.0
+BANNER_WIDTH_PX = 14.0
+BANNER_DROP_PX = 28.0
 BANNER_MIN_FACE_PX = 40
 BANNER_CLOTHS = (("BannerViolet", (0.2, 0.06, 0.34)), ("BannerTeal", (0.03, 0.15, 0.19)))
 
@@ -1987,7 +1988,7 @@ def material_niche():
         op = _MathBuilder(nodes, links)
         _coords, u, v = _uv_parts(nodes, links)
         across = op("ABSOLUTE", op("SUBTRACT", u, 0.5))
-        aspect = 15.0 / 13.0
+        aspect = 20.0 / 14.0
 
         def arch(half_width, spring):
             dv = op("MULTIPLY", op("SUBTRACT", v, spring), aspect)
@@ -2009,7 +2010,7 @@ def material_niche():
 
 
 def add_candle_niche(name, x, face_y, wall_height, stretch, rng):
-    width, screen_height = 13.0, 15.0
+    width, screen_height = 14.0, 20.0
     bottom = wall_height * 0.2
     top = bottom + screen_height / SIN_ALPHA
     _face_plane(name, x, face_y, bottom, top, width, material_niche(), stretch, out=0.25)
@@ -2457,7 +2458,7 @@ def material_tapestry():
     def build(nodes, links):
         op = _MathBuilder(nodes, links)
         coords, u, v = _uv_parts(nodes, links)
-        aspect = 17.0 / 16.0
+        aspect = 28.0 / 20.0
         border = op("MAXIMUM", op("MAXIMUM", op("LESS_THAN", u, 0.06), op("GREATER_THAN", u, 0.94)),
                     op("MAXIMUM", op("GREATER_THAN", v, 0.95), op.between(v, 0.08, 0.12)))
         fringe = op("LESS_THAN", v, 0.08)
@@ -2497,7 +2498,7 @@ def material_tapestry():
 
 
 def add_tapestry(name, x, face_y, wall_height, stretch, rng):
-    width, drop = 16.0, 17.0
+    width, drop = 20.0, 28.0
     top = wall_height * 0.84
     _face_plane(name, x, face_y, top - drop / SIN_ALPHA, top, width, material_tapestry(), stretch, out=0.8)
     _box(name + "Rod", (x, face_y + 1.2, top + 0.8), (width + 3.0, 1.2, 1.2),
@@ -2528,16 +2529,16 @@ def material_rift():
 
 
 def add_rift(name, x, face_y, wall_height, stretch, rng):
-    centre, half = _framed(name, x, face_y, wall_height, 9.0, 17.0, 0.48, material_rift(), None, 0.0, stretch,
+    centre, half = _framed(name, x, face_y, wall_height, 10.0, 24.0, 0.48, material_rift(), None, 0.0, stretch,
                            out=0.25)
     _glow("crystal", x, face_y, centre, (0.62, 0.36, 1.0), 9.0)
 
 
 DECOR = {
-    "shelf": (30.0, add_bookshelf), "portrait": (17.0, add_portrait), "niche": (13.0, add_candle_niche),
+    "shelf": (30.0, add_bookshelf), "portrait": (17.0, add_portrait), "niche": (14.0, add_candle_niche),
     "chalkboard": (27.0, add_chalkboard), "clock": (16.0, add_clock), "gauge": (11.0, add_gauge),
     "caseboard": (29.0, add_caseboard), "sconce": (7.0, add_sconce), "blueprint": (19.0, add_blueprint),
-    "map": (22.0, add_map), "mirror": (13.0, add_mirror), "tapestry": (19.0, add_tapestry), "rift": (11.0, add_rift),
+    "map": (22.0, add_map), "mirror": (13.0, add_mirror), "tapestry": (23.0, add_tapestry), "rift": (12.0, add_rift),
 }
 # Wide gaps take the pieces that tell the castle's story; narrow gaps the small ones.
 DECOR_BIG = ("caseboard", "shelf", "tapestry", "chalkboard", "map", "portrait", "shelf", "blueprint", "tapestry",
@@ -2879,7 +2880,7 @@ def add_ivy(layout, meta, stretch, count=6):
         left_side = rng.random() < 0.5
         x = start + width / 2.0 + 1.0 if left_side else end - width / 2.0 - 1.0
         top = wall_height * 0.99
-        _face_plane("Ivy%d" % index, x, face_y, top - float(rng.uniform(12.0, 19.0)) / SIN_ALPHA, top, width,
+        _face_plane("Ivy%d" % index, x, face_y, top - float(rng.uniform(20.0, 32.0)) / SIN_ALPHA, top, width,
                     material_ivy(), stretch, out=1.0)
     print("IVY %d" % min(count, len(segments)))
 

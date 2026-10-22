@@ -2,6 +2,43 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-44
+
+- **Date:** 2026-10-21
+- **Status:** taller walls and smaller Hall figures in the prototype, awaiting the user's review. Nothing ships.
+- **Request:** on stage 43 (committed and pushed as `59af5ea`), the user chose "adjust": "墙太矮了，也可能是因为人物现在的贴图太高了，导致看上去还是有点不好" (the walls are too low, or the figure too tall, so it still looks off).
+- **Cause:** 24 px walls beside a 66 px figure stood about a third of its height, which reads as a parapet, not a castle wall.
+
+### What changed
+
+- **Walls 40 px tall** (`FACE_PX`). The face decor is resized for 40 px faces: banners, tapestry, niche, rift and ivy. The feet stay in view on 74% of the opening route; that was measured for 32/36/40/44 px as 83/78/74/71%.
+- **Figures at 50 px instead of 66 in the preview** (`prototype_depth.gd`, `FIGURE_SCALE` = 1.1/1.45).
+  - Only the player's `VisualRoot` and the Guardian's `GuardianCore` change, with their offsets scaled, so the feet stay put.
+  - Collision and navigation are untouched, and the preview holds its scale if the game resets it.
+  - The handoff already listed smaller Hall figures as an earlier user request. The game itself still uses 1.45.
+- **Ghosts instead of silhouettes.** Whatever a wall hides now shows through:
+  - the player in its own colours, tinted violet, at 45% opacity;
+  - the Guardian tinted red, at 45%;
+  - footprints at 35%, so the route stays readable behind taller walls.
+  - Contact shadows and HD props are still fully hidden.
+
+### Verification
+
+- **Blender:** final render at 128 samples, 39 s. The footprint check is unchanged: IoU 1.0, and against the collision beyond 3 game px, 16 extra and 11 missing px.
+- **Native captures:** `capture_prototype.gd` passes all 36 checks in EN and ZH, with no shader errors.
+- **Godot:** gdlint is clean. The headless editor parse has 0 script errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `78 glows, 1 HD props, depth true`.
+- **Evidence:** the comparisons were rebuilt. New: `25-taller-walls.png` (stage 43 vs this pass, behind a wall).
+
+### Limits / next stage
+
+- **Occlusion trade-off:** at 40 px, a figure hugging a wall's north side shows only its head above the wall; the rest is a ghost.
+- **The Circuit cabinet:** the wall in front of its alcove now hides its lower half.
+- **Next:** if the user approves, put the figure scale into the game's Hall profile (`scripts/player.gd`, Guardian scene) together with the HD Hall, and extend the pipeline to the whole Hall.
+- **GitHub:** not committed. Committing needs the user's approval.
+
+---
+
 ## Stage: UX-20261021-43
 
 - **Date:** 2026-10-21
@@ -60,7 +97,7 @@
 
 - **Still open:** the Wake stair is 17 px wide (the gate wall's north edge steps east of it). Wall-mounted decor is not in the depth map, which is harmless because the player's body always stops 8 px south of a face.
 - **Next:** once the user approves the depth model, extend the pipeline to the whole Hall, including the other exhibits, machines and doors. Doors on walls that the player reaches from the north will need stairs or openings like the Wake gate's.
-- **GitHub:** not committed. Committing needs the user's approval. No Web deployment.
+- **GitHub:** committed and pushed as `59af5ea` with the user's approval. No Web deployment.
 
 ---
 

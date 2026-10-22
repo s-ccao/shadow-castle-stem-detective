@@ -265,9 +265,10 @@ Manual acceptance flow:
 
 1. **Blender Hall prototype (HD): walls with real depth built, user review pending.** See stages UX-20261021-39 to -43 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png`, `22-wall-dressing.png`, `23-denser-dressing.png` and `24-walls-with-depth.png` show the passes in order.
    - **Depth model** (stage 43):
-     - Walls stand on the collision; each wall px is the base of a block `FACE_PX` (24) tall on screen, so tops rise above the collision.
+     - Walls stand on the collision; each wall px is the base of a block `FACE_PX` (40 since stage 44) tall on screen, so tops rise above the collision.
      - `<render>-depth.png` holds, per screen px, the ground y of the wall seen there (RG = high/low byte, A = wall seen).
-     - `tools/blender/prototype_depth.gd` hides whatever a nearer wall covers, on the player, the Guardian, the footprints and the HD props.
+     - `tools/blender/prototype_depth.gd` shows whatever a nearer wall covers as a ghost: the player and Guardian at 45% in tinted colour, footprints at 35%. HD props and contact shadows are hidden fully.
+     - In the preview it also shows the Hall figures at 50 px (`FIGURE_SCALE`); only the visual nodes change.
      - Floor that no player body can reach (and that no reachable floor touches) is drawn as castle mass.
      - Props standing inside wall masses get alcoves.
      - Doors the player reaches from the north need a visible treatment from that side; the Wake gate is a stair down.
