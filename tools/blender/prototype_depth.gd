@@ -1,0 +1,190 @@
+extends RefCounted
+
+## Depth for the Blender prototype. Walls stand on the collision and their
+## tops rise above it on screen, so whatever stands north of a wall is behind
+## it. hall_prototype.py writes <render>-depth.png: for each screen px of the
+## region, the ground y of the wall seen there (R high byte, G low byte; A where
+## a wall is seen). A nearer surface has the larger ground y, so a shader on
+## each character, footprint and HD prop hides what a wall in front covers.
+## Characters keep a faint silhouette there, so they are never lost.
+
+const SHADER_CODE := """
+shader_type canvas_item;
+render_mode %s;
+
+uniform sampler2D depth_map : filter_nearest, repeat_disable;
+uniform vec2 depth_origin;
+uniform vec2 depth_size;
+uniform float feet_y = 0.0;
+uniform bool feet_from_origin = false;
+uniform vec4 xray = vec4(0.72, 0.62, 1.0, 0.0);
+
+varying vec2 world_position;
+varying float origin_y;
+
+void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
+	origin_y = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).y;
+}
+
+void fragment() {
+	vec4 color = COLOR;
+	vec2 uv = (world_position - depth_origin) / depth_size;
+	if (all(greaterThanEqual(uv, vec2(0.0))) && all(lessThan(uv, vec2(1.0)))) {
+		vec4 depth = texture(depth_map, uv);
+		float wall_y = floor(depth.r * 255.0 + 0.5) * 256.0 + floor(depth.g * 255.0 + 0.5);
+		float feet = feet_from_origin ? origin_y : feet_y;
+		if (depth.a > 0.5 && wall_y > feet + 0.5) {
+			color = vec4(xray.rgb, xray.a * color.a);
+		}
+	}
+	COLOR = color;
+}
+"""
+const PLAYER_XRAY := Color(0.55, 0.48, 0.9, 0.26)
+const GUARDIAN_XRAY := Color(0.95, 0.36, 0.36, 0.3)
+const HIDDEN := Color(0.0, 0.0, 0.0, 0.0)
+const GUARDIAN_SCENE := "res://scenes/enemy.tscn"
+const FOOTPRINT_SCRIPT := "hall_footprint_marker.gd"
+const SHADOW_NAME := "PrototypeContactShadow"
+
+var hall: Node
+var depth_texture: ImageTexture
+var origin := Vector2.ZERO
+var size := Vector2.ONE
+var mix_shader := Shader.new()
+var add_shader := Shader.new()
+## sprite -> {"material", "original", "body", "feet"}
+var entries: Dictionary = {}
+var fixed: Array[Dictionary] = []
+var shadows: Array[Sprite2D] = []
+var active := false
+var rescan_in := 0.0
+
+
+## Loads the depth map for `region` [x, y, width, height]. False without one.
+func attach(hall_node: Node, path: String, region: Array) -> bool:
+	var image := Image.load_from_file(ProjectSettings.globalize_path(path))
+	if image == null:
+		push_warning("No prototype depth map at " + path)
+		return false
+	hall = hall_node
+	depth_texture = ImageTexture.create_from_image(image)
+	origin = Vector2(float(region[0]), float(region[1]))
+	size = Vector2(float(region[2]), float(region[3]))
+	mix_shader.code = SHADER_CODE % "blend_mix"
+	add_shader.code = SHADER_CODE % "blend_add"
+	return true
+
+
+## A sprite that never moves, such as an HD prop, standing at `feet_y`.
+func add_fixed(sprite: Sprite2D, feet_y: float) -> void:
+	fixed.append({"sprite": sprite, "feet": feet_y})
+
+
+## Starts hiding what walls cover, and gives the characters contact shadows.
+func apply() -> void:
+	active = true
+	_rescan()
+
+
+## Puts every material back and removes the shadows, as the scene had them.
+func restore() -> void:
+	active = false
+	for sprite: Variant in entries:
+		if is_instance_valid(sprite):
+			(sprite as CanvasItem).material = entries[sprite]["original"]
+	entries.clear()
+	for shadow in shadows:
+		if is_instance_valid(shadow):
+			shadow.queue_free()
+	shadows.clear()
+
+
+## Keeps the characters' feet current and picks up footprints as they appear.
+func advance(delta: float) -> void:
+	if not active:
+		return
+	rescan_in -= delta
+	if rescan_in <= 0.0:
+		_rescan()
+	for sprite: Variant in entries:
+		var entry: Dictionary = entries[sprite]
+		var body: Variant = entry["body"]
+		if body != null and is_instance_valid(body) and is_instance_valid(sprite):
+			(entry["material"] as ShaderMaterial).set_shader_parameter(
+				"feet_y", (body as Node2D).global_position.y
+			)
+
+
+func _rescan() -> void:
+	rescan_in = 0.5
+	if not is_instance_valid(hall):
+		return
+	var player := hall.get_node_or_null("player") as Node2D
+	if player != null:
+		_track(player.get_node_or_null("VisualRoot/CharacterSprite") as CanvasItem, player, PLAYER_XRAY)
+	for node: Node in hall.find_children("*", "CharacterBody2D", true, false):
+		if node.scene_file_path == GUARDIAN_SCENE:
+			_track(node.get_node_or_null("GuardianCore") as CanvasItem, node as Node2D, GUARDIAN_XRAY)
+	for node: Node in hall.find_children("*", "Node2D", true, false):
+		var script := node.get_script() as Script
+		if script != null and script.resource_path.ends_with(FOOTPRINT_SCRIPT):
+			for child: Node in node.get_children():
+				if child is Sprite2D:
+					_track(child as CanvasItem, null, HIDDEN)
+	for item: Dictionary in fixed:
+		var sprite := item["sprite"] as Sprite2D
+		if is_instance_valid(sprite) and not entries.has(sprite):
+			_track(sprite, null, HIDDEN)
+			var material := entries[sprite]["material"] as ShaderMaterial
+			material.set_shader_parameter("feet_from_origin", false)
+			material.set_shader_parameter("feet_y", float(item["feet"]))
+
+
+func _track(sprite: CanvasItem, body: Node2D, xray: Color) -> void:
+	if sprite == null or entries.has(sprite):
+		return
+	var original := sprite.material
+	var additive := (
+		original is CanvasItemMaterial
+		and (original as CanvasItemMaterial).blend_mode == CanvasItemMaterial.BLEND_MODE_ADD
+	)
+	var material := ShaderMaterial.new()
+	material.shader = add_shader if additive else mix_shader
+	material.set_shader_parameter("depth_map", depth_texture)
+	material.set_shader_parameter("depth_origin", origin)
+	material.set_shader_parameter("depth_size", size)
+	material.set_shader_parameter("xray", xray)
+	material.set_shader_parameter("feet_from_origin", body == null)
+	if body != null:
+		material.set_shader_parameter("feet_y", body.global_position.y)
+		_add_shadow(body)
+	sprite.material = material
+	entries[sprite] = {"material": material, "original": original, "body": body}
+
+
+## A soft dark ellipse under the feet: a figure without one floats over the
+## painted floor. It is hidden by walls in front like everything else.
+func _add_shadow(body: Node2D) -> void:
+	if body.has_node(SHADOW_NAME):
+		return
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.0, 0.0, 0.02, 0.5))
+	gradient.set_color(1, Color(0.0, 0.0, 0.02, 0.0))
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	texture.width = 32
+	texture.height = 32
+	var shadow := Sprite2D.new()
+	shadow.name = SHADOW_NAME
+	shadow.texture = texture
+	shadow.scale = Vector2(28.0, 9.0) / 32.0
+	shadow.position = Vector2(0.0, -1.0)
+	shadow.z_index = -1
+	body.add_child(shadow)
+	shadows.append(shadow)
+	_track(shadow, null, HIDDEN)

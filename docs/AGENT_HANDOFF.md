@@ -263,7 +263,15 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): dense dressing and the first HD interactive prop built, user review pending.** See stages UX-20261021-39 to -42 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png`, `22-wall-dressing.png` and `23-denser-dressing.png` show the passes in order.
+1. **Blender Hall prototype (HD): walls with real depth built, user review pending.** See stages UX-20261021-39 to -43 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png`, `22-wall-dressing.png`, `23-denser-dressing.png` and `24-walls-with-depth.png` show the passes in order.
+   - **Depth model** (stage 43):
+     - Walls stand on the collision; each wall px is the base of a block `FACE_PX` (24) tall on screen, so tops rise above the collision.
+     - `<render>-depth.png` holds, per screen px, the ground y of the wall seen there (RG = high/low byte, A = wall seen).
+     - `tools/blender/prototype_depth.gd` hides whatever a nearer wall covers, on the player, the Guardian, the footprints and the HD props.
+     - Floor that no player body can reach (and that no reachable floor touches) is drawn as castle mass.
+     - Props standing inside wall masses get alcoves.
+     - Doors the player reaches from the north need a visible treatment from that side; the Wake gate is a stair down.
+     - The old "silhouette = collision" rule is gone: it put each wall's top edge exactly where the player stops on its north side.
    - Pipeline:
      - `tools/blender/export_hall_region.gd` (headless Godot) exports the real collision as `wall_mask.png`, plus `outside_mask.png` and `region.json`.
      - `tools/blender/hall_prototype.py` (Blender 5.2 bpy, Cycles Metal) builds walls whose cap plus south face exactly covers the collision. It uses a 40° orthographic camera with a 1/cos Y pre-stretch, so the floor maps 1:1 onto game coordinates.

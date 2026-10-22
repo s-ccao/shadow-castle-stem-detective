@@ -17,9 +17,11 @@ const HALL_SCENE := "res://scenes/game_world.tscn"
 const OVERLAY_NAME := "BlenderPrototypeOverlay"
 const Glows := preload("res://tools/blender/prototype_glows.gd")
 const Props := preload("res://tools/blender/prototype_props.gd")
+const Depth := preload("res://tools/blender/prototype_depth.gd")
 
 var glows: Glows
 var props: Props
+var depth: Depth
 
 
 func _initialize() -> void:
@@ -60,12 +62,23 @@ func _add_overlay(hall: Node) -> void:
 	props = Props.new()
 	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
 	props.apply()
-	print("BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props" % [region, halos, swapped])
+	depth = Depth.new()
+	var has_depth := depth.attach(hall, DATA + "render-depth.png", region)
+	if has_depth:
+		for item: Dictionary in props.standing():
+			depth.add_fixed(item["sprite"], item["feet"])
+		depth.apply()
+	print(
+		"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, depth %s"
+		% [region, halos, swapped, has_depth]
+	)
 
 
 func _process(delta: float) -> bool:
 	if glows != null:
 		glows.advance(delta)
+	if depth != null:
+		depth.advance(delta)
 	return false
 
 

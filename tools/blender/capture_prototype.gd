@@ -16,12 +16,15 @@ const DATA := "res://prototypes/blender_hall/"
 const RENDER_SCALE := 2.0
 const Glows := preload("res://tools/blender/prototype_glows.gd")
 const Props := preload("res://tools/blender/prototype_props.gd")
+const Depth := preload("res://tools/blender/prototype_depth.gd")
 ## Gameplay shots: where the player stands. Each keeps the zoomed camera view
 ## inside the rendered region so no old art shows at the frame edges.
 const PLAYER_SHOTS: Dictionary = {
 	"01-arrival": Vector2(224, 984),
 	"02-first-corridor": Vector2(430, 1000),
 	"03-wake-gate": Vector2(258, 1090),
+	# Feet against a wall's north side: the wall stands in front.
+	"04-behind-wall": Vector2(519, 1019),
 }
 ## Art-only shots with the fog lifted: camera centres at gameplay zoom.
 const ART_SHOTS: Dictionary = {
@@ -32,6 +35,7 @@ const ART_SHOTS: Dictionary = {
 var hall: Node2D
 var overlay: Sprite2D
 var props: Props
+var depth: Depth
 var failures: Array[String] = []
 var out_dir := ""
 
@@ -68,6 +72,10 @@ func _run() -> void:
 	props = Props.new()
 	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
 	_expect(swapped > 0, "The HD props load")
+	depth = Depth.new()
+	_expect(depth.attach(hall, DATA + "render-depth.png", region), "The depth map loads")
+	for item: Dictionary in props.standing():
+		depth.add_fixed(item["sprite"], item["feet"])
 	if overlay == null:
 		_finish()
 		return
@@ -125,14 +133,17 @@ func _make_overlay(origin: Vector2) -> Sprite2D:
 
 func _pair(label: String) -> void:
 	overlay.visible = false
+	depth.restore()
 	props.restore()
 	await _wait(0.15)
 	await _shot("current", label)
 	overlay.visible = true
 	props.apply()
+	depth.apply()
 	await _wait(0.15)
 	await _shot("blender", label)
 	overlay.visible = false
+	depth.restore()
 	props.restore()
 
 

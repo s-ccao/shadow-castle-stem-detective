@@ -35,11 +35,20 @@ func attach(hall: Node, path: String, data_dir: String, render_scale: float) -> 
 			"pixel_filter": sprite.texture_filter,
 			"hd_texture": ImageTexture.create_from_image(image),
 			"hd_scale": hd_scale,
+			"feet": float(prop["rect"][1]) + float(prop["rect"][3]),
 			"children": children,
 			"child_positions": children.map(func(child: Node2D) -> Vector2: return child.position),
 			"child_scales": children.map(func(child: Node2D) -> Vector2: return child.scale),
 		})
 	return swaps.size()
+
+
+## Each swapped sprite with the ground y its prop stands on.
+func standing() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for swap: Dictionary in swaps:
+		result.append({"sprite": swap["sprite"], "feet": swap["feet"]})
+	return result
 
 
 ## Shows the HD renders. Children (the contact shadow) keep their on-screen

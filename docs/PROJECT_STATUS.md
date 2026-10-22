@@ -24,6 +24,11 @@
     - dropped notes, chalk diagrams, glowing reagent spills, cracked flagstones, rubble, loose cogs and a candle ring around the compass;
     - moss, ivy and candles on the wall tops.
     - The Circuit knowledge exhibit is now an HD electrical cabinet with two meters on a closed circuit. It occupies exactly the same footprint, so interaction is unchanged.
+  - **Walls with real depth:** the user found the player looked like they were standing on walls' top edges. The cause: the walls' drawn tops ended exactly where the player stops.
+    - Walls now stand on the collision and rise 24 px.
+    - A player behind a wall has their legs hidden (with a faint silhouette), and characters have soft shadows.
+    - Floor no one can reach is solid castle, and the Wake Room door is a stair down seen from the player's side.
+    - The clock-like compass and the 3D floor clutter are gone.
   - The user is reviewing it in the playable preview before it is extended to the rest of the Hall.
 
 - **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.

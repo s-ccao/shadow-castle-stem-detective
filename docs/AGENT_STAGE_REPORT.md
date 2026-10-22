@@ -2,6 +2,68 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-43
+
+- **Date:** 2026-10-21
+- **Status:** walls with real depth built in the prototype region, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 42 the user chose to extend the prototype to the whole Hall (stage 42 is committed and pushed as `3d8143c`). Before that, they raised three problems:
+  - "大厅的钟感觉很怪异，有点感觉穿模了，横在那里的感觉很不好": the Hall's "clock" looked strange and seemed to clip.
+  - "大厅下面的墙感觉玩家走不过去": the walls below felt impassable.
+  - "现在的效果玩家走到墙壁旁边就和踩着墙壁的上沿一样，不知道是否是因为人物模型现在是贴图的问题": next to a wall, the player looks like they are standing on its top edge; is it because the character is a flat sprite?
+
+### Diagnosis
+
+- **Measurement:** at all 1,926 reachable spots where the player's feet touch a wall to their south, the drawn wall top began 1 px below the feet.
+- **Cause:** the prototype drew every wall's cap plus south face exactly over its collision. So a wall's top edge sat exactly where the player stops on its north side, and nothing was ever drawn in front of the player. The current hand-painted art has the same property (`04-behind-wall.png`, left). The character being a sprite only adds to it: there was no shadow and no occlusion.
+- **The "clock":** most likely the brass compass rose at the arrival, a ringed, ticked disc lying flat. The 3D candles, rubble and cogs around the floor could be walked through.
+- **The walls below:** the Wake gate's door was drawn on its south face, facing a strip of floor no player can reach, while the player arrives on its north side. Other walled-off strips along the bottom were also drawn as floor.
+
+### What changed
+
+- **Walls stand on the collision** (`tools/blender/hall_prototype.py`, `Layout`). Every wall px is now the base of a block 24 px tall on screen, and its top rises above the base the way a real wall's does.
+  - 24 px keeps the player's feet in view on 94% of the opening route (measured).
+  - A player hugging a wall's north side keeps head and shoulders of their 66 px.
+  - Movement, doors and the Guardian are unchanged.
+- **Depth map and occlusion:**
+  - `render-depth.png`: for each screen px, the ground y of the wall seen there. It is computed from the same heightfield, and the nearer surface has the larger ground y.
+  - The new `tools/blender/prototype_depth.gd` puts a shader on the player, the Guardian, the footprints and the HD props that hides whatever a wall in front covers.
+  - Characters keep a faint violet (player) or red (Guardian) silhouette there, so they are never lost.
+  - Both characters get a soft contact shadow, which walls hide too.
+- **No floor beyond reach:** floor no player body can reach, and that no reachable floor touches, is now castle mass. That is 78,291 px over the map, including the strips along the bottom.
+- **The Wake Room door from the player's side:** a stair drops south through the gate wall from where the player stands. It is lit violet from below and runs under the mass beyond, with candles on the wall tops at its mouth. The door on the south face is gone.
+- **The Circuit exhibit** stands in a floor-level alcove cut into the wall mass it sits in, instead of floating over the wall top.
+- **Removed:** the compass rose, the ritual candles, the rubble and the loose cogs. Everything left on walkable floor is flat (notes, chalk, spills, cracks, grates, the rug).
+- **Smaller decor:** face decor is sized for 24 px faces: banners, tapestry, niche, rift and ivy.
+- **Wall tops:** lighter, so masses read as stone rather than holes.
+
+### Findings
+
+- **Footprint check:** the walls rendered from straight above, unstretched, have IoU 1.0 with the heightfield. Against the collision, beyond 3 game px, only 16 px are extra and 11 px missing, at corners.
+- **In play** (`04-behind-wall.png`, `24-walls-with-depth.png`): with feet against a wall's north side, the wall hides the legs and the player reads as behind it, not on top of it.
+
+### Exact files
+
+- Changed: `tools/blender/hall_prototype.py`, `tools/blender/play_prototype.gd`, `tools/blender/capture_prototype.gd` (new shot `04-behind-wall`, depth on/off per pair), `tools/blender/prototype_props.gd` (`standing()`).
+- New: `tools/blender/prototype_depth.gd` (+UID).
+- Evidence: rebuilt comparisons, plus new `04-behind-wall.png` and `24-walls-with-depth.png` (stage 42 vs this pass), in `docs/evidence/2026-10-21-blender-hall-prototype/`.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_hall/`, now also holding `render-depth.png`.
+
+### Verification
+
+- **Blender:** final render at 2048×1024, 128 samples, 31 s, with the footprint check as above. `py_compile` and pyflakes are clean.
+- **Native captures:** `capture_prototype.gd` passes all 36 checks in EN and ZH, including "The depth map loads" and the new shot. No shader errors.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`. The headless editor parse (isolated HOME) has 0 script errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `79 glows, 1 HD props, depth true`.
+
+### Limits / next stage
+
+- **Still open:** the Wake stair is 17 px wide (the gate wall's north edge steps east of it). Wall-mounted decor is not in the depth map, which is harmless because the player's body always stops 8 px south of a face.
+- **Next:** once the user approves the depth model, extend the pipeline to the whole Hall, including the other exhibits, machines and doors. Doors on walls that the player reaches from the north will need stairs or openings like the Wake gate's.
+- **GitHub:** not committed. Committing needs the user's approval. No Web deployment.
+
+---
+
 ## Stage: UX-20261021-42
 
 - **Date:** 2026-10-21
@@ -67,7 +129,7 @@
 - **Next:**
   - Extend the pipeline to the whole Hall, including the other four knowledge exhibits, the storage rack, the three Final Key machines and the seven doors.
   - Then decide on characters.
-- **GitHub:** not committed. Committing needs the user's approval. No Web deployment.
+- **GitHub:** committed and pushed as `3d8143c` with the user's approval. No Web deployment.
 
 ---
 
