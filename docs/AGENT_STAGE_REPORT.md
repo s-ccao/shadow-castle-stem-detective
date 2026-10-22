@@ -2,6 +2,59 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-45
+
+- **Date:** 2026-10-21
+- **Status:** the Blender HD prototype now covers the whole Hall, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 44 (committed and pushed as `0c0c00d`), the user chose "extend to the whole Hall".
+
+### What changed
+
+- **The whole Hall in one render.**
+  - `export_hall_region.gd` exports the full map (`--region=0,0,1920,1280`). It also exports every prop the game sorts against the player (`HALL_OCCLUSION_NODE_PATHS`: rack, 3 key machines, 5 exhibits), and each door's real prompt rect from `get_interaction_rect`.
+  - `hall_prototype.py` builds every door, alcove, lantern and decor count from that data instead of the old region's hand-placed values. Decor counts scale with area.
+- **Each door on the side the player uses it from.**
+  - A door shows on the camera-facing south face whenever the player can stand south of it, inside the game's prompt area (the prompt rect grown by the game's 14 px margin and the 14×8 body). That gives six face doors.
+  - Only the Wake Room door, with no standing room south of it, keeps the stair down from the north.
+  - Greenhouse, Library and Circuit have reachable floor on both sides of their walls (1,784 / 2,501 / 3,400 standing px north). The old art paints all three arches on the south face, and the game puts the player back south of them, so they face south too. My earlier plan had stairs for Greenhouse and Library; that was wrong and is not built.
+- **Doors that sit flush.**
+  - Smoothing left some door faces a few px ragged; Final's measured edge was a 4 px bump below the real face. The face is now cut back to one straight line across each door.
+  - A lantern hangs beside every door: the search follows the face, so doors near corners are lit too (Circuit and Dining were unlit).
+  - The keystone is a pale stone wedge with a small violet gem, not a white block.
+- **Gallery works across the Hall.** The gaps between corridors join into pits of up to 222,565 px, where the old rule placed 2 pipes and 4 gears per pit.
+  - Pipe runs are at most 170 px, end in iron valve housings on the pit floor, and alternate direction. Before, single pipes ran across the whole Hall like ruled lines.
+  - Counts scale with pit area, and gear trains of two or three mesh at their rims. Gears no longer overlap: 143 gears, 0 overlapping pairs; the old rule gave 169 overlapping pairs.
+- **Depth for every prop.** The preview and the captures put the occlusion shader on all 9 props and their contact shadows (`Depth.add_props`), not only the HD exhibit.
+- **Captures:** door shots 05–10 from the floor in front of each arch; art shots 13–17 across the north, east and centre; the overview zoom fits the whole Hall on one screen.
+
+### Exact files
+
+- Changed: `tools/blender/hall_prototype.py`, `tools/blender/export_hall_region.gd`, `tools/blender/prototype_depth.gd`, `tools/blender/capture_prototype.gd`, `tools/blender/play_prototype.gd`.
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`:
+  - rebuilt comparisons 01–04, 11, 12, 20 and `silhouette-diff.png`;
+  - new `14-art-north.png`, `17-art-heart.png`, `26-hall-doors.png` (every door, in game), and `27-doors-and-gallery-works.png` (first whole-Hall pass vs final).
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_hall/`, now holding the whole Hall's masks, `region.json` and render (3840×2560).
+
+### Verification
+
+- **Layout loop:** a no-Blender harness runs the builder's `Layout` in 5 s. It checks each door's side against the game's prompt rects, which match `game_world.gd` exactly, and checks that every door face is flush. It fails on the previous code (Wake given a face door; 23 ragged columns at Final).
+- **Gear check:** 0 overlapping gear pairs; it fails on the previous rule.
+- **Blender:** final render at 128 samples, 148 s, 4.1 GB peak. Footprint: IoU 1.0; against the collision beyond 3 game px, 20 extra and 0 missing px. Missing px beside a deliberate cut (alcoves, door faces, the stair) no longer count; before that change it was 62 px, all beside cuts.
+- **Native captures:** `capture_prototype.gd` passes all 87 checks in EN and ZH, including "Every listed prop takes the depth shader" and a walkable spot for all 10 player shots. No shader errors.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 script errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `region [0, 0, 1920, 1280], 330 glows, 1 HD props, depth true (9 props)`.
+
+### Limits / next stage
+
+- **Only the Circuit exhibit is HD.** The other 8 props are still the pixel sprites, now with depth.
+- **The game still shows 66 px figures;** 50 px exists only in the preview.
+- **The export can warn at exit:** in 1 of 3 runs it printed "3 resources still in use at exit". The export itself is complete every time.
+- **Next, if approved:** HD models for the remaining exhibits, machines and rack; then move the HD Hall, the depth shader and the 50 px Hall figure into the game itself.
+- **GitHub:** not committed. Committing needs the user's approval.
+
+---
+
 ## Stage: UX-20261021-44
 
 - **Date:** 2026-10-21
@@ -35,7 +88,7 @@
 - **Occlusion trade-off:** at 40 px, a figure hugging a wall's north side shows only its head above the wall; the rest is a ghost.
 - **The Circuit cabinet:** the wall in front of its alcove now hides its lower half.
 - **Next:** if the user approves, put the figure scale into the game's Hall profile (`scripts/player.gd`, Guardian scene) together with the HD Hall, and extend the pipeline to the whole Hall.
-- **GitHub:** not committed. Committing needs the user's approval.
+- **GitHub:** committed and pushed as `0c0c00d` with the user's approval.
 
 ---
 

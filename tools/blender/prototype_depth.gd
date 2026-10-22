@@ -88,8 +88,28 @@ func attach(hall_node: Node, path: String, region: Array) -> bool:
 
 
 ## A sprite that never moves, such as an HD prop, standing at `feet_y`.
-func add_fixed(sprite: Sprite2D, feet_y: float) -> void:
+func add_fixed(sprite: CanvasItem, feet_y: float) -> void:
+	for item: Dictionary in fixed:
+		if item["sprite"] == sprite:
+			return
 	fixed.append({"sprite": sprite, "feet": feet_y})
+
+
+## Every prop region.json lists ({name: {"path", "rect"}}): each stands on the
+## bottom of its visual rect. Returns how many it found.
+func add_props(props: Dictionary) -> int:
+	var spatial := RoomSpatialRuntime.new()
+	var count := 0
+	for prop: Dictionary in props.values():
+		var root := hall.get_node_or_null(NodePath(str(prop["path"])))
+		var visual := spatial.find_visual_node(root) if root != null else null
+		if visual == null:
+			push_warning("No prototype depth prop at " + str(prop["path"]))
+			continue
+		var rect: Array = prop["rect"]
+		add_fixed(visual, float(rect[1]) + float(rect[3]))
+		count += 1
+	return count
 
 
 ## Starts hiding what walls cover, and gives the characters contact shadows.
@@ -158,10 +178,19 @@ func _rescan() -> void:
 				if child is Sprite2D:
 					_track(child as CanvasItem, null, FOOTPRINT_GHOST)
 	for item: Dictionary in fixed:
-		var sprite := item["sprite"] as Sprite2D
-		if is_instance_valid(sprite) and not entries.has(sprite):
-			_track(sprite, null, HIDDEN)
-			var material := entries[sprite]["material"] as ShaderMaterial
+		var sprite: Variant = item["sprite"]
+		if not is_instance_valid(sprite):
+			continue
+		# The prop's contact shadow lies on the same ground as the prop.
+		var parts: Array[CanvasItem] = [sprite as CanvasItem]
+		for child: Node in (sprite as Node).get_children():
+			if child is Sprite2D:
+				parts.append(child as CanvasItem)
+		for part in parts:
+			if entries.has(part):
+				continue
+			_track(part, null, HIDDEN)
+			var material := entries[part]["material"] as ShaderMaterial
 			material.set_shader_parameter("feet_from_origin", false)
 			material.set_shader_parameter("feet_y", float(item["feet"]))
 

@@ -263,7 +263,12 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): walls with real depth built, user review pending.** See stages UX-20261021-39 to -43 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png`, `22-wall-dressing.png`, `23-denser-dressing.png` and `24-walls-with-depth.png` show the passes in order.
+1. **Blender Hall prototype (HD): the whole Hall is built, user review pending.** See stages UX-20261021-39 to -45 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order; `26-hall-doors.png` shows every door in game.
+   - **Whole Hall** (stage 45): the export covers the full map, `--region=0,0,1920,1280`. Its `region.json` lists every occluding prop (`props`: path and rect) and each door's real prompt rect (`door_prompts`, from `get_interaction_rect`).
+     - A door is drawn on the camera-facing south face whenever the player can stand south of it inside the game's prompt area, and its face is cut back flush. Only Wake keeps the stair from the north. Greenhouse, Library and Circuit have floor on both sides, but their arches face south, as the old art paints them.
+     - Gallery works scale with pit area: pipe runs of at most 170 px ending in valve housings, gear trains that never overlap, and crystal clusters.
+     - Every listed prop and its contact shadow takes the depth shader (`Depth.add_props`).
+     - The final render takes about 150 s at 128 samples (3840×2560, 4.1 GB peak).
    - **Depth model** (stage 43):
      - Walls stand on the collision; each wall px is the base of a block `FACE_PX` (40 since stage 44) tall on screen, so tops rise above the collision.
      - `<render>-depth.png` holds, per screen px, the ground y of the wall seen there (RG = high/low byte, A = wall seen).
@@ -275,7 +280,7 @@ Manual acceptance flow:
      - The old "silhouette = collision" rule is gone: it put each wall's top edge exactly where the player stops on its north side.
    - Pipeline:
      - `tools/blender/export_hall_region.gd` (headless Godot) exports the real collision as `wall_mask.png`, plus `outside_mask.png` and `region.json`.
-     - `tools/blender/hall_prototype.py` (Blender 5.2 bpy, Cycles Metal) builds walls whose cap plus south face exactly covers the collision. It uses a 40° orthographic camera with a 1/cos Y pre-stretch, so the floor maps 1:1 onto game coordinates.
+     - `tools/blender/hall_prototype.py` (Blender 5.2 bpy, Cycles Metal) builds walls that stand on the collision, their tops rising above it. It uses a 40° orthographic camera with a 1/cos Y pre-stretch, so the floor maps 1:1 onto game coordinates.
        - Geometry is per game px from a smoothed copy of the collision, which stays within 2 px of it.
        - Props (lanterns, banners, gallery machinery, wall dressing) must stay inside the wall outline: hung on a south face, or sunk in a gallery below its rim.
        - Things hung on a face are scaled ×1/sin 40° in height (`UPRIGHT`), so clocks and dials read round on screen, as the gate arch does.
@@ -290,9 +295,10 @@ Manual acceptance flow:
        - The Circuit exhibit is the first one.
    - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
-   - The user chose to tune this one region until it satisfies, then extend it to the whole Hall. They allow replacing anything in the region with details that fit the game.
-     - Next: extend the pipeline to the whole Hall, including the other knowledge exhibits, the storage rack, the Final Key machines and the seven doors.
+   - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45). They allow replacing anything in the Hall with details that fit the game.
+     - Next: HD models for the other exhibits, the storage rack and the Final Key machines (only the Circuit exhibit is HD). Then move the HD Hall, the depth shader and the 50 px Hall figure into the game itself.
      - Dressing tips: floor items must be flat (tagged `floor_decal`); wall and top items must sit inside the outline; and the AO nodes use `only_local`, so props don't darken the stone in squares.
+     - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.
    - Characters stay as they are until the Hall is settled.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.

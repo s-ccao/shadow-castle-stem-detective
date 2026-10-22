@@ -129,14 +129,36 @@ func _outside_mask(map_size: Vector2i) -> Image:
 func _metadata(hall: Node2D) -> Dictionary:
 	var constants := (hall.get_script() as GDScript).get_script_constant_map()
 	var doors := {}
+	# The rect each door's prompt is centred on (get_interaction_rect): the
+	# builder draws a door on the side of its wall the player can use it from.
+	var door_prompts := {}
 	for constant: String in DOOR_CONSTANTS:
 		if constants.has(constant):
 			doors[constant] = _point(constants[constant] as Vector2)
+			var prompt: Rect2 = hall.call(
+				"get_interaction_rect", constant.trim_suffix("_FOCUS_POSITION").to_lower()
+			)
+			if prompt.has_area():
+				door_prompts[constant] = [
+					prompt.position.x, prompt.position.y, prompt.size.x, prompt.size.y
+				]
 	var exhibits := {}
 	var spatial := RoomSpatialRuntime.new()
 	for exhibit: Node in hall.get_node("WallCollisions/KnowledgeExhibits").get_children():
 		var rect := spatial.get_visual_rect(exhibit)
 		exhibits[exhibit.name] = [rect.position.x, rect.position.y, rect.size.x, rect.size.y]
+	# Every prop the game sorts against the player: the Blender builder cuts a
+	# niche for any that stands inside a wall, and the preview hides what a
+	# nearer wall covers of each.
+	var props := {}
+	for path: NodePath in constants.get("HALL_OCCLUSION_NODE_PATHS", []):
+		var prop := hall.get_node_or_null(path)
+		if prop == null:
+			continue
+		var rect := spatial.get_visual_rect(prop)
+		props[prop.name] = {
+			"path": str(path), "rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]
+		}
 	var route: Array = []
 	for point: Vector2 in hall.get("hall_tutorial_route"):
 		route.append(_point(point))
@@ -147,7 +169,9 @@ func _metadata(hall: Node2D) -> Dictionary:
 		"map_size": [int(constants["MAP_PIXEL_WIDTH"]), int(constants["MAP_PIXEL_HEIGHT"])],
 		"spawn": _point((hall.get_node("player") as Node2D).global_position),
 		"doors": doors,
+		"door_prompts": door_prompts,
 		"exhibits": exhibits,
+		"props": props,
 		"opening_route": route,
 	}
 

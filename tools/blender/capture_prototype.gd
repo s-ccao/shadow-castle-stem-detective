@@ -25,11 +25,24 @@ const PLAYER_SHOTS: Dictionary = {
 	"03-wake-gate": Vector2(258, 1090),
 	# Feet against a wall's north side: the wall stands in front.
 	"04-behind-wall": Vector2(519, 1019),
+	# Every Hall door from the floor in front of its arch: the art draws each
+	# on the wall's camera-facing south face.
+	"05-chemistry-door": Vector2(302, 136),
+	"06-final-door": Vector2(933, 130),
+	"07-library-door": Vector2(1667, 290),
+	"08-greenhouse-door": Vector2(185, 392),
+	"09-circuit-door": Vector2(133, 736),
+	"10-dining-door": Vector2(1787, 712),
 }
 ## Art-only shots with the fog lifted: camera centres at gameplay zoom.
 const ART_SHOTS: Dictionary = {
 	"11-art-arrival": Vector2(300, 1010),
 	"12-art-centre": Vector2(700, 960),
+	"13-art-north-west": Vector2(330, 250),
+	"14-art-north": Vector2(933, 160),
+	"15-art-north-east": Vector2(1580, 300),
+	"16-art-east": Vector2(1660, 860),
+	"17-art-heart": Vector2(1000, 620),
 }
 
 var hall: Node2D
@@ -76,6 +89,8 @@ func _run() -> void:
 	_expect(depth.attach(hall, DATA + "render-depth.png", region), "The depth map loads")
 	for item: Dictionary in props.standing():
 		depth.add_fixed(item["sprite"], item["feet"])
+	var listed: Dictionary = meta.get("props", {})
+	_expect(depth.add_props(listed) == listed.size(), "Every listed prop takes the depth shader")
 	if overlay == null:
 		_finish()
 		return
@@ -93,6 +108,11 @@ func _run() -> void:
 	var fog := hall.get("fog_sprite") as CanvasItem
 	if fog != null:
 		fog.visible = false
+	# Off the last door, so its prompt does not ride along into the art shots.
+	var rest := _walkable_near(PLAYER_SHOTS["04-behind-wall"] as Vector2)
+	if rest != Vector2.INF:
+		player.global_position = rest
+		await _wait(0.5)
 	var camera := Camera2D.new()
 	hall.add_child(camera)
 	camera.make_current()
@@ -101,7 +121,9 @@ func _run() -> void:
 		camera.global_position = ART_SHOTS[shot]
 		await _wait(0.3)
 		await _pair(shot)
-	camera.zoom = Vector2.ONE
+	# The whole region on one screen.
+	var fit := minf(1.0, minf(1024.0 / float(region[2]), 768.0 / float(region[3])))
+	camera.zoom = Vector2(fit, fit)
 	camera.global_position = Vector2(
 		float(region[0]) + float(region[2]) * 0.5, float(region[1]) + float(region[3]) * 0.5
 	)

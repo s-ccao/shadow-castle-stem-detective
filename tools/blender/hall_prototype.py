@@ -54,6 +54,9 @@ ALPHA_DEGREES = 40.0
 # route, and the preview shows whatever a wall hides as a faint ghost.
 FACE_PX = 40
 PLAYER_BODY_PX = (14, 8)
+# RoomSpatialRuntime's margin for a Hall door prompt: the body's gap to the
+# prompt rect.
+PROMPT_MARGIN_PX = 14
 # A prop that stands inside a wall mass gets a floor-level niche this deep.
 ALCOVE_DEPTH_PX = 18
 # The Wake Room stair: half width, how far south of the door it runs, and
@@ -85,6 +88,10 @@ DOOR_SPRING_PX = 52
 # Lamps hang over open floor, never against the stone they would wash out.
 LAMP_CLEARANCE_PX = 16
 LAMP_HEIGHT_PX = 36
+LANTERN_SPACING_PX = 130
+# Dressing counts were tuned on a 1024 x 512 region; larger regions scale them.
+DENSITY_AREA_PX = 1024 * 512
+DENSITY = 1.0
 
 CLASS_FLOOR, CLASS_CAP, CLASS_FACE, CLASS_PIT, CLASS_PIT_WALL, CLASS_GATE, CLASS_CAP_EDGE, CLASS_STAIRS = range(8)
 # Wall tops are dark so the lit corridors read as the space to explore. A
@@ -93,6 +100,13 @@ CLASS_FLOOR, CLASS_CAP, CLASS_FACE, CLASS_PIT, CLASS_PIT_WALL, CLASS_GATE, CLASS
 CAP_EDGE_PX = 8
 CAP_RIM_PX = 3
 SEED = 1307
+# Gallery works: the longest a pipe run may be, the clear gap between runs on
+# one lane, and the pit area each further pipe, gear or crystal cluster needs.
+PIPE_MAX_PX = 170
+PIPE_GAP_PX = 36
+GALLERY_PIPE_AREA_PX = 26000
+GALLERY_GEAR_AREA_PX = 9000
+GALLERY_CRYSTAL_AREA_PX = 32000
 
 
 def parse_args():
@@ -250,12 +264,12 @@ class Layout:
     the part of them the wall's top covers.
     """
 
-    def __init__(self, collision, outside, sin_alpha, spawn=None, door_center=None, alcoves=()):
+    def __init__(self, collision, outside, sin_alpha, spawn=None, doors=(), alcoves=()):
         self.collision = collision
         filled, self.filled_pockets = self._fill_pockets(collision, outside)
         self.pockets = filled & ~collision
         smooth = self._smooth(filled)
-        self.unreachable = self._enclosed_floor(smooth, outside, spawn)
+        self.unreachable, self.cover, self.reach = self._enclosed_floor(smooth, outside, spawn)
         self.wall = smooth | self.unreachable
         self.outside = outside & ~self.wall
         self.rows, self.columns = self.wall.shape
@@ -269,13 +283,70 @@ class Layout:
         self.gate_face_y = None
         self.gate_runs = {}
         self.galleries = []
-        self.stairs = None
+        self.stairs = []
+        self.face_doors = []
         self._galleries()
         self._cap_edges()
         for rect in alcoves:
             self._carve_alcove(rect)
-        if door_center is not None:
-            self._cut_stairs(door_center)
+        for name, point, prompt in doors:
+            side = self._door_side(point, prompt)
+            if side == "north":
+                self._cut_stairs(point)
+            elif side == "south":
+                self._face_door(name, point)
+            print("DOOR %s: the player stands %s of it" % (name, side))
+
+    def _door_side(self, point, prompt=None, reach=120):
+        """Which side of its wall a door is used from.
+
+        The Hall art draws every arch on the camera-facing south face, and the
+        player uses it from there whenever they can stand south of it, even
+        where the wall has floor on both sides (Greenhouse, Library, Circuit).
+        Only a door with no standing room south of it (Wake) is used from the
+        north, and there it becomes a stair down. Standing room is where the
+        game shows the door's prompt: feet whose body comes within
+        PROMPT_MARGIN_PX of the prompt rect (else within `reach` of the door).
+        """
+        x, y = int(point[0]), int(point[1])
+        if prompt:
+            side = PROMPT_MARGIN_PX + PLAYER_BODY_PX[0] // 2
+            left, right = prompt[0] - side, prompt[0] + prompt[2] + side
+            top, bottom = prompt[1] - PROMPT_MARGIN_PX, prompt[1] + prompt[3] + PROMPT_MARGIN_PX + PLAYER_BODY_PX[1]
+        else:
+            left, right, top, bottom = x - reach, x + reach, y - reach, y + reach
+        top, left = max(int(top), 0), max(int(left), 0)
+        ys = np.nonzero(self.reach[top:int(bottom) + 1, left:int(right) + 1])[0] + top
+        if len(ys) == 0:
+            return None
+        return "south" if (ys > y).any() else "north"
+
+    def _face_door(self, name, point):
+        """A door on the south face of the wall it is drawn in.
+
+        The face is cut back to one straight line across the door's width:
+        smoothing leaves it a few px ragged, and an arch must sit flush. Only
+        drawn wall is removed, never added over floor the player walks on.
+        """
+        x, y = int(point[0]), int(point[1])
+        below = np.flatnonzero(~self.wall[y:, x])
+        if len(below) == 0:
+            return
+        own = y + int(below[0])
+        half = int(DOOR_SCREEN_PX[0] / 2.0) + 2
+        faces = {}
+        for column in range(max(x - half, 0), min(x + half + 1, self.columns)):
+            free = np.flatnonzero(~self.wall[y:, column])
+            if len(free) and abs(y + int(free[0]) - own) <= 6:
+                faces[column] = y + int(free[0])
+        face_y = min(faces.values())
+        for column, column_face in faces.items():
+            cut = slice(face_y, column_face)
+            self.height[cut, column] = 0.0
+            self.kind[cut, column] = CLASS_FLOOR
+            self.footprint[cut, column] = False
+            self.carved[cut, column] = True
+        self.face_doors.append({"name": name.split("_")[0].title(), "x": float(x), "face_y": float(face_y)})
 
     @staticmethod
     def _enclosed_floor(wall, outside, spawn, step=2):
@@ -286,7 +357,8 @@ class Layout:
         as castle mass instead.
         """
         if spawn is None:
-            return np.zeros_like(wall)
+            free = ~wall & ~outside
+            return np.zeros_like(wall), free, free
         rows, columns = wall.shape
         cell_rows, cell_columns = rows // step, columns // step
         solid = (wall | outside)[:cell_rows * step, :cell_columns * step]
@@ -321,18 +393,24 @@ class Layout:
         covered = box_sum(reach, np.clip(row, 0, cell_rows), np.clip(row + up + 1, 0, cell_rows)) > 0
         covered_px = np.zeros_like(wall)
         covered_px[:cell_rows * step, :cell_columns * step] = np.kron(covered, np.ones((step, step), dtype=bool))
+        feet_px = np.zeros_like(wall)
+        feet_px[:cell_rows * step, :cell_columns * step] = np.kron(reach, np.ones((step, step), dtype=bool))
         floor = ~wall & ~outside
         unreached = floor & ~covered_px
         labels, _sizes = _flood_labels(unreached)
         touching = np.unique(labels[_dilate(covered_px & floor, 1) & unreached])
         enclosed = (labels > 0) & ~np.isin(labels, touching)
         print("ENCLOSED floor drawn as wall: %d px" % int(enclosed.sum()))
-        return enclosed
+        return enclosed, covered_px & floor, feet_px
 
     def _carve_alcove(self, rect, margin=3):
         """A floor-level niche in the wall for a prop that stands inside the mass."""
         x, y, width, height = rect
         feet = int(round(y + height))
+        # Only a prop whose base stands inside a wall mass needs a niche;
+        # one on open floor simply stands in front of the walls.
+        if not self.wall[max(feet - 4, 0), min(int(x + width / 2.0), self.columns - 1)]:
+            return
         rows = slice(max(feet - ALCOVE_DEPTH_PX, 0), min(feet + 1, self.rows))
         columns = slice(max(int(x) - margin, 0), min(int(math.ceil(x + width)) + margin, self.columns))
         inside = self.wall[rows, columns] & self.footprint[rows, columns]
@@ -371,8 +449,14 @@ class Layout:
                 columns.append(column)
                 column += direction
         columns.sort()
-        bottom = min(door_y + STAIR_RUN_PX, self.rows)
+        deepest = top
         for column in columns:
+            # Stop short of the wall's south face: the stair runs under the
+            # mass, it does not break through it.
+            below = np.flatnonzero(~self.wall[door_y:, column])
+            run_end = door_y + int(below[0]) if len(below) else self.rows
+            bottom = min(door_y + STAIR_RUN_PX, run_end - 8)
+            deepest = max(deepest, bottom)
             for row in range(north_edge(column), bottom):
                 if not self.wall[row, column]:
                     continue
@@ -381,7 +465,7 @@ class Layout:
                 self.kind[row, column] = CLASS_STAIRS
                 self.footprint[row, column] = False
                 self.carved[row, column] = True
-        self.stairs = {"left": columns[0], "right": columns[-1] + 1, "top": top, "bottom": bottom}
+        self.stairs.append({"left": columns[0], "right": columns[-1] + 1, "top": top, "bottom": deepest})
         print("STAIRS x %d-%d from y %d" % (columns[0], columns[-1] + 1, top))
 
     @staticmethod
@@ -1410,6 +1494,92 @@ def _gear_material(name, color):
     return _material(name, build)
 
 
+DOOR_SCREEN_PX = (30.0, 36.0)
+
+
+def material_face_door():
+    """An arched oak door in a pale stone surround, laid out in screen proportions."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        aspect = DOOR_SCREEN_PX[1] / DOOR_SCREEN_PX[0]
+        across = op("ABSOLUTE", op("SUBTRACT", u, 0.5))
+        up = op("MULTIPLY", v, aspect)
+        spring = aspect - 0.5
+
+        def arch(half):
+            rise = op("SUBTRACT", up, spring)
+            rounded = op("LESS_THAN", op("ADD", op("MULTIPLY", across, across), op("MULTIPLY", rise, rise)),
+                         half * half)
+            return op("MAXIMUM", op("MULTIPLY", op("LESS_THAN", across, half), op("LESS_THAN", up, spring)), rounded)
+
+        surround = arch(0.5)
+        door = arch(0.36)
+        planks = op("LESS_THAN", op("FRACT", op("MULTIPLY", u, 7.0)), 0.12)
+        straps = op("MAXIMUM", op.between(up, 0.22, 0.29), op.between(up, 0.72, 0.79))
+        ring = op.between(op("SQRT", op("ADD", op("MULTIPLY", op("SUBTRACT", u, 0.62), op("SUBTRACT", u, 0.62)),
+                                         op("MULTIPLY", op("SUBTRACT", up, 0.5), op("SUBTRACT", up, 0.5)))),
+                          0.03, 0.055)
+        joints = op("MAXIMUM", op("LESS_THAN", op("FRACT", op("MULTIPLY", up, 5.0)), 0.08),
+                    op("LESS_THAN", op("FRACT", op("ADD", op("MULTIPLY", u, 4.0),
+                                                       op("MULTIPLY", op("FLOOR", op("MULTIPLY", up, 5.0)), 0.5))), 0.07))
+        # A wedge keystone of paler stone, a small violet gem set in it.
+        crown = op("SUBTRACT", up, spring + 0.36)
+        keystone = op("MULTIPLY", op("LESS_THAN", across, op("ADD", 0.06, op("MULTIPLY", crown, 0.3))),
+                      op("GREATER_THAN", crown, 0.0))
+        gem = op("LESS_THAN", op("ADD", op("DIVIDE", across, 0.035),
+                                 op("DIVIDE", op("ABSOLUTE", op("SUBTRACT", up, spring + 0.43)), 0.045)), 1.0)
+        stone = _mix(nodes, links, joints, (0.4, 0.38, 0.39), (0.16, 0.15, 0.16))
+        stone = _mix(nodes, links, op("MULTIPLY", keystone, op("SUBTRACT", 1.0, joints)), stone, (0.52, 0.49, 0.47))
+        stone = _mix(nodes, links, gem, stone, (0.42, 0.22, 0.75))
+        wood = _mix(nodes, links, planks, (0.22, 0.12, 0.055), (0.07, 0.04, 0.02))
+        wood = _mix(nodes, links, op("MAXIMUM", straps, ring), wood, (0.1, 0.09, 0.09))
+        color = _mix(nodes, links, door, stone, wood)
+        shader = _principled(nodes, links, color, roughness=op("SUBTRACT", 0.8, op("MULTIPLY", straps, 0.4)))
+        links.new(op("MULTIPLY", op("MAXIMUM", straps, ring), door), shader.inputs["Metallic"])
+        shader.inputs["Emission Color"].default_value = (0.62, 0.36, 1.0, 1.0)
+        links.new(op("MULTIPLY", gem, 1.4), shader.inputs["Emission Strength"])
+        _alpha_cut(nodes, links, shader, surround)
+    return _material("FaceDoor", build)
+
+
+def add_face_doors(layout, stretch):
+    """Doors the player walks up to from the south, on the wall face they see."""
+    faces = _south_faces(layout)
+    material = material_face_door()
+    for door in layout.face_doors:
+        x, face_y = door["x"], door["face_y"]
+        _face_plane("Door" + door["name"], x, face_y, 0.0, DOOR_SCREEN_PX[1] / SIN_ALPHA, DOOR_SCREEN_PX[0],
+                    material, stretch, out=0.4)
+        _glow("crystal", x, face_y, (DOOR_SCREEN_PX[1] - 3.0) / SIN_ALPHA, (0.62, 0.36, 1.0), 8.0)
+        row = int(face_y) - 1
+        for side in (-1.0, 1.0):
+            # The nearest face beside the surround: a smoothed face wanders a
+            # few px, and a door by a corner has a face on one side only.
+            for gap in range(7, 21):
+                lamp_x = x + side * (DOOR_SCREEN_PX[0] / 2.0 + gap)
+                if not 0 <= int(lamp_x) < layout.columns:
+                    break
+                rows = np.flatnonzero(faces[max(row - 4, 0):row + 5, int(lamp_x)]) + max(row - 4, 0)
+                if len(rows):
+                    face_row = int(rows[np.argmin(np.abs(rows - row))])
+                    add_lantern("Door%sLamp" % door["name"],
+                                (lamp_x, face_row + 1.0, float(layout.height[face_row, int(lamp_x)])), stretch)
+                    break
+    print("FACE DOORS %d" % len(layout.face_doors))
+
+
+def _near_door(layout, x, face_y, reach=40.0):
+    """Whether a face position is taken by a door or a stair's mouth."""
+    for door in layout.face_doors:
+        if abs(x - door["x"]) < reach and abs(face_y - door["face_y"]) < 30.0:
+            return True
+    for stairs in layout.stairs:
+        if stairs["left"] - reach < x < stairs["right"] + reach and abs(face_y - stairs["top"]) < 90.0:
+            return True
+    return False
+
+
 def add_lantern(name, mount, stretch):
     """An iron wall lantern: arm, roof, posts, glass and a flame lighting it from inside."""
     x, face_y, wall_height = mount
@@ -1436,45 +1606,35 @@ def add_lantern(name, mount, stretch):
 
 
 def add_lamps(layout, meta, stretch):
+    """Iron lanterns along the faces that look onto open floor: the longest faces
+    first, spaced so each corridor gets light and none crowd, clear of doors."""
     x0, y0, width, height = meta["region"]
-    violet = (0.62, 0.42, 1.0)
     clear = _clear_floor(layout)
     faces = _south_faces(layout)
-    lanterns = [
-        ("LampWest", (92.0, 852.0)), ("LampCentre", (440.0, 828.0)), ("LampNorth", (712.0, 860.0)),
-        ("LampSpawn", (307.0, 1024.0)), ("LampHallway", (566.0, 960.0)), ("LampGallery", (740.0, 1088.0)),
-        ("LampEast", (979.0, 980.0)), ("LampSouth", (874.0, 1236.0)),
-    ]
+    segments = []
+    for row in range(y0, min(y0 + height, layout.rows)):
+        starts, ends = _runs(faces[row, x0:x0 + width])
+        for start, end in zip(starts, ends):
+            if end - start >= 30:
+                segments.append((int(end - start), row, x0 + int(start), x0 + int(end)))
+    segments.sort(reverse=True)
     mounts = []
-    for name, (x, y) in lanterns:
-        if not (x0 - MARGIN_PX <= x <= x0 + width + MARGIN_PX and y0 - MARGIN_PX <= y <= y0 + height + MARGIN_PX):
-            continue
-        mount = _wall_mount(layout, x, y, faces)
-        if mount is None or any(abs(mount[0] - other[0]) < 24 and abs(mount[1] - other[1]) < 24
-                                for other in mounts):
-            continue
-        mounts.append(mount)
-        add_lantern(name, mount, stretch)
-        # A dim fill where the old lamp hung keeps the corridor readable.
-        # A dim pool on the floor below keeps the corridor readable.
-        add_point_light(name + "Fill", nearest_floor(layout, x, y + 24.0, clear), LAMP_HEIGHT_PX,
-                        (1.0, 0.66, 0.36), 1.0, 0.2, stretch, mirrored=False)
-    add_point_light("GlowCentre", nearest_floor(layout, 420.0, 880.0, clear), LAMP_HEIGHT_PX, violet, 1.6,
-                    0.1, stretch, mirrored=False)
-    door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
-    if door is not None and layout.gate_face_y is not None:
-        face_y = layout.gate_face_y
-        for side in (-1.0, 1.0):
-            add_point_light("GateLantern", (door[0] + side * 30.0, face_y + 14.0), 46.0,
-                            (1.0, 0.64, 0.3), 1.6, 0.04, stretch, mirrored=False)
-        add_point_light("GateKeystone", (door[0], face_y + 10.0), 78.0, violet, 1.2, 0.03, stretch,
-                        mirrored=False)
-        # The gate's painted lanterns and keystone, in screen px above the door's foot.
-        for side in (-1.0, 1.0):
-            _glow("lantern", door[0] + side * (DOOR_HALF_WIDTH_PX + 12.0), face_y, 30.0 / SIN_ALPHA,
-                  (1.0, 0.64, 0.3), 14.0)
-        _glow("crystal", door[0], face_y, (DOOR_SPRING_PX * 0.6 + DOOR_HALF_WIDTH_PX + 3.0) / SIN_ALPHA,
-              violet, 10.0)
+    for length, row, start, end in segments:
+        count = max(1, length // 150)
+        for slot in range(count):
+            x = start + (slot + 0.5) * length / count
+            face_y = row + 1.0
+            if _near_door(layout, x, face_y, reach=48.0):
+                continue
+            if any((x - other[0]) ** 2 + (face_y - other[1]) ** 2 < LANTERN_SPACING_PX ** 2 for other in mounts):
+                continue
+            mount = (x, face_y, float(layout.height[row, int(x)]))
+            mounts.append(mount)
+            name = "Lamp%d" % len(mounts)
+            add_lantern(name, mount, stretch)
+            # A soft pool on the floor below keeps the corridor readable.
+            add_point_light(name + "Fill", nearest_floor(layout, x, face_y + 24.0, clear), LAMP_HEIGHT_PX,
+                            (1.0, 0.66, 0.36), 1.0, 0.2, stretch, mirrored=False)
     print("LANTERNS %d" % len(mounts))
     return mounts
 
@@ -1502,15 +1662,21 @@ def add_gallery_machinery(layout, meta, stretch):
         floor = layout.height[top:top + rows, left:left + columns]
         clearance = _clearance(mask, 24)
         used = np.zeros_like(mask)
-        horizontal = columns >= rows
-        lanes = clearance if horizontal else clearance.T
-        lanes_used = used if horizontal else used.T
-        for pipe in range(2):
+        # The gaps between corridors join into pits up to the size of the
+        # Hall: their works scale with them, so no stretch is left bare.
+        area = int(mask.sum())
+        pipe_count = min(2 + area // GALLERY_PIPE_AREA_PX, 12)
+        gear_count = min(4 + area // GALLERY_GEAR_AREA_PX, 28)
+        crystal_count = min(1 + area // GALLERY_CRYSTAL_AREA_PX, 8)
+        for pipe in range(pipe_count):
+            # Alternate the runs' direction so winding pits get both.
+            horizontal = (columns >= rows) == (pipe % 2 == 0)
+            lanes = clearance if horizontal else clearance.T
+            lanes_used = used if horizontal else used.T
             best = None
             for lane in range(lanes.shape[0]):
-                if lanes_used[max(lane - 6, 0):lane + 7].any():
-                    continue
-                starts, ends = _runs(lanes[lane] >= 5)
+                blocked = lanes_used[max(lane - 6, 0):lane + 7].any(axis=0)
+                starts, ends = _runs((lanes[lane] >= 5) & ~blocked)
                 if len(starts) == 0:
                     continue
                 longest = int(np.argmax(ends - starts))
@@ -1518,9 +1684,14 @@ def add_gallery_machinery(layout, meta, stretch):
                 if best is None or length > best[0]:
                     best = (length, lane, int(starts[longest]), int(ends[longest]))
             if best is None or best[0] < 24:
-                break
+                continue
             length, lane, start, end = best
-            lanes_used[max(lane - 6, 0):lane + 7, start:end] = True
+            # A run no longer than a pipe could be: a lane across the whole
+            # Hall reads as a ruled line, not plumbing.
+            if length > PIPE_MAX_PX:
+                start += int(rng.integers(0, length - PIPE_MAX_PX + 1))
+                end = start + PIPE_MAX_PX
+            lanes_used[max(lane - 6, 0):lane + 7, max(start - PIPE_GAP_PX, 0):end + PIPE_GAP_PX] = True
             if horizontal:
                 a = (left + start + 1.0, top + lane + 0.5)
                 b = (left + end - 1.0, top + lane + 0.5)
@@ -1531,24 +1702,55 @@ def add_gallery_machinery(layout, meta, stretch):
                 base = float(floor[start:end, lane].min())
             add_pipe("Pipe%d_%d" % (number, pipe), a, b, base + 2.6, 2.4, brass, iron, stretch)
             counts["pipes"] += 1
-        for gear in range(4):
-            free = np.where(used, 0, clearance)
+        yy, xx = np.ogrid[:rows, :columns]
+
+        def disc(row, column, radius):
+            return (yy - row) ** 2 + (xx - column) ** 2 <= radius ** 2
+
+        placed, train = 0, 0
+        while placed < gear_count:
+            # The room the pit's edge and the works already set leave, so no
+            # gear is laid through another.
+            free = _clearance(mask & ~used, 24)
             row, column = np.unravel_index(int(np.argmax(free)), free.shape)
             radius = min((free[row, column] - 1) * 0.9 - 1.5, 15.0)
             if radius < 5.0:
                 break
-            radius *= rng.uniform(0.78, 1.0)
-            add_gear("Gear%d_%d" % (number, gear), left + column + 0.5, top + row + 0.5,
+            # Mixed sizes: a narrow channel limits every gear alike.
+            radius = max(radius * rng.uniform(0.6, 1.0), 5.0)
+            others = used.copy()
+            add_gear("Gear%d_%d_0" % (number, train), left + column + 0.5, top + row + 0.5,
                      float(floor[row, column]) + 0.6, radius, 2.4, rng.uniform(0.0, 2.0 * math.pi),
                      gears[int(rng.random() < 0.35)], stretch)
-            yy, xx = np.ogrid[:rows, :columns]
-            used |= (yy - row) ** 2 + (xx - column) ** 2 <= (radius + 3.0) ** 2
-            counts["gears"] += 1
-        free = np.where(used, 0, clearance)
-        row, column = np.unravel_index(int(np.argmax(free)), free.shape)
-        if free[row, column] >= 6:
-            add_crystals("Crystal%d" % number, left + column + 0.5, top + row + 0.5,
+            used |= disc(row, column, radius + 3.0)
+            placed += 1
+            # One or two smaller gears whose teeth meet its rim: a train of
+            # works, not a coin dropped on the floor.
+            for companion in range(1, int(rng.integers(2, 4))):
+                small = radius * rng.uniform(0.45, 0.7)
+                turn = rng.uniform(0.0, 2.0 * math.pi)
+                reach = 1.02 * (radius + small)
+                y, x = row + reach * math.sin(turn), column + reach * math.cos(turn)
+                ty, tx = int(round(y)), int(round(x))
+                if (small < 3.5 or not (0 <= ty < rows and 0 <= tx < columns)
+                        or clearance[ty, tx] < small + 1.5 or (others & disc(y, x, small + 1.5)).any()):
+                    continue
+                add_gear("Gear%d_%d_%d" % (number, train, companion), left + x + 0.5, top + y + 0.5,
+                         float(floor[ty, tx]) + 0.6, small, 2.4, rng.uniform(0.0, 2.0 * math.pi),
+                         gears[int(rng.random() < 0.35)], stretch)
+                others |= disc(y, x, small + 1.0)
+                used |= disc(y, x, small + 3.0)
+                placed += 1
+            train += 1
+        counts["gears"] += placed
+        for cluster in range(crystal_count):
+            free = _clearance(mask & ~used, 24)
+            row, column = np.unravel_index(int(np.argmax(free)), free.shape)
+            if free[row, column] < 6:
+                break
+            add_crystals("Crystal%d_%d" % (number, cluster), left + column + 0.5, top + row + 0.5,
                          float(floor[row, column]), room, crystal, rng, stretch)
+            used |= (yy - row) ** 2 + (xx - column) ** 2 <= 10 ** 2
             counts["crystals"] += 1
     print("MACHINERY pipes=%(pipes)d gears=%(gears)d crystal clusters=%(crystals)d" % counts)
 
@@ -1570,6 +1772,12 @@ def add_pipe(name, start, end, z, radius, material, flange_material, stretch):
         _cylinder(flanges, radius * 1.4, 1.8, matrix=Matrix.Translation(shift) @ turn)
     _prop(name + "Flanges", flanges, flange_material,
           world_point((x0 + x1) / 2.0, (y0 + y1) / 2.0, z, stretch), stretch)
+    # Each run ends in an iron valve housing on the pit floor: plumbing
+    # between works, not a pipe that stops in mid-air.
+    ground = z - radius - 0.2
+    for index, (x, y) in enumerate((start, end)):
+        _box("%sValve%d" % (name, index), (x, y, ground + radius * 1.3),
+             (radius * 3.0, radius * 3.0, radius * 2.6), flange_material, stretch)
 
 
 def add_gear(name, x, y, z, radius, thickness, angle, material, stretch):
@@ -1680,7 +1888,6 @@ def add_banners(layout, meta, stretch, mounts):
     """Banners on the long south faces, clear of lanterns, the gate and each other."""
     x0, y0, width, height = meta["region"]
     faces = _south_faces(layout)
-    door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
     segments = []
     for row in range(y0, min(y0 + height, layout.rows)):
         starts, ends = _runs(faces[row, x0:x0 + width])
@@ -1699,7 +1906,7 @@ def add_banners(layout, meta, stretch, mounts):
         for x in spots:
             if wanted == 0:
                 break
-            if door is not None and abs(x - door[0]) < 90 and abs(face_y - door[1]) < 60:
+            if _near_door(layout, x, face_y):
                 continue
             if any(abs(x - mount[0]) < 34 and abs(face_y - mount[1]) < 30 for mount in mounts):
                 continue
@@ -2568,15 +2775,14 @@ def dress_faces(layout, meta, stretch, taken):
     """Shelves, portraits, alcoves, boards, gauges and a clock in the free stretches
     of the south faces, around the lanterns and banners in `taken` (x, face_y, half width)."""
     rng = np.random.default_rng(SEED + 7)
-    door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
     turns = {DECOR_BIG: 0, DECOR_SMALL: 0}
     placed = {kind: 0 for kind in DECOR}
     webs = 0
     for start, end, face_y, wall_height in sorted(face_segments(layout, meta), key=lambda item: item[0] - item[1]):
-        if door is not None and abs(face_y - door[1]) < 70 and start < door[0] + 90 and end > door[0] - 90:
-            continue
         free = [(start + 3.0, end - 3.0)]
-        for x, other_y, half in taken:
+        for x, other_y, half in list(taken) + [(door["x"], door["face_y"], 26.0) for door in layout.face_doors] + [
+                ((stairs["left"] + stairs["right"]) / 2.0, face_y, 60.0) for stairs in layout.stairs
+                if abs(face_y - stairs["top"]) < 90.0]:
             if abs(other_y - face_y) > 3.0:
                 continue
             cut = []
@@ -2597,7 +2803,8 @@ def dress_faces(layout, meta, stretch, taken):
             pool = DECOR_BIG if slot >= 30.0 else DECOR_SMALL
             for index in range(slots):
                 fits = [pool[(turns[pool] + step) % len(pool)] for step in range(len(pool))]
-                fits = [kind for kind in fits if DECOR[kind][0] <= slot - 3.0 and placed[kind] < DECOR_CAPS[kind]]
+                fits = [kind for kind in fits
+                        if DECOR[kind][0] <= slot - 3.0 and placed[kind] < DECOR_CAPS[kind] * DENSITY]
                 if not fits:
                     continue
                 kind = fits[0]
@@ -2670,7 +2877,7 @@ def _open_spots(layout, meta, room_px, count, avoid, spacing, rng, near_wall=Non
 def add_floor_details(layout, meta, stretch, avoid):
     """Cracked flagstones, flush with the floor; a few leak violet light."""
     rng = np.random.default_rng(SEED + 11)
-    cracks = _open_spots(layout, meta, 10, 12, avoid, 70.0, rng)
+    cracks = _open_spots(layout, meta, 10, int(round(12 * DENSITY)), avoid, 70.0, rng)
     for index, (x, y) in enumerate(cracks):
         size = float(rng.uniform(18.0, 28.0))
         turn = float(rng.uniform(0.0, math.pi))
@@ -2787,7 +2994,7 @@ def add_floor_story(layout, meta, stretch, avoid):
     """Notes, spills and chalk working, all flat on the open floor."""
     rng = np.random.default_rng(SEED + 23)
     note = material_note()
-    clusters = _open_spots(layout, meta, 12, 9, avoid, 90.0, rng, clear_of=40.0)
+    clusters = _open_spots(layout, meta, 12, int(round(9 * DENSITY)), avoid, 90.0, rng, clear_of=40.0)
     notes = 0
     for cx, cy in clusters:
         for _page in range(int(rng.integers(2, 5))):
@@ -2796,7 +3003,7 @@ def add_floor_story(layout, meta, stretch, avoid):
                         z=0.14 + notes * 0.002)
             notes += 1
     taken = avoid + clusters
-    spills = _open_spots(layout, meta, 14, 3, taken, 220.0, rng, clear_of=45.0)
+    spills = _open_spots(layout, meta, 14, int(round(3 * DENSITY)), taken, 220.0, rng, clear_of=45.0)
     for index, (x, y) in enumerate(spills):
         name, color = (("SpillViolet", (0.6, 0.3, 1.0)), ("SpillGreen", (0.25, 1.0, 0.5)))[index % 2]
         size = float(rng.uniform(18.0, 26.0))
@@ -2804,16 +3011,17 @@ def add_floor_story(layout, meta, stretch, avoid):
                     material_spill(name, color), stretch, z=0.13)
         _glow("potion", x, y, 0.0, color, size * 0.7)
     taken = taken + spills
-    chalk = _open_spots(layout, meta, 24, 2, taken, 260.0, rng, clear_of=50.0)
+    chalk = _open_spots(layout, meta, 24, int(round(2 * DENSITY)), taken, 260.0, rng, clear_of=50.0)
     for index, (x, y) in enumerate(chalk):
         _decal_quad("Chalk%d" % index, x, y, 44.0, 30.0, float(rng.uniform(-0.3, 0.3)), material_chalk_diagram(),
                     stretch, z=0.12)
     print("FLOOR STORY notes=%d spills=%d chalk=%d" % (notes, len(spills), len(chalk)))
 
 
-def add_cap_candles(layout, meta, stretch, count=10):
+def add_cap_candles(layout, meta, stretch, count=None):
     """Candles burning on the wall tops, near the camera-facing edge, inside the outline."""
     rng = np.random.default_rng(SEED + 31)
+    count = int(round(10 * DENSITY)) if count is None else count
     x0, y0, width, height = meta["region"]
     window = (slice(y0, y0 + height), slice(x0, x0 + width))
     solid = layout.footprint[window] & (layout.kind[window] != CLASS_PIT)
@@ -2871,8 +3079,9 @@ def material_ivy():
     return _material("Ivy", build)
 
 
-def add_ivy(layout, meta, stretch, count=6):
+def add_ivy(layout, meta, stretch, count=None):
     rng = np.random.default_rng(SEED + 41)
+    count = int(round(6 * DENSITY)) if count is None else count
     segments = [segment for segment in face_segments(layout, meta, minimum=30)]
     rng.shuffle(segments)
     for index, (start, end, face_y, wall_height) in enumerate(segments[:count]):
@@ -3032,19 +3241,21 @@ def _candle_group(name, x, y, base, stretch, count=3):
 
 def add_stair_lights(layout, stretch):
     """Violet light rising up the Wake Room stair; candles on the wall tops at its mouth."""
-    stairs = layout.stairs
-    if stairs is None:
-        return
+    for number, stairs in enumerate(layout.stairs):
+        _stair_lights(layout, stairs, number, stretch)
+
+
+def _stair_lights(layout, stairs, number, stretch):
     centre = (stairs["left"] + stairs["right"]) / 2.0
     for index, fraction in enumerate((0.3, 0.6)):
         y = stairs["top"] + (stairs["bottom"] - stairs["top"]) * fraction
         z = float(layout.height[int(y), int(centre)]) + 6.0
-        add_point_light("StairGlow%d" % index, (centre, y), z, (0.62, 0.38, 1.0), 0.5, 0.05, stretch, mirrored=False)
+        add_point_light("StairGlow%d_%d" % (number, index), (centre, y), z, (0.62, 0.38, 1.0), 0.5, 0.05, stretch, mirrored=False)
         _glow("crystal", centre, y, z, (0.62, 0.38, 1.0), 14.0)
     for side, x in (("West", stairs["left"] - 6.0), ("East", stairs["right"] + 6.0)):
         y = stairs["top"] + 8.0
         if layout.height[int(y), int(x)] > 0.0:
-            _candle_group("StairCandles" + side, x, y, float(layout.height[int(y), int(x)]), stretch)
+            _candle_group("StairCandles%d%s" % (number, side), x, y, float(layout.height[int(y), int(x)]), stretch)
 
 
 def add_hd_props(meta, stretch):
@@ -3251,7 +3462,9 @@ def compare_footprint(path, layout, meta, scale):
     iou = np.logical_and(seen, raised).sum() / max(np.logical_or(seen, raised).sum(), 1)
     reach = (SMOOTH_TOLERANCE_PX + 1) * factor
     far_extra = seen & ~filled & ~_dilate(collision, reach)
-    far_missing = collision & ~carved & ~_dilate(seen, reach)
+    # A prop's own collision box and a stair's corner lie within the cuts made
+    # for them on purpose; only a wall missing elsewhere is a fault.
+    far_missing = collision & ~_dilate(carved, reach) & ~_dilate(seen, reach)
     print("FOOTPRINT vs heightfield iou=%.5f; vs collision beyond %d game px: extra=%d missing=%d "
           "(filled unreachable+pockets %d px, carved %d px; render %dx%d)" % (
               iou, SMOOTH_TOLERANCE_PX + 1, far_extra.sum(), far_missing.sum(), filled.sum(), carved.sum(),
@@ -3281,9 +3494,14 @@ def main():
     outside = load_mask(os.path.join(data, "outside_mask.png"))
     door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
     started = time.time()
-    alcoves = [rect for prop_id, rect in (meta.get("exhibits") or {}).items()
-               if prop_id in PROP_SPRITES and _rect_in_region(rect, meta)]
-    layout = Layout(collision, outside, math.sin(alpha), spawn=meta.get("spawn"), door_center=door, alcoves=alcoves)
+    global DENSITY
+    x0, y0, width, height = meta["region"]
+    DENSITY = width * height / DENSITY_AREA_PX
+    props = meta.get("props") or {name: {"rect": rect} for name, rect in (meta.get("exhibits") or {}).items()}
+    alcoves = [prop["rect"] for prop in props.values() if _rect_in_region(prop["rect"], meta)]
+    doors = sorted((name, point, (meta.get("door_prompts") or {}).get(name))
+                   for name, point in (meta.get("doors") or {}).items())
+    layout = Layout(collision, outside, math.sin(alpha), spawn=meta.get("spawn"), doors=doors, alcoves=alcoves)
     print("LAYOUT built in %.1fs" % (time.time() - started))
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -3302,6 +3520,7 @@ def main():
         add_runner_rug(layout, route[1], route[2], stretch)
     setup_world()
     add_sun()
+    add_face_doors(layout, stretch)
     mounts = add_lamps(layout, meta, stretch)
     add_stair_lights(layout, stretch)
     add_gallery_machinery(layout, meta, stretch)

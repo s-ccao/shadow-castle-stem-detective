@@ -64,13 +64,15 @@ func _add_overlay(hall: Node) -> void:
 	props.apply()
 	depth = Depth.new()
 	var has_depth := depth.attach(hall, DATA + "render-depth.png", region)
+	var depth_props := 0
 	if has_depth:
 		for item: Dictionary in props.standing():
 			depth.add_fixed(item["sprite"], item["feet"])
+		depth_props = depth.add_props((meta as Dictionary).get("props", {}))
 		depth.apply()
 	print(
-		"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, depth %s"
-		% [region, halos, swapped, has_depth]
+		"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, depth %s (%d props)"
+		% [region, halos, swapped, has_depth, depth_props]
 	)
 
 

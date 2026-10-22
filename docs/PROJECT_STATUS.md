@@ -6,8 +6,9 @@
 
 ## Latest actual-project update (2026-10-21)
 
-- **Blender HD Hall prototype (not shipped):** one Hall region around the Wake spawn was rebuilt in Blender from the real collision and rendered as an HD 2D image.
+- **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
+  - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.
   - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/).
   - **Second art pass:** the user found the first pass too plain to invite exploration, so this pass adds:
     - smooth walls instead of 4 px stairs, with dark tops and lit stone outlines;
