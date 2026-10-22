@@ -2,6 +2,78 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-40
+
+- **Date:** 2026-10-21
+- **Status:** second art pass on the same prototype region complete, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** the user's verdict on stage 39 was "这现在只是做了一小部分吗，感觉还是一半，太简陋了，不够让人有探索欲望和神秘感" (only a small part, half-finished, too crude, no pull to explore, no mystery). They chose to tune this region until it satisfies before extending it.
+- **Scope:** the region is the lower-left fifth of the Hall (x 0–1024, y 768–1280 of 1920×1280), around the Wake gate and the opening route.
+
+### What changed (all in `tools/blender/hall_prototype.py`)
+
+- **Clean walls instead of 4 px stairs.** The collision is a 4 px raster traced from the old art, so every diagonal was a staircase.
+  - Geometry is now built per game px from a smoothed copy (Gaussian σ 2.5 px, threshold ½, never thinner than the collision eroded by 1 px). Straight edges stay exact and stairs become slopes.
+  - No edge moves more than 2 px from the collision.
+  - Faces are merged into quads within 32 px tiles: 19.7k faces.
+- **Dark wall tops, lit outlines.** Wall tops are dark slate, and a lit capstone lip runs along every edge: 8 px on the camera-facing south edge, 3 px elsewhere. Each wall mass keeps a crisp outline, and the corridors become the lit space to explore.
+- **Real machinery in the galleries.** The striped brass shader, which read as staircases, is gone. Galleries now have a dark plate floor with 3D brass works:
+  - 22 flanged pipe runs;
+  - 35 toothed brass and copper gears with spoke windows;
+  - 11 violet crystal clusters, each lit from above.
+  - Everything stays below the rim, so it sits inside the wall outline.
+- **Lanterns.** There are 8 iron lanterns (arm, roof, posts, glass with a flame inside), each on a real full-height south face.
+  - They line the opening route, and some light side corridors and the Circuit exhibit, so warm light invites a look.
+  - Each one has a soft warm pool on the floor below.
+- **Decor that tells the place:**
+  - 3 swallowtail banners (violet and teal) with the castle's gear-and-eye sigil.
+  - A brass compass rose with a ring of faintly lit runes, set in polished stone at the arrival: (180, 948), r 46.
+  - A worn runner rug along the route's first east leg, which the violet footprints now follow.
+  - Two iron floor grates with violet light rising through them. A script places them in quiet spots well off the route, at (514, 1114) and (582, 786), as a reason to wander.
+- **Tried and dropped:** floor puddles. At game scale they read as dirt smears, not water.
+- **Render cost:** 128 samples take about 41 s on the M3 (about 19 s of that is fixed per run). Two fixes:
+  - The compass shader had been on the floor material, so every floor pixel evaluated about 120 nodes. The compass is now its own disc object.
+  - Decorative glows are excluded from light sampling, because the point lights carry the light.
+
+### Findings
+
+- **Gameplay still unchanged.** Against the smoothed outline the render's silhouette has IoU 1.0. Against the raw collision:
+  - 0 px are missing beyond 3 game px.
+  - 16 render px are extra beyond 3 game px, at two pocket-adjacent spots 1–2 game px across.
+  - All other differences are the 2 px smoothing and the 308 filled pocket cells (5,700 px), as before.
+- **In play** (native captures with real fog and the HUD):
+  - The arrival opens on the compass, a lantern pool and the rug that the footprints follow.
+  - Gears and violet crystals glint in the galleries.
+  - Banners and grates draw the eye down side corridors.
+- **Still open:**
+  - The pixel-art player and the Circuit exhibit sit on an HD background.
+  - The south wall faces are still mostly plain stone.
+  - The lights are static in the render. In play they could flicker.
+
+### Exact files
+
+- Changed: `tools/blender/hall_prototype.py`.
+- Evidence: `docs/evidence/2026-10-21-blender-hall-prototype/`.
+  - The six side-by-side comparisons were rebuilt from fresh native captures.
+  - New: `21-region-iteration.png`, comparing the first prototype with this pass.
+  - Updated: `silhouette-diff.png`. Red marks extra px beyond 3 game px and blue marks missing px beyond 3 game px; the dim colours are within tolerance.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only (gitignored, regenerable): `prototypes/blender_hall/`, containing `render.png`, `silhouette*.png`, `hall_prototype.blend` and the EN/ZH captures.
+
+### Verification
+
+- **Blender:** final render at 2048×1024, 128 samples, 42 s, with the silhouette check as above. `py_compile` and pyflakes are clean.
+- **Native captures:** `capture_prototype.gd` passes all 29 checks in EN and ZH. All shots are 1024×768 and were inspected.
+- **Godot:** the headless editor parse has 0 script errors (isolated HOME). `git diff --check` is clean.
+- **Preview:** the playable preview was relaunched on the new render: `play_prototype.gd -- --hall`.
+
+### Limits / next stage
+
+- **Proposed next stage:** after the user's review, add the remaining wall-face detail: alcoves with candles, portraits, shelves. In-game lantern flicker and crystal pulse could follow.
+- **Later:** extend the pipeline to the whole Hall, including treatments for the seven doors (most face directions the camera cannot see). Characters stay deferred.
+- **GitHub:** not committed. Committing these changes needs the user's approval. No Web deployment.
+
+---
+
 ## Stage: UX-20261021-39
 
 - **Date:** 2026-10-21

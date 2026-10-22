@@ -8,7 +8,13 @@
 
 - **Blender HD Hall prototype (not shipped):** one Hall region around the Wake spawn was rebuilt in Blender from the real collision and rendered as an HD 2D image.
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
-  - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/). The user is choosing whether to pursue it.
+  - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/).
+  - **Second art pass:** the user found the first pass too plain to invite exploration, so this pass adds:
+    - smooth walls instead of 4 px stairs, with dark tops and lit stone outlines;
+    - real brass machinery and violet crystals in the galleries;
+    - eight wall lanterns along the route and side corridors;
+    - banners, a brass compass inlay at the arrival, a runner rug the footprints follow, and two glowing floor grates off the route.
+  - The user is reviewing it in the playable preview before it is extended to the rest of the Hall.
 
 - **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.
   - The authored recording still chooses the corridors, but its through-wall first segment and hand wobble are no longer replayed.

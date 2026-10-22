@@ -14,11 +14,12 @@ Projection. The camera is orthographic and tilted ALPHA_DEGREES from looking
 straight down. The scene's Y axis is stretched by 1/cos(ALPHA), so the floor
 lands 1:1 on game coordinates and a height z shows as z*sin(ALPHA) screen px.
 
-Gameplay. Each wall column run (a vertical run of collision cells) shows a
-top cap and a south face. Its height is chosen so the two together cover
-exactly the run's cells on screen: the rendered walls match the collision, so
-nothing about movement, doors or the Guardian changes, and the player is
-always correctly drawn in front of every wall.
+Gameplay. Each wall column run (a vertical run of wall px) shows a top cap
+and a south face. Its height is chosen so the two together cover exactly the
+run on screen: the rendered walls match the collision, so nothing about
+movement, doors or the Guardian changes, and the player is always correctly
+drawn in front of every wall. The collision is a 4 px raster whose diagonals
+are stairs; the walls follow a smoothed copy that stays within 2 px of it.
 """
 
 import json
@@ -27,27 +28,39 @@ import os
 import sys
 import time
 
+import bmesh
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
-CELL = 4
+CELL = 1
+# The wall collision is a 4 px raster traced from the old art, so its
+# diagonals are 4 px stairs. Geometry is built per game px from a lightly
+# smoothed copy: straight edges stay exact, stairs become slopes, and no edge
+# moves more than SMOOTH_TOLERANCE_PX from the collision.
+SOURCE_CELL = 4
+SMOOTH_SIGMA_PX = 2.5
+SMOOTH_TOLERANCE_PX = 2
 # Blender units per game px. 1 unit = 100 px keeps light falloff in sane ranges.
 PX = 0.01
 ALPHA_DEGREES = 40.0
 # Tallest south face on screen, and the least top cap a run keeps.
 FACE_PX = 44
 CAP_MIN_PX = 12
+# Neighbouring columns whose south edges differ by at most this much belong to
+# one face and share its height, so a sloped wall keeps a level top.
+EDGE_SLACK_PX = 3
 # Large wall masses get a stone rim around a sunken machinery gallery,
 # echoing the existing art's pale outlines around dark machinery. Ordinary
 # walls stay solid: a gallery narrower than this reads as a crack.
-RIM_CELLS = 3
-GALLERY_MIN_WIDTH_CELLS = 7
-GALLERY_MIN_CELLS = 140
-PIT_SCREEN_PX = 10
-# Enclosed floor pockets this small sit inside wall masses where the collision
-# decomposition left a gap. No body fits or reaches them; drawn as floor they
-# become black crevices across the wall tops, so they are drawn as wall.
+RIM_PX = 12
+GALLERY_MIN_WIDTH_PX = 28
+GALLERY_MIN_AREA_PX = 2240
+PIT_SCREEN_PX = 12
+# Enclosed floor pockets this small, in 4 px collision cells, sit inside wall
+# masses where the collision decomposition left a gap. No body fits or reaches
+# them; drawn as floor they become black crevices across the wall tops, so
+# they are drawn as wall.
 POCKET_MAX_CELLS = 24
 # Margin of geometry built around the rendered region, for shadows cast in.
 MARGIN_PX = 192
@@ -58,10 +71,16 @@ GATE_FACE_PX = 84
 DOOR_HALF_WIDTH_PX = 17
 DOOR_SPRING_PX = 52
 # Lamps hang over open floor, never against the stone they would wash out.
-LAMP_CLEARANCE_CELLS = 4
+LAMP_CLEARANCE_PX = 16
 LAMP_HEIGHT_PX = 36
 
-CLASS_FLOOR, CLASS_CAP, CLASS_FACE, CLASS_PIT, CLASS_PIT_WALL, CLASS_GATE = range(6)
+CLASS_FLOOR, CLASS_CAP, CLASS_FACE, CLASS_PIT, CLASS_PIT_WALL, CLASS_GATE, CLASS_CAP_EDGE = range(7)
+# Wall tops are dark so the lit corridors read as the space to explore. A
+# capstone lip catches the light: deep along the south edge the camera faces,
+# a thin line on the other edges so every mass keeps its outline.
+CAP_EDGE_PX = 8
+CAP_RIM_PX = 3
+SEED = 1307
 
 
 def parse_args():
@@ -105,239 +124,386 @@ def load_mask(path):
     return pixels.reshape(height, width, 4)[::-1, :, 0] > 0.5
 
 
-class Layout:
-    """Per-cell heights (game px of 3D height) and material classes."""
+def _gaussian(field, sigma):
+    """Separable Gaussian blur with edge padding."""
+    radius = int(math.ceil(sigma * 3.0))
+    offsets = np.arange(-radius, radius + 1, dtype=np.float32)
+    kernel = np.exp(-0.5 * (offsets / sigma) ** 2)
+    kernel /= kernel.sum()
+    rows, columns = field.shape
+    padded = np.pad(field, ((radius, radius), (0, 0)), mode="edge")
+    field = sum(weight * padded[index:index + rows, :] for index, weight in enumerate(kernel))
+    padded = np.pad(field, ((0, 0), (radius, radius)), mode="edge")
+    return sum(weight * padded[:, index:index + columns] for index, weight in enumerate(kernel))
 
-    def __init__(self, wall, outside, door_center, sin_alpha):
-        self.collision = wall.copy()
-        wall, self.filled_pockets = self._fill_pockets(wall, outside & ~wall)
-        self.wall = wall
-        self.outside = outside & ~wall
-        self.rows, self.columns = wall.shape
-        self.height = np.zeros(wall.shape, dtype=np.float64)
-        self.kind = np.full(wall.shape, CLASS_FLOOR, dtype=np.int8)
-        self.footprint = np.zeros(wall.shape, dtype=bool)
-        self.face_px = np.zeros(wall.shape, dtype=np.int32)
+
+def _erode(mask, times):
+    """Shrink by `times` px, 4-neighbour; beyond the array counts as outside."""
+    inner = mask.copy()
+    for _ in range(times):
+        shrunk = inner.copy()
+        shrunk[1:, :] &= inner[:-1, :]
+        shrunk[:-1, :] &= inner[1:, :]
+        shrunk[:, 1:] &= inner[:, :-1]
+        shrunk[:, :-1] &= inner[:, 1:]
+        shrunk[0, :] = shrunk[-1, :] = False
+        shrunk[:, 0] = shrunk[:, -1] = False
+        inner = shrunk
+    return inner
+
+
+def _dilate(mask, times):
+    grown = mask.copy()
+    for _ in range(times):
+        wider = grown.copy()
+        wider[1:, :] |= grown[:-1, :]
+        wider[:-1, :] |= grown[1:, :]
+        wider[:, 1:] |= grown[:, :-1]
+        wider[:, :-1] |= grown[:, 1:]
+        grown = wider
+    return grown
+
+
+def _clearance(mask, limit):
+    """How far each px of `mask` is from its edge, by octagonal erosion, up to `limit`."""
+    result = np.zeros(mask.shape, dtype=np.int32)
+    current = mask.copy()
+    for step in range(1, limit + 1):
+        result[current] = step
+        shrunk = _erode(current, 1)
+        if step % 2 == 0:
+            shrunk[1:, 1:] &= current[:-1, :-1]
+            shrunk[:-1, :-1] &= current[1:, 1:]
+            shrunk[1:, :-1] &= current[:-1, 1:]
+            shrunk[:-1, 1:] &= current[1:, :-1]
+        current = shrunk
+        if not current.any():
+            break
+    return result
+
+
+def _block_any(mask, size):
+    rows, columns = mask.shape[0] // size, mask.shape[1] // size
+    return mask[:rows * size, :columns * size].reshape(rows, size, columns, size).any(axis=(1, 3))
+
+
+def _upsample(grid, size, shape):
+    return np.kron(grid, np.ones((size, size), dtype=grid.dtype))[:shape[0], :shape[1]]
+
+
+def _flood_labels(mask):
+    """4-connected components: a label per cell (0 for none) and each label's size."""
+    labels = np.zeros(mask.shape, dtype=np.int32)
+    sizes = [0]
+    rows, columns = mask.shape
+    for row, column in zip(*np.nonzero(mask)):
+        if labels[row, column]:
+            continue
+        label = len(sizes)
+        labels[row, column] = label
+        stack = [(row, column)]
+        size = 0
+        while stack:
+            r, c = stack.pop()
+            size += 1
+            for nr, nc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
+                if 0 <= nr < rows and 0 <= nc < columns and mask[nr, nc] and not labels[nr, nc]:
+                    labels[nr, nc] = label
+                    stack.append((nr, nc))
+        sizes.append(size)
+    return labels, np.array(sizes)
+
+
+def _runs(valid, *keys):
+    """Start and end of each maximal run where `valid` holds and every key stays equal."""
+    count = len(valid)
+    if count == 0:
+        empty = np.zeros(0, dtype=np.int64)
+        return empty, empty
+    same = valid[1:] == valid[:-1]
+    for key in keys:
+        same &= key[1:] == key[:-1]
+    starts = np.flatnonzero(np.concatenate(([True], ~same)))
+    ends = np.append(starts[1:], count)
+    keep = valid[starts]
+    return starts[keep], ends[keep]
+
+
+class Layout:
+    """Per-px heights (game px of 3D height) and material classes."""
+
+    def __init__(self, collision, outside, door_center, sin_alpha):
+        self.collision = collision
+        filled, self.filled_pockets = self._fill_pockets(collision, outside)
+        self.pockets = filled & ~collision
+        self.wall = self._smooth(filled)
+        self.outside = outside & ~self.wall
+        self.rows, self.columns = self.wall.shape
+        self.height = np.zeros(self.wall.shape, dtype=np.float64)
+        self.kind = np.full(self.wall.shape, CLASS_FLOOR, dtype=np.int8)
+        self.footprint = np.zeros(self.wall.shape, dtype=bool)
+        self.face_px = np.zeros(self.wall.shape, dtype=np.int32)
+        self.pit = np.zeros(self.wall.shape, dtype=bool)
         self.sin_alpha = sin_alpha
         self.gate_face_y = None
+        self.gate_runs = {}
+        self.galleries = []
         self._columns_to_runs(door_center)
         self._galleries()
+        self._cap_edges()
         self.kind[self.wall & ~self.footprint] = CLASS_FLOOR
+
+    @staticmethod
+    def _fill_pockets(collision, outside):
+        """Wall in the small enclosed floor pockets of the 4 px collision raster."""
+        half = SOURCE_CELL // 2
+        wall = collision[half::SOURCE_CELL, half::SOURCE_CELL]
+        floor = ~wall & ~outside[half::SOURCE_CELL, half::SOURCE_CELL]
+        labels, sizes = _flood_labels(floor)
+        pocket = sizes <= POCKET_MAX_CELLS
+        pocket[0] = False
+        pocket[np.unique(np.concatenate((labels[0], labels[-1], labels[:, 0], labels[:, -1])))] = False
+        cells = pocket[labels]
+        print("POCKETS filled %d enclosed floor cells" % int(cells.sum()))
+        return collision | _upsample(cells, SOURCE_CELL, collision.shape), int(cells.sum())
+
+    @staticmethod
+    def _smooth(wall):
+        """Round off the 4 px stairs; straight edges stay where they are."""
+        field = _gaussian(wall.astype(np.float32), SMOOTH_SIGMA_PX)
+        smooth = (field >= 0.5) | _erode(wall, 1)
+        return smooth & _dilate(wall, SMOOTH_TOLERANCE_PX)
 
     def _columns_to_runs(self, door_center):
         """Split every column into runs, then pick each run's face height.
 
-        Runs that end on the same south edge in neighbouring columns form one
-        face. They share one height, the face's median wish, clamped per column
-        to what that run can show: per-column heights stepped wherever a wall's
+        Runs whose south edges continue from column to column form one face.
+        They share one height, the face's median wish, clamped per column to
+        what that run can show: per-column heights stepped wherever a wall's
         north edge stepped, and the steps cast slits of shadow across the caps.
         """
-        gate_row = int(door_center[1] // CELL) if door_center is not None else -1
+        gate_row = int(door_center[1]) if door_center is not None else -1
         runs = []
+        by_column = []
         for column in range(self.columns):
             padded = np.concatenate(([False], self.wall[:, column], [False])).astype(np.int8)
             steps = np.diff(padded)
-            centre_x = (column + 0.5) * CELL
-            in_gate = door_center is not None and abs(centre_x - door_center[0]) <= GATE_HALF_WIDTH_PX
-            for start, end in zip(np.where(steps == 1)[0], np.where(steps == -1)[0]):
-                gate = in_gate and start <= gate_row < end
+            in_gate = door_center is not None and abs(column + 0.5 - door_center[0]) <= GATE_HALF_WIDTH_PX
+            here = []
+            for start, end in zip(np.flatnonzero(steps == 1), np.flatnonzero(steps == -1)):
+                gate = bool(in_gate and start <= gate_row < end)
                 tallest = GATE_FACE_PX if gate else FACE_PX
-                depth = (end - start) * CELL
-                wish = min(tallest, max(depth - CAP_MIN_PX, CELL)) // CELL * CELL
-                runs.append([column, int(start), int(end), wish, gate])
-        by_edge = {}
-        for run in runs:
-            by_edge.setdefault((run[2], run[4]), []).append(run)
-        self.gate_runs = {}
-        for (end, gate), group in by_edge.items():
-            group.sort(key=lambda run: run[0])
-            segment = [group[0]]
-            for run in group[1:] + [None]:
-                if run is not None and run[0] == segment[-1][0] + 1:
-                    segment.append(run)
-                    continue
-                shared = int(np.median([item[3] for item in segment])) // CELL * CELL
-                for column, start, run_end, _wish, is_gate in segment:
-                    self._apply_run(column, start, run_end, shared, is_gate)
-                if run is not None:
-                    segment = [run]
+                wish = min(tallest, max(int(end - start) - CAP_MIN_PX, 1))
+                here.append(len(runs))
+                runs.append((column, int(start), int(end), wish, gate))
+            by_column.append(here)
+        chain_of = [-1] * len(runs)
+        chains = []
+        for column in range(self.columns):
+            taken = set()
+            for index in by_column[column]:
+                _column, start, end, _wish, gate = runs[index]
+                link = -1
+                for previous in (by_column[column - 1] if column else ()):
+                    _p, p_start, p_end, _w, p_gate = runs[previous]
+                    chain = chain_of[previous]
+                    if (p_gate == gate and abs(p_end - end) <= EDGE_SLACK_PX and p_start < end
+                            and start < p_end and chain not in taken):
+                        link = chain
+                        break
+                if link < 0:
+                    link = len(chains)
+                    chains.append([])
+                taken.add(link)
+                chains[link].append(index)
+                chain_of[index] = link
+        for chain in chains:
+            shared = int(np.median([runs[index][3] for index in chain]))
+            for index in chain:
+                column, start, end, _wish, gate = runs[index]
+                self._apply_run(column, start, end, shared, gate)
 
     def _apply_run(self, column, start, end, shared_face, gate):
-        depth = (end - start) * CELL
-        if depth <= CELL:
-            # A one-cell sliver cannot show both a cap and a face. It becomes a
-            # low lip that overhangs its cell by one cell.
-            face, lift = 0, CELL
+        depth = end - start
+        if depth <= 1:
+            # A 1 px sliver cannot show both a cap and a face. It becomes a
+            # low lip that overhangs its px by one px.
+            face, lift = 0, 1
         else:
-            face = max(CELL, min(shared_face, depth - CELL))
+            face = max(1, min(shared_face, depth - 1))
             lift = face
-        top = start + face // CELL
+        top = start + face
         self.footprint[top:end, column] = True
         self.height[top:end, column] = lift / self.sin_alpha
         self.face_px[start:end, column] = face
         self.kind[top:end, column] = CLASS_CAP
         if gate:
-            self.gate_face_y = end * CELL
+            self.gate_face_y = end
             self.gate_runs[column] = end
 
-    @staticmethod
-    def _fill_pockets(wall, outside):
-        floor = ~wall & ~outside
-        rows, columns = floor.shape
-        seen = np.zeros_like(floor)
-        filled = wall.copy()
-        count = 0
-        for row, column in zip(*np.nonzero(floor)):
-            if seen[row, column]:
-                continue
-            stack = [(row, column)]
-            seen[row, column] = True
-            component = []
-            touches_edge = False
-            while stack:
-                r, c = stack.pop()
-                component.append((r, c))
-                if r in (0, rows - 1) or c in (0, columns - 1):
-                    touches_edge = True
-                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < rows and 0 <= nc < columns and floor[nr, nc] and not seen[nr, nc]:
-                        seen[nr, nc] = True
-                        stack.append((nr, nc))
-            if len(component) <= POCKET_MAX_CELLS and not touches_edge:
-                for r, c in component:
-                    filled[r, c] = True
-                count += len(component)
-        print("POCKETS filled %d enclosed floor cells" % count)
-        return filled, count
-
-    @staticmethod
-    def _erode(mask, times):
-        inner = mask.copy()
-        for _ in range(times):
-            shrunk = inner.copy()
-            shrunk[1:, :] &= inner[:-1, :]
-            shrunk[:-1, :] &= inner[1:, :]
-            shrunk[:, 1:] &= inner[:, :-1]
-            shrunk[:, :-1] &= inner[:, 1:]
-            shrunk[0, :] = shrunk[-1, :] = False
-            shrunk[:, 0] = shrunk[:, -1] = False
-            inner = shrunk
-        return inner
-
-    @staticmethod
-    def _dilate(mask, times):
-        grown = mask.copy()
-        for _ in range(times):
-            wider = grown.copy()
-            wider[1:, :] |= grown[:-1, :]
-            wider[:-1, :] |= grown[1:, :]
-            wider[:, 1:] |= grown[:, :-1]
-            wider[:, :-1] |= grown[:, 1:]
-            grown = wider
-        return grown
-
     def _galleries(self):
-        inner = self._erode(self.footprint, RIM_CELLS)
+        inner = _erode(self.footprint, RIM_PX)
         # Opening: anything narrower than the minimum width disappears.
-        half = GALLERY_MIN_WIDTH_CELLS // 2
-        inner = self._dilate(self._erode(inner, half), half) & inner
+        half = GALLERY_MIN_WIDTH_PX // 2
+        inner = _dilate(_erode(inner, half), half) & inner
         for column in self.gate_runs:
             inner[:, column] = False
+        # Components are found on the coarse collision grid; the opening above
+        # has already given their edges a smooth shape.
+        coarse, _sizes = _flood_labels(_block_any(inner, SOURCE_CELL))
+        labels = _upsample(coarse, SOURCE_CELL, inner.shape)
+        labels[~inner] = 0
+        areas = np.bincount(labels.ravel())
         keep = np.zeros_like(inner)
-        seen = np.zeros_like(inner)
-        rows, columns = inner.shape
-        for row, column in zip(*np.nonzero(inner)):
-            if seen[row, column]:
+        for label in np.flatnonzero(areas >= GALLERY_MIN_AREA_PX):
+            if label == 0:
                 continue
-            stack = [(row, column)]
-            seen[row, column] = True
-            component = []
-            while stack:
-                r, c = stack.pop()
-                component.append((r, c))
-                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < rows and 0 <= nc < columns and inner[nr, nc] and not seen[nr, nc]:
-                        seen[nr, nc] = True
-                        stack.append((nr, nc))
-            if len(component) >= GALLERY_MIN_CELLS:
-                for r, c in component:
-                    keep[r, c] = True
+            rows, columns = np.nonzero(labels == label)
+            top, left = int(rows.min()), int(columns.min())
+            mask = np.zeros((rows.max() - top + 1, columns.max() - left + 1), dtype=bool)
+            mask[rows - top, columns - left] = True
+            self.galleries.append({"top": top, "left": left, "mask": mask})
+            keep[rows, columns] = True
         self.pit = keep
         self.height[keep] = np.maximum(self.height[keep] - PIT_SCREEN_PX / self.sin_alpha, 2.0)
         self.kind[keep] = CLASS_PIT
+        print("GALLERIES %d" % len(self.galleries))
+
+    def _cap_edges(self):
+        south = np.zeros_like(self.footprint)
+        for depth in range(1, CAP_EDGE_PX + 1):
+            behind = np.zeros_like(self.footprint)
+            behind[:-depth, :] = self.footprint[depth:, :]
+            south |= self.footprint & ~behind
+        solid = self.footprint & ~self.pit
+        rim = solid & ~_erode(solid, CAP_RIM_PX)
+        self.kind[(south | rim) & (self.kind == CLASS_CAP)] = CLASS_CAP_EDGE
+
+
+# Merged quads stay within tiles this size: long thin slivers would make the
+# ray tracer's bounding boxes overlap across whole rows.
+GEOMETRY_TILE_PX = 32
 
 
 def build_geometry(layout, crop, stretch):
-    """Quads per cell: tops, the vertical steps between neighbours, and floor."""
+    """Merged quads: tops as tile-sized rectangles, wall faces as runs of equal steps."""
     row_lo, row_hi, column_lo, column_hi = crop
-    vertices = []
-    lookup = {}
-    faces = []
+    # One px of context around the crop; beyond the map counts as open floor.
+    first_row, first_column = row_lo - 1, column_lo - 1
+    shape = (row_hi - row_lo + 2, column_hi - column_lo + 2)
+    source = (slice(max(first_row, 0), min(row_hi + 1, layout.rows)),
+              slice(max(first_column, 0), min(column_hi + 1, layout.columns)))
+    target = (slice(source[0].start - first_row, source[0].stop - first_row),
+              slice(source[1].start - first_column, source[1].stop - first_column))
+
+    def window(array, fill):
+        out = np.full(shape, fill, dtype=array.dtype)
+        out[target] = array[source]
+        return out
+
+    height = window(layout.height, 0.0)
+    kind = window(layout.kind, CLASS_FLOOR).astype(np.int16)
+    outside = window(layout.outside, False)
+    built = np.zeros(shape, dtype=bool)
+    built[1:-1, 1:-1] = True
+    built &= ~outside
+    pit = kind == CLASS_PIT
+    gate_end = np.full(shape[1], -1, dtype=np.int64)
+    for column, end in layout.gate_runs.items():
+        if 0 <= column - first_column < shape[1]:
+            gate_end[column - first_column] = end
+    column_tiles = (first_column + np.arange(shape[1])) // GEOMETRY_TILE_PX
+    row_tiles = (first_row + np.arange(shape[0])) // GEOMETRY_TILE_PX
+    corners = []
     materials = []
 
-    def vertex(column_edge, row_edge, z):
-        key = (column_edge, row_edge, round(z, 5))
-        found = lookup.get(key)
-        if found is None:
-            found = len(vertices)
-            lookup[key] = found
-            vertices.append((column_edge * CELL * PX, -row_edge * CELL * PX, z * PX))
-        return found
+    def emit(points, material):
+        corners.append(np.stack([np.column_stack(point) for point in points], axis=1))
+        materials.append(np.asarray(material, dtype=np.int32))
 
-    height = layout.height
-    kind = layout.kind
-    gate_runs = layout.gate_runs
-    for row in range(row_lo, row_hi):
-        for column in range(column_lo, column_hi):
-            if layout.outside[row, column]:
+    # Tops: runs along each row, stacked into rectangles while the run below
+    # matches and stays in the same tile band.
+    rectangles = []
+    growing = {}
+    for row in range(1, shape[0] - 1):
+        starts, ends = _runs(built[row], height[row], kind[row], column_tiles)
+        continuing = {}
+        for start, end in zip(starts.tolist(), ends.tolist()):
+            key = (start, end, float(height[row, start]), int(kind[row, start]))
+            rectangle = growing.pop(key, None)
+            if rectangle is not None and row_tiles[rectangle[0]] == row_tiles[row]:
+                rectangle[1] = row + 1
+            else:
+                if rectangle is not None:
+                    rectangles.append(key + tuple(rectangle))
+                rectangle = [row, row + 1]
+            continuing[key] = rectangle
+        rectangles.extend(key + tuple(rectangle) for key, rectangle in growing.items())
+        growing = continuing
+    rectangles.extend(key + tuple(rectangle) for key, rectangle in growing.items())
+    tops = np.array(rectangles, dtype=np.float64)
+    x0, x1 = first_column + tops[:, 0], first_column + tops[:, 1]
+    z = tops[:, 2]
+    y0, y1 = first_row + tops[:, 4], first_row + tops[:, 5]
+    emit(((x0, y1, z), (x1, y1, z), (x1, y0, z), (x0, y0, z)), tops[:, 3].astype(np.int32))
+
+    for upper in range(shape[0] - 1):
+        lower = upper + 1
+        high, low = height[upper], height[lower]
+        side = np.where(pit[upper] | pit[lower], CLASS_PIT_WALL, CLASS_FACE)
+        south = np.where((gate_end == first_row + lower) & (side == CLASS_FACE), CLASS_GATE, side)
+        for facing_south in (True, False):
+            if facing_south:
+                starts, ends = _runs((high > low) & built[upper], high, low, south, column_tiles)
+                bottom, top, material = low, high, south
+            else:
+                starts, ends = _runs((low > high) & built[lower], high, low, side, column_tiles)
+                bottom, top, material = high, low, side
+            if len(starts) == 0:
                 continue
-            z = height[row, column]
-            cell_kind = int(kind[row, column])
-            faces.append((
-                vertex(column, row + 1, z), vertex(column + 1, row + 1, z),
-                vertex(column + 1, row, z), vertex(column, row, z),
-            ))
-            materials.append(cell_kind)
-            if z <= 0.0:
+            x0, x1 = first_column + starts + 0.0, first_column + ends + 0.0
+            y = np.full(len(starts), first_row + lower + 0.0)
+            z0, z1 = bottom[starts], top[starts]
+            if facing_south:
+                emit(((x0, y, z0), (x1, y, z0), (x1, y, z1), (x0, y, z1)), material[starts])
+            else:
+                emit(((x1, y, z0), (x0, y, z0), (x0, y, z1), (x1, y, z1)), material[starts])
+
+    for left in range(shape[1] - 1):
+        right = left + 1
+        high, low = height[:, left], height[:, right]
+        side = np.where(pit[:, left] | pit[:, right], CLASS_PIT_WALL, CLASS_FACE)
+        for facing_east in (True, False):
+            if facing_east:
+                starts, ends = _runs((high > low) & built[:, left], high, low, side, row_tiles)
+                bottom, top = low, high
+            else:
+                starts, ends = _runs((low > high) & built[:, right], high, low, side, row_tiles)
+                bottom, top = high, low
+            if len(starts) == 0:
                 continue
-            for d_row, d_column in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                other_row, other_column = row + d_row, column + d_column
-                if 0 <= other_row < height.shape[0] and 0 <= other_column < height.shape[1]:
-                    other = height[other_row, other_column]
-                    other_kind = int(kind[other_row, other_column])
-                else:
-                    other, other_kind = 0.0, CLASS_FLOOR
-                if other >= z:
-                    continue
-                inner = other_kind == CLASS_PIT or cell_kind == CLASS_PIT
-                side = CLASS_PIT_WALL if inner else CLASS_FACE
-                if d_row == 1 and gate_runs.get(column) == row + 1 and not inner:
-                    side = CLASS_GATE
-                if d_row == 1:  # south neighbour: face looks south, at the camera
-                    quad = (vertex(column, row + 1, other), vertex(column + 1, row + 1, other),
-                            vertex(column + 1, row + 1, z), vertex(column, row + 1, z))
-                elif d_row == -1:
-                    quad = (vertex(column + 1, row, other), vertex(column, row, other),
-                            vertex(column, row, z), vertex(column + 1, row, z))
-                elif d_column == 1:
-                    quad = (vertex(column + 1, row + 1, other), vertex(column + 1, row, other),
-                            vertex(column + 1, row, z), vertex(column + 1, row + 1, z))
-                else:
-                    quad = (vertex(column, row, other), vertex(column, row + 1, other),
-                            vertex(column, row + 1, z), vertex(column, row, z))
-                faces.append(quad)
-                materials.append(side)
+            y0, y1 = first_row + starts + 0.0, first_row + ends + 0.0
+            x = np.full(len(starts), first_column + right + 0.0)
+            z0, z1 = bottom[starts], top[starts]
+            if facing_east:
+                emit(((x, y1, z0), (x, y0, z0), (x, y0, z1), (x, y1, z1)), side[starts])
+            else:
+                emit(((x, y0, z0), (x, y1, z0), (x, y1, z1), (x, y0, z1)), side[starts])
+
+    quads = np.concatenate(corners)
+    points = quads.reshape(-1, 3) * PX
+    points[:, 1] *= -1.0
+    unique, inverse = np.unique(np.round(points, 6), axis=0, return_inverse=True)
+    faces = np.asarray(inverse).reshape(-1, 4)
     mesh = bpy.data.meshes.new("HallPrototype")
-    mesh.from_pydata(vertices, [], faces)
+    mesh.from_pydata(unique.tolist(), [], faces.tolist())
     mesh.update()
-    mesh.polygons.foreach_set("material_index", materials)
+    mesh.polygons.foreach_set("material_index", np.concatenate(materials))
     _project_uvs(mesh)
     obj = bpy.data.objects.new("HallPrototype", mesh)
     obj.scale = (1.0, stretch, 1.0)
     bpy.context.scene.collection.objects.link(obj)
-    print("GEOMETRY vertices=%d faces=%d" % (len(vertices), len(faces)))
+    print("GEOMETRY vertices=%d faces=%d" % (len(unique), len(faces)))
     return obj
 
 
@@ -859,6 +1025,9 @@ def _bevelled(nodes, links, normal, radius):
     return bevel.outputs["Normal"]
 
 
+RUNE_GLOW = (0.45, 0.3, 1.0)
+
+
 def material_floor_textured(textures):
     material = bpy.data.materials.new("FloorFlagstone")
     nodes, links = _nodes(material)
@@ -869,11 +1038,124 @@ def material_floor_textured(textures):
     return material
 
 
-def material_cap_textured(textures):
-    material = bpy.data.materials.new("WallCapStone")
+def add_compass_inlay(inlay, stretch):
+    """The compass rose: its own disc just above the flagstones, so only the
+    disc pays for the rose's shader."""
+    centre_x, centre_y, radius = inlay
+    material = bpy.data.materials.new("CompassInlay")
+    nodes, links = _nodes(material)
+    op = _MathBuilder(nodes, links)
+    coords = nodes.new("ShaderNodeTexCoord")
+    separate = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(coords.outputs["Object"], separate.inputs[0])
+    # Object coordinates of the disc are centred on the rose.
+    parts = _compass_inlay(op, separate.outputs["X"], separate.outputs["Y"], (0.0, 0.0, radius))
+    stone = _noise(nodes, links, coords.outputs["Object"], scale=60.0, detail=6.0)
+    color = _mix(nodes, links, stone, (0.014, 0.012, 0.018), (0.03, 0.026, 0.036))
+    color = _mix(nodes, links, parts["brass"], color, (0.64, 0.46, 0.2))
+    color = _mix(nodes, links, parts["shade"], color, (0.3, 0.19, 0.08))
+    shader = _principled(nodes, links, color, roughness=op("ADD", 0.12, op("MULTIPLY", parts["brass"], 0.18)))
+    links.new(parts["brass"], shader.inputs["Metallic"])
+    shader.inputs["Emission Color"].default_value = RUNE_GLOW + (1.0,)
+    links.new(op("MULTIPLY", parts["glow"], 0.7), shader.inputs["Emission Strength"])
+    shape = bmesh.new()
+    bmesh.ops.create_circle(shape, cap_ends=True, cap_tris=False, segments=96, radius=radius * PX)
+    inlay_object = _prop("CompassInlay", shape, material, world_point(centre_x, centre_y, 0.1, stretch), stretch)
+    # Lies on the floor: the silhouette pass leaves it out like the floor.
+    inlay_object["floor_decal"] = True
+
+
+class _MathBuilder:
+    """Shader math in one call: op("ADD", a, b) with sockets or numbers."""
+
+    def __init__(self, nodes, links):
+        self.nodes = nodes
+        self.links = links
+
+    def __call__(self, operation, a, b=None):
+        node = self.nodes.new("ShaderNodeMath")
+        node.operation = operation
+        for index, value in enumerate((a, b)):
+            if value is None:
+                continue
+            if isinstance(value, (int, float)):
+                node.inputs[index].default_value = float(value)
+            else:
+                self.links.new(value, node.inputs[index])
+        return node.outputs[0]
+
+    def between(self, value, low, high):
+        return self("MULTIPLY", self("GREATER_THAN", value, low), self("LESS_THAN", value, high))
+
+
+def _ramp(nodes, links, value, low, high):
+    """0 below `low`, 1 above `high`, linear between."""
+    node = nodes.new("ShaderNodeMapRange")
+    node.inputs["From Min"].default_value = low
+    node.inputs["From Max"].default_value = high
+    links.new(value, node.inputs["Value"])
+    return node.outputs["Result"]
+
+
+def _compass_inlay(op, x, y, inlay):
+    """A brass compass rose set in a polished disc, ringed by faintly lit runes."""
+    centre_x, centre_y, radius = inlay
+    local_x = op("SUBTRACT", x, centre_x * PX)
+    local_y = op("SUBTRACT", y, -centre_y * PX)
+    square = op("ADD", op("MULTIPLY", local_x, local_x), op("MULTIPLY", local_y, local_y))
+    r = op("DIVIDE", op("SQRT", square), radius * PX)
+    safe = op("ADD", square, 1e-12)
+    cos2 = op("DIVIDE", op("SUBTRACT", op("MULTIPLY", local_x, local_x), op("MULTIPLY", local_y, local_y)), safe)
+    sin2 = op("DIVIDE", op("MULTIPLY", op("MULTIPLY", local_x, local_y), 2.0), safe)
+    turn = op("DIVIDE", op("ADD", op("ARCTAN2", local_y, local_x), math.pi), 2.0 * math.pi)
+    disc = op("LESS_THAN", r, 1.0)
+
+    def ring(at, half_width):
+        return op.between(r, at - half_width, at + half_width)
+
+    rings = op("MAXIMUM", op("MAXIMUM", ring(0.965, 0.022), ring(0.83, 0.012)), ring(0.6, 0.012))
+    ticks = op("MULTIPLY", op.between(r, 0.87, 0.94),
+               op("LESS_THAN", op("FRACT", op("MULTIPLY", turn, 64.0)), 0.16))
+    long_points = op("LESS_THAN", r, op("ADD", 0.07, op("MULTIPLY", 0.5, op("POWER", op("ABSOLUTE", cos2), 12.0))))
+    short_points = op("LESS_THAN", r, op("ADD", 0.05, op("MULTIPLY", 0.3, op("POWER", op("ABSOLUTE", sin2), 12.0))))
+    # Each point is split into a lit and a shaded half, as on a ship's compass.
+    long_shade = op("MULTIPLY", long_points, op("GREATER_THAN", op("MULTIPLY", local_x, local_y), 0.0))
+    short_shade = op("MULTIPLY", op("MULTIPLY", short_points, op("SUBTRACT", 1.0, long_points)),
+                     op("GREATER_THAN", op("ABSOLUTE", local_x), op("ABSOLUTE", local_y)))
+    hub = op("LESS_THAN", r, 0.06)
+    brass = op("MAXIMUM", op("MAXIMUM", rings, ticks), op("MAXIMUM", long_points, short_points))
+    shade = op("MULTIPLY", op("MAXIMUM", long_shade, short_shade), op("SUBTRACT", 1.0, hub))
+    # A ring of runes between the inner rings: stems, bars and slants picked
+    # per glyph slot, so no two neighbours repeat.
+    across = op("DIVIDE", op("SUBTRACT", r, 0.64), 0.15)
+    slot = op("MULTIPLY", turn, 18.0)
+    along = op("FRACT", slot)
+    index = op("FLOOR", slot)
+
+    def coin(seed):
+        return op("FRACT", op("MULTIPLY", op("SINE", op("ADD", op("MULTIPLY", index, 12.9898), seed)), 43758.5453))
+
+    strokes = op("MULTIPLY", op.between(along, 0.45, 0.55), op("GREATER_THAN", coin(1.7), 0.25))
+    for seed, low, high in ((3.1, 0.1, 0.24), (5.3, 0.43, 0.57), (7.9, 0.76, 0.9)):
+        bar = op("MULTIPLY", op.between(across, low, high), op.between(along, 0.22, 0.78))
+        strokes = op("MAXIMUM", strokes, op("MULTIPLY", bar, op("GREATER_THAN", coin(seed), 0.45)))
+    slant = op("LESS_THAN", op("ABSOLUTE", op("SUBTRACT", op("SUBTRACT", along, 0.5),
+                                                op("MULTIPLY", op("SUBTRACT", across, 0.5), 0.7))), 0.06)
+    strokes = op("MAXIMUM", strokes, op("MULTIPLY", slant, op("GREATER_THAN", coin(9.4), 0.55)))
+    runes = op("MULTIPLY", op("MULTIPLY", op.between(across, 0.04, 0.96), op.between(along, 0.12, 0.88)),
+               strokes)
+    glow = op("MAXIMUM", runes, op("MULTIPLY", hub, 1.6))
+    return {"disc": disc, "brass": brass, "shade": shade, "glow": glow}
+
+
+def material_cap_textured(textures, lit=True):
+    material = bpy.data.materials.new("WallCapLip" if lit else "WallTopDark")
     nodes, links = _nodes(material)
     maps = textures.sample(nodes, links, "large_grey_tiles", repeat=0.75)
-    color = _grade(nodes, links, maps["diff"], 0.9, (0.86, 0.83, 0.9))
+    if lit:
+        color = _grade(nodes, links, maps["diff"], 0.95, (0.88, 0.84, 0.86))
+    else:
+        color = _grade(nodes, links, maps["diff"], 0.3, (0.55, 0.5, 0.66), saturation=0.6)
     color = _ao_multiply(nodes, links, color, distance=0.12, floor_value=0.55)
     normal = _bevelled(nodes, links, maps["normal"], 0.02)
     _principled(nodes, links, color, roughness=maps["rough"], normal=normal)
@@ -895,20 +1177,14 @@ def material_face_textured(textures, full_height):
 
 
 def material_pit_textured(textures):
-    """The galleries: dark plate works, brass pipe runs, a few violet crystals."""
-    material = material_pit()
-    nodes = material.node_tree.nodes
-    links = material.node_tree.links
+    """Gallery floors: dark riveted plate under the brass works."""
+    material = bpy.data.materials.new("GalleryFloor")
+    nodes, links = _nodes(material)
     maps = textures.sample(nodes, links, "metal_plate", repeat=0.5)
-    plate = _grade(nodes, links, maps["diff"], 0.35, (0.55, 0.5, 0.62), saturation=0.5)
-    shader = next(node for node in nodes if node.type == "BSDF_PRINCIPLED")
-    base = shader.inputs["Base Color"].links[0].from_socket
-    # Replace the flat works colour under the pipes and crystals with the plate.
-    mix_nodes = [node for node in nodes if node.type == "MIX" and node.data_type == "RGBA"]
-    works_mix = mix_nodes[0]
-    links.new(plate, works_mix.inputs[MIX_COLOR_A])
-    links.new(plate, works_mix.inputs[MIX_COLOR_B])
-    del base
+    plate = _grade(nodes, links, maps["diff"], 0.3, (0.55, 0.5, 0.62), saturation=0.5)
+    plate = _ao_multiply(nodes, links, plate, distance=0.12, floor_value=0.25)
+    shader = _principled(nodes, links, plate, roughness=maps["rough"], normal=maps["normal"])
+    shader.inputs["Metallic"].default_value = 0.6
     return material
 
 
@@ -917,12 +1193,13 @@ def make_materials(door_x, sin_alpha, textures=None):
     gate_height = GATE_FACE_PX / sin_alpha * PX
     if textures is not None and textures.available():
         print("MATERIALS CC0 photo textures from", textures.directory)
-        return [material_floor_textured(textures), material_cap_textured(textures),
+        return [material_floor_textured(textures), material_cap_textured(textures, lit=False),
                 material_face_textured(textures, full_height), material_pit_textured(textures),
-                material_pit_wall(), material_gate(door_x, sin_alpha, gate_height, textures)]
+                material_pit_wall(), material_gate(door_x, sin_alpha, gate_height, textures),
+                material_cap_textured(textures, lit=True)]
     print("MATERIALS procedural")
     return [material_floor(), material_cap(), material_face(full_height), material_pit(),
-            material_pit_wall(), material_gate(door_x, sin_alpha, gate_height)]
+            material_pit_wall(), material_gate(door_x, sin_alpha, gate_height), material_cap()]
 
 
 # ---------------------------------------------------------------- world, lights, camera
@@ -968,156 +1245,601 @@ def add_sun():
 
 
 def _clear_floor(layout):
-    open_floor = ~layout.wall & ~layout.outside
-    clear = open_floor.copy()
-    for _ in range(LAMP_CLEARANCE_CELLS):
-        shrunk = clear.copy()
-        shrunk[1:, :] &= clear[:-1, :]
-        shrunk[:-1, :] &= clear[1:, :]
-        shrunk[:, 1:] &= clear[:, :-1]
-        shrunk[:, :-1] &= clear[:, 1:]
-        clear = shrunk
-    return clear
+    return _erode(~layout.wall & ~layout.outside, LAMP_CLEARANCE_PX)
+
+
+def _nearest(mask, x, y, reach):
+    """Row and column of the `mask` px nearest (x, y), within `reach` px."""
+    row_lo, row_hi = max(int(y) - reach, 0), min(int(y) + reach, mask.shape[0])
+    column_lo, column_hi = max(int(x) - reach, 0), min(int(x) + reach, mask.shape[1])
+    rows, columns = np.nonzero(mask[row_lo:row_hi, column_lo:column_hi])
+    if len(rows) == 0:
+        return None
+    best = int(np.argmin((column_lo + columns + 0.5 - x) ** 2 + (row_lo + rows + 0.5 - y) ** 2))
+    return int(row_lo + rows[best]), int(column_lo + columns[best])
 
 
 def nearest_floor(layout, x, y, clear=None):
-    row, column = int(y // CELL), int(x // CELL)
-    allowed = clear if clear is not None else (~layout.wall & ~layout.outside)
-    best = None
-    for radius in range(0, 40):
-        for d_row in range(-radius, radius + 1):
-            for d_column in range(-radius, radius + 1):
-                if max(abs(d_row), abs(d_column)) != radius:
-                    continue
-                r, c = row + d_row, column + d_column
-                if 0 <= r < layout.rows and 0 <= c < layout.columns:
-                    if allowed[r, c]:
-                        candidate = ((c + 0.5) * CELL, (r + 0.5) * CELL)
-                        distance = (candidate[0] - x) ** 2 + (candidate[1] - y) ** 2
-                        if best is None or distance < best[0]:
-                            best = (distance, candidate)
-        if best is not None:
-            return best[1]
-    return (x, y)
+    found = _nearest(clear if clear is not None else (~layout.wall & ~layout.outside), x, y, 160)
+    return (x, y) if found is None else (found[1] + 0.5, found[0] + 0.5)
 
 
-def add_point_light(name, position, height, color, power, radius, stretch):
+def _south_faces(layout):
+    """Px on the south edge of a full-height wall that look onto open floor."""
+    open_below = np.zeros_like(layout.wall)
+    open_below[:-1, :] = ~layout.wall[1:, :] & ~layout.outside[1:, :]
+    capped = layout.footprint & ((layout.kind == CLASS_CAP) | (layout.kind == CLASS_CAP_EDGE))
+    return capped & open_below & (layout.face_px >= FACE_PX)
+
+
+def _wall_mount(layout, x, y, faces, reach=96):
+    """The nearest full-height south face, in front of which a lantern can hang."""
+    found = _nearest(faces, x, y, reach)
+    if found is None:
+        return None
+    row, column = found
+    return (column + 0.5, row + 1.0, float(layout.height[row, column]))
+
+
+def add_point_light(name, position, height, color, power, radius, stretch, mirrored=True):
     data = bpy.data.lights.new(name, "POINT")
     data.energy = power
     data.color = color
     data.shadow_soft_size = radius
     light = bpy.data.objects.new(name, data)
     light.location = world_point(position[0], position[1], height, stretch)
+    light.visible_glossy = mirrored
     bpy.context.scene.collection.objects.link(light)
+    return light
 
 
-def _lantern_material():
-    material = bpy.data.materials.get("LanternGlass")
-    if material is not None:
-        return material
-    material = bpy.data.materials.new("LanternGlass")
-    nodes, links = _nodes(material)
-    shader = _principled(nodes, links, (1.0, 0.7, 0.35), roughness=0.3,
-                         emission=(1.0, 0.62, 0.28), emission_strength=22.0)
-    del shader
+# ---------------------------------------------------------------- props
+#
+# Props are built in game px and stretched like the hall, so a gear lying on
+# the floor reads round on screen exactly as the floor does. Everything stays
+# inside the walls' on-screen outline: hung on a south face, or sunk in a
+# gallery no taller than its rim.
+
+
+def _prop(name, shape, material, location, stretch):
+    mesh = bpy.data.meshes.new(name)
+    shape.to_mesh(mesh)
+    shape.free()
+    mesh.materials.append(material)
+    obj = bpy.data.objects.new(name, mesh)
+    obj.location = location
+    obj.scale = (1.0, stretch, 1.0)
+    bpy.context.scene.collection.objects.link(obj)
+    return obj
+
+
+def _box(name, centre, size, material, stretch):
+    shape = bmesh.new()
+    bmesh.ops.create_cube(shape, size=1.0,
+                          matrix=Matrix.Diagonal((size[0] * PX, size[1] * PX, size[2] * PX, 1.0)))
+    return _prop(name, shape, material, world_point(*centre, stretch), stretch)
+
+
+def _cylinder(shape, radius, depth, segments=16, matrix=None, tip_radius=None):
+    bmesh.ops.create_cone(shape, cap_ends=True, cap_tris=False, segments=segments,
+                          radius1=radius * PX, radius2=(radius if tip_radius is None else tip_radius) * PX,
+                          depth=depth * PX, matrix=matrix if matrix is not None else Matrix.Identity(4))
+
+
+def _material(name, build):
+    material = bpy.data.materials.get(name)
+    if material is None:
+        material = bpy.data.materials.new(name)
+        nodes, links = _nodes(material)
+        build(nodes, links)
     return material
 
 
 def _iron_material():
-    material = bpy.data.materials.get("LanternIron")
-    if material is not None:
-        return material
-    material = bpy.data.materials.new("LanternIron")
-    nodes, links = _nodes(material)
-    _principled(nodes, links, (0.04, 0.035, 0.035), roughness=0.45, metallic=0.9)
-    return material
+    return _material("LanternIron", lambda nodes, links: _principled(
+        nodes, links, (0.04, 0.035, 0.035), roughness=0.45, metallic=0.9))
 
 
-def _wall_mount(layout, x, y, reach_cells=24):
-    """The nearest south face, in front of which a lantern can hang."""
-    row, column = int(y // CELL), int(x // CELL)
-    best = None
-    for r in range(max(row - reach_cells, 0), min(row + reach_cells, layout.rows - 1)):
-        for c in range(max(column - reach_cells, 0), min(column + reach_cells, layout.columns)):
-            if layout.kind[r, c] != CLASS_CAP or not layout.footprint[r, c]:
-                continue
-            below = r + 1
-            if layout.wall[below, c] or layout.outside[below, c]:
-                continue
-            if layout.face_px[r, c] < FACE_PX:
-                continue
-            distance = (r - row) ** 2 + (c - column) ** 2
-            if best is None or distance < best[0]:
-                best = (distance, r, c)
-    if best is None:
-        return None
-    _distance, r, c = best
-    return ((c + 0.5) * CELL, (r + 1) * CELL, layout.height[r, c])
+def _glow_material(name, color, strength, base):
+    return _material(name, lambda nodes, links: _principled(
+        nodes, links, base, roughness=0.3, emission=color, emission_strength=strength))
+
+
+def _lantern_glass():
+    def build(nodes, links):
+        shader = _principled(nodes, links, (1.0, 0.78, 0.52), roughness=0.22,
+                             emission=(1.0, 0.5, 0.18), emission_strength=1.4)
+        shader.inputs["Transmission Weight"].default_value = 1.0
+        shader.inputs["IOR"].default_value = 1.45
+    return _material("LanternGlass", build)
+
+
+def _metal(name, color, roughness):
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        tarnish = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=45.0, detail=6.0),
+                        0.42, 0.72)
+        base = _mix(nodes, links, tarnish, color, tuple(channel * 0.42 for channel in color))
+        _principled(nodes, links, base, roughness=roughness, metallic=1.0)
+    return _material(name, build)
+
+
+def _gear_material(name, color):
+    """Brass with dark spoke windows, laid out on the gear's own bounding box."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords = nodes.new("ShaderNodeTexCoord")
+        separate = nodes.new("ShaderNodeSeparateXYZ")
+        links.new(coords.outputs["Generated"], separate.inputs[0])
+        gx = op("SUBTRACT", separate.outputs["X"], 0.5)
+        gy = op("SUBTRACT", separate.outputs["Y"], 0.5)
+        radius = op("MULTIPLY", op("SQRT", op("ADD", op("MULTIPLY", gx, gx), op("MULTIPLY", gy, gy))), 2.0)
+        spoke = op("FRACT", op("DIVIDE", op("ADD", op("ARCTAN2", gy, gx), math.pi), 2.0 * math.pi / 5.0))
+        window = op("MULTIPLY", op.between(radius, 0.34, 0.6), op.between(spoke, 0.16, 0.84))
+        tarnish = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=45.0, detail=6.0),
+                        0.42, 0.72)
+        base = _mix(nodes, links, tarnish, color, tuple(channel * 0.45 for channel in color))
+        base = _mix(nodes, links, window, base, (0.012, 0.01, 0.014))
+        shader = _principled(nodes, links, base, roughness=0.38)
+        links.new(op("MULTIPLY", op("SUBTRACT", 1.0, window), 0.8), shader.inputs["Metallic"])
+    return _material(name, build)
 
 
 def add_lantern(name, mount, stretch):
+    """An iron wall lantern: arm, roof, posts, glass and a flame lighting it from inside."""
     x, face_y, wall_height = mount
     z = wall_height * 0.6
-    glass = bpy.data.meshes.new(name + "Glass")
-    import bmesh
+    y = face_y + 4.5
+    iron = _iron_material()
+    _box(name + "Arm", (x, face_y + 2.2, z + 6.2), (1.0, 4.4, 1.0), iron, stretch)
+    _box(name + "Roof", (x, y, z + 4.1), (5.4, 5.4, 1.3), iron, stretch)
+    _box(name + "Base", (x, y, z - 3.9), (4.8, 4.8, 1.0), iron, stretch)
+    for offset in (-2.1, 2.1):
+        _box(name + "Post", (x + offset, y + 2.1, z), (0.6, 0.6, 7.2), iron, stretch)
+    glass = _box(name + "Glass", (x, y, z), (4.0, 4.0, 6.8), _lantern_glass(), stretch)
     shape = bmesh.new()
-    bmesh.ops.create_uvsphere(shape, u_segments=12, v_segments=8, radius=3.4 * PX)
-    shape.to_mesh(glass)
-    shape.free()
-    glass_object = bpy.data.objects.new(name + "Glass", glass)
-    glass_object.location = world_point(x, face_y + 4.0, z, stretch)
-    glass_object.data.materials.append(_lantern_material())
-    bpy.context.scene.collection.objects.link(glass_object)
-    bracket = bpy.data.meshes.new(name + "Bracket")
-    shape = bmesh.new()
-    bmesh.ops.create_cube(shape, size=1.0)
-    shape.to_mesh(bracket)
-    shape.free()
-    bracket_object = bpy.data.objects.new(name + "Bracket", bracket)
-    bracket_object.location = world_point(x, face_y + 1.5, z + 5.0, stretch)
-    bracket_object.scale = (2.0 * PX, 3.0 * PX * stretch, 6.0 * PX)
-    bracket_object.data.materials.append(_iron_material())
-    bpy.context.scene.collection.objects.link(bracket_object)
-    data = bpy.data.lights.new(name, "POINT")
-    data.energy = 3.2
-    data.color = (1.0, 0.62, 0.3)
-    data.shadow_soft_size = 0.04
-    light = bpy.data.objects.new(name, data)
-    light.location = world_point(x, face_y + 10.0, z, stretch)
-    bpy.context.scene.collection.objects.link(light)
+    bmesh.ops.create_uvsphere(shape, u_segments=10, v_segments=8, radius=1.0 * PX,
+                              matrix=Matrix.Diagonal((1.0, 1.0, 1.9, 1.0)))
+    flame = _prop(name + "Flame", shape, _glow_material("LanternFlame", (1.0, 0.8, 0.45), 24.0, (1.0, 0.8, 0.5)),
+                  world_point(x, y, z - 0.8, stretch), stretch)
+    # The light sits inside: glass and flame must not shadow it.
+    glass.visible_shadow = False
+    flame.visible_shadow = False
+    add_point_light(name, (x, y), z, (1.0, 0.6, 0.28), 3.6, 0.012, stretch)
 
 
 def add_lamps(layout, meta, stretch):
     x0, y0, width, height = meta["region"]
     violet = (0.62, 0.42, 1.0)
     clear = _clear_floor(layout)
+    faces = _south_faces(layout)
     lanterns = [
-        ("LampWest", (130.0, 960.0)), ("LampSpawn", (300.0, 1010.0)),
-        ("LampHallway", (540.0, 960.0)), ("LampGallery", (760.0, 1080.0)),
-        ("LampNorth", (860.0, 860.0)),
+        ("LampWest", (92.0, 852.0)), ("LampCentre", (440.0, 828.0)), ("LampNorth", (712.0, 860.0)),
+        ("LampSpawn", (307.0, 1024.0)), ("LampHallway", (566.0, 960.0)), ("LampGallery", (740.0, 1088.0)),
+        ("LampEast", (979.0, 980.0)), ("LampSouth", (874.0, 1236.0)),
     ]
-    used = set()
+    mounts = []
     for name, (x, y) in lanterns:
         if not (x0 - MARGIN_PX <= x <= x0 + width + MARGIN_PX and y0 - MARGIN_PX <= y <= y0 + height + MARGIN_PX):
             continue
-        mount = _wall_mount(layout, x, y)
-        if mount is None or (round(mount[0]), round(mount[1])) in used:
+        mount = _wall_mount(layout, x, y, faces)
+        if mount is None or any(abs(mount[0] - other[0]) < 24 and abs(mount[1] - other[1]) < 24
+                                for other in mounts):
             continue
-        used.add((round(mount[0]), round(mount[1])))
+        mounts.append(mount)
         add_lantern(name, mount, stretch)
         # A dim fill where the old lamp hung keeps the corridor readable.
-        add_point_light(name + "Fill", nearest_floor(layout, x, y, clear), LAMP_HEIGHT_PX,
-                        (1.0, 0.66, 0.36), 1.4, 0.2, stretch)
-    for name, (x, y) in (("GlowCentre", (420.0, 880.0)), ("GlowEast", (980.0, 1010.0))):
-        add_point_light(name, nearest_floor(layout, x, y, clear), LAMP_HEIGHT_PX, violet, 3.0,
-                        0.1, stretch)
+        # A dim pool on the floor below keeps the corridor readable.
+        add_point_light(name + "Fill", nearest_floor(layout, x, y + 24.0, clear), LAMP_HEIGHT_PX,
+                        (1.0, 0.66, 0.36), 1.0, 0.2, stretch, mirrored=False)
+    add_point_light("GlowCentre", nearest_floor(layout, 420.0, 880.0, clear), LAMP_HEIGHT_PX, violet, 1.6,
+                    0.1, stretch, mirrored=False)
     door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
     if door is not None and layout.gate_face_y is not None:
         face_y = layout.gate_face_y
         for side in (-1.0, 1.0):
             add_point_light("GateLantern", (door[0] + side * 30.0, face_y + 14.0), 46.0,
-                            (1.0, 0.64, 0.3), 1.6, 0.04, stretch)
-        add_point_light("GateKeystone", (door[0], face_y + 10.0), 78.0, violet, 1.2, 0.03, stretch)
+                            (1.0, 0.64, 0.3), 1.6, 0.04, stretch, mirrored=False)
+        add_point_light("GateKeystone", (door[0], face_y + 10.0), 78.0, violet, 1.2, 0.03, stretch,
+                        mirrored=False)
+    print("LANTERNS %d" % len(mounts))
+    return mounts
+
+
+def _in_view(meta, left, top, right, bottom):
+    x0, y0, width, height = meta["region"]
+    return not (left > x0 + width + MARGIN_PX or right < x0 - MARGIN_PX
+                or top > y0 + height + MARGIN_PX or bottom < y0 - MARGIN_PX)
+
+
+def add_gallery_machinery(layout, meta, stretch):
+    """Brass works in the sunken galleries: pipe runs, gears and shadow crystals."""
+    rng = np.random.default_rng(SEED)
+    brass = _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3)
+    iron = _iron_material()
+    gears = (_gear_material("GearBrass", (0.64, 0.46, 0.2)), _gear_material("GearCopper", (0.6, 0.31, 0.17)))
+    crystal = _glow_material("ShadowCrystal", (0.5, 0.26, 1.0), 0.7, (0.16, 0.05, 0.36))
+    room = PIT_SCREEN_PX / layout.sin_alpha - 1.5
+    counts = {"pipes": 0, "gears": 0, "crystals": 0}
+    for number, gallery in enumerate(layout.galleries):
+        top, left, mask = gallery["top"], gallery["left"], gallery["mask"]
+        rows, columns = mask.shape
+        if not _in_view(meta, left, top, left + columns, top + rows):
+            continue
+        floor = layout.height[top:top + rows, left:left + columns]
+        clearance = _clearance(mask, 24)
+        used = np.zeros_like(mask)
+        horizontal = columns >= rows
+        lanes = clearance if horizontal else clearance.T
+        lanes_used = used if horizontal else used.T
+        for pipe in range(2):
+            best = None
+            for lane in range(lanes.shape[0]):
+                if lanes_used[max(lane - 6, 0):lane + 7].any():
+                    continue
+                starts, ends = _runs(lanes[lane] >= 5)
+                if len(starts) == 0:
+                    continue
+                longest = int(np.argmax(ends - starts))
+                length = int(ends[longest] - starts[longest])
+                if best is None or length > best[0]:
+                    best = (length, lane, int(starts[longest]), int(ends[longest]))
+            if best is None or best[0] < 24:
+                break
+            length, lane, start, end = best
+            lanes_used[max(lane - 6, 0):lane + 7, start:end] = True
+            if horizontal:
+                a = (left + start + 1.0, top + lane + 0.5)
+                b = (left + end - 1.0, top + lane + 0.5)
+                base = float(floor[lane, start:end].min())
+            else:
+                a = (left + lane + 0.5, top + start + 1.0)
+                b = (left + lane + 0.5, top + end - 1.0)
+                base = float(floor[start:end, lane].min())
+            add_pipe("Pipe%d_%d" % (number, pipe), a, b, base + 2.6, 2.4, brass, iron, stretch)
+            counts["pipes"] += 1
+        for gear in range(4):
+            free = np.where(used, 0, clearance)
+            row, column = np.unravel_index(int(np.argmax(free)), free.shape)
+            radius = min((free[row, column] - 1) * 0.9 - 1.5, 15.0)
+            if radius < 5.0:
+                break
+            radius *= rng.uniform(0.78, 1.0)
+            add_gear("Gear%d_%d" % (number, gear), left + column + 0.5, top + row + 0.5,
+                     float(floor[row, column]) + 0.6, radius, 2.4, rng.uniform(0.0, 2.0 * math.pi),
+                     gears[int(rng.random() < 0.35)], stretch)
+            yy, xx = np.ogrid[:rows, :columns]
+            used |= (yy - row) ** 2 + (xx - column) ** 2 <= (radius + 3.0) ** 2
+            counts["gears"] += 1
+        free = np.where(used, 0, clearance)
+        row, column = np.unravel_index(int(np.argmax(free)), free.shape)
+        if free[row, column] >= 6:
+            add_crystals("Crystal%d" % number, left + column + 0.5, top + row + 0.5,
+                         float(floor[row, column]), room, crystal, rng, stretch)
+            counts["crystals"] += 1
+    print("MACHINERY pipes=%(pipes)d gears=%(gears)d crystal clusters=%(crystals)d" % counts)
+
+
+def add_pipe(name, start, end, z, radius, material, flange_material, stretch):
+    """A pipe lying on the gallery floor between two plan points, flanged along its run."""
+    (x0, y0), (x1, y1) = start, end
+    along_x = abs(x1 - x0) >= abs(y1 - y0)
+    length = abs(x1 - x0) if along_x else abs(y1 - y0)
+    turn = Matrix.Rotation(math.radians(90.0), 4, "Y" if along_x else "X")
+    shape = bmesh.new()
+    _cylinder(shape, radius, length, matrix=turn)
+    _prop(name, shape, material, world_point((x0 + x1) / 2.0, (y0 + y1) / 2.0, z, stretch), stretch)
+    flanges = bmesh.new()
+    count = max(int(length // 18.0), 1)
+    for index in range(count + 1):
+        offset = -length / 2.0 + length * index / count
+        shift = Vector((offset * PX, 0.0, 0.0)) if along_x else Vector((0.0, -offset * PX, 0.0))
+        _cylinder(flanges, radius * 1.4, 1.8, matrix=Matrix.Translation(shift) @ turn)
+    _prop(name + "Flanges", flanges, flange_material,
+          world_point((x0 + x1) / 2.0, (y0 + y1) / 2.0, z, stretch), stretch)
+
+
+def add_gear(name, x, y, z, radius, thickness, angle, material, stretch):
+    """A flat cog: toothed disc and raised hub, its bottom resting at z."""
+    shape = bmesh.new()
+    body = radius * 0.82
+    teeth = max(8, int(radius * 0.9))
+    _cylinder(shape, body, thickness, segments=max(24, teeth * 2))
+    tooth_width = 2.0 * math.pi * body / teeth * 0.5
+    for index in range(teeth):
+        turn = angle + 2.0 * math.pi * index / teeth
+        bmesh.ops.create_cube(shape, size=1.0, matrix=(
+            Matrix.Rotation(turn, 4, "Z") @ Matrix.Translation(((body + radius * 0.09) * PX, 0.0, 0.0))
+            @ Matrix.Diagonal((radius * 0.2 * PX, tooth_width * PX, thickness * 0.94 * PX, 1.0))))
+    _cylinder(shape, radius * 0.22, thickness * 1.8, segments=16)
+    _prop(name, shape, material, world_point(x, y, z + thickness / 2.0, stretch), stretch)
+
+
+def add_crystals(name, x, y, z, room, material, rng, stretch):
+    """A cluster of violet shards, lit from within, none taller than `room`."""
+    shape = bmesh.new()
+    for _shard in range(int(rng.integers(4, 7))):
+        height = rng.uniform(0.45, 1.0) * room
+        radius = rng.uniform(1.0, 1.9)
+        tilt = rng.uniform(0.0, 0.45)
+        heading = rng.uniform(0.0, 2.0 * math.pi)
+        spot = Vector((rng.uniform(-2.5, 2.5) * PX, rng.uniform(-2.5, 2.5) * PX, 0.0))
+        lean = Matrix.Rotation(heading, 4, "Z") @ Matrix.Rotation(tilt, 4, "X")
+        _cylinder(shape, radius, height, segments=6, tip_radius=0.0,
+                  matrix=Matrix.Translation(spot) @ lean @ Matrix.Translation((0.0, 0.0, height / 2.0 * PX)))
+    shards = _prop(name, shape, material, world_point(x, y, z, stretch), stretch)
+    shards.visible_shadow = False
+    add_point_light(name + "Light", (x, y), z + room + 12.0, (0.62, 0.4, 1.0), 0.8, 0.03, stretch)
+
+
+def material_banner(name, cloth, aspect):
+    """A hanging banner: swallowtail hem, gold trim and the castle's gear-and-eye sigil."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords = nodes.new("ShaderNodeTexCoord")
+        separate = nodes.new("ShaderNodeSeparateXYZ")
+        links.new(coords.outputs["UV"], separate.inputs[0])
+        u, v = separate.outputs["X"], separate.outputs["Y"]
+        edge = op("ABSOLUTE", op("SUBTRACT", u, 0.5))
+        hem = op("SUBTRACT", v, op("MULTIPLY", op("SUBTRACT", 0.5, edge), 0.34))
+        trim = op("MAXIMUM", op("MAXIMUM", op("GREATER_THAN", edge, 0.41), op("LESS_THAN", hem, 0.05)),
+                  op("GREATER_THAN", v, 0.94))
+        # The sigil is drawn in screen proportions: `aspect` is the banner's
+        # on-screen height over its width.
+        sx = op("DIVIDE", op("SUBTRACT", u, 0.5), 0.4)
+        sy = op("DIVIDE", op("MULTIPLY", op("SUBTRACT", v, 0.6), aspect), 0.4)
+        radius = op("SQRT", op("ADD", op("MULTIPLY", sx, sx), op("MULTIPLY", sy, sy)))
+        teeth = op("GREATER_THAN", op("COSINE", op("MULTIPLY", op("ARCTAN2", sy, sx), 8.0)), 0.2)
+        gear = op("MAXIMUM", op.between(radius, 0.72, 0.9), op("MULTIPLY", op.between(radius, 0.9, 1.06), teeth))
+
+        def almond(half_width, half_height):
+            bulge = op("SUBTRACT", 1.0, op("MULTIPLY", op("DIVIDE", sx, half_width), op("DIVIDE", sx, half_width)))
+            return op("MULTIPLY", op("LESS_THAN", op("ABSOLUTE", sy), op("MULTIPLY", bulge, half_height)),
+                      op("LESS_THAN", op("ABSOLUTE", sx), half_width))
+
+        eye = op("SUBTRACT", almond(0.58, 0.36), almond(0.44, 0.22))
+        pupil = op("LESS_THAN", radius, 0.15)
+        gold = op("MAXIMUM", op("MAXIMUM", trim, gear), op("MAXIMUM", eye, 0.0))
+        folds = op("ADD", 0.72, op("MULTIPLY", 0.28, op("SINE", op("MULTIPLY", u, 2.0 * math.pi * 2.5))))
+        weave = _noise(nodes, links, coords.outputs["UV"], scale=70.0, detail=2.0)
+        fabric = _mix(nodes, links, weave, cloth, tuple(channel * 0.6 for channel in cloth))
+        color = _mix(nodes, links, op("SUBTRACT", 1.0, folds), fabric, (0.0, 0.0, 0.0))
+        color = _mix(nodes, links, gold, color, (0.66, 0.48, 0.2))
+        shader = _principled(nodes, links, color, roughness=op("SUBTRACT", 0.88, op("MULTIPLY", gold, 0.55)))
+        links.new(gold, shader.inputs["Metallic"])
+        shader.inputs["Emission Color"].default_value = (0.62, 0.38, 1.0, 1.0)
+        links.new(op("MULTIPLY", pupil, 5.0), shader.inputs["Emission Strength"])
+        output = next(node for node in nodes if node.type == "OUTPUT_MATERIAL")
+        transparent = nodes.new("ShaderNodeBsdfTransparent")
+        cut = nodes.new("ShaderNodeMixShader")
+        links.new(op("GREATER_THAN", hem, 0.0), cut.inputs["Fac"])
+        links.new(transparent.outputs["BSDF"], cut.inputs[1])
+        links.new(shader.outputs["BSDF"], cut.inputs[2])
+        links.new(cut.outputs["Shader"], output.inputs["Surface"])
+    return _material(name, build)
+
+
+BANNER_WIDTH_PX = 16.0
+BANNER_DROP_PX = 30.0
+BANNER_MIN_FACE_PX = 40
+BANNER_CLOTHS = (("BannerViolet", (0.2, 0.06, 0.34)), ("BannerTeal", (0.03, 0.15, 0.19)))
+
+
+def add_banner(name, x, face_y, wall_height, sin_alpha, stretch, material):
+    top = wall_height * 0.84
+    bottom = top - BANNER_DROP_PX / sin_alpha
+    y = face_y + 0.8
+    half = BANNER_WIDTH_PX / 2.0
+    corners = [(x - half, y, bottom), (x + half, y, bottom), (x + half, y, top), (x - half, y, top)]
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata([tuple(world_point(*corner, stretch)) for corner in corners], [], [(0, 1, 2, 3)])
+    layer = mesh.uv_layers.new(name="UVMap")
+    for loop, uv in zip(layer.data, ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))):
+        loop.uv = uv
+    mesh.materials.append(material)
+    bpy.context.scene.collection.objects.link(bpy.data.objects.new(name, mesh))
+    _box(name + "Rod", (x, face_y + 1.2, top + 0.8), (BANNER_WIDTH_PX + 3.0, 1.2, 1.2),
+         _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3), stretch)
+
+
+def add_banners(layout, meta, stretch, mounts):
+    """Banners on the long south faces, clear of lanterns, the gate and each other."""
+    x0, y0, width, height = meta["region"]
+    faces = _south_faces(layout)
+    door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
+    segments = []
+    for row in range(y0, min(y0 + height, layout.rows)):
+        starts, ends = _runs(faces[row, x0:x0 + width])
+        for start, end in zip(starts, ends):
+            if end - start >= BANNER_MIN_FACE_PX:
+                segments.append((int(end - start), row, x0 + int(start), x0 + int(end)))
+    segments.sort(reverse=True)
+    aspect = BANNER_DROP_PX / BANNER_WIDTH_PX
+    placed = []
+    margin = BANNER_WIDTH_PX / 2.0 + 4.0
+    for length, row, start, end in segments:
+        face_y = row + 1.0
+        wanted = 2 if length >= 160 else 1
+        centre = (start + end) / 2.0
+        spots = sorted(np.arange(start + margin, end - margin + 0.1, 4.0), key=lambda spot: abs(spot - centre))
+        for x in spots:
+            if wanted == 0:
+                break
+            if door is not None and abs(x - door[0]) < 90 and abs(face_y - door[1]) < 60:
+                continue
+            if any(abs(x - mount[0]) < 34 and abs(face_y - mount[1]) < 30 for mount in mounts):
+                continue
+            if any(abs(x - other[0]) < 80 and abs(face_y - other[1]) < 40 for other in placed):
+                continue
+            wanted -= 1
+            cloth_name, cloth = BANNER_CLOTHS[len(placed) % len(BANNER_CLOTHS)]
+            add_banner("Banner%d" % len(placed), x, face_y, float(layout.height[row, int(x)]),
+                       layout.sin_alpha, stretch, material_banner(cloth_name, cloth, aspect))
+            placed.append((x, face_y))
+    print("BANNERS %d" % len(placed))
+
+
+def _decal(name, corners_px, uv_px, material, stretch, z=0.15):
+    """A flat floor decal; UVs in game px so its pattern keeps a fixed scale."""
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata([tuple(world_point(x, y, z, stretch)) for x, y in corners_px], [], [(0, 1, 2, 3)])
+    layer = mesh.uv_layers.new(name="UVMap")
+    for loop, uv in zip(layer.data, uv_px):
+        loop.uv = uv
+    mesh.materials.append(material)
+    obj = bpy.data.objects.new(name, mesh)
+    obj["floor_decal"] = True
+    bpy.context.scene.collection.objects.link(obj)
+    return obj
+
+
+def _uv_parts(nodes, links):
+    coords = nodes.new("ShaderNodeTexCoord")
+    separate = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(coords.outputs["UV"], separate.inputs[0])
+    return coords, separate.outputs["X"], separate.outputs["Y"]
+
+
+def material_rug(name, length, width):
+    """A worn runner: fringed ends, ochre border, diamond field, a trodden centre."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        to_end = op("MINIMUM", u, op("SUBTRACT", length, u))
+        to_side = op("MINIMUM", v, op("SUBTRACT", width, v))
+        fringe = op("LESS_THAN", to_end, 3.0)
+        threads = op("LESS_THAN", op("FRACT", op("DIVIDE", v, 1.6)), 0.55)
+        border = op("MAXIMUM", op("LESS_THAN", to_side, 3.5), op("LESS_THAN", to_end, 6.5))
+        pinstripe = op("MAXIMUM", op.between(to_side, 4.6, 5.6),
+                       op("MULTIPLY", op.between(to_end, 7.6, 8.6), op("GREATER_THAN", to_side, 4.6)))
+        diamond = op("ADD", op("ABSOLUTE", op("SUBTRACT", op("FRACT", op("DIVIDE", u, 9.0)), 0.5)),
+                     op("ABSOLUTE", op("SUBTRACT", op("FRACT", op("DIVIDE", op("SUBTRACT", v, width / 2.0), 9.0)), 0.5)))
+        motif = op("LESS_THAN", diamond, 0.2)
+        weave = _noise(nodes, links, coords.outputs["UV"], scale=0.9, detail=6.0)
+        wear = _ramp(nodes, links, op("ADD", weave, op("MULTIPLY", op("SUBTRACT", 0.5, op("DIVIDE", op("ABSOLUTE",
+                     op("SUBTRACT", v, width / 2.0)), width)), 0.6)), 0.55, 0.9)
+        color = _mix(nodes, links, motif, (0.13, 0.022, 0.035), (0.21, 0.05, 0.045))
+        color = _mix(nodes, links, op("MAXIMUM", border, pinstripe), color, (0.27, 0.18, 0.07))
+        color = _mix(nodes, links, op("MULTIPLY", wear, 0.75), color, (0.11, 0.075, 0.07))
+        color = _mix(nodes, links, fringe, color, (0.3, 0.26, 0.2))
+        color = _mix(nodes, links, 1.0, color, op("ADD", 0.7, op("MULTIPLY", weave, 0.5)), blend="MULTIPLY")
+        bump = _bump(nodes, links, weave, strength=0.25, distance=0.002)
+        shader = _principled(nodes, links, color, roughness=0.95, normal=bump)
+        output = next(node for node in nodes if node.type == "OUTPUT_MATERIAL")
+        cut = nodes.new("ShaderNodeMixShader")
+        links.new(op("SUBTRACT", 1.0, op("MULTIPLY", fringe, op("SUBTRACT", 1.0, threads))), cut.inputs["Fac"])
+        links.new(nodes.new("ShaderNodeBsdfTransparent").outputs["BSDF"], cut.inputs[1])
+        links.new(shader.outputs["BSDF"], cut.inputs[2])
+        links.new(cut.outputs["Shader"], output.inputs["Surface"])
+    return _material(name, build)
+
+
+def add_runner_rug(layout, start, end, stretch, widest=20, margin=5, inset=10):
+    """A runner down a straight leg of the opening route, as wide as the corridor allows."""
+    (x0, y0), (x1, y1) = start, end
+    along_x = abs(x1 - x0) >= abs(y1 - y0)
+    low, high = (min(x0, x1), max(x0, x1)) if along_x else (min(y0, y1), max(y0, y1))
+    low, high = low + inset, high - inset
+    centre = y0 if along_x else x0
+    open_floor = ~layout.wall & ~layout.outside
+    half = 0
+    for candidate in range(widest, 7, -1):
+        across = slice(int(centre - candidate - margin), int(centre + candidate + margin))
+        span = slice(int(low), int(high))
+        window = open_floor[across, span] if along_x else open_floor[span, across]
+        if window.all():
+            half = candidate
+            break
+    if not half:
+        print("RUG skipped: corridor too narrow")
+        return
+    length = high - low
+    if along_x:
+        corners = [(low, centre + half), (high, centre + half), (high, centre - half), (low, centre - half)]
+    else:
+        corners = [(centre - half, high), (centre - half, low), (centre + half, low), (centre + half, high)]
+    uvs = [(0.0, 0.0), (length, 0.0), (length, 2.0 * half), (0.0, 2.0 * half)]
+    _decal("RunnerRug", corners, uvs, material_rug("RunnerRug", length, 2.0 * half), stretch)
+    print("RUG %.0fx%d from (%.0f, %.0f) to (%.0f, %.0f)" % (length, 2 * half, x0, y0, x1, y1))
+
+
+def material_grate(name, length, width):
+    """An iron floor grate; violet light rises through the gaps from below."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        to_edge = op("MINIMUM", op("MINIMUM", u, op("SUBTRACT", length, u)),
+                     op("MINIMUM", v, op("SUBTRACT", width, v)))
+        frame = op("LESS_THAN", to_edge, 2.0)
+        bars = op("LESS_THAN", op("FRACT", op("DIVIDE", u, 3.0)), 0.6)
+        iron = op("MAXIMUM", frame, bars)
+        depth = op("SUBTRACT", 1.0, op("DIVIDE", op("ABSOLUTE", op("SUBTRACT", v, width / 2.0)), width / 2.0))
+        color = _mix(nodes, links, iron, (0.02, 0.012, 0.035), (0.05, 0.045, 0.05))
+        shader = _principled(nodes, links, color, roughness=op("ADD", 0.35, op("MULTIPLY", iron, 0.2)))
+        links.new(op("MULTIPLY", iron, 0.85), shader.inputs["Metallic"])
+        shader.inputs["Emission Color"].default_value = (0.55, 0.3, 1.0, 1.0)
+        links.new(op("MULTIPLY", op("SUBTRACT", 1.0, iron), op("MULTIPLY", depth, 0.8)),
+                  shader.inputs["Emission Strength"])
+    return _material(name, build)
+
+
+def quiet_spots(layout, meta, count, room_px, avoid):
+    """Open floor well off the opening route and away from `avoid` points."""
+    x0, y0, width, height = meta["region"]
+    window = (slice(y0, y0 + height), slice(x0, x0 + width))
+    room = _clearance(~layout.wall[window] & ~layout.outside[window], room_px + 2)
+    rows, columns = np.nonzero(room >= room_px)
+    points = np.column_stack((x0 + columns + 0.5, y0 + rows + 0.5))
+    route = np.asarray(meta.get("opening_route") or [], dtype=np.float64)
+    off_route = np.full(len(points), 1e9)
+    for a, b in zip(route[:-1], route[1:]):
+        segment = b - a
+        t = np.clip(((points - a) @ segment) / max(segment @ segment, 1e-9), 0.0, 1.0)
+        off_route = np.minimum(off_route, np.hypot(*(points - (a + t[:, None] * segment)).T))
+    chosen = []
+    for _ in range(count):
+        clear_of = np.full(len(points), 400.0)
+        for other in list(avoid) + chosen:
+            clear_of = np.minimum(clear_of, np.hypot(points[:, 0] - other[0], points[:, 1] - other[1]))
+        score = np.minimum(off_route, 120.0) + 0.5 * np.minimum(clear_of, 160.0)
+        score[clear_of < 120.0] = -1.0
+        if len(score) == 0 or score.max() <= 0.0:
+            break
+        chosen.append(tuple(points[int(np.argmax(score))]))
+    return chosen
+
+
+def add_floor_grates(layout, meta, stretch, avoid, count=2, length=24.0, width=14.0):
+    for index, (x, y) in enumerate(quiet_spots(layout, meta, count, int(length / 2) + 6, avoid)):
+        corners = [(x - length / 2, y + width / 2), (x + length / 2, y + width / 2),
+                   (x + length / 2, y - width / 2), (x - length / 2, y - width / 2)]
+        uvs = [(0.0, 0.0), (length, 0.0), (length, width), (0.0, width)]
+        _decal("FloorGrate%d" % index, corners, uvs, material_grate("FloorGrate", length, width), stretch)
+        add_point_light("FloorGrate%dGlow" % index, (x, y), 4.0, (0.6, 0.38, 1.0), 0.35, 0.06, stretch,
+                        mirrored=False)
+        print("GRATE at (%.0f, %.0f)" % (x, y))
+
+
+def find_inlay_spot(layout, near, reach=150, largest=46.0, smallest=22.0):
+    """Open floor near the arrival with room for the compass inlay."""
+    if not near:
+        return None
+    x, y = near
+    margin = int(largest * 2)
+    row_lo, row_hi = max(int(y) - reach - margin, 0), min(int(y) + reach + margin, layout.rows)
+    column_lo, column_hi = max(int(x) - reach - margin, 0), min(int(x) + reach + margin, layout.columns)
+    window = (slice(row_lo, row_hi), slice(column_lo, column_hi))
+    room = _clearance(~layout.wall[window] & ~layout.outside[window], int(largest) + 12)
+    rows, columns = np.mgrid[row_lo:row_hi, column_lo:column_hi]
+    distance = np.hypot(columns + 0.5 - x, rows + 0.5 - y)
+    radius = np.minimum((room - 1) * 0.9 - 4.0, largest)
+    score = np.where(distance > reach, -1e9, radius - 0.12 * distance)
+    best = np.unravel_index(int(np.argmax(score)), score.shape)
+    if radius[best] < smallest:
+        return None
+    spot = (column_lo + best[1] + 0.5, row_lo + best[0] + 0.5, float(radius[best]))
+    print("INLAY at (%.0f, %.0f) radius %.0f" % spot)
+    return spot
 
 
 def add_camera(meta, alpha, stretch, scale):
@@ -1211,25 +1933,28 @@ def compare_silhouette(path, layout, meta, scale):
     seen = pixels.reshape(height, width, 4)[::-1, :, 3] > 0.5
     x0, y0, region_w, region_h = meta["region"]
     factor = int(round(scale))
-    window = (slice(y0 // CELL, (y0 + region_h) // CELL), slice(x0 // CELL, (x0 + region_w) // CELL))
-    block = np.ones((CELL * factor, CELL * factor), dtype=bool)
-    expected = np.kron(layout.collision[window], block)
-    pockets = np.kron(layout.wall[window] & ~layout.collision[window], block)
-    union = np.logical_or(seen, expected).sum()
-    overlap = np.logical_and(seen, expected).sum()
-    extra_mask = np.logical_and(seen, ~expected)
-    extra = extra_mask.sum()
-    extra_pockets = np.logical_and(extra_mask, pockets).sum()
-    missing = np.logical_and(~seen, expected).sum()
-    print("SILHOUETTE vs collision: iou=%.5f extra_px=%d (unreachable pockets %d, lips %d) "
-          "missing_px=%d (render %dx%d, %d px per game px)" % (
-              overlap / max(union, 1), extra, extra_pockets, extra - extra_pockets, missing,
-              width, height, factor))
+    window = (slice(y0, y0 + region_h), slice(x0, x0 + region_w))
+    block = np.ones((factor, factor), dtype=bool)
+    target = np.kron(layout.wall[window], block)
+    collision = np.kron(layout.collision[window], block)
+    pockets = np.kron(layout.pockets[window], block)
+    iou = np.logical_and(seen, target).sum() / max(np.logical_or(seen, target).sum(), 1)
+    extra = seen & ~collision
+    missing = collision & ~seen
+    reach = (SMOOTH_TOLERANCE_PX + 1) * factor
+    far_extra = extra & ~pockets & ~_dilate(collision, reach)
+    far_missing = missing & ~_dilate(seen, reach)
+    print("SILHOUETTE vs smoothed outline iou=%.5f; vs collision extra_px=%d (pockets %d) missing_px=%d; "
+          "beyond %d game px: extra=%d missing=%d (render %dx%d, %d px per game px)" % (
+              iou, extra.sum(), np.logical_and(extra, pockets).sum(), missing.sum(),
+              SMOOTH_TOLERANCE_PX + 1, far_extra.sum(), far_missing.sum(), width, height, factor))
     diff = np.zeros((height, width, 4), dtype=np.float32)
     diff[..., 3] = 1.0
-    diff[np.logical_and(seen, expected)] = (0.35, 0.35, 0.40, 1.0)
-    diff[np.logical_and(seen, ~expected)] = (1.0, 0.2, 0.2, 1.0)
-    diff[np.logical_and(~seen, expected)] = (0.2, 0.6, 1.0, 1.0)
+    diff[np.logical_and(seen, collision)] = (0.35, 0.35, 0.40, 1.0)
+    diff[extra] = (0.55, 0.16, 0.16, 1.0)
+    diff[missing] = (0.16, 0.36, 0.6, 1.0)
+    diff[far_extra] = (1.0, 0.2, 0.2, 1.0)
+    diff[far_missing] = (0.2, 0.6, 1.0, 1.0)
     out = bpy.data.images.new("SilhouetteDiff", width, height, alpha=True)
     out.pixels.foreach_set(diff[::-1].ravel())
     out.filepath_raw = os.path.abspath(path.replace(".png", "-diff.png"))
@@ -1244,28 +1969,41 @@ def main():
         meta = json.load(handle)
     alpha = math.radians(ALPHA_DEGREES)
     stretch = 1.0 / math.cos(alpha)
-    wall_full = load_mask(os.path.join(data, "wall_mask.png"))
-    outside_full = load_mask(os.path.join(data, "outside_mask.png"))
-    half = CELL // 2
-    wall = wall_full[half::CELL, half::CELL]
-    outside = outside_full[half::CELL, half::CELL]
+    collision = load_mask(os.path.join(data, "wall_mask.png"))
+    outside = load_mask(os.path.join(data, "outside_mask.png"))
     door = meta.get("doors", {}).get("WAKE_ROOM_DOOR_FOCUS_POSITION")
-    layout = Layout(wall, outside, door, math.sin(alpha))
+    started = time.time()
+    layout = Layout(collision, outside, door, math.sin(alpha))
+    inlay = find_inlay_spot(layout, meta.get("spawn"))
+    print("LAYOUT built in %.1fs" % (time.time() - started))
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     x0, y0, width, height = meta["region"]
     crop = (
-        max((y0 - MARGIN_PX) // CELL, 0), min((y0 + height + MARGIN_PX) // CELL, layout.rows),
-        max((x0 - MARGIN_PX) // CELL, 0), min((x0 + width + MARGIN_PX) // CELL, layout.columns),
+        max(y0 - MARGIN_PX, 0), min(y0 + height + MARGIN_PX, layout.rows),
+        max(x0 - MARGIN_PX, 0), min(x0 + width + MARGIN_PX, layout.columns),
     )
     hall = build_geometry(layout, crop, stretch)
     door_x = (door[0] if door is not None else 0.0) * PX
     textures = TextureSet(options["textures"] or os.path.join(data, "textures"))
     for material in make_materials(door_x, math.sin(alpha), textures):
         hall.data.materials.append(material)
+    if inlay is not None:
+        add_compass_inlay(inlay, stretch)
+    route = meta.get("opening_route") or []
+    if len(route) >= 4:
+        add_runner_rug(layout, route[1], route[2], stretch)
     setup_world()
     add_sun()
-    add_lamps(layout, meta, stretch)
+    mounts = add_lamps(layout, meta, stretch)
+    add_gallery_machinery(layout, meta, stretch)
+    add_banners(layout, meta, stretch, mounts)
+    add_floor_grates(layout, meta, stretch, [mount[:2] for mount in mounts] + [tuple(meta.get("spawn", (0, 0)))])
+    # Every glow here is decorative: the lanterns and crystals carry point
+    # lights. Sampling glowing surfaces as lights would make each floor
+    # triangle a light, since the runes drive the floor's emission.
+    for material in bpy.data.materials:
+        material.cycles.emission_sampling = "NONE"
     add_camera(meta, alpha, stretch, options["scale"])
     setup_cycles(options["samples"], options["preview"])
     if options["save_blend"]:
@@ -1273,14 +2011,16 @@ def main():
     render_to(options["out"])
     if options["silhouette"]:
         # Floor quads would fill the outline; hide them by giving the silhouette
-        # pass a walls-only copy.
+        # pass a walls-only copy. Props stay: they must fit inside the outline.
         walls_only = hall.copy()
         walls_only.data = hall.data.copy()
         walls_only.name = "HallWallsOnly"
         bpy.context.scene.collection.objects.link(walls_only)
         hall.hide_render = True
+        for obj in bpy.context.scene.objects:
+            if obj.get("floor_decal"):
+                obj.hide_render = True
         mesh = walls_only.data
-        import bmesh
         edit = bmesh.new()
         edit.from_mesh(mesh)
         doomed = [face for face in edit.faces if face.material_index == CLASS_FLOOR]

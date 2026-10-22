@@ -263,15 +263,22 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): built, decision pending.** See stage UX-20261021-39 and `docs/evidence/2026-10-21-blender-hall-prototype/`.
+1. **Blender Hall prototype (HD): second art pass built, user review pending.** See stages UX-20261021-39 and -40 and `docs/evidence/2026-10-21-blender-hall-prototype/` (`21-region-iteration.png` compares the two passes).
    - Pipeline:
      - `tools/blender/export_hall_region.gd` (headless Godot) exports the real collision as `wall_mask.png`, plus `outside_mask.png` and `region.json`.
      - `tools/blender/hall_prototype.py` (Blender 5.2 bpy, Cycles Metal) builds walls whose cap plus south face exactly covers the collision. It uses a 40° orthographic camera with a 1/cos Y pre-stretch, so the floor maps 1:1 onto game coordinates.
+       - Geometry is per game px from a smoothed copy of the collision, which stays within 2 px of it.
+       - Props (lanterns, banners, gallery machinery) must stay inside the wall outline: hung on a south face, or sunk in a gallery below its rim.
+       - Floor decals carry the `floor_decal` property, so the silhouette pass skips them like the floor.
+       - Keep heavy shader logic off the floor material (give it its own object), and keep merged quads tile-sized. Both slowed renders several-fold.
      - `tools/blender/capture_prototype.gd` (native Godot) overlays the render visually and captures paired shots.
      - `tools/blender/play_prototype.gd` (native Godot, `-- --hall`) is a playable preview. The normal game does not include the render.
    - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
-   - Open questions for the user: raise quality (CC0 PBR textures, 3D props, chamfered diagonals) and extend it to the whole Hall; use a hybrid 3D lighting/depth pass under the painted texture; or stay 2D. Characters stay as they are until this is decided.
+   - The user chose to tune this one region until it satisfies, then extend it to the whole Hall. Next candidates for the region:
+     - wall-face detail (alcoves with candles, portraits, shelves);
+     - in-game lantern flicker and crystal pulse.
+   - Characters stay as they are until the Hall is settled.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
 4. **Room spatial audit drift.** `tests/room_spatial_audit.gd` still expects a 14px contact band for the five Hall knowledge exhibits and `arrival_chemistry_core`, but those deliberately use the 72px wall-aware approach zone. The six failures predate the 2026-10-21 stage; update the expectation rather than the margin.
