@@ -14,6 +14,7 @@ extends SceneTree
 const HOME_MARKER := "res://.godot/blender-proto-capture"
 const DATA := "res://prototypes/blender_hall/"
 const RENDER_SCALE := 2.0
+const Glows := preload("res://tools/blender/prototype_glows.gd")
 ## Gameplay shots: where the player stands. Each keeps the zoomed camera view
 ## inside the rendered region so no old art shows at the frame edges.
 const PLAYER_SHOTS: Dictionary = {
@@ -110,6 +111,8 @@ func _make_overlay(origin: Vector2) -> Sprite2D:
 	sprite.z_index = -40
 	sprite.visible = false
 	hall.add_child(sprite)
+	# The halos at rest: the preview animates them, a still shows their mean.
+	Glows.new().attach(sprite, DATA + "render-glows.json", origin, RENDER_SCALE)
 	return sprite
 
 

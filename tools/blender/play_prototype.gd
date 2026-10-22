@@ -15,6 +15,9 @@ const DATA := "res://prototypes/blender_hall/"
 const RENDER_SCALE := 2.0
 const HALL_SCENE := "res://scenes/game_world.tscn"
 const OVERLAY_NAME := "BlenderPrototypeOverlay"
+const Glows := preload("res://tools/blender/prototype_glows.gd")
+
+var glows: Glows
 
 
 func _initialize() -> void:
@@ -50,7 +53,15 @@ func _add_overlay(hall: Node) -> void:
 	# player, the footprint trail and the fog.
 	sprite.z_index = -40
 	hall.add_child(sprite)
-	print("BLENDER_PROTOTYPE_OVERLAY region %s" % [region])
+	glows = Glows.new()
+	var halos := glows.attach(sprite, DATA + "render-glows.json", sprite.position, RENDER_SCALE)
+	print("BLENDER_PROTOTYPE_OVERLAY region %s, %d glows" % [region, halos])
+
+
+func _process(delta: float) -> bool:
+	if glows != null:
+		glows.advance(delta)
+	return false
 
 
 func _enter_hall_from_wake_room() -> void:

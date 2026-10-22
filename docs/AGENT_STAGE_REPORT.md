@@ -2,6 +2,72 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-41
+
+- **Date:** 2026-10-21
+- **Status:** wall dressing and living light added to the prototype region, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** the user approved stage 40 ("满意，继续加墙面细节和灯光闪烁"). They added: "原来的可以全部修改掉，增加你觉得符合我游戏的细节" (anything original may be replaced; add the details that fit the game). Stage 40 was committed and pushed as `2a853a2` with their approval.
+
+### What changed
+
+- **Wall dressing** (`tools/blender/hall_prototype.py`, `dress_faces`). The free stretches of every full-height south face are filled around the lanterns, banners and the Wake gate.
+  - Wide gaps take story pieces, narrow gaps small ones, and each kind is capped so nothing repeats.
+  - This pass placed:
+    - 6 candle alcoves: an arched recess with three lit candles and its own small light;
+    - 3 portraits: a darkened oil sitter in a gilt frame, cracked varnish, eyes that glint;
+    - 1 bookshelf: cloth-bound books in a muted palette, a couple leaning, and glowing potion flasks in glass;
+    - 1 chalkboard: lines of equations and a ringed diagram, half rubbed out;
+    - 2 clocks stopped at eight minutes to midnight;
+    - 3 brass pressure gauges on risers, needles in the red;
+    - 1 detective's case board: notes and photographs pinned to cork, tied with red string;
+    - 9 cobwebs in upper corners.
+  - The case board, shelf, lantern and banner share the long wall beside the opening route.
+- **Screen proportions:** things hung on a face are scaled ×1/sin 40° in height, so clocks and dials read round, as the gate arch does, and lanterns are taller than wide.
+- **Living light:** the Blender script writes `render-glows.json` beside the render, with 48 glows: lanterns, candles, potions, crystals, grates, the compass runes and the portraits' eyes.
+  - The new `tools/blender/prototype_glows.gd` adds an additive halo for each glow under the overlay.
+  - In the playable preview the halos move on smooth noise: lanterns and candles flicker; crystals, grates, runes and eyes pulse slowly.
+  - Captures show the halos at rest.
+  - The Hall's fog (z 100) still covers them, so unexplored rooms stay dark.
+
+### Findings
+
+- **Gameplay still unchanged:**
+  - IoU against the smoothed outline is 0.99993.
+  - Against the collision, 0 px are missing beyond 3 game px, and the same 16 px are extra at the two pocket-adjacent spots.
+  - All dressing sits inside the wall outline. The gauge risers stand on the floor at the wall's foot, within 3 px.
+- **In play** (`12-art-centre`, `22-wall-dressing.png`): the walls now give each corridor its own reason to look, and the warm halos make the lamplight feel alive.
+- **Still open:**
+  - The Circuit knowledge exhibit is still a pixel sprite on the HD render. Replacing it needs care, because it is interactive.
+  - The wall tops are uniform dark slate.
+
+### Exact files
+
+- Changed: `tools/blender/hall_prototype.py`, `tools/blender/play_prototype.gd`, `tools/blender/capture_prototype.gd`.
+- New: `tools/blender/prototype_glows.gd` (+UID).
+- Evidence: `docs/evidence/2026-10-21-blender-hall-prototype/`.
+  - The six comparisons were rebuilt from fresh EN/ZH native captures.
+  - New: `22-wall-dressing.png` (stage 40 vs this pass).
+  - Updated: `silhouette-diff.png`.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_hall/`, containing `render.png`, `render-glows.json`, the silhouettes, `hall_prototype.blend` and the captures.
+
+### Verification
+
+- **Blender:** final render at 2048×1024, 128 samples, 67 s, with the silhouette check as above. `py_compile` and pyflakes are clean.
+- **Native captures:** `capture_prototype.gd` passes all 29 checks in EN and ZH, and the shots were inspected.
+- **Godot:** gdlint is clean on all three GDScript tools. The headless editor parse (isolated HOME) has 0 script errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `BLENDER_PROTOTYPE_OVERLAY region [0, 768, 1024, 512], 48 glows`.
+
+### Limits / next stage
+
+- **Proposed next:**
+  - An HD model of the Circuit exhibit that still reads as interactive.
+  - Moss and wear on the wall tops.
+  - Then extending the pipeline to the whole Hall, including the seven doors.
+- **GitHub:** not committed. Committing needs the user's approval. No Web deployment.
+
+---
+
 ## Stage: UX-20261021-40
 
 - **Date:** 2026-10-21
@@ -70,7 +136,7 @@
 
 - **Proposed next stage:** after the user's review, add the remaining wall-face detail: alcoves with candles, portraits, shelves. In-game lantern flicker and crystal pulse could follow.
 - **Later:** extend the pipeline to the whole Hall, including treatments for the seven doors (most face directions the camera cannot see). Characters stay deferred.
-- **GitHub:** not committed. Committing these changes needs the user's approval. No Web deployment.
+- **GitHub:** committed and pushed as `2a853a2` with the user's approval. No Web deployment.
 
 ---
 

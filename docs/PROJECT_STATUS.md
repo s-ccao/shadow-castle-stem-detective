@@ -14,6 +14,11 @@
     - real brass machinery and violet crystals in the galleries;
     - eight wall lanterns along the route and side corridors;
     - banners, a brass compass inlay at the arrival, a runner rug the footprints follow, and two glowing floor grates off the route.
+  - **Wall dressing:** the user approved that pass and asked for game-fitting detail. The walls now hold:
+    - candle alcoves, and portraits whose eyes catch the light;
+    - a bookshelf with glowing potion flasks, a chalkboard of equations, brass pressure gauges, and clocks stopped at eight minutes to midnight;
+    - a detective's case board tied with red string, and cobwebs.
+    - In the playable preview, lanterns and candles flicker while crystals, grates and runes pulse.
   - The user is reviewing it in the playable preview before it is extended to the rest of the Hall.
 
 - **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.
