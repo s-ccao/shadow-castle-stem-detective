@@ -15,6 +15,7 @@ const HOME_MARKER := "res://.godot/blender-proto-capture"
 const DATA := "res://prototypes/blender_hall/"
 const RENDER_SCALE := 2.0
 const Glows := preload("res://tools/blender/prototype_glows.gd")
+const Props := preload("res://tools/blender/prototype_props.gd")
 ## Gameplay shots: where the player stands. Each keeps the zoomed camera view
 ## inside the rendered region so no old art shows at the frame edges.
 const PLAYER_SHOTS: Dictionary = {
@@ -30,6 +31,7 @@ const ART_SHOTS: Dictionary = {
 
 var hall: Node2D
 var overlay: Sprite2D
+var props: Props
 var failures: Array[String] = []
 var out_dir := ""
 
@@ -63,13 +65,18 @@ func _run() -> void:
 	await _wait(1.2)
 	overlay = _make_overlay(Vector2(float(region[0]), float(region[1])))
 	_expect(overlay != null, "The prototype render loads")
+	props = Props.new()
+	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
+	_expect(swapped > 0, "The HD props load")
 	if overlay == null:
 		_finish()
 		return
 	var player := hall.get_node("player") as CharacterBody2D
 	for shot: String in PLAYER_SHOTS:
 		var spot := _walkable_near(PLAYER_SHOTS[shot] as Vector2)
-		_expect(spot != Vector2.INF, "A walkable spot exists for " + shot)
+		# The spot is logged: when a moving body blocks the exact target, the
+		# shot is framed from the nearest free spot instead.
+		_expect(spot != Vector2.INF, "A walkable spot exists for %s at %s" % [shot, spot])
 		if spot == Vector2.INF:
 			continue
 		player.global_position = spot
@@ -118,12 +125,15 @@ func _make_overlay(origin: Vector2) -> Sprite2D:
 
 func _pair(label: String) -> void:
 	overlay.visible = false
+	props.restore()
 	await _wait(0.15)
 	await _shot("current", label)
 	overlay.visible = true
+	props.apply()
 	await _wait(0.15)
 	await _shot("blender", label)
 	overlay.visible = false
+	props.restore()
 
 
 func _walkable_near(target: Vector2) -> Vector2:

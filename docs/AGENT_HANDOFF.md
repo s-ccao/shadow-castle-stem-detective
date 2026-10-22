@@ -263,7 +263,7 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): wall dressing and living light built, user review pending.** See stages UX-20261021-39 to -41 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` compares the first two passes and `22-wall-dressing.png` the latest.
+1. **Blender Hall prototype (HD): dense dressing and the first HD interactive prop built, user review pending.** See stages UX-20261021-39 to -42 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png`, `22-wall-dressing.png` and `23-denser-dressing.png` show the passes in order.
    - Pipeline:
      - `tools/blender/export_hall_region.gd` (headless Godot) exports the real collision as `wall_mask.png`, plus `outside_mask.png` and `region.json`.
      - `tools/blender/hall_prototype.py` (Blender 5.2 bpy, Cycles Metal) builds walls whose cap plus south face exactly covers the collision. It uses a 40° orthographic camera with a 1/cos Y pre-stretch, so the floor maps 1:1 onto game coordinates.
@@ -276,10 +276,14 @@ Manual acceptance flow:
      - `tools/blender/capture_prototype.gd` (native Godot) overlays the render visually and captures paired shots.
      - `tools/blender/play_prototype.gd` (native Godot, `-- --hall`) is a playable preview. The normal game does not include the render.
      - `tools/blender/prototype_glows.gd` adds additive halos under the overlay. They animate in the preview and stay at rest in captures, and the fog (z 100) still covers them.
+     - `tools/blender/prototype_props.gd` swaps interactive pixel props for HD renders listed in `<render>-props.json`. Only the prop's `Sprite` texture and scale change.
+       - Each HD prop is modelled to touch all four sides of its sprite's rect, and rendered alone into exactly that rect, because the game reads feet, focus, occlusion and highlight from the opaque bounds (`RoomSpatialRuntime.get_visual_rect`).
+       - The Circuit exhibit is the first one.
    - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
    - The user chose to tune this one region until it satisfies, then extend it to the whole Hall. They allow replacing anything in the region with details that fit the game.
-     - Next candidates: an HD model of the Circuit knowledge exhibit to replace its pixel sprite, which needs care because it is interactive; moss and wear on the dark tops; more varied floor.
+     - Next: extend the pipeline to the whole Hall, including the other knowledge exhibits, the storage rack, the Final Key machines and the seven doors.
+     - Dressing tips: floor items must be flat (tagged `floor_decal`); wall and top items must sit inside the outline; and the AO nodes use `only_local`, so props don't darken the stone in squares.
    - Characters stay as they are until the Hall is settled.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.

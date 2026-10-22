@@ -16,8 +16,10 @@ const RENDER_SCALE := 2.0
 const HALL_SCENE := "res://scenes/game_world.tscn"
 const OVERLAY_NAME := "BlenderPrototypeOverlay"
 const Glows := preload("res://tools/blender/prototype_glows.gd")
+const Props := preload("res://tools/blender/prototype_props.gd")
 
 var glows: Glows
+var props: Props
 
 
 func _initialize() -> void:
@@ -55,7 +57,10 @@ func _add_overlay(hall: Node) -> void:
 	hall.add_child(sprite)
 	glows = Glows.new()
 	var halos := glows.attach(sprite, DATA + "render-glows.json", sprite.position, RENDER_SCALE)
-	print("BLENDER_PROTOTYPE_OVERLAY region %s, %d glows" % [region, halos])
+	props = Props.new()
+	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
+	props.apply()
+	print("BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props" % [region, halos, swapped])
 
 
 func _process(delta: float) -> bool:

@@ -668,6 +668,9 @@ def _bevel(nodes, radius):
 def _ao_multiply(nodes, links, color, distance, floor_value=0.45):
     ao = nodes.new("ShaderNodeAmbientOcclusion")
     ao.samples = 4
+    # Only the hall's own stone occludes: floor decals and props hovering
+    # above the stone must not darken it in squares.
+    ao.only_local = True
     ao.inputs["Distance"].default_value = distance
     shaped = nodes.new("ShaderNodeMapRange")
     shaped.inputs["From Min"].default_value = 0.0
@@ -1158,6 +1161,22 @@ def material_cap_textured(textures, lit=True):
         color = _grade(nodes, links, maps["diff"], 0.95, (0.88, 0.84, 0.86))
     else:
         color = _grade(nodes, links, maps["diff"], 0.3, (0.55, 0.5, 0.66), saturation=0.6)
+        coords = nodes.new("ShaderNodeTexCoord")
+        moss = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=2.2, detail=6.0), 0.56, 0.68)
+        speckle = _noise(nodes, links, coords.outputs["Object"], scale=40.0, detail=3.0)
+        green = _mix(nodes, links, speckle, (0.02, 0.05, 0.018), (0.06, 0.11, 0.035))
+        color = _mix(nodes, links, moss, color, green)
+        cracks = nodes.new("ShaderNodeTexVoronoi")
+        cracks.feature = "DISTANCE_TO_EDGE"
+        cracks.inputs["Scale"].default_value = 2.2
+        links.new(coords.outputs["Object"], cracks.inputs["Vector"])
+        # Only some cell edges crack: a broken network, not a tiled grid.
+        broken = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=5.0, detail=3.0), 0.5, 0.62)
+        crack = nodes.new("ShaderNodeMath")
+        crack.operation = "MULTIPLY"
+        links.new(_ramp(nodes, links, cracks.outputs["Distance"], 0.014, 0.0), crack.inputs[0])
+        links.new(broken, crack.inputs[1])
+        color = _mix(nodes, links, crack.outputs[0], color, (0.008, 0.006, 0.01))
     color = _ao_multiply(nodes, links, color, distance=0.12, floor_value=0.55)
     normal = _bevelled(nodes, links, maps["normal"], 0.02)
     _principled(nodes, links, color, roughness=maps["rough"], normal=normal)
@@ -2130,7 +2149,7 @@ def add_chalkboard(name, x, face_y, wall_height, stretch, rng):
     _box(name + "Tray", (x, face_y + 1.6, centre - half - 1.2), (width - 6.0, 2.6, 0.8), _wood(), stretch)
 
 
-def material_dial(name, kind):
+def material_dial(name, kind, needle=0.33):
     """A brass gauge's dial or a clock face, drawn on the disc's own 0..1 UVs."""
     def build(nodes, links):
         op = _MathBuilder(nodes, links)
@@ -2158,7 +2177,7 @@ def material_dial(name, kind):
             ticks = op("MULTIPLY", op("MULTIPLY", op.between(radius, 0.68, 0.86), sweep),
                        op("LESS_THAN", op("FRACT", op("MULTIPLY", turn, 32.0)), 0.18))
             red = op("MULTIPLY", op.between(radius, 0.68, 0.86), op.between(turn, 0.72, 0.875))
-            hands = hand(0.33, 0.7, 0.025)
+            hands = hand(needle, 0.7, 0.025)
             face = (0.72, 0.68, 0.56)
         color = _mix(nodes, links, ticks, face, (0.04, 0.035, 0.03))
         if red is not None:
@@ -2295,16 +2314,236 @@ def add_caseboard(name, x, face_y, wall_height, stretch, rng):
     _frame(name + "Frame", x, face_y, centre - half, centre + half, width, 1.3, 1.3, _wood(), stretch)
 
 
+def add_sconce(name, x, face_y, wall_height, stretch, rng):
+    """A single candle on an iron wall bracket."""
+    up = 1.0 / SIN_ALPHA
+    z = wall_height * float(rng.uniform(0.48, 0.6))
+    iron = _iron_material()
+    _box(name + "Plate", (x, face_y + 0.3, z), (2.4, 0.6, 4.0 * up), iron, stretch)
+    _box(name + "Arm", (x, face_y + 1.6, z - 1.4 * up), (0.9, 2.6, 0.8 * up), iron, stretch)
+    cup = bmesh.new()
+    _cylinder(cup, 1.3, 0.8 * up, segments=10)
+    _prop(name + "Cup", cup, iron, world_point(x, face_y + 2.9, z - 1.4 * up, stretch), stretch)
+    tall = float(rng.uniform(2.2, 3.6)) * up
+    wax = bmesh.new()
+    _cylinder(wax, 0.7, tall, segments=8)
+    _prop(name + "Candle", wax, _material("CandleWax", lambda n, l: _principled(n, l, (0.8, 0.73, 0.58), roughness=0.5)),
+          world_point(x, face_y + 2.9, z - 1.0 * up + tall / 2.0, stretch), stretch)
+    tip_z = z - 1.0 * up + tall + 0.9 * up
+    flame = bmesh.new()
+    bmesh.ops.create_uvsphere(flame, u_segments=8, v_segments=6, radius=0.5 * PX,
+                              matrix=Matrix.Diagonal((1.0, 1.0, 1.8 * up, 1.0)))
+    tip = _prop(name + "Flame", flame, _glow_material("CandleFlame", (1.0, 0.72, 0.32), 18.0, (1.0, 0.8, 0.5)),
+                world_point(x, face_y + 2.9, tip_z, stretch), stretch)
+    tip.visible_shadow = False
+    add_point_light(name + "Light", (x, face_y + 4.0), tip_z, (1.0, 0.62, 0.3), 0.3, 0.01, stretch)
+    _glow("candle", x, face_y + 2.9, tip_z, (1.0, 0.68, 0.32), 7.0)
+
+
+def _framed(name, x, face_y, wall_height, width, screen_height, centre_ratio, material, frame_material, bar, stretch,
+            out=0.7):
+    centre = wall_height * centre_ratio
+    half = screen_height / SIN_ALPHA / 2.0
+    _face_plane(name, x, face_y, centre - half, centre + half, width, material, stretch, out=out)
+    if frame_material is not None:
+        _frame(name + "Frame", x, face_y, centre - half, centre + half, width, bar, out + 0.6, frame_material, stretch)
+    return centre, half
+
+
+def material_blueprint():
+    """A draughtsman's sheet: grid, a gear in elevation, crosshairs and dimensions."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        aspect = 12.0 / 16.0
+        grid = op("MAXIMUM", op("LESS_THAN", op("FRACT", op("MULTIPLY", u, 12.0)), 0.05),
+                  op("LESS_THAN", op("FRACT", op("MULTIPLY", v, 9.0)), 0.06))
+        du = op("SUBTRACT", u, 0.4)
+        dv = op("MULTIPLY", op("SUBTRACT", v, 0.52), aspect)
+        radius = op("SQRT", op("ADD", op("MULTIPLY", du, du), op("MULTIPLY", dv, dv)))
+        teeth = op("GREATER_THAN", op("COSINE", op("MULTIPLY", op("ARCTAN2", dv, du), 10.0)), 0.2)
+        gear = op("MAXIMUM", op("MAXIMUM", op.between(radius, 0.19, 0.205), op.between(radius, 0.05, 0.062)),
+                  op("MULTIPLY", op.between(radius, 0.205, 0.25), op("MULTIPLY", teeth, op.between(radius, 0.24, 0.25))))
+        teeth_sides = op("MULTIPLY", op.between(radius, 0.205, 0.25),
+                         op("LESS_THAN", op("ABSOLUTE", op("COSINE", op("MULTIPLY", op("ARCTAN2", dv, du), 10.0))), 0.25))
+        cross = op("MULTIPLY", op("LESS_THAN", radius, 0.31),
+                   op("MAXIMUM", op("LESS_THAN", op("ABSOLUTE", du), 0.004), op("LESS_THAN", op("ABSOLUTE", dv), 0.004)))
+        dimension = op("MULTIPLY", op.between(v, 0.1, 0.115), op.between(u, 0.15, 0.65))
+        box = op("MULTIPLY", op.between(u, 0.7, 0.9), op.between(v, 0.28, 0.76))
+        box_edge = op("SUBTRACT", box, op("MULTIPLY", op.between(u, 0.71, 0.89), op.between(v, 0.295, 0.745)))
+        lines = op("MAXIMUM", op("MAXIMUM", gear, teeth_sides), op("MAXIMUM", op("MAXIMUM", cross, dimension), box_edge))
+        color = _mix(nodes, links, op("MULTIPLY", grid, 0.35), (0.03, 0.08, 0.22), (0.2, 0.32, 0.55))
+        color = _mix(nodes, links, op("MINIMUM", lines, 1.0), color, (0.72, 0.8, 0.9))
+        _principled(nodes, links, color, roughness=0.82)
+    return _material("Blueprint", build)
+
+
+def add_blueprint(name, x, face_y, wall_height, stretch, rng):
+    _framed(name, x, face_y, wall_height, 16.0, 12.0, float(rng.uniform(0.5, 0.58)), material_blueprint(),
+            _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3), 1.0, stretch)
+
+
+def material_map():
+    """An old parchment map: coastlines, a dotted route and a red cross."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        stain = _noise(nodes, links, coords.outputs["UV"], scale=5.0, detail=5.0)
+        land = _noise(nodes, links, coords.outputs["UV"], scale=3.2, detail=3.0)
+        coast = op("LESS_THAN", op("ABSOLUTE", op("SUBTRACT", land, 0.5)), 0.012)
+        path_v = op("ADD", 0.48, op("MULTIPLY", op("SINE", op("MULTIPLY", u, 7.0)), 0.14))
+        route = op("MULTIPLY", op("MULTIPLY", op("LESS_THAN", op("ABSOLUTE", op("SUBTRACT", v, path_v)), 0.02),
+                                  op("LESS_THAN", op("FRACT", op("MULTIPLY", u, 22.0)), 0.45)), op.between(u, 0.08, 0.7))
+        cross_u = op("SUBTRACT", u, 0.74)
+        cross_v = op("MULTIPLY", op("SUBTRACT", v, 0.62), 14.0 / 20.0)
+        cross = op("MULTIPLY", op("LESS_THAN", op("ABSOLUTE", cross_u), 0.045),
+                   op("MAXIMUM", op("LESS_THAN", op("ABSOLUTE", op("SUBTRACT", cross_u, cross_v)), 0.012),
+                      op("LESS_THAN", op("ABSOLUTE", op("ADD", cross_u, cross_v)), 0.012)))
+        edge = op("MINIMUM", op("MINIMUM", u, op("SUBTRACT", 1.0, u)), op("MINIMUM", v, op("SUBTRACT", 1.0, v)))
+        torn = op("GREATER_THAN", edge, op("MULTIPLY", stain, 0.05))
+        color = _mix(nodes, links, stain, (0.42, 0.33, 0.2), (0.6, 0.5, 0.33))
+        color = _mix(nodes, links, op("LESS_THAN", edge, 0.06), color, (0.3, 0.22, 0.12))
+        color = _mix(nodes, links, coast, color, (0.18, 0.12, 0.07))
+        color = _mix(nodes, links, route, color, (0.35, 0.1, 0.06))
+        color = _mix(nodes, links, cross, color, (0.6, 0.06, 0.04))
+        shader = _principled(nodes, links, color, roughness=0.9)
+        _alpha_cut(nodes, links, shader, torn)
+    return _material("OldMap", build)
+
+
+def add_map(name, x, face_y, wall_height, stretch, rng):
+    centre, half = _framed(name, x, face_y, wall_height, 20.0, 14.0, float(rng.uniform(0.5, 0.56)), material_map(),
+                           None, 0.0, stretch, out=0.5)
+    brass = _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3)
+    for dx in (-8.5, 8.5):
+        tack = bmesh.new()
+        _cylinder(tack, 0.6, 0.8, segments=8, matrix=UPRIGHT @ Matrix.Rotation(math.radians(90.0), 4, "X"))
+        _prop(name + "Tack", tack, brass, world_point(x + dx, face_y + 0.9, centre + half * 0.8, stretch), stretch)
+
+
+def material_mirror():
+    """An oval looking-glass in a gilt frame; something pale stands in it."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        du = op("MULTIPLY", op("SUBTRACT", u, 0.5), 2.0)
+        dv = op("MULTIPLY", op("SUBTRACT", v, 0.5), 2.0)
+        radius = op("SQRT", op("ADD", op("MULTIPLY", du, du), op("MULTIPLY", dv, dv)))
+        frame = op.between(radius, 0.8, 1.0)
+        head = op("LESS_THAN", op("ADD", op("MULTIPLY", op("DIVIDE", du, 0.2), op("DIVIDE", du, 0.2)),
+                                  op("MULTIPLY", op("DIVIDE", op("SUBTRACT", dv, 0.12), 0.17),
+                                     op("DIVIDE", op("SUBTRACT", dv, 0.12), 0.17))), 1.0)
+        body = op("LESS_THAN", op("ADD", op("MULTIPLY", op("DIVIDE", du, 0.42), op("DIVIDE", du, 0.42)),
+                                  op("MULTIPLY", op("DIVIDE", op("ADD", dv, 0.62), 0.5),
+                                     op("DIVIDE", op("ADD", dv, 0.62), 0.5))), 1.0)
+        ghost = op("MULTIPLY", op("MAXIMUM", head, body), op("LESS_THAN", radius, 0.8))
+        color = _mix(nodes, links, frame, (0.5, 0.52, 0.56), (0.62, 0.46, 0.18))
+        shader = _principled(nodes, links, color, roughness=op("ADD", 0.04, op("MULTIPLY", frame, 0.28)), metallic=1.0)
+        shader.inputs["Emission Color"].default_value = (0.62, 0.68, 0.8, 1.0)
+        links.new(op("MULTIPLY", ghost, 0.22), shader.inputs["Emission Strength"])
+        _alpha_cut(nodes, links, shader, op("LESS_THAN", radius, 1.0))
+    return _material("Mirror", build)
+
+
+def add_mirror(name, x, face_y, wall_height, stretch, rng):
+    _framed(name, x, face_y, wall_height, 11.0, 16.0, 0.55, material_mirror(), None, 0.0, stretch, out=0.6)
+
+
+def material_tapestry():
+    """A woven star chart: constellations and a crescent on deep blue, gold border, fringed hem."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        aspect = 30.0 / 22.0
+        border = op("MAXIMUM", op("MAXIMUM", op("LESS_THAN", u, 0.06), op("GREATER_THAN", u, 0.94)),
+                    op("MAXIMUM", op("GREATER_THAN", v, 0.95), op.between(v, 0.08, 0.12)))
+        fringe = op("LESS_THAN", v, 0.08)
+        threads = op("LESS_THAN", op("FRACT", op("MULTIPLY", u, 30.0)), 0.5)
+        sky = op("MULTIPLY", u, 1.0)
+        stars = nodes.new("ShaderNodeTexVoronoi")
+        stars.inputs["Scale"].default_value = 9.0
+        star_coords = nodes.new("ShaderNodeCombineXYZ")
+        links.new(sky, star_coords.inputs["X"])
+        links.new(op("MULTIPLY", v, aspect), star_coords.inputs["Y"])
+        links.new(star_coords.outputs[0], stars.inputs["Vector"])
+        star = op("LESS_THAN", stars.outputs["Distance"], 0.07)
+        points = ((0.25, 0.7), (0.38, 0.78), (0.5, 0.66), (0.62, 0.72), (0.35, 0.42), (0.55, 0.36))
+        lines = None
+        for (ax, ay), (bx, by) in zip(points[:-1], points[1:]):
+            t = op("MINIMUM", op("MAXIMUM", op("DIVIDE", op("ADD", op("MULTIPLY", op("SUBTRACT", u, ax), bx - ax),
+                                                            op("MULTIPLY", op("MULTIPLY", op("SUBTRACT", v, ay), by - ay),
+                                                               aspect * aspect)),
+                                             (bx - ax) ** 2 + ((by - ay) * aspect) ** 2), 0.0), 1.0)
+            gx = op("SUBTRACT", u, op("ADD", ax, op("MULTIPLY", t, bx - ax)))
+            gy = op("MULTIPLY", op("SUBTRACT", v, op("ADD", ay, op("MULTIPLY", t, by - ay))), aspect)
+            segment = op("LESS_THAN", op("ADD", op("MULTIPLY", gx, gx), op("MULTIPLY", gy, gy)), 0.00012)
+            lines = segment if lines is None else op("MAXIMUM", lines, segment)
+        mu = op("SUBTRACT", u, 0.72)
+        mv = op("MULTIPLY", op("SUBTRACT", v, 0.84), aspect)
+        moon = op("MULTIPLY", op("LESS_THAN", op("ADD", op("MULTIPLY", mu, mu), op("MULTIPLY", mv, mv)), 0.006),
+                  op("GREATER_THAN", op("ADD", op("MULTIPLY", op("SUBTRACT", mu, 0.03), op("SUBTRACT", mu, 0.03)),
+                                         op("MULTIPLY", op("SUBTRACT", mv, 0.02), op("SUBTRACT", mv, 0.02))), 0.005))
+        weave = _noise(nodes, links, coords.outputs["UV"], scale=80.0, detail=2.0)
+        color = _mix(nodes, links, weave, (0.018, 0.025, 0.07), (0.04, 0.05, 0.12))
+        color = _mix(nodes, links, op("MAXIMUM", op("MAXIMUM", star, lines), moon), color, (0.7, 0.6, 0.32))
+        color = _mix(nodes, links, border, color, (0.5, 0.36, 0.13))
+        color = _mix(nodes, links, fringe, color, (0.45, 0.35, 0.16))
+        shader = _principled(nodes, links, color, roughness=0.9)
+        _alpha_cut(nodes, links, shader, op("SUBTRACT", 1.0, op("MULTIPLY", fringe, op("SUBTRACT", 1.0, threads))))
+    return _material("StarTapestry", build)
+
+
+def add_tapestry(name, x, face_y, wall_height, stretch, rng):
+    width, drop = 22.0, 30.0
+    top = wall_height * 0.84
+    _face_plane(name, x, face_y, top - drop / SIN_ALPHA, top, width, material_tapestry(), stretch, out=0.8)
+    _box(name + "Rod", (x, face_y + 1.2, top + 0.8), (width + 3.0, 1.2, 1.2),
+         _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3), stretch)
+
+
+def material_rift():
+    """A crack in the stone with violet light seeping through it."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        wander_in = nodes.new("ShaderNodeCombineXYZ")
+        links.new(op("MULTIPLY", v, 3.0), wander_in.inputs["X"])
+        wander_in.inputs["Y"].default_value = 2.7
+        wander = _noise(nodes, links, wander_in.outputs[0], scale=1.0, detail=6.0)
+        centre = op("ADD", 0.5, op("MULTIPLY", op("SUBTRACT", wander, 0.5), 0.9))
+        taper = op("MULTIPLY", op("SUBTRACT", 1.0, op("ABSOLUTE", op("SUBTRACT", op("MULTIPLY", v, 2.0), 1.0))), 0.07)
+        gap = op("ABSOLUTE", op("SUBTRACT", u, centre))
+        crack = op("LESS_THAN", gap, taper)
+        core = op("LESS_THAN", gap, op("MULTIPLY", taper, 0.45))
+        soot = op("MULTIPLY", op("LESS_THAN", gap, op("ADD", taper, 0.08)), 0.55)
+        color = _mix(nodes, links, crack, (0.03, 0.02, 0.03), (0.01, 0.005, 0.015))
+        shader = _principled(nodes, links, color, roughness=0.9)
+        shader.inputs["Emission Color"].default_value = (0.6, 0.32, 1.0, 1.0)
+        links.new(op("MULTIPLY", core, 3.0), shader.inputs["Emission Strength"])
+        _alpha_cut(nodes, links, shader, op("MAXIMUM", crack, soot))
+    return _material("Rift", build)
+
+
+def add_rift(name, x, face_y, wall_height, stretch, rng):
+    centre, half = _framed(name, x, face_y, wall_height, 10.0, 22.0, 0.45, material_rift(), None, 0.0, stretch,
+                           out=0.25)
+    _glow("crystal", x, face_y, centre, (0.62, 0.36, 1.0), 9.0)
+
+
 DECOR = {
     "shelf": (30.0, add_bookshelf), "portrait": (17.0, add_portrait), "niche": (14.0, add_candle_niche),
     "chalkboard": (27.0, add_chalkboard), "clock": (16.0, add_clock), "gauge": (11.0, add_gauge),
-    "caseboard": (29.0, add_caseboard),
+    "caseboard": (29.0, add_caseboard), "sconce": (7.0, add_sconce), "blueprint": (19.0, add_blueprint),
+    "map": (22.0, add_map), "mirror": (13.0, add_mirror), "tapestry": (25.0, add_tapestry), "rift": (12.0, add_rift),
 }
 # Wide gaps take the pieces that tell the castle's story; narrow gaps the small ones.
-DECOR_BIG = ("caseboard", "shelf", "chalkboard", "portrait", "shelf", "clock", "chalkboard", "portrait")
-DECOR_SMALL = ("niche", "portrait", "gauge", "niche", "clock")
-DECOR_CAPS = {"caseboard": 1, "shelf": 3, "chalkboard": 2, "portrait": 4, "clock": 2, "gauge": 3, "niche": 6}
-COBWEBS_MAX = 9
+DECOR_BIG = ("caseboard", "shelf", "tapestry", "chalkboard", "map", "portrait", "shelf", "blueprint", "tapestry",
+             "clock")
+DECOR_SMALL = ("niche", "portrait", "sconce", "mirror", "gauge", "blueprint", "rift", "clock", "niche", "sconce")
+DECOR_CAPS = {"caseboard": 2, "shelf": 4, "tapestry": 3, "chalkboard": 2, "map": 2, "portrait": 5, "blueprint": 3,
+              "clock": 3, "niche": 8, "sconce": 8, "mirror": 2, "gauge": 4, "rift": 3}
+DECOR_SLOT_PX = 30.0
+COBWEBS_MAX = 14
 
 
 def face_segments(layout, meta, minimum=14):
@@ -2349,9 +2588,9 @@ def dress_faces(layout, meta, stretch, taken):
             free = cut
         for a, b in free:
             room = b - a
-            slots = max(1, int(room // 46.0))
+            slots = max(1, int(room // DECOR_SLOT_PX))
             slot = room / slots
-            pool = DECOR_BIG if slot >= 34.0 else DECOR_SMALL
+            pool = DECOR_BIG if slot >= 30.0 else DECOR_SMALL
             for index in range(slots):
                 fits = [pool[(turns[pool] + step) % len(pool)] for step in range(len(pool))]
                 fits = [kind for kind in fits if DECOR[kind][0] <= slot - 3.0 and placed[kind] < DECOR_CAPS[kind]]
@@ -2365,11 +2604,508 @@ def dress_faces(layout, meta, stretch, taken):
                 placed[kind] += 1
         for corner_right, corner_x in ((False, start), (True, end)):
             near_free = any(a - 4.0 <= corner_x + (-7.0 if corner_right else 7.0) <= b + 4.0 for a, b in free)
-            if near_free and webs < COBWEBS_MAX and end - start >= 24.0 and rng.random() < 0.22:
+            if near_free and webs < COBWEBS_MAX and end - start >= 24.0 and rng.random() < 0.3:
                 add_cobweb("Cobweb%d" % webs, corner_x + (-5.5 if corner_right else 5.5), face_y, wall_height,
                            corner_right, stretch)
                 webs += 1
     print("DECOR %s cobwebs=%d" % (" ".join("%s=%d" % item for item in placed.items()), webs))
+
+
+def material_floor_crack(glowing):
+    """Cracked flagstone: a jagged split with branches; some leak violet light."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        marks = None
+        for seed, (start, end, slope) in enumerate(((0.08, 0.92, 0.0), (0.45, 0.85, 0.7), (0.3, 0.6, -0.9))):
+            wander_in = nodes.new("ShaderNodeCombineXYZ")
+            links.new(op("MULTIPLY", u, 4.0), wander_in.inputs["X"])
+            wander_in.inputs["Y"].default_value = 3.1 + seed * 5.3
+            wander = _noise(nodes, links, wander_in.outputs[0], scale=1.0, detail=6.0)
+            line_v = op("ADD", op("ADD", 0.5, op("MULTIPLY", op("SUBTRACT", u, 0.5), slope)),
+                        op("MULTIPLY", op("SUBTRACT", wander, 0.5), 0.35))
+            span = op.between(u, start, end)
+            middle = (start + end) / 2.0
+            width = op("MULTIPLY", op("SUBTRACT", 1.0, op("DIVIDE", op("ABSOLUTE", op("SUBTRACT", u, middle)),
+                                                            (end - start) / 2.0)), 0.014 if seed == 0 else 0.008)
+            mark = op("MULTIPLY", span, op("LESS_THAN", op("ABSOLUTE", op("SUBTRACT", v, line_v)), width))
+            marks = mark if marks is None else op("MAXIMUM", marks, mark)
+        shader = _principled(nodes, links, (0.008, 0.006, 0.01), roughness=0.95)
+        if glowing:
+            shader.inputs["Emission Color"].default_value = (0.58, 0.3, 1.0, 1.0)
+            shader.inputs["Emission Strength"].default_value = 0.55
+        _alpha_cut(nodes, links, shader, marks)
+    return _material("FloorCrackGlow" if glowing else "FloorCrack", build)
+
+
+def _open_spots(layout, meta, room_px, count, avoid, spacing, rng, near_wall=None, clear_of=None):
+    """Spread spots over open floor in the region: `clear_of` px from `avoid`
+    (default `spacing`) and `spacing` px from each other."""
+    clear_of = spacing if clear_of is None else clear_of
+    x0, y0, width, height = meta["region"]
+    window = (slice(y0, y0 + height), slice(x0, x0 + width))
+    open_floor = ~layout.wall[window] & ~layout.outside[window]
+    allowed = _clearance(open_floor, room_px + 1) >= room_px
+    if near_wall is not None:
+        allowed &= _dilate(layout.wall[window], near_wall) & ~_dilate(layout.wall[window], max(near_wall - 4, 1))
+    rows, columns = np.nonzero(allowed)
+    order = rng.permutation(len(rows))
+    chosen = []
+    for index in order:
+        point = (x0 + columns[index] + 0.5, y0 + rows[index] + 0.5)
+        if any((point[0] - other[0]) ** 2 + (point[1] - other[1]) ** 2 < clear_of ** 2 for other in avoid):
+            continue
+        if any((point[0] - other[0]) ** 2 + (point[1] - other[1]) ** 2 < spacing ** 2 for other in chosen):
+            continue
+        chosen.append(point)
+        if len(chosen) >= count:
+            break
+    return chosen
+
+
+def add_floor_details(layout, meta, stretch, avoid, inlay):
+    """Cracked flagstones, rubble at the foot of walls and candles around the compass."""
+    rng = np.random.default_rng(SEED + 11)
+    cracks = _open_spots(layout, meta, 10, 12, avoid, 70.0, rng)
+    for index, (x, y) in enumerate(cracks):
+        size = float(rng.uniform(18.0, 28.0))
+        turn = float(rng.uniform(0.0, math.pi))
+        corners = [(x + size / 2.0 * (math.cos(turn) * sx - math.sin(turn) * sy),
+                    y + size / 2.0 * (math.sin(turn) * sx + math.cos(turn) * sy))
+                   for sx, sy in ((-1.0, 1.0), (1.0, 1.0), (1.0, -1.0), (-1.0, -1.0))]
+        glowing = index % 4 == 1
+        _decal("FloorCrack%d" % index, corners, [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
+               material_floor_crack(glowing), stretch, z=0.12)
+        if glowing:
+            _glow("grate", x, y, 0.0, (0.58, 0.3, 1.0), 12.0)
+    stone = _material("Rubble", lambda nodes, links: _principled(nodes, links, (0.16, 0.15, 0.16), roughness=0.9))
+    heaps = _open_spots(layout, meta, 3, 10, avoid + cracks, 60.0, rng, near_wall=6)
+    for index, (x, y) in enumerate(heaps):
+        shape = bmesh.new()
+        for _stone in range(int(rng.integers(4, 8))):
+            radius = float(rng.uniform(0.6, 1.7))
+            spot = Matrix.Translation((float(rng.uniform(-4.0, 4.0)) * PX, float(rng.uniform(-3.0, 3.0)) * PX,
+                                       radius * 0.35 * PX))
+            squash = Matrix.Diagonal((1.0, 1.0, 0.6, 1.0)) @ Matrix.Rotation(float(rng.uniform(0.0, 3.0)), 4, "Z")
+            bmesh.ops.create_icosphere(shape, subdivisions=1, radius=radius * PX, matrix=spot @ squash)
+        _prop("Rubble%d" % index, shape, stone, world_point(x, y, 0.0, stretch), stretch)["floor_decal"] = True
+    lit = 0
+    if inlay is not None:
+        wax = _material("CandleWax", lambda nodes, links: _principled(nodes, links, (0.8, 0.73, 0.58), roughness=0.5))
+        flame = _glow_material("CandleFlame", (1.0, 0.72, 0.32), 18.0, (1.0, 0.8, 0.5))
+        centre_x, centre_y, radius = inlay
+        open_floor = ~layout.wall & ~layout.outside
+        for corner in range(4):
+            angle = math.radians(45.0 + 90.0 * corner)
+            x = centre_x + math.cos(angle) * (radius + 8.0)
+            y = centre_y - math.sin(angle) * (radius + 8.0)
+            if not open_floor[max(int(y) - 4, 0):int(y) + 5, max(int(x) - 4, 0):int(x) + 5].all():
+                continue
+            for offset_x, offset_y, tall in ((-1.6, 0.6, 3.2), (1.2, -0.4, 4.6), (0.4, 1.8, 2.2)):
+                height = tall / SIN_ALPHA
+                body = bmesh.new()
+                _cylinder(body, 0.8, height, segments=10)
+                _prop("RitualCandle", body, wax, world_point(x + offset_x, y + offset_y, height / 2.0, stretch),
+                      stretch)["floor_decal"] = True
+                tip = bmesh.new()
+                bmesh.ops.create_uvsphere(tip, u_segments=8, v_segments=6, radius=0.5 * PX,
+                                          matrix=Matrix.Diagonal((1.0, 1.0, 1.8 / SIN_ALPHA, 1.0)))
+                lit_tip = _prop("RitualFlame", tip, flame,
+                                world_point(x + offset_x, y + offset_y, height + 0.9 / SIN_ALPHA, stretch), stretch)
+                lit_tip.visible_shadow = False
+                lit_tip["floor_decal"] = True
+                _glow("candle", x + offset_x, y + offset_y, height + 0.9 / SIN_ALPHA, (1.0, 0.68, 0.32), 6.0)
+            add_point_light("RitualLight%d" % corner, (x, y + 2.0), 7.0, (1.0, 0.62, 0.3), 0.35, 0.02, stretch)
+            lit += 1
+    print("FLOOR cracks=%d rubble=%d ritual candle groups=%d" % (len(cracks), len(heaps), lit))
+
+
+# ---------------------------------------------------------------- more life
+#
+# Flat floor dressing (notes, spills, chalk, loose gears) is walked over, so it
+# lies flat and is tagged floor_decal. Candles on the wall tops and ivy on the
+# faces stay inside the wall outline and are checked with it.
+
+
+def _decal_quad(name, x, y, width, length, turn, material, stretch, z=0.14):
+    cos_t, sin_t = math.cos(turn), math.sin(turn)
+    corners = [(x + (sx * width * cos_t - sy * length * sin_t) / 2.0, y + (sx * width * sin_t + sy * length * cos_t) / 2.0)
+               for sx, sy in ((-1.0, 1.0), (1.0, 1.0), (1.0, -1.0), (-1.0, -1.0))]
+    return _decal(name, corners, [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], material, stretch, z=z)
+
+
+def material_note():
+    """A dropped page: parchment tone per page, ink lines, a dog-eared corner."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        info = nodes.new("ShaderNodeObjectInfo")
+        lines = op("MULTIPLY", op("LESS_THAN", op("FRACT", op("MULTIPLY", v, 7.0)), 0.3),
+                   op("MULTIPLY", op.between(u, 0.14, op("ADD", 0.6, op("MULTIPLY", info.outputs["Random"], 0.3))),
+                      op.between(v, 0.12, 0.84)))
+        corner = op("GREATER_THAN", op("ADD", u, v), 1.78)
+        paper = _mix(nodes, links, info.outputs["Random"], (0.62, 0.56, 0.42), (0.78, 0.74, 0.64))
+        color = _mix(nodes, links, op("MULTIPLY", lines, 0.8), paper, (0.12, 0.09, 0.08))
+        color = _mix(nodes, links, corner, color, (0.42, 0.37, 0.27))
+        _principled(nodes, links, color, roughness=0.88)
+    return _material("DroppedNote", build)
+
+
+def material_spill(name, color):
+    """Spilled reagent: an irregular glossy pool that glows faintly."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        du = op("MULTIPLY", op("SUBTRACT", u, 0.5), 2.0)
+        dv = op("MULTIPLY", op("SUBTRACT", v, 0.5), 2.0)
+        radius = op("SQRT", op("ADD", op("MULTIPLY", du, du), op("MULTIPLY", dv, dv)))
+        wobble = _noise(nodes, links, coords.outputs["UV"], scale=3.0, detail=4.0)
+        shape = op("LESS_THAN", op("ADD", radius, op("MULTIPLY", op("SUBTRACT", wobble, 0.5), 0.9)), 0.62)
+        droplets = op("LESS_THAN", _noise(nodes, links, coords.outputs["UV"], scale=11.0, detail=2.0), 0.3)
+        pool = op("MAXIMUM", shape, op("MULTIPLY", droplets, op("LESS_THAN", radius, 0.95)))
+        depth = op("SUBTRACT", 1.0, op("MINIMUM", op("DIVIDE", radius, 0.7), 1.0))
+        base = _mix(nodes, links, depth, tuple(channel * 0.05 for channel in color),
+                    tuple(channel * 0.16 for channel in color))
+        shader = _principled(nodes, links, base, roughness=0.04)
+        shader.inputs["Emission Color"].default_value = color + (1.0,)
+        links.new(op("MULTIPLY", op("POWER", depth, 2.0), 0.9), shader.inputs["Emission Strength"])
+        # Thin at the rim: the pool fades into the stone rather than sitting on it.
+        _alpha_cut(nodes, links, shader, op("MULTIPLY", pool, op("ADD", 0.55, op("MULTIPLY", depth, 0.45))))
+    return _material(name, build)
+
+
+def material_chalk_diagram():
+    """Chalk on the flagstones: a circle, an inscribed triangle, arrows and working."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        aspect = 30.0 / 44.0
+        du = op("SUBTRACT", u, 0.32)
+        dv = op("MULTIPLY", op("SUBTRACT", v, 0.5), aspect)
+        radius = op("SQRT", op("ADD", op("MULTIPLY", du, du), op("MULTIPLY", dv, dv)))
+        circle = op.between(radius, 0.24, 0.255)
+        lines = circle
+        corners = [(0.32 + 0.245 * math.cos(math.radians(a)), 0.5 + 0.245 * math.sin(math.radians(a)) / aspect)
+                   for a in (90.0, 210.0, 330.0)]
+        for (ax, ay), (bx, by) in zip(corners, corners[1:] + corners[:1]):
+            length = (bx - ax) ** 2 + ((by - ay) * aspect) ** 2
+            t = op("MINIMUM", op("MAXIMUM", op("DIVIDE", op("ADD", op("MULTIPLY", op("SUBTRACT", u, ax), bx - ax),
+                                                         op("MULTIPLY", op("SUBTRACT", v, ay), (by - ay) * aspect * aspect)),
+                                          length), 0.0), 1.0)
+            gx = op("SUBTRACT", u, op("ADD", ax, op("MULTIPLY", t, bx - ax)))
+            gy = op("MULTIPLY", op("SUBTRACT", v, op("ADD", ay, op("MULTIPLY", t, by - ay))), aspect)
+            lines = op("MAXIMUM", lines, op("LESS_THAN", op("ADD", op("MULTIPLY", gx, gx), op("MULTIPLY", gy, gy)),
+                                                         0.00006))
+        arrow = op("MULTIPLY", op.between(v, 0.49, 0.51), op.between(u, 0.6, 0.78))
+        head = op("MULTIPLY", op("LESS_THAN", op("ABSOLUTE", op("SUBTRACT", op("ABSOLUTE", op("SUBTRACT", v, 0.5)),
+                                                                        op("MULTIPLY", op("SUBTRACT", 0.78, u), 1.3))),
+                                              0.012), op.between(u, 0.72, 0.78))
+        words = None
+        for level, seed in ((0.74, 2.3), (0.6, 5.1), (0.4, 8.7)):
+            word_in = nodes.new("ShaderNodeCombineXYZ")
+            links.new(op("MULTIPLY", u, 14.0), word_in.inputs["X"])
+            word_in.inputs["Y"].default_value = seed
+            letters = op("MULTIPLY", op("GREATER_THAN", _noise(nodes, links, word_in.outputs[0], scale=1.0, detail=1.0),
+                                        0.46), op("LESS_THAN", op("FRACT", op("MULTIPLY", u, 90.0)), 0.5))
+            row = op("MULTIPLY", op("MULTIPLY", op.between(v, level - 0.035, level + 0.035), op.between(u, 0.8, 0.97)),
+                     letters)
+            words = row if words is None else op("MAXIMUM", words, row)
+        smudge = _noise(nodes, links, coords.outputs["UV"], scale=6.0, detail=3.0)
+        chalk = op("MULTIPLY", op("MAXIMUM", op("MAXIMUM", lines, op("MAXIMUM", arrow, head)), words),
+                   op("ADD", 0.35, op("MULTIPLY", smudge, 0.65)))
+        shader = _principled(nodes, links, (0.78, 0.8, 0.76), roughness=0.95)
+        _alpha_cut(nodes, links, shader, op("MINIMUM", chalk, 1.0))
+    return _material("ChalkDiagram", build)
+
+
+def add_floor_story(layout, meta, stretch, avoid):
+    """Notes, spills, chalk working and loose gears across the open floor."""
+    rng = np.random.default_rng(SEED + 23)
+    note = material_note()
+    clusters = _open_spots(layout, meta, 12, 9, avoid, 90.0, rng, clear_of=40.0)
+    notes = 0
+    for cx, cy in clusters:
+        for _page in range(int(rng.integers(2, 5))):
+            x, y = cx + float(rng.uniform(-9.0, 9.0)), cy + float(rng.uniform(-7.0, 7.0))
+            _decal_quad("Note%d" % notes, x, y, 6.0, 8.0, float(rng.uniform(0.0, math.pi)), note, stretch,
+                        z=0.14 + notes * 0.002)
+            notes += 1
+    taken = avoid + clusters
+    spills = _open_spots(layout, meta, 14, 3, taken, 220.0, rng, clear_of=45.0)
+    for index, (x, y) in enumerate(spills):
+        name, color = (("SpillViolet", (0.6, 0.3, 1.0)), ("SpillGreen", (0.25, 1.0, 0.5)))[index % 2]
+        size = float(rng.uniform(18.0, 26.0))
+        _decal_quad("Spill%d" % index, x, y, size, size * 0.8, float(rng.uniform(0.0, math.pi)),
+                    material_spill(name, color), stretch, z=0.13)
+        _glow("potion", x, y, 0.0, color, size * 0.7)
+    taken = taken + spills
+    chalk = _open_spots(layout, meta, 24, 2, taken, 260.0, rng, clear_of=50.0)
+    for index, (x, y) in enumerate(chalk):
+        _decal_quad("Chalk%d" % index, x, y, 44.0, 30.0, float(rng.uniform(-0.3, 0.3)), material_chalk_diagram(),
+                    stretch, z=0.12)
+    taken = taken + chalk
+    gears = (_gear_material("GearBrass", (0.64, 0.46, 0.2)), _gear_material("GearCopper", (0.6, 0.31, 0.17)))
+    loose = _open_spots(layout, meta, 4, 8, taken, 60.0, rng, near_wall=10, clear_of=20.0)
+    for index, (x, y) in enumerate(loose):
+        add_gear("LooseGear%d" % index, x, y, 0.0, float(rng.uniform(2.4, 3.8)), 0.6, float(rng.uniform(0.0, 6.3)),
+                 gears[index % 2], stretch)
+        bpy.data.objects["LooseGear%d" % index]["floor_decal"] = True
+    print("FLOOR STORY notes=%d spills=%d chalk=%d loose gears=%d" % (notes, len(spills), len(chalk), len(loose)))
+
+
+def add_cap_candles(layout, meta, stretch, count=10):
+    """Candles burning on the wall tops, near the camera-facing edge, inside the outline."""
+    rng = np.random.default_rng(SEED + 31)
+    x0, y0, width, height = meta["region"]
+    window = (slice(y0, y0 + height), slice(x0, x0 + width))
+    solid = layout.footprint[window] & (layout.kind[window] != CLASS_PIT)
+    lip = solid & ~np.roll(solid, -5, axis=0)
+    deep = np.zeros_like(solid)
+    deep[14:, :] = solid[:-14, :]
+    allowed = lip & deep & _erode(solid, 3)
+    rows, columns = np.nonzero(allowed)
+    wax = _material("CandleWax", lambda nodes, links: _principled(nodes, links, (0.8, 0.73, 0.58), roughness=0.5))
+    flame = _glow_material("CandleFlame", (1.0, 0.72, 0.32), 18.0, (1.0, 0.8, 0.5))
+    chosen = []
+    for index in rng.permutation(len(rows)):
+        x, y = x0 + columns[index] + 0.5, y0 + rows[index] + 0.5
+        if any((x - a) ** 2 + (y - b) ** 2 < 70.0 ** 2 for a, b in chosen):
+            continue
+        chosen.append((x, y))
+        base = float(layout.height[int(y), int(x)])
+        for offset_x, offset_y, tall in ((-1.4, -1.0, 3.0), (1.0, 0.0, 4.4), (0.2, -2.2, 2.2))[:int(rng.integers(2, 4))]:
+            body = bmesh.new()
+            _cylinder(body, 0.75, tall, segments=10)
+            _prop("CapCandle", body, wax, world_point(x + offset_x, y + offset_y, base + tall / 2.0, stretch), stretch)
+            tip = bmesh.new()
+            bmesh.ops.create_uvsphere(tip, u_segments=8, v_segments=6, radius=0.5 * PX,
+                                      matrix=Matrix.Diagonal((1.0, 1.0, 1.8, 1.0)))
+            lit = _prop("CapFlame", tip, flame, world_point(x + offset_x, y + offset_y, base + tall + 0.9, stretch),
+                        stretch)
+            lit.visible_shadow = False
+            _glow("candle", x + offset_x, y + offset_y, base + tall + 0.9, (1.0, 0.68, 0.32), 6.0)
+        add_point_light("CapCandleLight", (x, y + 1.0), base + 6.0, (1.0, 0.62, 0.3), 0.3, 0.01, stretch)
+        if len(chosen) >= count:
+            break
+    print("CAP CANDLES %d" % len(chosen))
+
+
+def material_ivy():
+    """Ivy hanging from a wall's top: clustered leaves thinning out as they fall."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        leaves = nodes.new("ShaderNodeTexVoronoi")
+        leaves.inputs["Scale"].default_value = 9.0
+        links.new(coords.outputs["UV"], leaves.inputs["Vector"])
+        leaf = op("LESS_THAN", leaves.outputs["Distance"], 0.36)
+        reach_in = nodes.new("ShaderNodeCombineXYZ")
+        links.new(op("MULTIPLY", u, 4.0), reach_in.inputs["X"])
+        reach_in.inputs["Y"].default_value = 1.9
+        reach = op("ADD", 0.25, op("MULTIPLY", _noise(nodes, links, reach_in.outputs[0], scale=1.0, detail=3.0), 0.8))
+        hang = op("GREATER_THAN", v, op("SUBTRACT", 1.0, reach))
+        edges = op("MINIMUM", op("MULTIPLY", u, 6.0), op("MULTIPLY", op("SUBTRACT", 1.0, u), 6.0))
+        keep = op("MULTIPLY", op("MULTIPLY", leaf, hang), op("GREATER_THAN", edges, _noise(nodes, links, coords.outputs["UV"],
+                                                                                             scale=7.0, detail=2.0)))
+        shade = _mix(nodes, links, leaves.outputs["Color"], (0.035, 0.09, 0.03), (0.09, 0.2, 0.06))
+        shader = _principled(nodes, links, shade, roughness=0.6)
+        _alpha_cut(nodes, links, shader, keep)
+    return _material("Ivy", build)
+
+
+def add_ivy(layout, meta, stretch, count=6):
+    rng = np.random.default_rng(SEED + 41)
+    segments = [segment for segment in face_segments(layout, meta, minimum=30)]
+    rng.shuffle(segments)
+    for index, (start, end, face_y, wall_height) in enumerate(segments[:count]):
+        width = float(rng.uniform(12.0, 18.0))
+        left_side = rng.random() < 0.5
+        x = start + width / 2.0 + 1.0 if left_side else end - width / 2.0 - 1.0
+        top = wall_height * 0.99
+        _face_plane("Ivy%d" % index, x, face_y, top - float(rng.uniform(26.0, 38.0)) / SIN_ALPHA, top, width,
+                    material_ivy(), stretch, out=1.0)
+    print("IVY %d" % min(count, len(segments)))
+
+
+# ---------------------------------------------------------------- HD props
+#
+# Interactive props keep their game sprite node: feet, focus point, occlusion
+# and highlight all come from that sprite's on-screen rect. Each one is
+# modelled to fill exactly that rect, rendered on its own over transparency,
+# and the playable preview swaps the sprite's texture for the render.
+
+PROP_SPRITES = {"CircuitRoomKnowledge": "WallCollisions/KnowledgeExhibits/CircuitRoomKnowledge/Sprite"}
+
+
+def _wire(name, points, radius, material, stretch):
+    """A copper lead through game points (x, plan y, z)."""
+    curve = bpy.data.curves.new(name, "CURVE")
+    curve.dimensions = "3D"
+    curve.bevel_depth = radius * PX
+    curve.bevel_resolution = 2
+    spline = curve.splines.new("POLY")
+    spline.points.add(len(points) - 1)
+    for point, (x, y, z) in zip(spline.points, points):
+        point.co = (x * PX, -y * PX * stretch, z * PX, 1.0)
+    curve.materials.append(material)
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.scene.collection.objects.link(obj)
+    return obj
+
+
+def build_circuit_exhibit(rect, stretch):
+    """The Circuit Room knowledge exhibit as an electrical cabinet: two meters on a
+    closed circuit, as its text describes, with a knife switch, copper leads, a coil
+    and a lit bulb. Returns its objects and the bulb's position."""
+    x0, y0, width, height = rect
+    cx = x0 + width / 2.0
+    feet = y0 + height
+    face = feet - 3.0
+    back = feet - 16.0
+    up = 1.0 / SIN_ALPHA
+    brass = _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3)
+    copper = _metal("MachineCopper", (0.6, 0.31, 0.17), 0.34)
+
+    def build_wood(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = nodes.new("ShaderNodeTexWave")
+        grain.wave_type = "BANDS"
+        grain.bands_direction = "Z"
+        grain.inputs["Scale"].default_value = 40.0
+        grain.inputs["Distortion"].default_value = 5.0
+        links.new(coords.outputs["Object"], grain.inputs["Vector"])
+        _principled(nodes, links, _mix(nodes, links, grain.outputs["Fac"], (0.16, 0.08, 0.04), (0.3, 0.16, 0.08)),
+                    roughness=0.5)
+    wood = _material("CabinetWalnut", build_wood)
+    bakelite = _material("Bakelite", lambda nodes, links: _principled(nodes, links, (0.015, 0.012, 0.012),
+                                                                        roughness=0.3))
+    made = []
+
+    def box(suffix, centre_x, front, depth, low, high, wide, material):
+        made.append(_box("Circuit" + suffix, (centre_x, front - depth / 2.0, (low + high) / 2.0 * up),
+                         (wide, depth, (high - low) * up), material, stretch))
+
+    def disc(suffix, centre_x, plan_y, z, radius, depth, material, segments=28):
+        shape = bmesh.new()
+        _cylinder(shape, radius, depth, segments=segments, matrix=UPRIGHT @ Matrix.Rotation(math.radians(90.0), 4, "X"))
+        made.append(_prop("Circuit" + suffix, shape, material, world_point(centre_x, plan_y, z * up, stretch), stretch))
+
+    # The game reads the prop's feet and highlight from the sprite's opaque
+    # bounds, so the model touches all four sides of the rect: the plinth's
+    # front edge is the feet line, the crest's arch reaches the top.
+    box("Plinth", cx, feet, feet - back, 0.0, 5.0, width - 1.0, wood)
+    box("Body", cx, face, face - back, 5.0, 64.0, width - 3.0, wood)
+    for side in (-1.0, 1.0):
+        box("Door", cx + side * 8.2, face + 0.6, 0.6, 8.0, 26.0, 14.5, wood)
+        disc("Knob", cx + side * 1.8, face + 1.0, 17.0, 0.8, 0.8, brass, segments=10)
+    box("Ledge", cx, face + 2.6, 2.6, 28.0, 30.5, width - 3.0, wood)
+    box("Panel", cx, face + 0.3, 0.3, 33.0, 58.0, width - 7.0, bakelite)
+    for index, side in enumerate((-1.0, 1.0)):
+        disc("Bezel", cx + side * 8.2, face + 1.1, 46.0, 6.2, 1.6, brass)
+        made.append(_dial_disc("CircuitDial", cx + side * 8.2, face + 1.95, 46.0 * up, 5.3,
+                               material_dial("ExhibitDial%d" % index, "gauge", needle=(0.15, -0.08)[index]), stretch))
+    box("SwitchBase", cx - 9.0, face + 2.4, 2.0, 30.5, 31.5, 8.0, bakelite)
+    box("Blade", cx - 9.0, face + 1.6, 0.6, 31.6, 32.3, 7.0, copper)
+    disc("Handle", cx - 13.2, face + 1.4, 32.0, 0.9, 1.4, bakelite, segments=10)
+    for offset in (5.0, 8.5):
+        post = bmesh.new()
+        _cylinder(post, 0.7, 1.6 * up, segments=10)
+        made.append(_prop("CircuitPost", post, brass, world_point(cx + offset, face + 1.4, 31.3 * up, stretch), stretch))
+    coil = bmesh.new()
+    _cylinder(coil, 1.0, 5.0 * up, segments=12)
+    for turn in range(7):
+        _cylinder(coil, 1.7, 0.45 * up, segments=14,
+                  matrix=Matrix.Translation((0.0, 0.0, (-2.0 + turn * 0.66) * up * PX)))
+    made.append(_prop("CircuitCoil", coil, copper, world_point(cx + 13.0, face + 1.3, 33.0 * up, stretch), stretch))
+    box("Cornice", cx, face + 1.2, face + 1.2 - back, 62.0, 65.0, width, brass)
+    crest_y = face - 4.0
+    box("Crest", cx, crest_y + 0.6, 1.2, 65.0, 72.0, 20.0, brass)
+    disc("Arch", cx, crest_y, 72.0, max(crest_y - 0.6 - 72.0 - y0, 6.0), 1.2, brass, segments=40)
+    socket = bmesh.new()
+    _cylinder(socket, 1.6, 2.0 * up, segments=12)
+    made.append(_prop("CircuitSocket", socket, brass, world_point(cx, crest_y + 2.2, 69.0 * up, stretch), stretch))
+    bulb_z = 73.5 * up
+    glass = bmesh.new()
+    bmesh.ops.create_uvsphere(glass, u_segments=14, v_segments=10, radius=2.9 * PX, matrix=UPRIGHT)
+    bulb = _prop("CircuitBulb", glass, _flask_glass(), world_point(cx, crest_y + 2.2, bulb_z, stretch), stretch)
+    bulb.visible_shadow = False
+    made.append(bulb)
+    filament = bmesh.new()
+    bmesh.ops.create_cube(filament, size=1.0, matrix=Matrix.Diagonal((1.8 * PX, 0.4 * PX, 1.2 * up * PX, 1.0)))
+    glow = _prop("CircuitFilament", filament, _glow_material("Filament", (1.0, 0.7, 0.32), 40.0, (1.0, 0.8, 0.5)),
+                 world_point(cx, crest_y + 2.2, bulb_z, stretch), stretch)
+    glow.visible_shadow = False
+    made.append(glow)
+    lead = face + 0.5
+    made.append(_wire("CircuitLeadA", [(cx - 6.0, face + 1.4, 31.9 * up), (cx - 5.0, lead, 34.0 * up),
+                                       (cx - 8.2, lead, 39.5 * up)], 0.35, copper, stretch))
+    made.append(_wire("CircuitLeadB", [(cx - 8.2, lead, 52.5 * up), (cx - 4.0, lead, 55.5 * up),
+                                       (cx + 4.0, lead, 55.5 * up), (cx + 8.2, lead, 52.5 * up)], 0.35, copper, stretch))
+    made.append(_wire("CircuitLeadC", [(cx + 8.2, lead, 39.5 * up), (cx + 8.5, face + 1.4, 33.0 * up)], 0.35, copper, stretch))
+    made.append(_wire("CircuitLeadD", [(cx + 13.0, face + 1.3, 36.0 * up), (cx + 14.5, lead, 50.0 * up),
+                                       (cx + 13.0, lead, 61.0 * up), (cx + 3.0, crest_y + 2.2, 70.0 * up)], 0.3, copper, stretch))
+    for obj in made:
+        obj["hd_prop"] = "CircuitRoomKnowledge"
+    return made, (cx, crest_y + 2.2, bulb_z)
+
+
+def add_hd_props(meta, stretch):
+    """Builds every HD prop the region holds, hidden from the background render."""
+    props = {}
+    exhibits = meta.get("exhibits", {})
+    x0, y0, width, height = meta["region"]
+    rect = exhibits.get("CircuitRoomKnowledge")
+    if rect is not None and x0 <= rect[0] and rect[0] + rect[2] <= x0 + width and y0 <= rect[1] \
+            and rect[1] + rect[3] <= y0 + height:
+        objects, bulb = build_circuit_exhibit(rect, stretch)
+        # The bulb lights the wall behind the prop in the background render too,
+        # and a soft key from the corridor side makes the exhibit read as the
+        # thing to walk up to.
+        add_point_light("CircuitBulbLight", bulb[:2], bulb[2], (1.0, 0.66, 0.32), 1.1, 0.02, stretch)
+        add_point_light("CircuitKey", (rect[0] + rect[2] + 16.0, rect[1] + rect[3] + 26.0), 55.0, (1.0, 0.86, 0.7),
+                        1.8, 0.15, stretch, mirrored=False)
+        _glow("bulb", bulb[0], bulb[1], bulb[2], (1.0, 0.68, 0.32), 12.0)
+        for obj in objects:
+            obj.hide_render = True
+        props["CircuitRoomKnowledge"] = (rect, objects)
+    return props
+
+
+def render_props(props, out, meta):
+    """Each HD prop alone, cropped to its rect, over transparency; plus the swap list."""
+    scene = bpy.context.scene
+    x0, y0, width, height = meta["region"]
+    entries = []
+    for prop_id, (rect, objects) in props.items():
+        others = [obj for obj in scene.objects if obj.type in ("MESH", "CURVE") and not obj.hide_render]
+        for obj in others:
+            obj.hide_render = True
+        for obj in objects:
+            obj.hide_render = False
+        render = scene.render
+        render.use_border = True
+        render.use_crop_to_border = True
+        render.border_min_x = (rect[0] - x0) / width
+        render.border_max_x = (rect[0] + rect[2] - x0) / width
+        render.border_min_y = 1.0 - (rect[1] + rect[3] - y0) / height
+        render.border_max_y = 1.0 - (rect[1] - y0) / height
+        render.film_transparent = True
+        render.image_settings.color_mode = "RGBA"
+        image = os.path.splitext(out)[0] + "-prop-%s.png" % prop_id
+        render_to(image)
+        render.use_border = False
+        render.film_transparent = False
+        render.image_settings.color_mode = "RGB"
+        for obj in objects:
+            obj.hide_render = True
+        for obj in others:
+            obj.hide_render = False
+        entries.append({"id": prop_id, "node": PROP_SPRITES[prop_id], "image": os.path.basename(image),
+                        "rect": list(rect)})
+    path = os.path.splitext(out)[0] + "-props.json"
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump({"generator": "tools/blender/hall_prototype.py", "props": entries}, handle, indent=1)
+    print("PROPS %d -> %s" % (len(entries), path))
 
 
 def find_inlay_spot(layout, near, reach=150, largest=46.0, smallest=22.0):
@@ -2553,6 +3289,13 @@ def main():
     add_floor_grates(layout, meta, stretch, [mount[:2] for mount in mounts] + [tuple(meta.get("spawn", (0, 0)))])
     dress_faces(layout, meta, stretch, [(mount[0], mount[1], 6.0) for mount in mounts]
                 + [(x, y, BANNER_WIDTH_PX / 2.0 + 2.0) for x, y in banners])
+    route = [tuple(point) for point in meta.get("opening_route") or []]
+    keep_clear = [mount[:2] for mount in mounts] + route + ([inlay[:2]] if inlay is not None else [])
+    add_floor_details(layout, meta, stretch, keep_clear, inlay)
+    add_floor_story(layout, meta, stretch, keep_clear)
+    add_cap_candles(layout, meta, stretch)
+    add_ivy(layout, meta, stretch)
+    props = add_hd_props(meta, stretch)
     glows_path = os.path.splitext(options["out"])[0] + "-glows.json"
     with open(glows_path, "w", encoding="utf-8") as handle:
         json.dump({"generator": "tools/blender/hall_prototype.py", "region": meta["region"], "glows": GLOWS},
@@ -2568,6 +3311,7 @@ def main():
     if options["save_blend"]:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(options["save_blend"]))
     render_to(options["out"])
+    render_props(props, options["out"], meta)
     if options["silhouette"]:
         # Floor quads would fill the outline; hide them by giving the silhouette
         # pass a walls-only copy. Props stay: they must fit inside the outline.

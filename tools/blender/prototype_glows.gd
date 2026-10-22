@@ -10,6 +10,7 @@ extends RefCounted
 ## strength: halo alpha at rest; depth: how far it swings; speed: changes per second.
 const KINDS: Dictionary = {
 	"lantern": {"strength": 0.3, "depth": 0.22, "speed": 5.0},
+	"bulb": {"strength": 0.32, "depth": 0.1, "speed": 3.0},
 	"candle": {"strength": 0.4, "depth": 0.35, "speed": 8.0},
 	"potion": {"strength": 0.28, "depth": 0.2, "speed": 1.2},
 	"crystal": {"strength": 0.32, "depth": 0.45, "speed": 0.6},

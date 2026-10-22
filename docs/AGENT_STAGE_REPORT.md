@@ -2,6 +2,75 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-42
+
+- **Date:** 2026-10-21
+- **Status:** denser dressing and the first HD interactive prop built in the prototype region, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 41 the user chose "满意，下一步把左边的电路展台也换成高清模型" (replace the Circuit exhibit on the left with an HD model) and noted "装饰太少了" (still too little decoration). Stage 41 was committed and pushed as `2bef8ca` with their approval.
+
+### What changed
+
+- **HD Circuit exhibit** (`build_circuit_exhibit`). The Circuit Room knowledge exhibit is modelled as a walnut electrical cabinet:
+  - two brass-bezelled meters on one closed circuit (its text describes "the two gauges measure a closed electrical circuit"), joined by copper leads;
+  - a knife switch, a copper coil, binding posts, a crest with a lit filament bulb, and cupboard doors.
+  - **Integration without touching gameplay.** The game reads the exhibit's feet, focus point, occlusion and highlight from its `Sprite` node's opaque bounds.
+    - The model is built to touch all four sides of the sprite's rect (62.5, 912.5, 37.5×92.5) and rendered alone over transparency into exactly that rect, as `render-prop-CircuitRoomKnowledge.png`, listed in `render-props.json`.
+    - The new `tools/blender/prototype_props.gd` swaps only that sprite's texture and scale in the preview and captures, and keeps the contact shadow in place.
+    - Headless check: feet (81.25, 1005) and rect are identical before and after the swap, and `restore()` returns the pixel prop exactly.
+- **Denser dressing.** Wall slots are now about 30 px apart (they were about 46), and six new wall kinds join the mix: iron candle sconces, blueprints, a torn treasure map, an oval mirror with a pale figure in it, a star-chart tapestry, and violet light leaking from wall cracks.
+  - **Floor** (flat, walk-over, tagged `floor_decal`):
+    - 29 dropped notes in clusters;
+    - 2 chalk diagrams (a triangle in a circle, arrows, working);
+    - 3 glowing reagent spills, violet and green;
+    - 12 cracked flagstones, some leaking violet light;
+    - 8 loose cogs and 10 rubble heaps at the walls' feet;
+    - 4 groups of ritual candles around the compass rose.
+  - **Wall tops:** moss patches and a broken crack network on the dark slate, 10 candle groups burning near their south edges (inside the outline), and 6 ivy curtains hanging down the faces.
+  - There are 91 animated glows now (64 before the floor dressing). The bulb flickers like a filament.
+- **Fixes along the way:**
+  - The floor and cap ambient occlusion only considers the hall's own stone. Without that, decals and props darkened the floor in squares.
+  - The capture tool logs the spot each player shot uses.
+
+### Findings
+
+- **Gameplay still unchanged:**
+  - IoU against the smoothed outline is 0.99993.
+  - Against the collision, 0 px are missing beyond 3 game px, and the same 16 px are extra at the two pocket-adjacent spots.
+  - Every new wall and top item is inside the outline. Every floor item is flat or a few px tall, and the silhouette pass skips it like the floor.
+- **In play** (`23-denser-dressing.png`):
+  - The arrival now has the lit cabinet, a candle ring around the compass and notes underfoot.
+  - Every corridor has something to look at, and the violet spills and leaks hint at more down the side passages.
+- **Render cost:** 34 s at 128 samples. A probe showed the Metal kernel optimisation level makes no difference at 128 samples.
+
+### Exact files
+
+- Changed: `tools/blender/hall_prototype.py`, `tools/blender/play_prototype.gd`, `tools/blender/capture_prototype.gd`, `tools/blender/prototype_glows.gd`.
+- New: `tools/blender/prototype_props.gd` (+UID).
+- Evidence: `docs/evidence/2026-10-21-blender-hall-prototype/`.
+  - The six comparisons were rebuilt from fresh EN/ZH captures.
+  - New: `23-denser-dressing.png` (stage 41 vs this pass).
+  - Updated: `silhouette-diff.png`.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_hall/`, containing `render.png`, `render-glows.json`, `render-props.json`, `render-prop-CircuitRoomKnowledge.png`, the silhouettes, `hall_prototype.blend` and the captures.
+
+### Verification
+
+- **Blender:** final render at 2048×1024, 128 samples, with the silhouette check as above. `py_compile` and pyflakes are clean.
+- **Native captures:** `capture_prototype.gd` passes all 30 checks in EN and ZH, including "The HD props load", and the shots were inspected.
+- **Exhibit swap:** a headless check confirms the swap leaves the exhibit's feet and rect identical.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`. The headless editor parse (isolated HOME) has 0 script errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `BLENDER_PROTOTYPE_OVERLAY region [0, 768, 1024, 512], 91 glows, 1 HD props`.
+
+### Limits / next stage
+
+- **Remaining pixel elements:** the player, the Guardian and the footprints are still pixel art on the HD render.
+- **Next:**
+  - Extend the pipeline to the whole Hall, including the other four knowledge exhibits, the storage rack, the three Final Key machines and the seven doors.
+  - Then decide on characters.
+- **GitHub:** not committed. Committing needs the user's approval. No Web deployment.
+
+---
+
 ## Stage: UX-20261021-41
 
 - **Date:** 2026-10-21
@@ -64,7 +133,7 @@
   - An HD model of the Circuit exhibit that still reads as interactive.
   - Moss and wear on the wall tops.
   - Then extending the pipeline to the whole Hall, including the seven doors.
-- **GitHub:** not committed. Committing needs the user's approval. No Web deployment.
+- **GitHub:** committed and pushed as `2bef8ca` with the user's approval. No Web deployment.
 
 ---
 

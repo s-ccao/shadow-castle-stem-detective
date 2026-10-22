@@ -19,6 +19,11 @@
     - a bookshelf with glowing potion flasks, a chalkboard of equations, brass pressure gauges, and clocks stopped at eight minutes to midnight;
     - a detective's case board tied with red string, and cobwebs.
     - In the playable preview, lanterns and candles flicker while crystals, grates and runes pulse.
+  - **Denser dressing and an HD exhibit:** the user still found it sparse, so this pass adds:
+    - sconces, blueprints, a treasure map, a haunted mirror, a star-chart tapestry and glowing wall cracks;
+    - dropped notes, chalk diagrams, glowing reagent spills, cracked flagstones, rubble, loose cogs and a candle ring around the compass;
+    - moss, ivy and candles on the wall tops.
+    - The Circuit knowledge exhibit is now an HD electrical cabinet with two meters on a closed circuit. It occupies exactly the same footprint, so interaction is unchanged.
   - The user is reviewing it in the playable preview before it is extended to the rest of the Hall.
 
 - **Hall route:** the first route out of the Wake Room is now planned down the middle of each corridor, starting from wherever the player stands. It runs in straight legs and never crosses stone.
