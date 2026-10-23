@@ -263,19 +263,25 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): the whole Hall is built, user review pending.** See stages UX-20261021-39 to -45 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order; `26-hall-doors.png` shows every door in game.
+1. **Blender Hall prototype (HD): the whole Hall and all nine props are built, user review pending.** See stages UX-20261021-39 to -46 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. `26-hall-doors.png` shows every door in game, `28-hd-props.png` every prop in game, and `29-hd-prop-models.png` each pixel sprite above its HD model.
+   - **HD props** (stage 46): all nine (5 knowledge exhibits, the storage rack, 3 Final Key machines) are Blender models, staged on new stands in the preview only.
+     - `HD_PROP_STANDS` in `hall_prototype.py` holds each stand: centre x, face row, width, height (the pixel sprite's at `FIGURE_SCALE`) and plan depth.
+     - Each prop backs onto a straight stretch of a wall's south face, with at least 40 + depth + 6 px of open floor in front, walk-up floor that no door's prompt claims, and 48 px from door arches. `prop_stands()` re-measures them on every build.
+     - Props are built with `PropKit`, in the stand's frame: x across, y plan px north of the feet, z screen px. Anything round uses its helpers (`cylinder`, `rod`, `disc`, `ball`, `ring`, `gear`, `wheel`), which read round in the Hall's stretched projection.
+     - In the Hall render props are invisible to the camera but cast shadows and bounce light. Each is then rendered alone and cropped to alpha above 0.05; `<render>-props.json` lists its node, image, shown rect and the move from its game place.
+     - Lanterns, banners, decor, cobwebs, ivy, wall-top candles and floor clutter keep clear of the stands.
    - **Whole Hall** (stage 45): the export covers the full map, `--region=0,0,1920,1280`. Its `region.json` lists every occluding prop (`props`: path and rect) and each door's real prompt rect (`door_prompts`, from `get_interaction_rect`).
      - A door is drawn on the camera-facing south face whenever the player can stand south of it inside the game's prompt area, and its face is cut back flush. Only Wake keeps the stair from the north. Greenhouse, Library and Circuit have floor on both sides, but their arches face south, as the old art paints them.
      - Gallery works scale with pit area: pipe runs of at most 170 px ending in valve housings, gear trains that never overlap, and crystal clusters.
      - Every listed prop and its contact shadow takes the depth shader (`Depth.add_props`).
-     - The final render takes about 150 s at 128 samples (3840×2560, 4.1 GB peak).
+     - The final render takes about 185 s at 128 samples (3840×2560), plus about 2 s per prop.
    - **Depth model** (stage 43):
      - Walls stand on the collision; each wall px is the base of a block `FACE_PX` (40 since stage 44) tall on screen, so tops rise above the collision.
      - `<render>-depth.png` holds, per screen px, the ground y of the wall seen there (RG = high/low byte, A = wall seen).
      - `tools/blender/prototype_depth.gd` shows whatever a nearer wall covers as a ghost: the player and Guardian at 45% in tinted colour, footprints at 35%. HD props and contact shadows are hidden fully.
      - In the preview it also shows the Hall figures at 50 px (`FIGURE_SCALE`); only the visual nodes change.
      - Floor that no player body can reach (and that no reachable floor touches) is drawn as castle mass.
-     - Props standing inside wall masses get alcoves.
+     - A prop left at its game place inside a wall mass would get an alcove; the staged props stand in front of the faces, so none is cut now.
      - Doors the player reaches from the north need a visible treatment from that side; the Wake gate is a stair down.
      - The old "silhouette = collision" rule is gone: it put each wall's top edge exactly where the player stops on its north side.
    - Pipeline:
@@ -287,16 +293,16 @@ Manual acceptance flow:
        - Floor decals carry the `floor_decal` property, so the silhouette pass skips them like the floor.
        - Keep heavy shader logic off the floor material (give it its own object), and keep merged quads tile-sized. Both slowed renders several-fold.
        - Beside the render it writes `<out>-glows.json`: lanterns, candles, crystals, grates, runes, potions and the portraits' eyes, in screen-space game px.
-     - `tools/blender/capture_prototype.gd` (native Godot) overlays the render visually and captures paired shots.
+     - `tools/blender/capture_prototype.gd` (native Godot) overlays the render and captures paired shots. Shots 21–29 walk the player up to each prop and check that its own prompt shows there and no door's does.
      - `tools/blender/play_prototype.gd` (native Godot, `-- --hall`) is a playable preview. The normal game does not include the render.
      - `tools/blender/prototype_glows.gd` adds additive halos under the overlay. They animate in the preview and stay at rest in captures, and the fog (z 100) still covers them.
-     - `tools/blender/prototype_props.gd` swaps interactive pixel props for HD renders listed in `<render>-props.json`. Only the prop's `Sprite` texture and scale change.
-       - Each HD prop is modelled to touch all four sides of its sprite's rect, and rendered alone into exactly that rect, because the game reads feet, focus, occlusion and highlight from the opaque bounds (`RoomSpatialRuntime.get_visual_rect`).
-       - The Circuit exhibit is the first one.
+     - `tools/blender/prototype_props.gd` stages the HD props listed in `<render>-props.json`.
+       - It moves each prop's node by its listed move and shows the cropped render in place of its sprite (unscaled, at the shown rect). It hides the pixel contact shadow and calls `sync_hall_knowledge_items()`.
+       - The game reads feet, prompt, focus box and occlusion from the sprite's opaque bounds (`RoomSpatialRuntime.get_visual_rect`), so all of them follow the HD prop. `restore()` puts every node back.
    - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
-   - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45). They allow replacing anything in the Hall with details that fit the game.
-     - Next: HD models for the other exhibits, the storage rack and the Final Key machines (only the Circuit exhibit is HD). Then move the HD Hall, the depth shader and the 50 px Hall figure into the game itself.
+   - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45), then asked for every prop in HD, moved or remade to blend in (stage 46). They allow replacing anything in the Hall with details that fit the game.
+     - Next: move the HD Hall, its props on their stands, the depth shader and the 50 px Hall figure into the game itself.
      - Dressing tips: floor items must be flat (tagged `floor_decal`); wall and top items must sit inside the outline; and the AO nodes use `only_local`, so props don't darken the stone in squares.
      - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.
    - Characters stay as they are until the Hall is settled.

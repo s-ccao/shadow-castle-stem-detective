@@ -134,6 +134,13 @@ def parse_args():
             options["preview"] = True
             index += 1
             continue
+        elif key == "--props-only":
+            # Iteration: render only the HD props, not the Hall behind them.
+            options["props_only"] = True
+            index += 1
+            continue
+        elif key == "--prop":
+            options.setdefault("only", []).append(argv[index + 1])
         else:
             raise SystemExit("Unknown option: " + key)
         index += 2
@@ -1563,8 +1570,9 @@ def add_face_doors(layout, stretch):
                 rows = np.flatnonzero(faces[max(row - 4, 0):row + 5, int(lamp_x)]) + max(row - 4, 0)
                 if len(rows):
                     face_row = int(rows[np.argmin(np.abs(rows - row))])
-                    add_lantern("Door%sLamp" % door["name"],
-                                (lamp_x, face_row + 1.0, float(layout.height[face_row, int(lamp_x)])), stretch)
+                    if not _prop_on_face(lamp_x - 3.0, lamp_x + 3.0, face_row + 1.0):
+                        add_lantern("Door%sLamp" % door["name"],
+                                    (lamp_x, face_row + 1.0, float(layout.height[face_row, int(lamp_x)])), stretch)
                     break
     print("FACE DOORS %d" % len(layout.face_doors))
 
@@ -1622,9 +1630,10 @@ def add_lamps(layout, meta, stretch):
     for length, row, start, end in segments:
         count = max(1, length // 150)
         for slot in range(count):
-            x = start + (slot + 0.5) * length / count
             face_y = row + 1.0
-            if _near_door(layout, x, face_y, reach=48.0):
+            # A prop on the face moves its lantern to hang just beside it.
+            x = _beside_props(start + (slot + 0.5) * length / count, face_y, start, end, 4.0)
+            if x is None or _near_door(layout, x, face_y, reach=48.0):
                 continue
             if any((x - other[0]) ** 2 + (face_y - other[1]) ** 2 < LANTERN_SPACING_PX ** 2 for other in mounts):
                 continue
@@ -1907,6 +1916,8 @@ def add_banners(layout, meta, stretch, mounts):
             if wanted == 0:
                 break
             if _near_door(layout, x, face_y):
+                continue
+            if _prop_on_face(x - BANNER_WIDTH_PX / 2.0, x + BANNER_WIDTH_PX / 2.0, face_y):
                 continue
             if any(abs(x - mount[0]) < 34 and abs(face_y - mount[1]) < 30 for mount in mounts):
                 continue
@@ -2771,6 +2782,20 @@ def face_segments(layout, meta, minimum=14):
     return segments
 
 
+def _cut_span(free, left, right):
+    """The stretches (a, b) of `free` less left..right."""
+    cut = []
+    for a, b in free:
+        if right <= a or left >= b:
+            cut.append((a, b))
+            continue
+        if left > a:
+            cut.append((a, left))
+        if right < b:
+            cut.append((right, b))
+    return cut
+
+
 def dress_faces(layout, meta, stretch, taken):
     """Shelves, portraits, alcoves, boards, gauges and a clock in the free stretches
     of the south faces, around the lanterns and banners in `taken` (x, face_y, half width)."""
@@ -2783,19 +2808,12 @@ def dress_faces(layout, meta, stretch, taken):
         for x, other_y, half in list(taken) + [(door["x"], door["face_y"], 26.0) for door in layout.face_doors] + [
                 ((stairs["left"] + stairs["right"]) / 2.0, face_y, 60.0) for stairs in layout.stairs
                 if abs(face_y - stairs["top"]) < 90.0]:
-            if abs(other_y - face_y) > 3.0:
-                continue
-            cut = []
-            for a, b in free:
-                left, right = x - half - 5.0, x + half + 5.0
-                if right <= a or left >= b:
-                    cut.append((a, b))
-                    continue
-                if left > a:
-                    cut.append((a, left))
-                if right < b:
-                    cut.append((right, b))
-            free = cut
+            if abs(other_y - face_y) <= 3.0:
+                free = _cut_span(free, x - half - 5.0, x + half + 5.0)
+        # A staged prop hides the face behind it, however ragged that face is.
+        for stand in STANDS.values():
+            if stand["face_min"] - 4.0 <= face_y <= stand["back"] + 4.0:
+                free = _cut_span(free, stand["left"] - PROP_PAD_PX, stand["right"] + PROP_PAD_PX)
         for a, b in free:
             room = b - a
             slots = max(1, int(room // DECOR_SLOT_PX))
@@ -3035,6 +3053,8 @@ def add_cap_candles(layout, meta, stretch, count=None):
     chosen = []
     for index in rng.permutation(len(rows)):
         x, y = x0 + columns[index] + 0.5, y0 + rows[index] + 0.5
+        if _behind_prop(x, y):
+            continue
         if any((x - a) ** 2 + (y - b) ** 2 < 70.0 ** 2 for a, b in chosen):
             continue
         chosen.append((x, y))
@@ -3084,24 +3104,508 @@ def add_ivy(layout, meta, stretch, count=None):
     count = int(round(6 * DENSITY)) if count is None else count
     segments = [segment for segment in face_segments(layout, meta, minimum=30)]
     rng.shuffle(segments)
-    for index, (start, end, face_y, wall_height) in enumerate(segments[:count]):
+    placed = 0
+    for start, end, face_y, wall_height in segments:
+        if placed >= count:
+            break
         width = float(rng.uniform(12.0, 18.0))
         left_side = rng.random() < 0.5
         x = start + width / 2.0 + 1.0 if left_side else end - width / 2.0 - 1.0
+        drop = float(rng.uniform(20.0, 32.0))
+        if _prop_on_face(x - width / 2.0, x + width / 2.0, face_y):
+            continue
         top = wall_height * 0.99
-        _face_plane("Ivy%d" % index, x, face_y, top - float(rng.uniform(20.0, 32.0)) / SIN_ALPHA, top, width,
-                    material_ivy(), stretch, out=1.0)
-    print("IVY %d" % min(count, len(segments)))
+        _face_plane("Ivy%d" % placed, x, face_y, top - drop / SIN_ALPHA, top, width, material_ivy(), stretch, out=1.0)
+        placed += 1
+    print("IVY %d" % placed)
 
 
 # ---------------------------------------------------------------- HD props
 #
-# Interactive props keep their game sprite node: feet, focus point, occlusion
-# and highlight all come from that sprite's on-screen rect. Each one is
-# modelled to fill exactly that rect, rendered on its own over transparency,
-# and the playable preview swaps the sprite's texture for the render.
+# The Hall's interactive props, modelled to stand in the HD Hall rather than
+# float over it. Each backs onto a wall's camera-facing south face with open
+# floor in front, and is rendered alone over transparency. The playable
+# preview stages it there: it moves the prop's node by the offset from its
+# place in the game and swaps its sprite for the render, so the game's feet,
+# prompt, focus box and occlusion all follow the prop the player sees. The
+# game's own scenes stay as they are.
 
-PROP_SPRITES = {"CircuitRoomKnowledge": "WallCollisions/KnowledgeExhibits/CircuitRoomKnowledge/Sprite"}
+# The preview shows figures at this scale, and props at it too, so props and
+# figures keep the game's proportions.
+FIGURE_SCALE = 1.1 / 1.45
+# Each prop's stand: centre x, the face row it backs onto (give or take a few
+# px), width and height on screen, and plan depth. Each was searched to back
+# onto a straight stretch of face, with a wall's height of open floor in front
+# (or the next wall's top would hide its foot) and floor to walk up to it that
+# no door's prompt claims. Sizes are the pixel sprites' at FIGURE_SCALE; the
+# workshop machine is remodelled narrower to fit its bay.
+HD_PROP_STANDS = {
+    "ChemistryRoomKnowledge": (634.5, 540, 25.6, 76.8, 8),
+    "CircuitRoomKnowledge": (203.0, 728, 28.4, 70.2, 8),
+    "LibraryRoomKnowledge": (1558.4, 196, 22.8, 64.5, 8),
+    "GreenhouseRoomKnowledge": (262.2, 284, 28.4, 67.3, 8),
+    "DiningHallKnowledge": (1718.2, 712, 30.3, 82.5, 8),
+    "StorageRack": (1625.0, 991, 52.2, 49.3, 8),
+    "FinalKeyMachine1": (342.1, 481, 32.2, 85.3, 8),
+    "FinalKeyMachine2": (1395.6, 128, 105.3, 50.3, 6),
+    "FinalKeyMachine3": (1275.0, 1148, 70.0, 80.0, 10),
+}
+# Free px kept beside a prop on its face, and how far past its stand each
+# prop's render reaches before it is cropped to what it shows.
+PROP_PAD_PX = 6.0
+PROP_RENDER_MARGIN_PX = 8
+# The game counts a sprite px as shown above this alpha (RoomSpatialRuntime).
+VISIBLE_ALPHA = 0.05
+# The stands measured on this layout, by prop. Set once the layout is built,
+# before any dressing, so lanterns, decor and floor clutter leave them clear.
+STANDS = {}
+
+
+def prop_stands(layout, meta):
+    """Each stand in the region, measured on the layout: the face row behind
+    every column it covers, its feet, and the open floor in front of it."""
+    x0, y0, width, height = meta["region"]
+    stands = {}
+    for name, (centre, near, wide, tall, depth) in HD_PROP_STANDS.items():
+        left, right = int(round(centre - wide / 2.0)), int(round(centre + wide / 2.0))
+        if not (x0 <= left and right <= x0 + width and y0 <= near - tall and near + depth <= y0 + height):
+            continue
+        faces = []
+        for column in range(left, right):
+            run = layout.wall[near - 14:near + 3, column]
+            rows = [near - 13 + index for index in range(len(run) - 1) if run[index] and not run[index + 1]]
+            faces.append(max(rows) if rows else None)
+        if None in faces:
+            print("STAND %s FAIL: no face behind part of columns %d..%d" % (name, left, right))
+            continue
+        back = max(faces)
+        room = min(int(np.argmax(layout.wall[back:, column])) if layout.wall[back:, column].any()
+                   else layout.rows - back for column in range(left, right))
+        stands[name] = {"centre": float(centre), "left": float(left), "right": float(right), "width": float(wide),
+                        "height": float(tall), "depth": float(depth), "face_min": float(min(faces)),
+                        "back": float(back), "feet": float(back + depth)}
+        print("STAND %s: x %d..%d, face %d..%d, feet %d, %d px open in front: %s" % (
+            name, left, right, min(faces), back, back + depth, room,
+            "OK" if room >= FACE_PX + depth + 6 else "FAIL"))
+    return stands
+
+
+def _prop_on_face(left, right, face_y, pad=PROP_PAD_PX):
+    """Whether a span of the south face at `face_y` is taken by a staged prop."""
+    return any(stand["face_min"] - 4.0 <= face_y <= stand["back"] + 4.0
+               and left < stand["right"] + pad and right > stand["left"] - pad for stand in STANDS.values())
+
+
+def _beside_props(x, face_y, start, end, half):
+    """`x` on the face start..end where no staged prop takes it, else the
+    nearest spot just beside the prop that does; None without room."""
+    if not _prop_on_face(x - half, x + half, face_y):
+        return x
+    spots = []
+    for stand in STANDS.values():
+        spots += [stand["left"] - PROP_PAD_PX - half - 1.0, stand["right"] + PROP_PAD_PX + half + 1.0]
+    for spot in sorted(spots, key=lambda spot: abs(spot - x)):
+        if start + half <= spot <= end - half and not _prop_on_face(spot - half, spot + half, face_y):
+            return spot
+    return None
+
+
+def _behind_prop(x, y):
+    """Whether a wall-top spot lies behind a staged prop, which hides it on screen."""
+    return any(stand["left"] - 10.0 < x < stand["right"] + 10.0 and stand["back"] - FACE_PX * 1.5 < y <= stand["back"]
+               for stand in STANDS.values())
+
+
+def _prop_floor():
+    """Points along each staged prop's foot that floor clutter keeps clear of."""
+    points = []
+    for stand in STANDS.values():
+        steps = max(int(math.ceil((stand["right"] - stand["left"]) / 12.0)), 1)
+        points += [(stand["left"] + (stand["right"] - stand["left"]) * index / steps, stand["feet"] + 4.0)
+                   for index in range(steps + 1)]
+    return points
+
+
+def _torus(shape, major, minor, segments=32, sides=10, matrix=None):
+    """A ring around Z in the XY plane, sizes in game px."""
+    matrix = matrix if matrix is not None else Matrix.Identity(4)
+    rings = []
+    for index in range(segments):
+        turn = 2.0 * math.pi * index / segments
+        ring = []
+        for side in range(sides):
+            bend = 2.0 * math.pi * side / sides
+            reach = major + minor * math.cos(bend)
+            ring.append(shape.verts.new(matrix @ Vector((reach * math.cos(turn) * PX, reach * math.sin(turn) * PX,
+                                                         minor * math.sin(bend) * PX))))
+        rings.append(ring)
+    for index in range(segments):
+        here, there = rings[index], rings[(index + 1) % segments]
+        for side in range(sides):
+            shape.faces.new((here[side], there[side], there[(side + 1) % sides], here[(side + 1) % sides]))
+    bmesh.ops.recalc_face_normals(shape, faces=shape.faces[:])
+
+
+# A disc or ring in the XY plane turned to face the camera, round on screen.
+FACE_ON = UPRIGHT @ Matrix.Rotation(math.radians(90.0), 4, "X")
+
+
+class PropKit:
+    """Builds one prop on its stand, in game px: `x` across from the stand's
+    centre, `y` plan px north of its feet (its front edge on the floor) toward
+    the face it backs onto, `z` screen px up. A part shows on screen up to its
+    y + z above the feet line, so the stand's height bounds that sum. Every
+    object is tagged with the prop's id, so the prop can render alone."""
+
+    def __init__(self, prop_id, stand, stretch):
+        self.id = prop_id
+        self.stand = stand
+        self.cx = stand["centre"]
+        self.feet = stand["feet"]
+        self.stretch = stretch
+        self.made = []
+        self.lights = []
+
+    def at(self, x, y, z):
+        return world_point(self.cx + x, self.feet - y, z / SIN_ALPHA, self.stretch)
+
+    def keep(self, obj):
+        obj["hd_prop"] = self.id
+        self.made.append(obj)
+        return obj
+
+    def mesh(self, name, shape, material, x, y, z, smooth=False):
+        """`shape`, built around its origin in PX units, placed at (x, y, z)."""
+        if smooth:
+            shape.normal_update()
+            for face in shape.faces:
+                face.smooth = smooth is True or bool(smooth(face))
+        return self.keep(_prop(self.id + name, shape, material, self.at(x, y, z), self.stretch))
+
+    def box(self, name, x, z, width, height, front, depth, material):
+        """A block from screen height z, its front `front` px north of the feet."""
+        shape = bmesh.new()
+        bmesh.ops.create_cube(shape, size=1.0, matrix=Matrix.Diagonal(
+            (width * PX, depth * PX, height / SIN_ALPHA * PX, 1.0)))
+        return self.mesh(name, shape, material, x, front + depth / 2.0, z + height / 2.0)
+
+    def cylinder(self, name, x, y, z, radius, height, material, plan=None, tip=None, segments=24):
+        """Upright from screen height z, centred `y` px north of the feet. `plan`
+        is its north-south half depth: by default half its radius, so its top
+        reads as a 3/4 view; `tip` narrows (or widens) its top."""
+        plan = radius * 0.5 if plan is None else plan
+        shape = bmesh.new()
+        _cylinder(shape, radius, height / SIN_ALPHA, segments=segments, tip_radius=tip,
+                  matrix=Matrix.Diagonal((1.0, plan / radius, 1.0, 1.0)))
+        return self.mesh(name, shape, material, x, y, z + height / 2.0, smooth=lambda face: abs(face.normal.z) < 0.6)
+
+    def rod(self, name, x0, x1, y, z, radius, material, plan=None, segments=20):
+        """Lying along x from x0 to x1, its axis `y` px north of the feet at screen
+        height z: `radius` on screen, `plan` its half depth (0.6 of it by default)."""
+        plan = radius * 0.6 if plan is None else min(plan, radius * 0.95)
+        lift = math.sqrt(radius ** 2 - plan ** 2) / SIN_ALPHA
+        shape = bmesh.new()
+        _cylinder(shape, 1.0, x1 - x0, segments=segments,
+                  matrix=Matrix.Diagonal((1.0, plan, lift, 1.0)) @ Matrix.Rotation(math.radians(90.0), 4, "Y"))
+        return self.mesh(name, shape, material, (x0 + x1) / 2.0, y, z, smooth=lambda face: abs(face.normal.x) < 0.6)
+
+    def disc(self, name, x, y, z, radius, thick, material, tip=None, segments=32):
+        """A disc facing the camera, round on screen, centred at screen height z
+        with its front face `y` px north of the feet; `tip` is its front radius."""
+        shape = bmesh.new()
+        _cylinder(shape, radius, thick, segments=segments, tip_radius=tip, matrix=FACE_ON)
+        return self.mesh(name, shape, material, x, y + thick / 2.0, z, smooth=lambda face: abs(face.normal.y) < 0.6)
+
+    def dial(self, name, x, y, z, radius, material):
+        """A flat disc facing the camera with UVs 0..1 across it: a dial, a lens."""
+        shape = bmesh.new()
+        shape.loops.layers.uv.new("UVMap")
+        bmesh.ops.create_circle(shape, cap_ends=True, cap_tris=False, segments=40, radius=radius * PX,
+                                matrix=FACE_ON, calc_uvs=True)
+        return self.mesh(name, shape, material, x, y, z)
+
+    def ring(self, name, x, y, z, radius, tube, material, segments=40):
+        """A torus facing the camera: a bezel, a rim, a key's bow."""
+        shape = bmesh.new()
+        _torus(shape, radius, tube, segments, 10, FACE_ON)
+        return self.mesh(name, shape, material, x, y + tube, z, smooth=True)
+
+    def ball(self, name, x, y, z, radius, material, plan=0.6, segments=16):
+        """A sphere that reads round on screen, `plan` of its radius deep north-south."""
+        lift = math.sqrt(1.0 - plan ** 2) / SIN_ALPHA
+        shape = bmesh.new()
+        bmesh.ops.create_uvsphere(shape, u_segments=segments, v_segments=max(segments // 2, 6), radius=radius * PX,
+                                  matrix=Matrix.Diagonal((1.0, plan, lift, 1.0)))
+        return self.mesh(name, shape, material, x, y, z, smooth=True)
+
+    def dome(self, name, x, y, z, radius, rise, material, plan=None, segments=32):
+        """The top half of an ellipsoid sitting at screen height z, `rise` tall."""
+        plan = radius * 0.5 if plan is None else plan
+        shape = bmesh.new()
+        bmesh.ops.create_uvsphere(shape, u_segments=segments, v_segments=segments // 2, radius=PX,
+                                  matrix=Matrix.Diagonal((radius, plan, rise / SIN_ALPHA, 1.0)))
+        bmesh.ops.delete(shape, geom=[vert for vert in shape.verts if vert.co.z < -1e-7], context="VERTS")
+        return self.mesh(name, shape, material, x, y, z, smooth=True)
+
+    def crystal(self, name, x, y, z, radius, height, material, turn=0.3):
+        """A six-sided double point, its waist at screen height z."""
+        shape = bmesh.new()
+        lift = height / SIN_ALPHA
+        squash = Matrix.Diagonal((1.0, 0.6, 1.0, 1.0)) @ Matrix.Rotation(turn, 4, "Z")
+        bmesh.ops.create_cone(shape, cap_ends=False, segments=6, radius1=radius * PX, radius2=0.0,
+                              depth=lift * 0.62 * PX, matrix=squash @ Matrix.Translation((0.0, 0.0, lift * 0.31 * PX)))
+        bmesh.ops.create_cone(shape, cap_ends=False, segments=6, radius1=0.0, radius2=radius * PX,
+                              depth=lift * 0.38 * PX, matrix=squash @ Matrix.Translation((0.0, 0.0, -lift * 0.19 * PX)))
+        bmesh.ops.remove_doubles(shape, verts=shape.verts[:], dist=1e-6)
+        return self.mesh(name, shape, material, x, y, z)
+
+    def _face_on(self, obj):
+        # Built in the XY plane: stood up to face the camera, round on screen.
+        obj.rotation_euler = (math.radians(90.0), 0.0, 0.0)
+        obj.scale = (1.0, 1.0 / SIN_ALPHA, self.stretch)
+        return obj
+
+    def gear(self, name, x, y, z, radius, thick, angle, material):
+        """A cog facing the camera, its front face `y` px north of the feet."""
+        shape = bmesh.new()
+        body = radius * 0.82
+        teeth = max(8, int(radius * 1.2))
+        _cylinder(shape, body, thick, segments=max(24, teeth * 2))
+        tooth_width = 2.0 * math.pi * body / teeth * 0.5
+        for index in range(teeth):
+            turn = angle + 2.0 * math.pi * index / teeth
+            bmesh.ops.create_cube(shape, size=1.0, matrix=(
+                Matrix.Rotation(turn, 4, "Z") @ Matrix.Translation(((body + radius * 0.09) * PX, 0.0, 0.0))
+                @ Matrix.Diagonal((radius * 0.2 * PX, tooth_width * PX, thick * 0.94 * PX, 1.0))))
+        _cylinder(shape, radius * 0.22, thick * 1.6, segments=16)
+        return self._face_on(self.mesh(name, shape, material, x, y + thick / 2.0, z))
+
+    def wheel(self, name, x, y, z, radius, rim, spokes, thick, angle, material):
+        """A spoked wheel facing the camera: rim, spokes and hub."""
+        shape = bmesh.new()
+        _torus(shape, radius - rim, rim, 48, 10, Matrix.Diagonal((1.0, 1.0, thick / (2.0 * rim), 1.0)))
+        for face in shape.faces:
+            face.smooth = True
+        for index in range(spokes):
+            turn = angle + 2.0 * math.pi * index / spokes
+            bmesh.ops.create_cube(shape, size=1.0, matrix=(
+                Matrix.Rotation(turn, 4, "Z") @ Matrix.Translation(((radius - rim) / 2.0 * PX, 0.0, 0.0))
+                @ Matrix.Diagonal(((radius - rim) * PX, rim * 0.7 * PX, thick * 0.6 * PX, 1.0))))
+        _cylinder(shape, rim * 1.6, thick * 1.4, segments=20)
+        return self._face_on(self.mesh(name, shape, material, x, y + thick / 2.0, z))
+
+    def wire(self, name, points, radius, material):
+        """A lead or pipe through (x, y, z) points of the prop's frame."""
+        return self.keep(_wire(self.id + name, [(self.cx + x, self.feet - y, z / SIN_ALPHA) for x, y, z in points],
+                               radius, material, self.stretch))
+
+    def plane(self, name, x, y, z0, z1, width, material):
+        """A flat panel facing the camera, UVs 0..1, `y` px north of the feet."""
+        corners = [(x - width / 2.0, z0), (x + width / 2.0, z0), (x + width / 2.0, z1), (x - width / 2.0, z1)]
+        mesh = bpy.data.meshes.new(self.id + name)
+        mesh.from_pydata([tuple(self.at(across, y, up)) for across, up in corners], [], [(0, 1, 2, 3)])
+        layer = mesh.uv_layers.new(name="UVMap")
+        for loop, uv in zip(layer.data, ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))):
+            loop.uv = uv
+        mesh.materials.append(material)
+        obj = bpy.data.objects.new(self.id + name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return self.keep(obj)
+
+    def light(self, name, x, y, z, color, power, radius=0.03, mirrored=True):
+        light = add_point_light(self.id + name, (self.cx + x, self.feet - y), z / SIN_ALPHA, color, power, radius,
+                                self.stretch, mirrored)
+        light["hd_prop"] = self.id
+        self.lights.append(light)
+        return light
+
+    def glow(self, kind, x, y, z, color, radius):
+        _glow(kind, self.cx + x, self.feet - y, z / SIN_ALPHA, color, radius)
+
+    def key_light(self, power=1.4):
+        """A soft key from the floor in front and to one side, so the prop reads
+        as something to walk up to; it lights the floor at its foot as well. A
+        wide prop gets one from each side."""
+        width = self.stand["width"]
+        sides = (-1.0, 1.0) if width > 60.0 else (1.0,)
+        for side in sides:
+            self.light("Key", side * min(width * 0.25 + 12.0, 30.0), -26.0, 34.0, (1.0, 0.86, 0.7),
+                       power / len(sides) ** 0.5, radius=0.15, mirrored=False)
+
+
+def _prop_metal(name, color, roughness):
+    """Metal with worn, rounded edges that catch the light."""
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        tarnish = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=45.0, detail=6.0),
+                        0.42, 0.72)
+        base = _mix(nodes, links, tarnish, color, tuple(channel * 0.45 for channel in color))
+        _principled(nodes, links, base, roughness=roughness, metallic=1.0, normal=_bevel(nodes, 0.004))
+    return _material(name, build)
+
+
+def _brass():
+    return _prop_metal("PropBrass", (0.64, 0.46, 0.2), 0.3)
+
+
+def _copper():
+    return _prop_metal("PropCopper", (0.6, 0.31, 0.17), 0.34)
+
+
+def _bronze():
+    return _prop_metal("PropBronze", (0.42, 0.26, 0.12), 0.42)
+
+
+def _steel():
+    return _prop_metal("PropSteel", (0.55, 0.56, 0.6), 0.22)
+
+
+def _cast_iron():
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        rust = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=38.0, detail=6.0), 0.55, 0.8)
+        color = _mix(nodes, links, rust, (0.07, 0.07, 0.08), (0.17, 0.085, 0.045))
+        _principled(nodes, links, color, roughness=0.52, metallic=0.7, normal=_bevel(nodes, 0.004))
+    return _material("PropCastIron", build)
+
+
+def _painted(name, color):
+    """Enamelled iron, chipped to dark metal along its worn edges."""
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        chips = _ramp(nodes, links, _noise(nodes, links, coords.outputs["Object"], scale=60.0, detail=5.0), 0.62, 0.7)
+        _principled(nodes, links, _mix(nodes, links, chips, color, (0.05, 0.05, 0.055)), roughness=0.45,
+                    normal=_bevel(nodes, 0.004))
+    return _material(name, build)
+
+
+def _walnut():
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = nodes.new("ShaderNodeTexWave")
+        grain.wave_type = "BANDS"
+        grain.bands_direction = "Z"
+        grain.inputs["Scale"].default_value = 40.0
+        grain.inputs["Distortion"].default_value = 5.0
+        links.new(coords.outputs["Object"], grain.inputs["Vector"])
+        _principled(nodes, links, _mix(nodes, links, grain.outputs["Fac"], (0.16, 0.08, 0.04), (0.3, 0.16, 0.08)),
+                    roughness=0.5, normal=_bevel(nodes, 0.003))
+    return _material("CabinetWalnut", build)
+
+
+def _bakelite():
+    return _material("Bakelite", lambda nodes, links: _principled(nodes, links, (0.015, 0.012, 0.012), roughness=0.3))
+
+
+def _oak():
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = nodes.new("ShaderNodeTexWave")
+        grain.wave_type = "BANDS"
+        grain.bands_direction = "X"
+        grain.inputs["Scale"].default_value = 30.0
+        grain.inputs["Distortion"].default_value = 6.0
+        grain.inputs["Detail"].default_value = 3.0
+        links.new(coords.outputs["Object"], grain.inputs["Vector"])
+        color = _mix(nodes, links, grain.outputs["Fac"], (0.15, 0.085, 0.04), (0.32, 0.19, 0.09))
+        _principled(nodes, links, color, roughness=0.6, normal=_bevel(nodes, 0.003))
+    return _material("PropOak", build)
+
+
+def _prop_stone():
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = _noise(nodes, links, coords.outputs["Object"], scale=70.0, detail=8.0)
+        color = _mix(nodes, links, grain, (0.12, 0.11, 0.13), (0.27, 0.25, 0.28))
+        _principled(nodes, links, color, roughness=0.85, normal=_bump(nodes, links, grain, 0.3,
+                                                                       normal=_bevel(nodes, 0.004)))
+    return _material("PropStone", build)
+
+
+def _parchment():
+    return _material("Parchment", lambda nodes, links: _principled(nodes, links, (0.62, 0.53, 0.36), roughness=0.85))
+
+
+def _cloth(name, color):
+    return _material(name, lambda nodes, links: _principled(nodes, links, color, roughness=0.92))
+
+
+def _liquid(name, color, strength):
+    """Coloured contents seen through glass, glowing faintly."""
+    return _material(name, lambda nodes, links: _principled(
+        nodes, links, tuple(channel * 0.5 for channel in color), roughness=0.15, emission=color,
+        emission_strength=strength))
+
+
+def _clear_glass(objects):
+    # Light passes the glass: lamps behind or inside it still reach the room.
+    for obj in objects if isinstance(objects, (list, tuple)) else [objects]:
+        obj.visible_shadow = False
+
+
+def material_reaction():
+    """A reaction seen through a porthole: churning orange heat, hottest at the centre."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+        du, dv = op("SUBTRACT", u, 0.5), op("SUBTRACT", v, 0.5)
+        radius = op("MULTIPLY", op("SQRT", op("ADD", op("MULTIPLY", du, du), op("MULTIPLY", dv, dv))), 2.0)
+        churn = nodes.new("ShaderNodeTexNoise")
+        churn.inputs["Scale"].default_value = 5.0
+        churn.inputs["Detail"].default_value = 6.0
+        churn.inputs["Distortion"].default_value = 2.5
+        links.new(coords.outputs["UV"], churn.inputs["Vector"])
+        heat = op("MULTIPLY", op("SUBTRACT", 1.15, radius), op("ADD", 0.45, churn.outputs["Fac"]))
+        color = _mix(nodes, links, _ramp(nodes, links, heat, 0.3, 0.9), (1.0, 0.16, 0.02), (1.0, 0.62, 0.18))
+        _principled(nodes, links, (0.05, 0.02, 0.01), roughness=0.4, emission=color,
+                    emission_strength=op("MULTIPLY", heat, 3.6))
+    return _material("ReactionGlow", build)
+
+
+def material_light_mixing(aspect):
+    """Frosted glass lit by red, green and blue lamps: where their light overlaps
+    it adds up to yellow, cyan and magenta, and to white where all three meet.
+    `aspect` is the panel's width over its height on screen."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        coords, u, v = _uv_parts(nodes, links)
+
+        def spot(centre_u, centre_v):
+            du = op("MULTIPLY", op("SUBTRACT", u, centre_u), aspect)
+            dv = op("SUBTRACT", v, centre_v)
+            distance = op("SQRT", op("ADD", op("MULTIPLY", du, du), op("MULTIPLY", dv, dv)))
+            return _ramp(nodes, links, op("SUBTRACT", 0.0, distance), -0.25, -0.21)
+
+        # Three equal circles, each centre on the other two's rims.
+        spread = 0.125
+        light = nodes.new("ShaderNodeCombineColor")
+        for channel, (across, up) in enumerate(((-1.0, 0.58), (1.0, 0.58), (0.0, -1.15))):
+            links.new(spot(0.5 + across * spread / aspect, 0.5 + up * spread), light.inputs[channel])
+        frost = _noise(nodes, links, coords.outputs["UV"], scale=40.0, detail=2.0)
+        base = _mix(nodes, links, frost, (0.07, 0.07, 0.09), (0.13, 0.13, 0.16))
+        _principled(nodes, links, base, roughness=0.6, emission=light.outputs[0], emission_strength=3.2)
+    return _material("LightMixingPanel", build)
+
+
+def material_leaf():
+    """Leaves, each its own shade of green."""
+    def build(nodes, links):
+        geometry = nodes.new("ShaderNodeNewGeometry")
+        color = _mix(nodes, links, geometry.outputs["Random Per Island"], (0.02, 0.09, 0.02), (0.13, 0.36, 0.06))
+        _principled(nodes, links, color, roughness=0.42)
+    return _material("PropLeaf", build)
+
+
+def material_pegboard():
+    """Hardboard drilled in a grid of peg holes."""
+    def build(nodes, links):
+        op = _MathBuilder(nodes, links)
+        _coords, u, v = _uv_parts(nodes, links)
+        across = op("SUBTRACT", op("FRACT", op("MULTIPLY", u, 15.0)), 0.5)
+        up = op("SUBTRACT", op("FRACT", op("MULTIPLY", v, 11.0)), 0.5)
+        hole = op("LESS_THAN", op("ADD", op("MULTIPLY", across, across), op("MULTIPLY", up, up)), 0.035)
+        _principled(nodes, links, _mix(nodes, links, hole, (0.22, 0.15, 0.08), (0.02, 0.015, 0.01)), roughness=0.85)
+    return _material("Pegboard", build)
 
 
 def _wire(name, points, radius, material, stretch):
@@ -3130,22 +3634,7 @@ def build_circuit_exhibit(rect, stretch):
     face = feet - 3.0
     back = feet - 16.0
     up = 1.0 / SIN_ALPHA
-    brass = _metal("MachineBrass", (0.64, 0.46, 0.2), 0.3)
-    copper = _metal("MachineCopper", (0.6, 0.31, 0.17), 0.34)
-
-    def build_wood(nodes, links):
-        coords = nodes.new("ShaderNodeTexCoord")
-        grain = nodes.new("ShaderNodeTexWave")
-        grain.wave_type = "BANDS"
-        grain.bands_direction = "Z"
-        grain.inputs["Scale"].default_value = 40.0
-        grain.inputs["Distortion"].default_value = 5.0
-        links.new(coords.outputs["Object"], grain.inputs["Vector"])
-        _principled(nodes, links, _mix(nodes, links, grain.outputs["Fac"], (0.16, 0.08, 0.04), (0.3, 0.16, 0.08)),
-                    roughness=0.5)
-    wood = _material("CabinetWalnut", build_wood)
-    bakelite = _material("Bakelite", lambda nodes, links: _principled(nodes, links, (0.015, 0.012, 0.012),
-                                                                        roughness=0.3))
+    brass, copper, wood, bakelite = _brass(), _copper(), _walnut(), _bakelite()
     made = []
 
     def box(suffix, centre_x, front, depth, low, high, wide, material):
@@ -3216,6 +3705,496 @@ def build_circuit_exhibit(rect, stretch):
     return made, (cx, crest_y + 2.2, bulb_z)
 
 
+def build_circuit_staged(k, rng):
+    """The Circuit Room exhibit, modelled at its pixel sprite's size, then shown
+    at the figures' scale and pressed to its stand's depth like the others."""
+    width, height = 37.5, 92.5
+    objects, bulb = build_circuit_exhibit((k.cx - width / 2.0, k.feet - height, width, height), k.stretch)
+    deep = min(1.0, k.stand["depth"] / (16.0 * FIGURE_SCALE))
+    pivot = world_point(k.cx, k.feet, 0.0, k.stretch)
+    for obj in objects:
+        offset = obj.location - pivot
+        obj.location = pivot + Vector((offset.x * FIGURE_SCALE, offset.y * FIGURE_SCALE * deep,
+                                       offset.z * FIGURE_SCALE))
+        obj.scale = (obj.scale[0] * FIGURE_SCALE, obj.scale[1] * FIGURE_SCALE * deep, obj.scale[2] * FIGURE_SCALE)
+        k.keep(obj)
+    x = k.cx + (bulb[0] - k.cx) * FIGURE_SCALE
+    y = k.feet + (bulb[1] - k.feet) * FIGURE_SCALE * deep
+    z = bulb[2] * FIGURE_SCALE
+    light = add_point_light(k.id + "Bulb", (x, y), z, (1.0, 0.66, 0.32), 0.8, 0.02, k.stretch)
+    light["hd_prop"] = k.id
+    k.lights.append(light)
+    _glow("bulb", x, y, z, (1.0, 0.68, 0.32), 9.0)
+
+
+def build_chemistry_core(k, rng):
+    """The bronze reaction core: a riveted vessel on a stone plinth, the
+    reaction glowing through its porthole and its heat venting up a flue."""
+    stone, bronze, brass, copper, glass = _prop_stone(), _bronze(), _brass(), _copper(), _flask_glass()
+    k.box("Plinth", 0.0, 0.0, 25.0, 6.0, 0.0, 8.0, stone)
+    k.box("PlinthCap", 0.0, 6.0, 23.4, 1.6, 0.3, 7.5, brass)
+    k.cylinder("Vessel", 0.0, 4.2, 7.6, 10.0, 43.0, bronze, plan=3.4, segments=40)
+    for index, z in enumerate((8.4, 33.0, 47.6)):
+        k.cylinder("Band%d" % index, 0.0, 4.2, z, 10.5, 2.2, brass, plan=3.75, segments=40)
+        for step in range(-4, 5):
+            turn = step * 0.33
+            k.ball("Rivet%d" % index, 10.5 * math.sin(turn), 4.2 - 3.75 * math.cos(turn) - 0.1, z + 1.1, 0.5,
+                   brass, segments=8)
+    k.dome("Dome", 0.0, 4.2, 50.6, 10.0, 6.0, bronze, plan=3.4)
+    k.cylinder("Flue", -3.5, 4.2, 54.0, 2.0, 15.0, copper, plan=1.4)
+    k.cylinder("FlueCap", -3.5, 4.2, 67.6, 2.8, 2.6, copper, plan=1.9, tip=2.4)
+    k.cylinder("Vent", 4.6, 4.2, 54.4, 1.2, 3.6, brass, plan=0.9)
+    k.ball("VentKnob", 4.6, 4.2, 58.6, 1.1, brass)
+    # The reaction itself, behind a bolted porthole.
+    k.disc("PortBoss", 0.0, 0.4, 24.0, 7.0, 1.0, bronze)
+    k.dial("Reaction", 0.0, 0.3, 24.0, 4.8, material_reaction())
+    k.ring("Bezel", 0.0, -0.3, 24.0, 5.3, 0.85, brass)
+    for index in range(8):
+        turn = 2.0 * math.pi * (index + 0.5) / 8.0
+        k.ball("Bolt", 6.4 * math.cos(turn), 0.15, 24.0 + 6.4 * math.sin(turn), 0.45, brass, segments=8)
+    k.disc("GaugeBody", 5.8, 0.5, 41.5, 3.0, 1.4, brass)
+    k.dial("Gauge", 5.8, 0.4, 41.5, 2.5, material_dial("CoreGauge", "gauge", needle=0.64))
+    _clear_glass(k.cylinder("SightGlass", -7.6, 1.4, 12.0, 1.1, 12.0, glass, plan=0.6))
+    k.cylinder("SightLevel", -7.6, 1.4, 12.2, 0.75, 7.5, _liquid("CoreLiquid", (1.0, 0.45, 0.1), 2.0), plan=0.4)
+    for z in (11.2, 24.0):
+        k.cylinder("SightCap", -7.6, 1.4, z, 1.4, 1.0, brass, plan=0.8)
+    k.wire("Pipe", [(9.4, 3.8, 41.0), (11.0, 3.8, 41.0), (11.0, 3.8, 8.0), (8.8, 3.8, 8.0)], 0.9, copper)
+    k.ring("Valve", 11.0, 2.2, 26.0, 1.4, 0.35, brass)
+    k.light("Reaction", 0.0, -5.0, 24.0, (1.0, 0.5, 0.18), 0.3, radius=0.04)
+    k.glow("lantern", 0.0, 0.3, 24.0, (1.0, 0.55, 0.2), 11.0)
+
+
+def build_library_console(k, rng):
+    """The light console: a walnut desk whose frosted panel shows red, green
+    and blue lamplight adding up where the beams overlap."""
+    walnut, brass = _walnut(), _brass()
+    k.box("Plinth", 0.0, 0.0, 22.4, 2.0, 0.0, 8.0, walnut)
+    k.box("Body", 0.0, 2.0, 21.2, 18.0, 0.6, 7.2, walnut)
+    for index, (low, high) in enumerate(((3.6, 10.0), (11.4, 17.8))):
+        k.box("Drawer%d" % index, 0.0, low, 17.6, high - low, 0.25, 0.5, walnut)
+        k.ball("Pull%d" % index, 0.0, -0.3, (low + high) / 2.0, 0.85, brass, segments=10)
+    k.box("Desk", 0.0, 20.0, 22.8, 1.6, 0.0, 8.0, walnut)
+    k.box("DeskLip", 0.0, 20.3, 22.8, 0.8, -0.15, 0.3, brass)
+    k.box("Back", 0.0, 21.6, 20.4, 30.4, 6.0, 2.0, walnut)
+    low, high, wide = 25.0, 46.0, 17.0
+    k.plane("Panel", 0.0, 5.9, low, high, wide, material_light_mixing(wide / (high - low)))
+    for side in (-1.0, 1.0):
+        k.box("Stile", side * (wide / 2.0 + 0.6), low - 1.0, 1.2, high - low + 2.0, 5.3, 0.7, brass)
+    for z in (low - 1.0, high):
+        k.box("Rail", 0.0, z, wide + 2.4, 1.0, 5.3, 0.7, brass)
+    k.box("Crest", 0.0, 52.0, 21.4, 1.8, 5.6, 2.6, brass)
+    k.disc("Arch", 0.0, 6.4, 53.8, 3.2, 1.0, brass)
+    for x, name, color in ((-5.6, "Red", (1.0, 0.12, 0.08)), (0.0, "Blue", (0.14, 0.3, 1.0)),
+                           (5.6, "Green", (0.12, 1.0, 0.22))):
+        k.box("Arm" + name, x, 50.2, 0.6, 1.8, 2.6, 3.4, brass)
+        k.cylinder("Hood" + name, x, 2.8, 47.8, 1.9, 2.4, brass, plan=1.0, tip=1.0)
+        k.ball("Lens" + name, x, 2.8, 47.6, 1.05, _glow_material("Lens" + name, color, 12.0, color), plan=0.5)
+        k.light(name, x, 1.2, 46.2, color, 0.1, radius=0.02)
+        k.glow("bulb", x, 2.8, 47.4, color, 4.5)
+    books = _book_material()
+    k.box("Book0", 6.0, 21.6, 6.4, 1.1, 1.4, 4.4, books)
+    k.box("Book1", 5.8, 22.7, 5.4, 1.0, 1.7, 3.8, books)
+    ink = _material("InkGlass", lambda nodes, links: _principled(nodes, links, (0.02, 0.02, 0.04), roughness=0.08))
+    k.cylinder("Inkwell", -6.6, 3.2, 21.6, 1.3, 1.6, ink, plan=0.8)
+    k.light("Panel", 0.0, 1.0, 36.0, (0.85, 0.85, 1.0), 0.16, radius=0.08)
+    k.glow("potion", 0.0, 5.9, 35.5, (0.85, 0.85, 1.0), 10.0)
+
+
+def build_greenhouse_construct(k, rng):
+    """The photosynthesis case: plants under glass around a glowing green core,
+    a sun lamp over them, and a water tube where oxygen bubbles rise."""
+    wood, brass, copper, glass = _oak(), _brass(), _copper(), _flask_glass()
+    k.box("Planter", 0.0, 0.0, 25.0, 9.0, 0.0, 8.0, wood)
+    for z in (1.0, 7.0):
+        k.box("PlanterBand", 0.0, z, 25.4, 1.0, -0.15, 8.3, copper)
+    half, front, back, low, high = 11.0, 0.8, 7.2, 9.0, 44.0
+    for x in (-half, half):
+        for y in (front, back):
+            k.box("Post", x, low, 1.1, high - low + 1.4, y - 0.55, 1.1, brass)
+        k.box("SideRail", x, high, 1.1, 1.4, front, back - front, brass)
+    for y in (front, back):
+        k.box("Rail", 0.0, high, half * 2.0 + 1.1, 1.4, y - 0.55, 1.1, brass)
+        k.box("Sill", 0.0, low, half * 2.0 + 1.1, 1.0, y - 0.55, 1.1, brass)
+    panes = [k.box("PaneFront", 0.0, low + 1.0, half * 2.0, high - low - 1.0, front - 0.15, 0.3, glass),
+             k.box("PaneBack", 0.0, low + 1.0, half * 2.0, high - low - 1.0, back - 0.15, 0.3, glass),
+             k.box("PaneTop", 0.0, high + 0.5, half * 2.0, 0.3, front, back - front, glass)]
+    for x in (-half, half):
+        panes.append(k.box("PaneSide", x, low + 1.0, 0.3, high - low - 1.0, front, back - front, glass))
+    _clear_glass(panes)
+    k.box("Roof", 0.0, high + 1.4, 10.0, 1.4, 2.6, 3.0, brass)
+    # Leaves all round, kept off the glass and clear of the core's front.
+    shape = bmesh.new()
+    placed = 0
+    while placed < 72:
+        leaf_x = float(rng.uniform(-9.6, 9.6))
+        leaf_z = low + 1.5 + float(rng.uniform(0.0, 1.0)) ** 0.85 * 31.0
+        leaf_y = float(rng.uniform(2.0, 6.0))
+        if abs(leaf_x) < 4.6 and abs(leaf_z - 26.0) < 5.2 and leaf_y < 4.2:
+            continue
+        size = float(rng.uniform(2.2, 3.8))
+        matrix = (Matrix.Translation((leaf_x * PX, leaf_y * PX, leaf_z / SIN_ALPHA * PX))
+                  @ Matrix.Diagonal((1.0, 0.6, 1.0 / SIN_ALPHA, 1.0))
+                  @ Matrix.Rotation(float(rng.uniform(0.0, 2.0 * math.pi)), 4, "Z")
+                  @ Matrix.Rotation(float(rng.uniform(-0.9, 0.9)), 4, "X")
+                  @ Matrix.Diagonal((size, size * 0.42, 0.22, 1.0)))
+        bmesh.ops.create_uvsphere(shape, u_segments=8, v_segments=5, radius=PX, matrix=matrix)
+        placed += 1
+    k.mesh("Leaves", shape, material_leaf(), 0.0, 0.0, 0.0, smooth=True)
+    stem = _material("PropStem", lambda nodes, links: _principled(nodes, links, (0.05, 0.14, 0.03), roughness=0.6))
+    for index in range(6):
+        base_x = -7.5 + index * 3.0
+        points = [(base_x, 4.0, low + 0.5)]
+        for step in range(1, 4):
+            points.append((base_x + float(rng.uniform(-2.0, 2.0)), float(rng.uniform(2.6, 5.8)), low + 0.5 + step * 9.5))
+        k.wire("Stem%d" % index, points, 0.32, stem)
+    k.cylinder("CoreStand", 0.0, 4.0, low, 0.6, 13.4, brass, plan=0.45)
+    k.ball("Core", 0.0, 4.0, 26.0, 3.6, _glow_material("PhotosynthesisCore", (0.35, 1.0, 0.3), 7.0, (0.2, 0.5, 0.15)),
+           plan=0.5)
+    k.light("Core", 0.0, 1.4, 26.0, (0.35, 1.0, 0.4), 0.3, radius=0.03)
+    k.glow("potion", 0.0, 4.0, 26.0, (0.35, 1.0, 0.4), 11.0)
+    # The sun lamp, on an arm from the case's back corner.
+    k.cylinder("LampPost", 10.2, 6.6, high + 1.4, 0.75, 13.6, brass, plan=0.5)
+    k.rod("LampArm", -0.4, 10.6, 6.0, 58.6, 0.65, brass, plan=0.4)
+    k.cylinder("LampStem", 0.0, 5.0, 56.4, 0.45, 2.2, brass, plan=0.35)
+    k.cylinder("LampHood", 0.0, 4.4, 53.4, 4.2, 3.2, brass, plan=1.9, tip=1.3)
+    k.ball("LampBulb", 0.0, 4.4, 53.0, 1.4, _glow_material("SunLampBulb", (1.0, 0.86, 0.6), 14.0, (1.0, 0.9, 0.7)),
+           plan=0.5)
+    k.light("Sun", 0.0, 3.4, 51.2, (1.0, 0.86, 0.62), 0.5, radius=0.03)
+    k.glow("bulb", 0.0, 4.4, 53.0, (1.0, 0.85, 0.6), 7.0)
+    # Oxygen bubbling up a water tube beside the case.
+    _clear_glass(k.cylinder("Tube", -12.9, 3.6, low, 1.2, 32.0, glass, plan=0.8))
+    k.cylinder("Water", -12.9, 3.6, low + 0.4, 0.95, 28.0, _liquid("TubeWater", (0.3, 0.75, 0.6), 0.5), plan=0.6)
+    bubble = _glow_material("Bubble", (0.85, 1.0, 0.95), 2.0, (0.9, 1.0, 1.0))
+    for z in (13.0, 17.4, 21.0, 25.8, 29.6, 33.8):
+        k.ball("Bubble", -12.9 + float(rng.uniform(-0.35, 0.35)), 3.0, z, float(rng.uniform(0.3, 0.5)), bubble)
+    k.cylinder("TubeFoot", -12.9, 3.6, low - 0.8, 1.3, 1.0, brass, plan=0.9)
+    k.cylinder("TubeCap", -12.9, 3.6, low + 32.0, 1.5, 1.4, brass, plan=1.0)
+    k.wire("TubePipe", [(-12.9, 3.6, low + 33.4), (-12.9, 3.6, low + 35.2), (-11.0, 3.6, low + 35.2)], 0.45, copper)
+
+
+def build_dining_clock(k, rng):
+    """A walnut longcase clock at eight minutes to midnight, with a candle clock
+    and an hourglass beside it: time told three independent ways."""
+    walnut, brass, glass, steel = _walnut(), _brass(), _flask_glass(), _steel()
+    k.box("Skirt", 0.0, 0.0, 22.6, 2.4, 0.0, 8.0, walnut)
+    k.box("Base", 0.0, 2.4, 21.0, 12.6, 0.6, 7.2, walnut)
+    k.box("BasePanel", 0.0, 5.0, 14.6, 7.4, 0.3, 0.5, walnut)
+    k.box("Waist", 0.0, 15.0, 22.0, 1.6, 0.2, 7.6, walnut)
+    low, high = 16.6, 51.0
+    for side in (-1.0, 1.0):
+        k.box("TrunkSide", side * 7.6, low, 2.2, high - low, 1.2, 6.0, walnut)
+    k.box("TrunkBack", 0.0, low, 13.4, high - low, 5.6, 1.6, walnut)
+    k.box("Velvet", 0.0, low, 13.0, high - low, 5.45, 0.1, _cloth("ClockVelvet", (0.07, 0.02, 0.05)))
+    for z in (low, high - 2.6):
+        k.box("TrunkRail", 0.0, z, 13.4, 2.6, 1.2, 1.2, walnut)
+    k.box("PendulumRod", 0.0, 25.0, 0.55, 23.0, 3.0, 0.4, brass)
+    k.disc("Bob", 0.0, 2.7, 25.0, 3.3, 0.5, brass, tip=2.9)
+    for side in (-1.0, 1.0):
+        k.cylinder("Weight", side * 3.6, 3.8, 33.0, 1.05, 7.5, brass, plan=0.7)
+        k.box("Chain", side * 3.6, 40.5, 0.3, 8.0, 3.7, 0.2, steel)
+    _clear_glass(k.box("Glass", 0.0, low + 2.6, 13.4, high - low - 5.2, 1.0, 0.25, glass))
+    k.box("Hood", 0.0, 51.0, 22.0, 18.0, 0.4, 7.6, walnut)
+    for side in (-1.0, 1.0):
+        k.cylinder("Column", side * 10.0, 1.0, 51.0, 0.95, 18.0, brass, plan=0.6)
+    k.disc("DialPlate", 0.0, 0.2, 60.0, 8.2, 0.3, brass)
+    k.dial("Dial", 0.0, 0.0, 60.0, 6.8, material_dial("ClockFace", "clock"))
+    k.ring("Bezel", 0.0, -0.4, 60.0, 7.2, 0.6, brass)
+    k.box("Cornice", 0.0, 69.0, 25.0, 2.0, 0.0, 8.0, walnut)
+    k.disc("Pediment", 0.0, 4.0, 71.0, 5.2, 1.4, walnut, segments=40)
+    k.ring("PedimentTrim", 0.0, 3.6, 71.0, 5.2, 0.45, brass)
+    for side in (-1.0, 1.0):
+        k.ball("Finial", side * 11.0, 3.5, 72.6, 1.3, brass)
+    # A candle burning down past its hour marks.
+    wax = _material("CandleWax", lambda nodes, links: _principled(nodes, links, (0.8, 0.73, 0.58), roughness=0.5))
+    k.cylinder("CandleDish", -13.2, 2.6, 0.0, 1.9, 0.9, brass, plan=1.1)
+    k.cylinder("CandleClock", -13.2, 2.6, 0.9, 1.05, 10.2, wax, plan=0.7)
+    for z in (3.4, 5.9, 8.4):
+        k.cylinder("HourMark", -13.2, 2.6, z, 1.1, 0.45, _cloth("HourRed", (0.45, 0.04, 0.03)), plan=0.74)
+    flame = k.ball("CandleFlame", -13.2, 2.6, 12.2, 0.6,
+                   _glow_material("CandleFlame", (1.0, 0.72, 0.32), 18.0, (1.0, 0.8, 0.5)), plan=0.5)
+    flame.scale.z *= 1.7
+    flame.visible_shadow = False
+    k.light("Candle", -13.2, 1.0, 13.0, (1.0, 0.62, 0.3), 0.18, radius=0.01)
+    k.glow("candle", -13.2, 2.6, 12.2, (1.0, 0.68, 0.32), 6.0)
+    # And an hourglass running.
+    sand = _material("Sand", lambda nodes, links: _principled(nodes, links, (0.62, 0.44, 0.2), roughness=0.9))
+    for z in (0.0, 9.2):
+        k.cylinder("GlassEnd", 13.2, 2.6, z, 1.9, 0.8, walnut, plan=1.1)
+    for side in (-1.0, 1.0):
+        k.cylinder("GlassPost", 13.2 + side * 1.55, 2.6, 0.8, 0.28, 8.4, brass, plan=0.28)
+    _clear_glass([k.cylinder("GlassLow", 13.2, 2.6, 0.8, 1.45, 4.2, glass, plan=0.87, tip=0.2),
+                  k.cylinder("GlassHigh", 13.2, 2.6, 5.0, 0.2, 4.2, glass, plan=0.12, tip=1.45)])
+    k.cylinder("SandLow", 13.2, 2.6, 0.9, 1.2, 1.9, sand, plan=0.72, tip=0.35)
+    k.cylinder("SandHigh", 13.2, 2.6, 6.1, 0.35, 2.2, sand, plan=0.21, tip=1.05)
+    k.cylinder("SandStream", 13.2, 2.6, 2.8, 0.12, 3.4, sand, plan=0.1)
+
+
+def build_storage_rack(k, rng):
+    """Oak shelving crowded with crates, jars, bottles, books and rolled plans;
+    one small vial among them glows violet."""
+    oak, dark, brass, glass, iron = _oak(), _wood(), _brass(), _flask_glass(), _cast_iron()
+    for x in (-25.0, 25.0):
+        k.box("Upright", x, 0.0, 2.2, 41.0, 0.0, 8.0, oak)
+        k.ball("Cap", x, 4.0, 42.2, 1.3, brass)
+    k.box("Divider", 0.0, 0.0, 1.4, 41.0, 0.8, 7.0, oak)
+    for index, z in enumerate((0.4, 13.5, 26.5, 39.4)):
+        k.box("Shelf%d" % index, 0.0, z, 48.0, 1.6, 0.3, 7.6, oak)
+    for index in range(6):
+        k.box("Plank%d" % index, -20.0 + index * 8.0, 0.4, 7.7, 40.6, 7.1, 0.8, dark)
+    floor = 2.0
+    k.box("CrateA", -17.0, floor, 11.0, 8.0, 1.0, 6.2, oak)
+    for z in (3.0, 5.6, 8.2):
+        k.box("CrateSlat", -17.0, z, 11.4, 1.0, 0.8, 0.3, dark)
+    k.box("CrateB", -6.5, floor, 8.0, 6.0, 1.4, 5.8, oak)
+    k.box("CrateLid", -6.5, floor + 6.0, 8.4, 0.8, 1.2, 6.2, dark)
+    k.ball("Sack", 8.0, 4.0, floor + 4.4, 4.4, _cloth("Sackcloth", (0.36, 0.28, 0.17)), plan=0.55)
+    k.box("Tin", 17.5, floor, 7.0, 4.6, 1.6, 5.0, iron)
+    k.box("TinLid", 17.5, floor + 4.6, 7.4, 0.7, 1.4, 5.4, brass)
+    floor = 15.1
+    for name, color, x, radius, tall in (("Amber", (1.0, 0.55, 0.15), -19.2, 2.6, 8.0),
+                                         ("Green", (0.3, 0.9, 0.4), -13.2, 2.2, 6.5)):
+        _clear_glass(k.cylinder("Jar" + name, x, 4.0, floor, radius, tall, glass, plan=radius * 0.6))
+        k.cylinder("Fill" + name, x, 4.0, floor + 0.2, radius * 0.82, tall * 0.62, _liquid("Jar" + name, color, 0.6),
+                   plan=radius * 0.5)
+        k.cylinder("Lid" + name, x, 4.0, floor + tall, radius * 1.04, 1.0, brass, plan=radius * 0.63)
+    bottle = _material("BottleGlass", lambda nodes, links: _principled(nodes, links, (0.03, 0.09, 0.04), roughness=0.08))
+    cork = _cloth("Cork", (0.4, 0.26, 0.13))
+    for index, (x, radius, tall) in enumerate(((-7.8, 1.4, 6.8), (-4.2, 1.2, 5.6))):
+        k.cylinder("Bottle%d" % index, x, 4.4, floor, radius, tall, bottle, plan=radius * 0.7)
+        k.cylinder("Neck%d" % index, x, 4.4, floor + tall, radius * 0.45, 2.6, bottle, plan=radius * 0.32,
+                   tip=radius * 0.4)
+        k.cylinder("Cork%d" % index, x, 4.4, floor + tall + 2.6, radius * 0.42, 0.9, cork, plan=radius * 0.3)
+    _clear_glass([k.ball("Vial", 3.6, 3.6, floor + 1.9, 1.8, glass),
+                  k.cylinder("VialNeck", 3.6, 3.6, floor + 3.5, 0.55, 2.2, glass, plan=0.4)])
+    k.ball("VialGlow", 3.6, 3.6, floor + 1.8, 1.4, _glow_material("VialViolet", (0.62, 0.32, 1.0), 6.0, (0.3, 0.12, 0.6)))
+    k.light("Vial", 3.6, 1.0, floor + 2.2, (0.62, 0.34, 1.0), 0.05, radius=0.01)
+    k.glow("potion", 3.6, 3.6, floor + 1.9, (0.62, 0.32, 1.0), 5.0)
+    paper, tie = _parchment(), _cloth("TieRed", (0.42, 0.05, 0.04))
+    k.rod("Roll0", 7.6, 21.4, 2.8, floor + 1.4, 1.35, paper)
+    k.rod("Roll1", 9.0, 20.4, 5.0, floor + 3.6, 1.25, paper)
+    k.rod("Roll2", 8.4, 22.2, 4.0, floor + 5.9, 1.2, paper)
+    k.rod("Tie", 14.2, 15.0, 2.7, floor + 1.4, 1.45, tie)
+    floor = 28.1
+    books = _book_material()
+    x = -23.4
+    while x < -7.0:
+        thick = float(rng.uniform(1.2, 2.2))
+        tall = float(rng.uniform(7.0, 10.0))
+        deep = float(rng.uniform(5.0, 6.4))
+        k.box("Book", x + thick / 2.0, floor, thick, tall, 7.4 - deep, deep, books)
+        x += thick + 0.15
+    for index in range(3):
+        k.box("LyingBook%d" % index, -3.6, floor + index * 1.25, 5.6 - index * 0.6, 1.2, 1.6 + index * 0.3,
+              5.0 - index * 0.4, books)
+    k.box("Chest", 10.0, floor, 10.0, 5.6, 1.6, 5.4, oak)
+    k.box("ChestLid", 10.0, floor + 5.6, 10.4, 1.6, 1.4, 5.8, dark)
+    for x in (6.4, 13.6):
+        k.box("ChestBand", x, floor, 0.8, 7.2, 1.3, 6.0, brass)
+    k.box("ChestLock", 10.0, floor + 3.2, 1.6, 2.0, 1.2, 0.4, brass)
+    k.box("LanternBase", 19.6, floor, 4.2, 0.9, 2.2, 4.0, iron)
+    _clear_glass(k.box("LanternGlass", 19.6, floor + 0.9, 3.4, 5.0, 2.6, 3.2, glass))
+    k.box("LanternRoof", 19.6, floor + 5.9, 4.6, 1.2, 2.0, 4.4, iron)
+    k.ring("LanternHandle", 19.6, 3.6, floor + 8.6, 1.4, 0.3, iron)
+
+
+def build_tower_machine(k, rng):
+    """The tower machine: a furnace cabinet, brass and copper drums turned by
+    meshing gears, and a glass cage at the top where a violet crystal glows."""
+    iron, brass, copper, glass = _cast_iron(), _brass(), _copper(), _flask_glass()
+    gear_brass, gear_copper = (_gear_material("GearBrass", (0.64, 0.46, 0.2)),
+                               _gear_material("GearCopper", (0.6, 0.31, 0.17)))
+    k.box("Plinth", 0.0, 0.0, 31.0, 3.0, 0.0, 8.0, iron)
+    k.box("Cabinet", 0.0, 3.0, 28.0, 18.0, 0.6, 7.2, iron)
+    for z in (4.2, 19.6):
+        for index in range(9):
+            k.ball("Rivet", -12.0 + index * 3.0, 0.45, z, 0.42, brass, segments=8)
+    k.box("FireDoor", 0.0, 6.0, 13.0, 10.0, 0.2, 0.6, iron)
+    k.box("FireSlit", 0.0, 9.2, 10.0, 1.8, 0.05, 0.3,
+          _glow_material("FurnaceGlow", (1.0, 0.42, 0.1), 10.0, (0.5, 0.15, 0.03)))
+    for x in (-3.0, 0.0, 3.0):
+        k.box("FireBar", x, 8.6, 0.6, 3.0, -0.15, 0.3, iron)
+    k.disc("GaugeBody", -9.5, 0.3, 14.5, 2.6, 1.0, brass)
+    k.dial("Gauge", -9.5, 0.2, 14.5, 2.2, material_dial("TowerGauge", "gauge", needle=0.4))
+    for index, (low, high, radius, metal) in enumerate(((21.0, 33.0, 12.5, brass), (33.0, 43.0, 10.5, copper))):
+        k.cylinder("Drum%d" % index, 0.0, 4.0, low, radius, high - low, metal, plan=3.6, segments=40)
+        for z in (low, high - 1.2):
+            k.cylinder("DrumBand%d" % index, 0.0, 4.0, z, radius + 0.4, 1.2, iron, plan=3.9, segments=40)
+    k.gear("GearA", -5.5, 0.1, 28.0, 6.4, 0.8, 0.1, gear_brass)
+    k.gear("GearB", 4.0, -0.1, 31.5, 4.6, 0.8, 0.25, gear_copper)
+    k.gear("GearC", -0.8, 0.3, 37.9, 3.4, 0.7, 0.0, gear_brass)
+    k.cylinder("Neck", 0.0, 4.0, 43.0, 6.4, 4.0, iron, plan=2.8)
+    k.cylinder("CageFloor", 0.0, 4.0, 47.0, 7.2, 1.4, brass, plan=3.2)
+    _clear_glass(k.cylinder("Cage", 0.0, 4.0, 48.4, 6.2, 16.6, glass, plan=2.9))
+    for x, y in ((-4.4, 1.9), (4.4, 1.9), (-4.4, 6.1), (4.4, 6.1)):
+        k.cylinder("CagePost", x, y, 48.4, 0.55, 16.6, brass, plan=0.45)
+    k.cylinder("CrystalSeat", 0.0, 4.0, 48.4, 2.6, 1.8, brass, plan=1.4, tip=1.6)
+    k.crystal("Crystal", 0.0, 4.2, 55.5, 2.6, 10.0,
+              _glow_material("KeyCrystal", (0.55, 0.22, 1.0), 2.6, (0.3, 0.12, 0.6)))
+    k.cylinder("CapPlate", 0.0, 4.0, 65.0, 7.4, 1.6, brass, plan=3.3)
+    k.dome("CapDome", 0.0, 4.0, 66.6, 5.6, 4.0, copper, plan=2.6)
+    k.cylinder("Spire", 0.0, 4.0, 70.2, 0.9, 7.6, brass, plan=0.6, tip=0.1)
+    k.ball("SpireBall", 0.0, 4.0, 72.2, 1.1, brass)
+    k.wire("PipeRight", [(13.6, 3.6, 12.0), (14.6, 3.6, 12.0), (14.6, 3.6, 45.5), (11.0, 3.6, 49.5),
+                         (7.2, 3.8, 49.5)], 0.9, copper)
+    for z in (24.0, 38.0):
+        k.cylinder("Flange", 14.6, 3.6, z, 1.3, 0.8, brass, plan=0.9)
+    k.wire("PipeLeft", [(-13.6, 3.6, 17.0), (-15.0, 3.6, 17.0), (-15.0, 3.6, 30.0), (-12.6, 3.6, 30.0)], 0.75, copper)
+    k.light("Furnace", 0.0, -3.0, 10.0, (1.0, 0.45, 0.12), 0.4, radius=0.04)
+    k.light("Crystal", 0.0, 1.6, 56.0, (0.62, 0.34, 1.0), 0.3, radius=0.02)
+    k.glow("lantern", 0.0, 0.0, 10.0, (1.0, 0.5, 0.15), 9.0)
+    k.glow("crystal", 0.0, 4.2, 56.5, (0.62, 0.34, 1.0), 11.0)
+
+
+def build_engine_machine(k, rng):
+    """The engine machine: a riveted boiler fired from the left, a piston
+    driving a heavy flywheel, and a brass winding key on its gearbox."""
+    iron, brass, steel = _cast_iron(), _brass(), _steel()
+    boiler = _painted("BoilerGreen", (0.05, 0.12, 0.08))
+    fire = _glow_material("FurnaceGlow", (1.0, 0.42, 0.1), 10.0, (0.5, 0.15, 0.03))
+    gear_brass = _gear_material("GearBrass", (0.64, 0.46, 0.2))
+    k.box("Bed", 0.0, 0.0, 104.0, 5.0, 0.0, 6.0, iron)
+    k.box("BedTrim", 0.0, 4.4, 104.4, 0.8, -0.1, 0.4, brass)
+    k.box("Firebox", -47.2, 5.0, 10.4, 20.0, 0.4, 5.6, iron)
+    k.box("FireDoor", -47.2, 8.0, 7.0, 8.4, 0.1, 0.4, iron)
+    k.box("FireGrate", -47.2, 9.4, 5.2, 5.6, 0.0, 0.15, fire)
+    for x in (-49.0, -47.2, -45.4):
+        k.box("FireBar", x, 9.2, 0.5, 6.0, -0.12, 0.2, iron)
+    k.rod("Boiler", -42.0, -12.0, 3.0, 16.5, 9.5, boiler, plan=2.8)
+    for x in (-39.0, -31.0, -23.0, -15.0):
+        k.rod("BoilerBand", x - 0.6, x + 0.6, 3.0, 16.5, 9.9, brass, plan=2.9)
+    for x in (-36.0, -18.0):
+        k.box("Saddle", x, 5.0, 4.0, 4.0, 0.6, 4.8, iron)
+    k.cylinder("Chimney", -33.0, 3.0, 24.5, 2.6, 17.0, iron, plan=1.7)
+    k.cylinder("ChimneyCrown", -33.0, 3.0, 41.0, 2.8, 3.0, iron, plan=1.9, tip=3.6)
+    k.cylinder("SteamDome", -19.0, 3.0, 24.0, 3.4, 4.2, brass, plan=2.0)
+    k.dome("SteamCap", -19.0, 3.0, 28.2, 3.4, 2.4, brass, plan=2.0)
+    k.cylinder("Whistle", -16.6, 3.0, 25.5, 0.55, 6.0, brass, plan=0.4)
+    k.disc("GaugeBack", -26.0, 0.1, 16.0, 3.2, 0.6, brass)
+    k.dial("Gauge", -26.0, 0.0, 16.0, 2.7, material_dial("EngineGauge", "gauge", needle=0.68))
+    k.ring("GaugeRim", -26.0, -0.3, 16.0, 3.0, 0.5, brass)
+    # The piston, its crosshead and the flywheel it turns.
+    k.rod("Cylinder", -11.0, -1.0, 3.0, 12.0, 4.6, iron, plan=2.6)
+    for x in (-11.0, -1.6):
+        k.rod("CylinderFlange", x, x + 0.9, 3.0, 12.0, 5.1, brass, plan=2.8)
+    k.box("CylinderFoot", -6.0, 5.0, 8.0, 3.0, 1.0, 4.0, iron)
+    k.rod("PistonRod", -1.0, 6.5, 3.0, 12.0, 0.7, steel)
+    k.box("Crosshead", 7.4, 10.2, 2.6, 3.6, 1.6, 2.8, steel)
+    for z in (9.6, 14.4):
+        k.rod("Slide", 3.0, 11.5, 3.6, z, 0.45, steel)
+    k.box("SlideFoot", 9.5, 5.0, 2.0, 4.4, 2.0, 2.4, iron)
+    wheel_x, wheel_z, radius = 25.0, 21.0, 15.0
+    k.box("Pedestal", wheel_x, 5.0, 5.0, 16.0, 4.0, 1.8, iron)
+    k.wheel("Flywheel", wheel_x, 0.6, wheel_z, radius, 1.5, 6, 1.4, 0.2, iron)
+    k.disc("Hub", wheel_x, -0.6, wheel_z, 2.2, 0.6, brass, tip=1.5)
+    crank = math.radians(205.0)
+    pin = (wheel_x + 6.2 * math.cos(crank), wheel_z + 6.2 * math.sin(crank))
+    k.disc("CrankPin", pin[0], -0.9, pin[1], 0.9, 0.5, steel)
+    k.wire("ConRod", [(8.6, -0.2, 12.0), (pin[0], -0.5, pin[1])], 0.7, steel)
+    # The gearbox and the winding key that sets it going.
+    k.box("Gearbox", 46.8, 5.0, 11.0, 15.0, 0.6, 5.2, iron)
+    k.box("GearboxPlate", 46.8, 7.0, 8.4, 11.0, 0.35, 0.3, brass)
+    k.gear("BoxGearA", 44.8, 0.0, 12.0, 3.4, 0.6, 0.0, gear_brass)
+    k.gear("BoxGearB", 49.3, 0.0, 15.4, 2.3, 0.6, 0.3, gear_brass)
+    k.cylinder("KeyCollar", 46.4, 3.0, 20.0, 1.6, 1.6, brass, plan=1.0)
+    k.cylinder("KeyShaft", 46.4, 3.0, 21.6, 0.75, 4.4, brass, plan=0.55)
+    k.box("KeyWeb", 46.4, 26.0, 1.4, 4.4, 2.2, 1.2, brass)
+    for side in (-1.0, 1.0):
+        k.ring("KeyBow", 46.4 + side * 2.9, 2.0, 29.2, 2.3, 0.85, brass)
+    k.light("Fire", -47.2, -3.0, 12.0, (1.0, 0.45, 0.12), 0.45, radius=0.04)
+    k.glow("lantern", -47.2, 0.0, 12.0, (1.0, 0.5, 0.15), 10.0)
+
+
+def build_workshop_machine(k, rng):
+    """The workshop machine: a workbench with a vise, tools on a pegboard and
+    a gooseneck lamp, beside a drill press belted to its flywheel."""
+    oak, iron, brass, copper, steel = _oak(), _cast_iron(), _brass(), _copper(), _steel()
+    green = _painted("MachineGreen", (0.06, 0.15, 0.1))
+    gear_brass = _gear_material("GearBrass", (0.64, 0.46, 0.2))
+    bench_x = -15.0
+    for x in (-32.6, 2.6):
+        for front in (0.6, 7.6):
+            k.box("Leg", x, 0.0, 2.0, 21.0, front, 1.8, oak)
+    k.box("LowShelf", bench_x, 5.0, 36.4, 1.2, 1.0, 8.0, oak)
+    k.box("Apron", bench_x, 18.0, 37.0, 3.0, 0.4, 9.0, oak)
+    k.box("Top", bench_x, 21.0, 38.0, 2.6, 0.0, 10.0, oak)
+    k.box("BoardBack", bench_x, 23.6, 38.0, 33.0, 9.0, 1.0, oak)
+    k.plane("Pegboard", bench_x, 8.95, 25.0, 55.6, 35.6, material_pegboard())
+    for x in (bench_x - 18.4, bench_x + 18.4):
+        k.box("BoardStile", x, 23.6, 1.2, 33.0, 8.6, 0.6, oak)
+    k.box("BoardRail", bench_x, 55.6, 38.0, 1.0, 8.6, 0.6, oak)
+    # Tools hung on the pegboard.
+    k.box("HammerHandle", -30.0, 31.0, 1.1, 11.0, 8.2, 0.6, oak)
+    k.box("HammerHead", -30.0, 42.0, 5.4, 2.2, 7.9, 0.9, steel)
+    k.box("WrenchShaft", -25.0, 32.0, 1.2, 11.0, 8.2, 0.5, steel)
+    k.ring("WrenchHead", -25.0, 8.0, 44.6, 1.7, 0.55, steel)
+    k.box("SawBlade", -16.0, 44.0, 10.0, 4.0, 8.5, 0.2, steel)
+    k.box("SawHandle", -9.6, 43.2, 3.0, 5.6, 8.1, 0.8, oak)
+    for index, (x, color) in enumerate(((-5.5, (0.45, 0.06, 0.04)), (-3.8, (0.5, 0.36, 0.06)),
+                                        (-2.1, (0.05, 0.25, 0.25)))):
+        k.cylinder("DriverShaft%d" % index, x, 8.4, 33.0, 0.32, 7.0, steel, plan=0.25)
+        k.cylinder("DriverHandle%d" % index, x, 8.4, 40.0, 0.75, 4.2, _cloth("Handle%d" % index, color), plan=0.5)
+    k.ring("WireCoil", -20.5, 7.8, 33.5, 2.6, 0.75, copper)
+    k.ring("WireCoilInner", -20.5, 7.7, 33.5, 1.7, 0.6, copper)
+    # The vise, a hammer and a gear left on the bench.
+    k.box("ViseBase", -28.0, 23.6, 5.0, 1.6, 0.6, 4.4, iron)
+    k.box("ViseBody", -28.0, 25.2, 4.2, 3.6, 0.8, 3.6, green)
+    for offset in (-1.0, 1.0):
+        k.box("ViseJaw", -28.0 + offset * 1.5, 28.8, 1.2, 2.4, 1.2, 3.0, steel)
+    k.rod("ViseBar", -31.6, -24.4, 0.2, 26.8, 0.45, steel)
+    for x in (-31.6, -24.4):
+        k.ball("ViseKnob", x, 0.2, 26.8, 0.7, steel)
+    k.rod("BenchHandle", -20.0, -13.0, 3.6, 24.3, 0.6, oak)
+    k.box("BenchHead", -12.2, 23.6, 1.6, 2.4, 2.2, 2.8, steel)
+    k.gear("BenchGear", -7.0, 6.4, 27.6, 3.6, 0.6, 0.2, gear_brass)
+    k.box("Toolbox", -24.0, 6.2, 9.0, 4.4, 1.4, 6.0, _painted("ToolboxRed", (0.32, 0.05, 0.04)))
+    k.box("ToolboxLid", -24.0, 10.6, 9.4, 0.8, 1.2, 6.4, _painted("ToolboxRed", (0.32, 0.05, 0.04)))
+    k.rod("ToolboxHandle", -26.0, -22.0, 4.4, 12.2, 0.4, steel)
+    k.cylinder("Bucket", -8.0, 4.6, 6.2, 3.0, 5.4, iron, plan=1.8, tip=3.4)
+    # The gooseneck lamp.
+    k.cylinder("LampFoot", -1.5, 6.2, 23.6, 2.2, 1.0, iron, plan=1.2)
+    k.wire("LampNeck", [(-1.5, 6.2, 24.6), (-1.5, 6.0, 32.0), (-3.2, 5.4, 37.4), (-7.0, 4.6, 39.8)], 0.5, brass)
+    k.cylinder("LampShade", -8.6, 4.4, 36.6, 3.2, 3.4, green, plan=1.6, tip=1.1)
+    k.ball("LampBulb", -8.6, 4.4, 36.4, 1.1, _glow_material("WorkLampBulb", (1.0, 0.82, 0.55), 14.0, (1.0, 0.9, 0.7)))
+    k.light("Lamp", -8.6, 3.2, 34.6, (1.0, 0.8, 0.52), 0.45, radius=0.02)
+    k.glow("bulb", -8.6, 4.4, 36.0, (1.0, 0.8, 0.5), 7.0)
+    # The drill press.
+    k.box("PressBase", 21.5, 0.0, 20.0, 3.6, 0.8, 8.6, iron)
+    k.cylinder("Column", 27.0, 6.6, 3.6, 1.9, 59.0, steel, plan=1.4)
+    k.cylinder("TableCollar", 27.0, 6.6, 24.6, 2.7, 4.6, iron, plan=1.9)
+    k.box("Table", 21.0, 27.0, 13.0, 1.8, 1.6, 6.0, green)
+    k.box("Workpiece", 19.4, 28.8, 4.2, 2.0, 2.8, 3.0, brass)
+    k.box("Head", 21.0, 47.6, 16.6, 14.0, 1.0, 8.0, green)
+    k.cylinder("Quill", 18.0, 4.2, 40.6, 1.55, 7.0, steel, plan=1.1)
+    k.cylinder("Chuck", 18.0, 4.2, 37.6, 1.5, 3.0, steel, plan=1.05, tip=0.9)
+    k.cylinder("Bit", 18.0, 4.2, 32.0, 0.12, 5.6, steel, tip=0.38)
+    k.disc("FeedHub", 30.0, 1.2, 54.0, 1.4, 1.0, steel)
+    for turn in (40.0, 160.0, 280.0):
+        end = (30.0 + 4.4 * math.cos(math.radians(turn)), 54.0 + 4.4 * math.sin(math.radians(turn)))
+        k.wire("FeedArm", [(30.0, 1.0, 54.0), (end[0], 0.6, end[1])], 0.38, steel)
+        k.ball("FeedKnob", end[0], 0.6, end[1], 0.85, _bakelite())
+    rubber = _material("BeltRubber", lambda nodes, links: _principled(nodes, links, (0.02, 0.02, 0.02), roughness=0.7))
+    k.rod("Motor", 14.0, 25.0, 7.6, 64.6, 3.0, green, plan=1.6)
+    k.box("BeltGuard", 21.0, 61.6, 12.0, 2.4, 2.0, 5.0, green)
+    k.wheel("Flywheel", 28.2, 0.4, 66.4, 6.2, 0.9, 5, 1.0, 0.3, iron)
+    k.disc("FlywheelHub", 28.2, -0.4, 66.4, 1.2, 0.5, brass)
+    k.disc("MotorPulley", 14.0, 0.6, 66.0, 2.2, 1.0, steel)
+    k.wire("BeltTop", [(14.0, 0.9, 68.2), (28.2, 0.9, 72.6)], 0.4, rubber)
+    k.wire("BeltLow", [(14.0, 1.4, 63.8), (21.0, 1.4, 61.8)], 0.4, rubber)
+
+
+PROP_BUILDERS = {
+    "ChemistryRoomKnowledge": build_chemistry_core,
+    "CircuitRoomKnowledge": build_circuit_staged,
+    "LibraryRoomKnowledge": build_library_console,
+    "GreenhouseRoomKnowledge": build_greenhouse_construct,
+    "DiningHallKnowledge": build_dining_clock,
+    "StorageRack": build_storage_rack,
+    "FinalKeyMachine1": build_tower_machine,
+    "FinalKeyMachine2": build_engine_machine,
+    "FinalKeyMachine3": build_workshop_machine,
+}
+
+
 def _rect_in_region(rect, meta):
     x0, y0, width, height = meta["region"]
     return x0 <= rect[0] and rect[0] + rect[2] <= x0 + width and y0 <= rect[1] and rect[1] + rect[3] <= y0 + height
@@ -3258,59 +4237,92 @@ def _stair_lights(layout, stairs, number, stretch):
             _candle_group("StairCandles%d%s" % (number, side), x, y, float(layout.height[int(y), int(x)]), stretch)
 
 
-def add_hd_props(meta, stretch):
-    """Builds every HD prop the region holds, hidden from the background render."""
+def add_hd_props(meta, stretch, only=None):
+    """Builds each staged prop on its stand, with its own lights. The props stay
+    out of the Hall render's camera, yet cast their shadows and bounce their
+    light into it, so each one stands in the room when laid over it."""
     props = {}
-    exhibits = meta.get("exhibits", {})
-    x0, y0, width, height = meta["region"]
-    rect = exhibits.get("CircuitRoomKnowledge")
-    if rect is not None and x0 <= rect[0] and rect[0] + rect[2] <= x0 + width and y0 <= rect[1] \
-            and rect[1] + rect[3] <= y0 + height:
-        objects, bulb = build_circuit_exhibit(rect, stretch)
-        # The bulb lights the wall behind the prop in the background render too,
-        # and a soft key from the corridor side makes the exhibit read as the
-        # thing to walk up to.
-        add_point_light("CircuitBulbLight", bulb[:2], bulb[2], (1.0, 0.66, 0.32), 1.1, 0.02, stretch)
-        add_point_light("CircuitKey", (rect[0] + rect[2] + 16.0, rect[1] + rect[3] + 26.0), 55.0, (1.0, 0.86, 0.7),
-                        1.8, 0.15, stretch, mirrored=False)
-        _glow("bulb", bulb[0], bulb[1], bulb[2], (1.0, 0.68, 0.32), 12.0)
-        for obj in objects:
-            obj.hide_render = True
-        props["CircuitRoomKnowledge"] = (rect, objects)
+    for prop_id, stand in STANDS.items():
+        if only and prop_id not in only:
+            continue
+        kit = PropKit(prop_id, stand, stretch)
+        PROP_BUILDERS[prop_id](kit, np.random.default_rng(SEED + sum(map(ord, prop_id))))
+        kit.key_light()
+        for obj in kit.made:
+            obj.visible_camera = False
+        props[prop_id] = kit
+        print("HD PROP %s: %d parts, %d lights" % (prop_id, len(kit.made), len(kit.lights)))
     return props
 
 
-def render_props(props, out, meta):
-    """Each HD prop alone, cropped to its rect, over transparency; plus the swap list."""
+def _crop_shown(path, left, top, size, scale, origin):
+    """Crops a prop's render to the px the game counts as shown (alpha above
+    VISIBLE_ALPHA); returns their rect on screen in game px. The render's
+    top-left render px is (left, top) of the region's render."""
+    image = bpy.data.images.load(os.path.abspath(path), check_existing=False)
+    width, height = image.size
+    pixels = np.empty(width * height * 4, dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    bpy.data.images.remove(image)
+    if (width, height) != tuple(size):
+        print("WARNING prop render %s is %dx%d, expected %dx%d" % (path, width, height, size[0], size[1]))
+    rgba = np.rint(pixels.reshape(height, width, 4)[::-1] * 255.0).astype(np.uint8)
+    shown = rgba[..., 3] > VISIBLE_ALPHA * 255.0
+    rows, columns = np.flatnonzero(shown.any(axis=1)), np.flatnonzero(shown.any(axis=0))
+    if len(rows) == 0:
+        raise SystemExit("Prop render %s shows nothing" % path)
+    crop = np.ascontiguousarray(rgba[rows[0]:rows[-1] + 1, columns[0]:columns[-1] + 1])
+    _write_png(path, crop)
+    return [round(origin[0] + (left + int(columns[0])) / scale, 2), round(origin[1] + (top + int(rows[0])) / scale, 2),
+            round(crop.shape[1] / scale, 2), round(crop.shape[0] / scale, 2)]
+
+
+def render_props(props, out, meta, listed, scale):
+    """Each staged prop alone over transparency, cropped to the px it shows, and
+    <render>-props.json: per prop its node, its image, the rect it shows on
+    screen and the move from its place in the game that stages it there."""
     scene = bpy.context.scene
+    render = scene.render
     x0, y0, width, height = meta["region"]
+    columns, rows = render.resolution_x, render.resolution_y
+    shown = [obj for obj in scene.objects if obj.type in ("MESH", "CURVE")]
+    camera_flags = {obj.name: obj.visible_camera for obj in shown}
     entries = []
-    for prop_id, (rect, objects) in props.items():
-        others = [obj for obj in scene.objects if obj.type in ("MESH", "CURVE") and not obj.hide_render]
-        for obj in others:
-            obj.hide_render = True
-        for obj in objects:
-            obj.hide_render = False
-        render = scene.render
+    for prop_id, kit in props.items():
+        stand = kit.stand
+        for obj in shown:
+            obj.visible_camera = obj.get("hd_prop") == prop_id
+        margin = PROP_RENDER_MARGIN_PX
+        left = max(int(math.floor((stand["left"] - margin - x0) * scale)), 0)
+        right = min(int(math.ceil((stand["right"] + margin - x0) * scale)), columns)
+        top = max(int(math.floor((stand["feet"] - stand["height"] - margin - y0) * scale)), 0)
+        bottom = min(int(math.ceil((stand["feet"] + margin - y0) * scale)), rows)
+        # Blender truncates the border to whole px: aim at px centres.
         render.use_border = True
         render.use_crop_to_border = True
-        render.border_min_x = (rect[0] - x0) / width
-        render.border_max_x = (rect[0] + rect[2] - x0) / width
-        render.border_min_y = 1.0 - (rect[1] + rect[3] - y0) / height
-        render.border_max_y = 1.0 - (rect[1] - y0) / height
+        render.border_min_x = (left + 0.5) / columns
+        render.border_max_x = (right + 0.5) / columns
+        render.border_min_y = (rows - bottom + 0.5) / rows
+        render.border_max_y = (rows - top + 0.5) / rows
         render.film_transparent = True
         render.image_settings.color_mode = "RGBA"
         image = os.path.splitext(out)[0] + "-prop-%s.png" % prop_id
         render_to(image)
-        render.use_border = False
-        render.film_transparent = False
-        render.image_settings.color_mode = "RGB"
-        for obj in objects:
-            obj.hide_render = True
-        for obj in others:
-            obj.hide_render = False
-        entries.append({"id": prop_id, "node": PROP_SPRITES[prop_id], "image": os.path.basename(image),
-                        "rect": list(rect)})
+        rect = _crop_shown(image, left, top, (right - left, bottom - top), scale, (x0, y0))
+        game = listed.get(prop_id) or {}
+        entry = {"id": prop_id, "root": game.get("path", ""), "image": os.path.basename(image), "rect": rect}
+        if game.get("rect"):
+            old = game["rect"]
+            entry["move"] = [round(rect[0] + rect[2] / 2.0 - (old[0] + old[2] / 2.0), 2),
+                             round(rect[1] + rect[3] - (old[1] + old[3]), 2)]
+        entries.append(entry)
+        print("PROP %s shows %.1f x %.1f at (%.1f, %.1f): feet %.1f on a stand at %.1f, move %s" % (
+            prop_id, rect[2], rect[3], rect[0], rect[1], rect[1] + rect[3], stand["feet"], entry.get("move")))
+    render.use_border = False
+    render.film_transparent = False
+    render.image_settings.color_mode = "RGB"
+    for obj in shown:
+        obj.visible_camera = camera_flags[obj.name]
     path = os.path.splitext(out)[0] + "-props.json"
     with open(path, "w", encoding="utf-8") as handle:
         json.dump({"generator": "tools/blender/hall_prototype.py", "props": entries}, handle, indent=1)
@@ -3497,12 +4509,17 @@ def main():
     global DENSITY
     x0, y0, width, height = meta["region"]
     DENSITY = width * height / DENSITY_AREA_PX
-    props = meta.get("props") or {name: {"rect": rect} for name, rect in (meta.get("exhibits") or {}).items()}
-    alcoves = [prop["rect"] for prop in props.values() if _rect_in_region(prop["rect"], meta)]
+    listed = meta.get("props") or {name: {"rect": rect} for name, rect in (meta.get("exhibits") or {}).items()}
+    # Staged props stand in front of the faces. Only a prop left where the game
+    # has it, inside a wall mass, needs a niche cut for it.
+    alcoves = [prop["rect"] for name, prop in listed.items()
+               if name not in HD_PROP_STANDS and _rect_in_region(prop["rect"], meta)]
     doors = sorted((name, point, (meta.get("door_prompts") or {}).get(name))
                    for name, point in (meta.get("doors") or {}).items())
     layout = Layout(collision, outside, math.sin(alpha), spawn=meta.get("spawn"), doors=doors, alcoves=alcoves)
     print("LAYOUT built in %.1fs" % (time.time() - started))
+    global STANDS
+    STANDS = prop_stands(layout, meta)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     x0, y0, width, height = meta["region"]
@@ -3525,16 +4542,17 @@ def main():
     add_stair_lights(layout, stretch)
     add_gallery_machinery(layout, meta, stretch)
     banners = add_banners(layout, meta, stretch, mounts)
-    add_floor_grates(layout, meta, stretch, [mount[:2] for mount in mounts] + [tuple(meta.get("spawn", (0, 0)))])
+    add_floor_grates(layout, meta, stretch, [mount[:2] for mount in mounts] + [tuple(meta.get("spawn", (0, 0)))]
+                     + _prop_floor())
     dress_faces(layout, meta, stretch, [(mount[0], mount[1], 6.0) for mount in mounts]
                 + [(x, y, BANNER_WIDTH_PX / 2.0 + 2.0) for x, y in banners])
     route = [tuple(point) for point in meta.get("opening_route") or []]
-    keep_clear = [mount[:2] for mount in mounts] + route
+    keep_clear = [mount[:2] for mount in mounts] + route + _prop_floor()
     add_floor_details(layout, meta, stretch, keep_clear)
     add_floor_story(layout, meta, stretch, keep_clear)
     add_cap_candles(layout, meta, stretch)
     add_ivy(layout, meta, stretch)
-    props = add_hd_props(meta, stretch)
+    props = add_hd_props(meta, stretch, options.get("only"))
     glows_path = os.path.splitext(options["out"])[0] + "-glows.json"
     with open(glows_path, "w", encoding="utf-8") as handle:
         json.dump({"generator": "tools/blender/hall_prototype.py", "region": meta["region"], "glows": GLOWS},
@@ -3550,8 +4568,11 @@ def main():
     setup_cycles(options["samples"], options["preview"])
     if options["save_blend"]:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(options["save_blend"]))
+    if options.get("props_only"):
+        render_props(props, options["out"], meta, listed, options["scale"])
+        return
     render_to(options["out"])
-    render_props(props, options["out"], meta)
+    render_props(props, options["out"], meta, listed, options["scale"])
     if options["silhouette"]:
         # Floor quads would fill the outline; hide them by giving the silhouette
         # pass a walls-only copy. Props stay: they must fit inside the outline.

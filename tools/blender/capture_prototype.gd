@@ -3,7 +3,10 @@ extends SceneTree
 ## Native in-game comparison for the Blender Hall prototype: replays the real
 ## Wake Room exit, then captures the same gameplay moments twice at 1024x768,
 ## once with the current Hall art and once with the prototype render laid over
-## it (visual only: collision, fog, route and every node stay as they are).
+## it (visual only, but for the HD props: each is staged on its stand, its node
+## moved with it; collision, fog and the route stay as they are). Each staged
+## prop is also shot with the player walked up to it, where its prompt must
+## show and no door's.
 ##
 ##   HOME="$PWD/.godot/blender-proto-capture/home" godot --path . \
 ##     --script res://tools/blender/capture_prototype.gd [-- --zh]
@@ -44,6 +47,23 @@ const ART_SHOTS: Dictionary = {
 	"16-art-east": Vector2(1660, 860),
 	"17-art-heart": Vector2(1000, 620),
 }
+## Each staged HD prop, shot with the player walked up beside it.
+const PROP_SHOTS: Dictionary = {
+	"ChemistryRoomKnowledge": "21-prop-chemistry-core",
+	"CircuitRoomKnowledge": "22-prop-circuit-exhibit",
+	"LibraryRoomKnowledge": "23-prop-light-console",
+	"GreenhouseRoomKnowledge": "24-prop-greenhouse-case",
+	"DiningHallKnowledge": "25-prop-dining-clock",
+	"StorageRack": "26-prop-storage-rack",
+	"FinalKeyMachine1": "27-prop-tower-machine",
+	"FinalKeyMachine2": "28-prop-engine-machine",
+	"FinalKeyMachine3": "29-prop-workshop-machine",
+}
+## Where a prop's own prompt shows, no door's may: doors take priority.
+const DOOR_INTERACTIONS: Array[String] = [
+	"chemistry_room_door", "greenhouse_room_door", "library_door", "dining_hall_door",
+	"final_room_door", "wake_room_door", "circuit_door",
+]
 
 var hall: Node2D
 var overlay: Sprite2D
@@ -84,12 +104,15 @@ func _run() -> void:
 	_expect(overlay != null, "The prototype render loads")
 	props = Props.new()
 	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
-	_expect(swapped > 0, "The HD props load")
+	var listed: Dictionary = meta.get("props", {})
+	_expect(
+		swapped == listed.size(),
+		"Every listed prop is staged in HD (%d of %d)" % [swapped, listed.size()]
+	)
 	depth = Depth.new()
 	_expect(depth.attach(hall, DATA + "render-depth.png", region), "The depth map loads")
 	for item: Dictionary in props.standing():
 		depth.add_fixed(item["sprite"], item["feet"])
-	var listed: Dictionary = meta.get("props", {})
 	_expect(depth.add_props(listed) == listed.size(), "Every listed prop takes the depth shader")
 	if overlay == null:
 		_finish()
@@ -105,6 +128,7 @@ func _run() -> void:
 		player.global_position = spot
 		await _wait(0.9)
 		await _pair(shot)
+	await _prop_shots(player)
 	var fog := hall.get("fog_sprite") as CanvasItem
 	if fog != null:
 		fog.visible = false
@@ -177,6 +201,81 @@ func _walkable_near(target: Vector2) -> Vector2:
 			if bool(hall.call("is_player_position_walkable", candidate)):
 				return candidate
 	return Vector2.INF
+
+
+## Every staged prop with the player walked up beside it, in both looks. In
+## the HD Hall the prop's own prompt must reach the player there, and no
+## door's (doors take priority over every prop).
+func _prop_shots(player: CharacterBody2D) -> void:
+	var depth_image := depth.depth_texture.get_image()
+	for swap: Dictionary in props.swaps:
+		var root := swap["root"] as Node
+		var prop_id := str(root.name)
+		var interaction := _interaction_for(prop_id)
+		props.apply()
+		var spot := _prop_spot(player, interaction, swap["rect"] as Rect2, depth_image)
+		props.restore()
+		_expect(
+			spot != Vector2.INF,
+			"%s: walked up to at %s, its prompt shows there and no door's" % [prop_id, spot]
+		)
+		if spot == Vector2.INF or not PROP_SHOTS.has(prop_id):
+			continue
+		player.global_position = spot
+		await _wait(0.9)
+		await _pair(PROP_SHOTS[prop_id])
+
+
+## A spot beside the prop, in full view, where its prompt shows and no door's.
+func _prop_spot(
+	player: CharacterBody2D, interaction: String, rect: Rect2, depth_image: Image
+) -> Vector2:
+	var right := rect.end.x + 10.0
+	var left := rect.position.x - 10.0
+	var centre := rect.get_center().x
+	var tries: Array[Vector2] = []
+	for step: Vector2 in [
+		Vector2(right, 5.0), Vector2(left, 5.0), Vector2(right, 14.0), Vector2(left, 14.0),
+		Vector2(centre, 12.0), Vector2(centre, 24.0), Vector2(right, 30.0), Vector2(left, 30.0),
+		Vector2(centre, 40.0), Vector2(right, 48.0), Vector2(left, 48.0), Vector2(centre, 56.0),
+	]:
+		tries.append(Vector2(step.x, rect.end.y + step.y))
+	for target: Vector2 in tries:
+		var spot := _walkable_near(target)
+		if spot == Vector2.INF or _behind_wall(depth_image, spot):
+			continue
+		player.global_position = spot
+		if not bool(hall.call("_is_near_hall_interaction", interaction)):
+			continue
+		var door_near := false
+		for door: String in DOOR_INTERACTIONS:
+			door_near = door_near or bool(hall.call("_is_near_hall_interaction", door))
+		if not door_near:
+			return spot
+	return Vector2.INF
+
+
+## Whether a wall's top hides part of a figure standing at `feet`: at the
+## preview's figure scale it shows about 20 x 48 px above its feet.
+func _behind_wall(image: Image, feet: Vector2) -> bool:
+	for y: int in range(int(feet.y) - 48, int(feet.y) + 1, 2):
+		for x: int in range(int(feet.x) - 10, int(feet.x) + 11, 2):
+			var px := Vector2i(x, y) - Vector2i(depth.origin)
+			if px.x < 0 or px.y < 0 or px.x >= image.get_width() or px.y >= image.get_height():
+				continue
+			var color := image.get_pixelv(px)
+			var wall_y := roundi(color.r * 255.0) * 256 + roundi(color.g * 255.0)
+			if color.a > 0.5 and float(wall_y) > feet.y + 0.5:
+				return true
+	return false
+
+
+func _interaction_for(prop_id: String) -> String:
+	if prop_id == "StorageRack":
+		return "hidden_library_key"
+	if prop_id.begins_with("FinalKeyMachine"):
+		return "final_key_machine_" + prop_id.trim_prefix("FinalKeyMachine")
+	return "hall_knowledge:" + prop_id
 
 
 func _enter_hall_from_wake_room() -> void:

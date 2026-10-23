@@ -2,10 +2,103 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-46
+
+- **Date:** 2026-10-22
+- **Status:** reviewed by the user, who approved committing it. Their notes for the next stage: the doors look too plain; the Wake Room door is missing (only a stair, so the space reads as nothing but the Hall); and doors should open by themselves as the player goes in. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 45 (committed and pushed as `1cd575d`), the user asked for the other eight props in HD. They allowed moving or remaking them "让他们完美的融入现在的环境" (so they blend perfectly into the current environment).
+
+### What changed
+
+- **New stands.** At their pixel places, most props no longer fit the HD Hall:
+  - the Dining clock stood in the black east void;
+  - the Tower machine stood inside a pit;
+  - the Workshop machine covered several wall blocks of a bay;
+  - the Circuit exhibit stood in an alcove behind a wall;
+  - Library and Greenhouse floated on open floor beside wall corners.
+- **Each prop now backs onto a straight stretch of a wall's camera-facing face**, chosen by three rules:
+  - it has at least a wall's height of open floor in front (40 px, plus its depth, plus 6 px); otherwise the next wall's top hides its foot, the "standing on a wall's top edge" look reported before;
+  - the player can walk up to it on floor no door's prompt claims;
+  - it keeps 48 px from door arches, and clear of the stair and the spawn.
+  - `HD_PROP_STANDS` lists the stands. `prop_stands()` re-measures each one on the layout and prints its face rows, feet and open floor. All 9 are OK; the engine has exactly the minimum, 52 px.
+- **How far each prop moves** (x, y in game px):
+
+  | Prop | Move | Note |
+  | --- | --- | --- |
+  | Chemistry | +8, +13 | the tutorial target, barely moved |
+  | Rack | +1, +11 | |
+  | Engine | 0, +8 | |
+  | Library | +7, −43 | |
+  | Greenhouse | −39, −33 | |
+  | Workshop | +101, +38 | |
+  | Tower | +116, −102 | |
+  | Dining | −139, −160 | |
+  | Circuit | +122, −271 | |
+
+- **Nine HD models**, each at its pixel sprite's size at the preview's figure scale (1.1/1.45). Each keeps its sprite's identity and shows its exhibit's science:
+  - **Chemistry:** a riveted bronze reaction vessel on a stone plinth. The reaction churns orange behind a bolted porthole; it has a flue, a gauge, a sight glass and a copper pipe.
+  - **Library:** a walnut console. Its frosted panel shows red, green and blue lamplight adding up to yellow, cyan, magenta and, where all three meet, white.
+  - **Greenhouse:** plants under a brass-framed glass case around a glowing green core, a sun lamp above, and oxygen bubbles rising in a water tube.
+  - **Dining:** a walnut longcase clock at eight minutes to midnight, with a candle clock and an hourglass: time read three independent ways.
+  - **Circuit:** the stage-44 cabinet, now at the figures' scale and the stand's depth.
+  - **Storage rack:** oak shelving with crates, jars, bottles, books, rolled plans and a chest; a small violet vial glows among them.
+  - **Tower machine:** a furnace cabinet, brass and copper drums turned by meshing gears, and a violet crystal in a glass cage.
+  - **Engine machine:** a firebox, a banded boiler with chimney, a piston and crosshead, a heavy flywheel, and a brass winding key on its gearbox.
+  - **Workshop machine** (remodelled 70 px wide to fit its bay): a workbench with a vise, pegboard tools and a gooseneck lamp, beside a belt-driven drill press.
+- **Rendered into the room.**
+  - In the Hall render the props are invisible to the camera, but they still cast shadows and bounce light. So their shadows and their own lights are baked into the floor and walls around them.
+  - Each prop is then rendered alone over transparency in the same scene. The render is cropped to the px the game counts as shown (alpha above 0.05, its own threshold).
+  - Each prop carries its own lights (reaction, lamps, furnace, crystal, candle) and a soft key light from the front; wide props get one from each side.
+  - No alcoves are cut for the staged props, so the old notches (e.g. behind the engine) are gone.
+- **The Hall's dressing makes room for the props.**
+  - Lanterns move beside a prop instead of hanging behind it.
+  - Banners, wall decor, cobwebs, ivy and wall-top candles stay off its face.
+  - Floor cracks, notes, spills, chalk and grates stay off its foot.
+- **Staged in the preview.** `prototype_props.gd` now does the following for each prop:
+  - moves the prop's node by its listed offset;
+  - shows the cropped render in place of its sprite;
+  - hides the pixel contact shadow;
+  - has the game re-read its knowledge exhibits.
+  - The game's feet, prompt, focus box and occlusion then follow the prop the player sees. `restore()` puts every node back exactly.
+- **Captures:** shots 21–29, one per prop. Each is taken from a walk-up spot where the player is in full view, the prop's own prompt shows and no door's does.
+
+### Exact files
+
+- Changed: `tools/blender/hall_prototype.py`, `tools/blender/prototype_props.gd` (rewritten), `tools/blender/capture_prototype.gd`, and `tools/blender/play_prototype.gd` (doc comment only).
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`:
+  - rebuilt comparisons 01–04, 11, 12, 14, 17, 20, `26-hall-doors.png` and `silhouette-diff.png`;
+  - new `28-hd-props.png`: every prop in game, from where its prompt shows (ZH);
+  - new `29-hd-prop-models.png`: each game pixel sprite above its HD model.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_hall/` (the Hall render, 9 prop renders and `render-props.json`).
+
+### Verification
+
+- **Stands:** all 9 are OK, both in the builder and in the no-Blender layout harness.
+- **Blender:** final render at 128 samples, 184 s for the Hall plus about 2 s per prop. Each prop's shown rect is within 1 px of its stand, and its feet within 0.5 px. Footprint is unchanged: IoU 1.0; against the collision beyond 3 game px, 20 extra and 0 missing px.
+- **Native captures:** `capture_prototype.gd` passes all 132 checks in EN and ZH. They include:
+  - "Every listed prop is staged in HD (9 of 9)";
+  - "Every listed prop takes the depth shader";
+  - for each prop, a walk-up spot in full view where its own prompt shows and no door's does.
+  - In the shots, the game's focus box frames each HD knowledge exhibit and the rack, and the Dining prompt reads 按 E · 了解餐厅知识.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `region [0, 0, 1920, 1280], 346 glows, 9 HD props, depth true (9 props)`.
+
+### Limits / next stage
+
+- **The moves exist only in the preview.** The game's scene still has the props at their pixel places, with their pixel sprites.
+- **No machine prompt at the start.** The three machines show no prompt until their stations unlock later in the story. The capture checks that their prompts reach the player, not the story gate.
+- **The Circuit exhibit sits beside its door.** The door's prompt covers the floor in front of the exhibit and to its left, so the player reads it from a step further south, still well inside its 72 px reach.
+- **Slower Hall render:** 184 s, up from 148 s.
+- **Next (user's notes):** richer doors that open by themselves as the player goes in, and a visible Wake Room door; after that, move the HD Hall, its props on their stands, the depth shader and the 50 px Hall figures into the game itself.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+---
+
 ## Stage: UX-20261021-45
 
 - **Date:** 2026-10-21
-- **Status:** the Blender HD prototype now covers the whole Hall, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Status:** approved by the user; committed and pushed as `1cd575d`. Nothing ships: the game, its scenes and the Web build are unchanged.
 - **Request:** on stage 44 (committed and pushed as `0c0c00d`), the user chose "extend to the whole Hall".
 
 ### What changed
@@ -51,7 +144,7 @@
 - **The game still shows 66 px figures;** 50 px exists only in the preview.
 - **The export can warn at exit:** in 1 of 3 runs it printed "3 resources still in use at exit". The export itself is complete every time.
 - **Next, if approved:** HD models for the remaining exhibits, machines and rack; then move the HD Hall, the depth shader and the 50 px Hall figure into the game itself.
-- **GitHub:** not committed. Committing needs the user's approval.
+- **GitHub:** committed and pushed as `1cd575d` with the user's approval.
 
 ---
 

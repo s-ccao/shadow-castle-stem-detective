@@ -2,8 +2,10 @@ extends SceneTree
 
 ## Playable preview of the Blender Hall prototype. Runs the real game (title
 ## screen, saves, every room) and lays the prototype render over the Hall
-## region it covers whenever the Hall loads. Visual only: collision, fog, the
-## route, the Guardian and saves are the game's own.
+## region it covers whenever the Hall loads. Visual only, but for the HD props:
+## each is staged on its stand in the HD Hall, its node moved with it so its
+## prompt and focus box follow. Collision, fog, the route, the Guardian and
+## saves are the game's own.
 ##
 ##   HOME="$PWD/.godot/blender-proto-play/home" godot --path . \
 ##     --script res://tools/blender/play_prototype.gd [-- --hall]

@@ -1,14 +1,18 @@
 # Project status
 
-**Last updated:** 2026-10-21
+**Last updated:** 2026-10-22
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
-## Latest actual-project update (2026-10-21)
+## Latest actual-project update (2026-10-22)
 
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.
+  - **All nine props in HD** (stage 46): the five knowledge exhibits, the storage rack and the three Final Key machines are now Blender models that stand in the HD Hall.
+    - Each backs onto a wall face with room to walk up to it, instead of floating on open floor, standing in a pit or covering walls, and casts real shadows into the room.
+    - Each shows its science: a reaction glowing in a bronze core, red, green and blue light adding up on a console, photosynthesis under glass, and a clock, candle clock and hourglass telling the time.
+    - In the playable preview the game's prompts and focus boxes follow the props to their new places.
   - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/).
   - **Second art pass:** the user found the first pass too plain to invite exploration, so this pass adds:
     - smooth walls instead of 4 px stairs, with dark tops and lit stone outlines;
