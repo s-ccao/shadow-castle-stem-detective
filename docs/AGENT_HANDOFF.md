@@ -263,16 +263,26 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -49 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their walk cycles and `36-tripo-characters.png` where each came from.
-   - **Characters** (stages 48–49): the detective and the Castle Guardian are Tripo models (stage 49; stage 48's primitive models looked like wooden puppets to the user). Each is a rigged, walking GLB in `prototypes/blender_chars/source/`.
-     - `sources.json` there records the pipeline, the prompts and the Tripo task ids: Studio Generate Image from the pixel sprite → Generate Model (HD, H3.1) → Auto Rig (Mixamo) → preset walk → GLB export in place.
-     - `tools/blender/character_prototype.py` renders each GLB's walk in 8 directions × 8 frames into `prototypes/blender_chars/<character>_walk_8dir.png`, plus `<character>.json` (rows by animation name, cell, feet, height, angle, source).
-     - Frame 0 is the cycle's mean pose (standing). Frames 1–7 are the rest of the cycle, which starts on the right foot passing the left; the period comes from the feet.
+1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -50 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their gaits (idle, walk, run) and `36-tripo-characters.png` where each came from.
+   - **Characters** (stages 48–50): the detective and the Castle Guardian are Tripo models (stage 49; stage 48's primitive models looked like wooden puppets to the user). Each is a rigged GLB in `prototypes/blender_chars/source/` holding Tripo's preset clips (`<character>_anims.glb`).
+     - `sources.json` there records the pipeline, the prompts, the Tripo task ids and the clips: Studio Generate Image from the pixel sprite → Generate Model (HD, H3.1) → Auto Rig (Mixamo) → preset clips (free to retarget) → GLB export in place.
+     - `tools/blender/character_prototype.py` renders three gaits in 8 directions into `prototypes/blender_chars/<character>_<idle|walk|run>_8dir.png`, plus `<character>.json`. The JSON gives the rows by animation name, cell, feet, height, angle, and per gait its image and frames, plus the idle's fps or a cycle's `stride` (ground covered, sheet px).
+     - Gaits: the idle is 36 frames. Walk and run are one cycle each in 8 frames, starting on the right foot's footfall; the period comes from the feet.
+     - `tools/blender/character_motion.py` (`STYLES`) keeps each clip's legs and restyles the rest so it reads at 50 px:
+       - arms held out from the coat and swinging a beat behind the legs, with bending elbows and fists in a run;
+       - hands 1.3–1.4×;
+       - chest twist, head counter-turn, nod and gaze;
+       - run lean cut from 30° to 13–14°;
+       - longer strides, with the lower shoe set back on the floor;
+       - an idle that breathes, sways and looks around.
      - Each figure is centred on its mean foot position. Tripo's stray untextured icosphere is removed. The Guardian's violet texels drive emission (`glow`).
-     - Run it with `--character detective|guardian --out prototypes/blender_chars/ [--angle 72] [--turnaround] [--zoom N]`. `--turnaround` and `--zoom` are for quick looks only.
+     - Run it with `--character detective|guardian --out prototypes/blender_chars/ [--angle 72] [--samples N] [--preview] [--zoom N]`. `--preview` writes a quick contact sheet of every gait at 0/45/90/180°; the 3× one feeds the evidence sheet.
      - The camera is orthographic at 72° from straight down, and the figures are not plan-stretched.
      - The detective's sheet uses 128 px cells with a 100 px figure, shown at 50 px. The Guardian's copies the pixel sheet's layout (128 × 156, boots on row 134), because `prototype_depth.gd` rescales `GuardianCore` itself every frame: its transform must stay the game's.
-     - `tools/blender/prototype_characters.gd` swaps `player/VisualRoot/CharacterSprite` and each Guardian's `GuardianCore` frames, filtered `LINEAR_WITH_MIPMAPS`. It scales and offsets only the detective's sprite, so the HD figure stands 238 × 0.19 px tall on the body origin.
+     - `tools/blender/prototype_characters.gd` gives `player/VisualRoot/CharacterSprite` and each Guardian's `GuardianCore` the HD walk frames, undrawn (`self_modulate` alpha 0), and adds a child `Sprite2D` (`PrototypeHDFigure`, `use_parent_material`) that draws the figure.
+       - `track()`, called from the preview's `_physics_process`, picks the idle loop while the game's walk is stopped; otherwise a walk, or a run (above 120 px/s, back below 100 px/s, after a 0.15 s dwell), by the body's pace per physics tick.
+       - It advances each cycle by the ground covered, so feet stay planted.
+       - It scales and offsets only the detective's sprite, so the HD figure stands 238 × 0.19 px tall on the body origin. Filtering is `LINEAR_WITH_MIPMAPS`.
    - **Doors** (stage 47): every face door and the Wake gate is a stone portal (`build_portal` in `hall_prototype.py`) with a 24 × 14 px doorway recess cut behind it and the room's emblem on its crest (`DOOR_THEMES`).
      - The two leaves hang on two empties each: the outer one stretches, the inner one turns, so the swing happens in true plan space.
      - `render_doors()` renders the leaves through `DOOR_ANGLES` (0°–72°) with the hall mesh and the portal as holdouts, and writes one sheet per door plus `<render>-doors.json`.
@@ -317,8 +327,8 @@ Manual acceptance flow:
    - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
    - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45), then asked for every prop in HD, moved or remade to blend in (stage 46), then for richer doors that open by themselves and a visible Wake Room door (stage 47). They allow replacing anything in the Hall with details that fit the game.
-     - Stage 48 made the characters HD, the user's choice after stage 47; they found those primitive-built figures puppet-like, so stage 49 regenerated both with Tripo in the game's style.
-     - Next (user's choice after stage 49): a running animation for the characters. Then move the HD Hall, its props on their stands, the doors, the depth shader, the 50 px Hall figures and the characters into the game itself.
+     - Stage 48 made the characters HD, the user's choice after stage 47; they found those primitive-built figures puppet-like, so stage 49 regenerated both with Tripo in the game's style. Stage 50 added the run and an idle and made the hands visible, after the user found the figures stiff, handless and without a running pose.
+     - Next (user's verdict on stage 50): what was enlarged is too big; bring it back toward normal. Then move the HD Hall, its props on their stands, the doors, the depth shader, the 50 px Hall figures and the characters into the game itself.
      - **Door rule for that move:** each Hall door must look the same as its room's door seen from inside; redesign both freely, with each room's own character, rather than copying today's textures.
      - Dressing tips: floor items must be flat (tagged `floor_decal`); wall and top items must sit inside the outline; and the AO nodes use `only_local`, so props don't darken the stone in squares.
      - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.

@@ -2,6 +2,85 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-50
+
+- **Date:** 2026-10-23
+- **Status:** reviewed by the user, who approved committing it. Their verdict: tweak, because what was enlarged is now too big and should be closer to normal ("现在的太大了，就正常一点就可以了"). Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** after stage 49 (committed and pushed as `c88924e`), the user asked for a running animation ("需要奔跑动画"). Reviewing that work they added three complaints:
+  - the hands can't be seen at all ("手根本看不到");
+  - running needs a pose of its own ("跑步也需要单独的姿势");
+  - the figures are too stiff and should be livelier ("人物现在太死板了，需要生动一点").
+
+### What changed
+
+- **More Tripo clips:** I retargeted more of Tripo Studio's preset animations onto both existing rigs: run, idle, look_around and standing_relax, plus swagger and flee_01 for the detective. Retargets cost no credits; the balance stayed at 3885.
+  - Each character's export is now one GLB with every clip: `detective_anims.glb` (7 clips) and `guardian_anims.glb` (5 clips), in place, with skeleton.
+  - `sources.json` records the export task ids and clips.
+- **Why the hands vanished:** the clips are motion capture of an adult, retargeted onto chibi bodies. The arms hang straight, so the small hands sit at the hips, inside the coat's outline (or the tabard's), and disappear at 50 px.
+- **New `tools/blender/character_motion.py`** keeps each clip's legs and hips and rebuilds the rest of every frame so it reads at 50 px:
+  - **Arms** are held 12–26° out from the body so the hands clear the coat. They swing against the legs, a beat (7% of the cycle) behind them, and the elbows bend as they come forward. A run pumps them at 80–84° with fists, the Guardian's gauntlets curled tighter.
+  - **Hands** are drawn 1.4× (detective) and 1.3× (Guardian) larger, the way chibi art draws them.
+  - **Chest and head:** the chest twists against the arms, the head turns back against it, nods with each step and looks where the figure goes.
+  - **Run lean:** the motion-capture run hunches 30° forward; it is brought to 13–14°.
+  - **Stride:** made 1.45× longer for the detective's run, and 1.3× (walk) and 1.15× (run) for the Guardian, so the legs don't strobe at the game's speeds. The body is lowered so the lower shoe still meets the floor; a run keeps half its time in the air.
+  - **Idle:** a 6-second loop that breathes twice, sways and looks left, then right.
+- **`tools/blender/character_prototype.py` now renders three gaits per character, each in the game's 8 directions:**
+  - **idle:** 36 frames at 6 fps;
+  - **walk:** one cycle in 8 frames;
+  - **run:** one cycle in 8 frames.
+  - Both cycles start on the right foot's footfall, found from the feet, so a figure can switch between them mid-stride.
+  - The JSON gives each sheet, the idle's fps, and each cycle's stride, i.e. the ground it covers. That is measured from a planted foot's steady backward slide: detective walk 54.5 px and run 111.3 px; Guardian walk 89.3 px and run 128.2 px, on the 100 px sheet figure.
+  - Shoes are found from the skin weights. The importer's NLA tracks are muted, and each pose starts from rest so a clip sets only what it keys.
+- **`tools/blender/prototype_characters.gd` draws each figure itself.** The game only knows a walk and a frozen standing frame, so its sprite is left to run the game's logic undrawn, on the HD walk frames. A child `Sprite2D` draws the figure, sharing the sprite's place, scale, visibility, modulate and the depth pass's material (`use_parent_material`). Every physics tick (`track()`, called from the preview's `_physics_process`) it:
+  - reads the game's facing and whether the game walks the figure;
+  - plays the idle loop while standing;
+  - while moving, walks or runs by the body's true pace per tick: it runs above 120 px/s and walks again below 100 px/s, a change of gait waiting until the pace has stayed past the threshold for 0.15 s;
+  - advances each cycle by the ground the body covered, so planted feet stay put at any speed.
+- **What this means in play:**
+  - The detective (180 px/s) runs at about 3.3 strides a second.
+  - The Guardian creeps, patrols and searches at a walk (38–96 px/s), and chases at a run (145 px/s and up), its cloak streaming.
+  - A paused game holds the figures. Measuring per physics tick made every capture run give identical results.
+
+### Exact files
+
+- New: `tools/blender/character_motion.py`.
+- Changed: `tools/blender/character_prototype.py`, `tools/blender/prototype_characters.gd`, `tools/blender/capture_prototype.gd` (new checks, shots 35–36, `_clear_way` with a reach), `tools/blender/play_prototype.gd` (`_physics_process`).
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`:
+  - `32-hd-characters.png` now shows the standing (first idle) frame in every facing.
+  - `33-character-walks.png` now shows the gaits: the idle loop, the walk and the run, side and front.
+  - `35-characters-close.png` adds the HD detective running and the HD Guardian charging, in game.
+  - `36-tripo-characters.png` now shows standing and running.
+  - The comparisons where the HD detective appears were rebuilt.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_chars/` (three sheets and JSON per character, plus a 3× `<character>_preview.png` from `--preview --zoom 3`) and `prototypes/blender_chars/source/` (both GLBs per character, `sources.json`).
+
+### Verification
+
+- **Blender:** all six sheets render with every frame of every facing inside its cell.
+- **Native captures:** `capture_prototype.gd` passes all 176 checks in EN and ZH, four runs in a row with identical results. The new checks:
+  - each figure is drawn by its HD child on the game sprite's place and depth material, with the game's sprite undrawn;
+  - "Standing plays the idle loop" (detective frame 255 → 261, Guardian 111 → 117 in a second);
+  - "The Guardian walks at patrol pace (70 px/s)" (all 30 ticks walk);
+  - "The Guardian runs at chase pace (170 px/s)" (walk ×13, then run ×23);
+  - "A stopped Guardian goes back to its idle loop";
+  - "Moving at the game's speed plays the HD run" (every moving sample, 8 different frames);
+  - "The run keeps each planted foot on its spot": 2.62 cycles over 145 px, 55.3 px a cycle against the 55.4 px rendered stride;
+  - "Stopping holds the game's standing frame and shows the idle loop";
+  - restoring removes the HD figures.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+- **Preview:** relaunched with the new figures.
+
+### Limits / next stage
+
+- **Preview only, Hall only:** the game's sprites are unchanged.
+- **Always running:** the detective has no slower gait in play, because the game moves him only at 180 px/s (252 with the Swiftness Potion). His walk appears only for slower scripted moves.
+- **Fixed lighting:** the figures are lit by a fixed rig, not by the Hall's lanterns.
+- **Unused clips:** swagger, flee_01, look_around and standing_relax are exported but not rendered. They are candidates for idle variety or a Guardian alert pose.
+- **Next (user's choice):** bring the enlarged parts back toward normal size. Then move the HD Hall, props, doors, depth shader, 50 px Hall figures and these characters into the game itself, with each Hall door matching its room's own door.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+---
+
 ## Stage: UX-20261021-49
 
 - **Date:** 2026-10-22

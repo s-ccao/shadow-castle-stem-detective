@@ -89,6 +89,13 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
+## Moves the HD figures on with the game's bodies, as the preview does.
+func _physics_process(delta: float) -> bool:
+	if characters != null:
+		characters.track(delta)
+	return false
+
+
 ## Keeps the depth shader on the figures' current feet, as the preview does.
 func _process(delta: float) -> bool:
 	if depth != null:
@@ -290,15 +297,17 @@ func _door_checks(player: CharacterBody2D) -> void:
 	_show_prototype(false)
 
 
-## The HD figures stand where the pixel ones did and play the game's walks.
+## The HD figures stand where the pixel ones did, drawn by figures of their
+## own: the idle loop while standing, a walk or a run by speed while moving.
 ## The detective is as tall as the pixel one on the same feet. For one pair of
 ## shots the Hall's tutorial is held (it walks the Guardian along its route
 ## every frame) and the Guardian stands facing the player across open floor;
-## then both go back as the game had them, and the player walks that way.
+## it is then walked and run by hand. Then both go back as the game had them,
+## and the player moves that way at the game's own speed.
 func _character_checks(player: CharacterBody2D) -> void:
 	var sprite := player.get_node("VisualRoot/CharacterSprite") as AnimatedSprite2D
 	var pixel_frames := sprite.sprite_frames
-	var pixel_place := [sprite.position, sprite.scale, sprite.texture_filter]
+	var pixel_place := [sprite.position, sprite.scale, sprite.texture_filter, sprite.self_modulate]
 	var enemy := hall.get_node_or_null("CastleGuardian") as CharacterBody2D
 	_expect(enemy != null, "The Hall has its Castle Guardian")
 	if enemy == null:
@@ -336,17 +345,25 @@ func _character_checks(player: CharacterBody2D) -> void:
 	var guardian_sheet: Dictionary = characters.sheets.get("guardian", {})
 	_expect(
 		not detective_sheet.is_empty() and sprite.sprite_frames == detective_sheet["frames"],
-		"The detective plays the HD sheet"
+		"The detective's game sprite runs the game's walks on the HD walk frames"
 	)
 	_expect(
 		not guardian_sheet.is_empty() and guardian.sprite_frames == guardian_sheet["frames"],
-		"The Guardian plays the HD sheet"
+		"The Guardian's game sprite runs the game's walks on the HD walk frames"
 	)
 	for frames: SpriteFrames in [sprite.sprite_frames, guardian.sprite_frames]:
 		var complete := true
 		for walk: StringName in WALKS:
 			complete = complete and frames.has_animation(walk) and frames.get_frame_count(walk) == 8
 		_expect(complete, "Every one of the game's 8 walks has 8 HD frames")
+	for pair: Array in [[sprite, "detective"], [guardian, "Guardian"]]:
+		var game_sprite := pair[0] as AnimatedSprite2D
+		var figure := characters.figure_of(game_sprite)
+		_expect(
+			figure != null and figure.get_parent() == game_sprite and figure.use_parent_material
+			and is_zero_approx(game_sprite.self_modulate.a) and figure.texture != null,
+			"The %s is drawn by its HD figure, on the game sprite's place and depth material" % pair[1]
+		)
 	if not detective_sheet.is_empty():
 		var shown := float(detective_sheet["height"]) * sprite.global_scale.y
 		var pixel_tall := Characters.PLAYER_FIGURE_PX * (sprite.get_parent() as Node2D).global_scale.y
@@ -367,6 +384,17 @@ func _character_checks(player: CharacterBody2D) -> void:
 			% [guardian.animation, guardian.frame, guardian.is_playing()]
 		)
 	)
+	var idle_before := [characters.figure_of(sprite).frame, characters.figure_of(guardian).frame]
+	await _wait(1.0)
+	var idle_after := [characters.figure_of(sprite).frame, characters.figure_of(guardian).frame]
+	_expect(
+		characters.gait_of(sprite) == "idle" and characters.gait_of(guardian) == "idle"
+		and idle_before[0] != idle_after[0] and idle_before[1] != idle_after[1],
+		(
+			"Standing plays the idle loop (detective frame %d -> %d, Guardian %d -> %d)"
+			% [idle_before[0], idle_after[0], idle_before[1], idle_after[1]]
+		)
+	)
 	_show_prototype(false)
 	# The fog would hide whichever figure stands outside the player's light.
 	var fog := hall.get("fog_sprite") as CanvasItem
@@ -374,14 +402,51 @@ func _character_checks(player: CharacterBody2D) -> void:
 	if fog != null:
 		fog.visible = false
 	await _pair("34-characters-standing")
-	if fog != null:
-		fog.visible = fog_shown
 	_expect(
 		sprite.sprite_frames == pixel_frames and guardian.sprite_frames == guardian_pixel
 		and sprite.position == pixel_place[0] and sprite.scale == pixel_place[1]
-		and sprite.texture_filter == pixel_place[2],
-		"Restoring gives both figures their pixel frames and place back"
+		and sprite.texture_filter == pixel_place[2] and sprite.self_modulate == pixel_place[3]
+		and sprite.get_node_or_null(Characters.HD_FIGURE) == null
+		and guardian.get_node_or_null(Characters.HD_FIGURE) == null,
+		"Restoring removes the HD figures and gives both sprites their pixel frames and place back"
 	)
+	# The Guardian walked, then run, by hand, from beside the player down the
+	# longest open lane, so the whole run stays on open floor.
+	var lane := _clear_way(stand, 200.0, 176.0)
+	if lane == Vector2.ZERO:
+		lane = way
+	enemy.global_position = stand + lane * 16.0
+	_show_prototype(true)
+	await _wait(0.2)
+	guardian.animation = WALKS[posmod(roundi((PI / 2.0 - lane.angle()) / (PI / 4.0)), 8)]
+	guardian.play()
+	for pace: Array in [[70.0, 0.5, "walk", "patrol"], [170.0, 0.6, "run", "chase"]]:
+		var left := float(pace[1])
+		var gaits: Array[String] = []
+		while left > 0.0:
+			# Moved in physics ticks, as the game moves it.
+			await physics_frame
+			var step := minf(root.get_physics_process_delta_time(), left)
+			left -= step
+			enemy.global_position += lane * float(pace[0]) * step
+			gaits.append(characters.gait_of(guardian))
+			if pace[2] == "run" and left < 0.2 and left + step >= 0.2:
+				await _shot("blender", "36-guardian-running")
+		var settled := gaits.slice(gaits.size() / 2)
+		_expect(
+			settled.count(pace[2]) == settled.size(),
+			(
+				"The Guardian %ss at %s pace (%.0f px/s): %s"
+				% [pace[2], pace[3], float(pace[0]), " ".join(_runs(gaits))]
+			)
+		)
+	guardian.stop()
+	guardian.frame = 0
+	await _wait(0.25)
+	_expect(characters.gait_of(guardian) == "idle", "A stopped Guardian goes back to its idle loop")
+	_show_prototype(false)
+	if fog != null:
+		fog.visible = fog_shown
 	enemy.global_position = enemy_state[1]
 	enemy.set("facing_direction", enemy_state[3])
 	enemy.visible = enemy_state[0]
@@ -390,6 +455,7 @@ func _character_checks(player: CharacterBody2D) -> void:
 	_show_prototype(true)
 	await _wait(0.3)
 	var start := player.global_position
+	var cycles_before := characters.cycles_of(sprite)
 	var actions: Array[String] = []
 	for pair: Array in [
 		[way.x > 0.5, "move_right"], [way.x < -0.5, "move_left"],
@@ -399,50 +465,90 @@ func _character_checks(player: CharacterBody2D) -> void:
 			actions.append(pair[1])
 	for action: String in actions:
 		Input.action_press(action)
-	var first := -1
-	var advanced := false
-	var seen: Array[String] = []
+	var path := 0.0
+	var last := start
+	var gaits_seen: Array[String] = []
+	var moving_gaits: Array[String] = []
+	var columns: Array[int] = []
 	for step: int in range(16):
 		await _wait(0.05)
-		seen.append("%s:%d%s" % [sprite.animation, sprite.frame, "+" if sprite.is_playing() else ""])
-		if sprite.animation in WALKS and sprite.is_playing():
-			if first < 0:
-				first = sprite.frame
-			advanced = advanced or sprite.frame != first
+		var moved := player.global_position.distance_to(last)
+		path += moved
+		last = player.global_position
+		gaits_seen.append(characters.gait_of(sprite))
+		# Until the floor ends ahead and the game stops the player's walk.
+		if moved > 1.0 and sprite.is_playing():
+			moving_gaits.append(characters.gait_of(sprite))
+		var figure := characters.figure_of(sprite)
+		if figure != null:
+			columns.append(figure.frame % figure.hframes)
 		# Mid-stride, still on the open floor the Guardian stood on.
 		if step == 7:
-			await _shot("blender", "35-detective-walking")
+			await _shot("blender", "35-detective-running")
+	var cycles := characters.cycles_of(sprite) - cycles_before
+	var figure_now := characters.figure_of(sprite)
+	var stride_px := 0.0
+	if figure_now != null and not detective_sheet.is_empty():
+		var run: Dictionary = (detective_sheet["gaits"] as Dictionary)["run"]
+		stride_px = float(run["stride"]) * figure_now.global_scale.y
+	var unique: Dictionary = {}
+	for column: int in columns:
+		unique[column] = true
 	_expect(
-		advanced and sprite.sprite_frames == detective_sheet.get("frames"),
+		moving_gaits.size() >= 6 and moving_gaits.count("run") == moving_gaits.size()
+		and unique.size() >= 4,
 		(
-			"Walking plays the HD walk frames (%s, moved %.0f px: %s)"
-			% [" + ".join(actions), player.global_position.distance_to(start), " ".join(seen)]
+			"Moving at the game's speed plays the HD run (%s, %.0f px: %s; frames %s)"
+			% [" + ".join(actions), path, " ".join(_runs(gaits_seen)), columns]
+		)
+	)
+	_expect(
+		cycles > 0.0 and absf(path / cycles - stride_px) < stride_px * 0.05,
+		(
+			(
+				"The run keeps each planted foot on its spot: %.2f cycles over %.0f px, "
+				+ "%.1f px a cycle (stride %.1f px)"
+			)
+			% [cycles, path, path / maxf(cycles, 0.001), stride_px]
 		)
 	)
 	for action: String in actions:
 		Input.action_release(action)
 	await _wait(0.4)
 	_expect(
-		sprite.frame == 0 and not sprite.is_playing(),
-		"Stopping shows the HD standing frame"
+		sprite.frame == 0 and not sprite.is_playing() and characters.gait_of(sprite) == "idle",
+		"Stopping holds the game's standing frame and shows the idle loop"
 	)
 	_show_prototype(false)
 	player.global_position = stand
 
 
-## The way from `from` with the longest run of walkable floor, up to 120 px.
-func _clear_way(from: Vector2) -> Vector2:
+## Gaits as runs, "walk x3 run x9", so a check's message stays short.
+func _runs(gaits: Array[String]) -> Array[String]:
+	var runs: Array[String] = []
+	var count := 0
+	for index: int in gaits.size():
+		count += 1
+		if index == gaits.size() - 1 or gaits[index + 1] != gaits[index]:
+			runs.append("%s x%d" % [gaits[index], count])
+			count = 0
+	return runs
+
+
+## The way from `from` with the longest run of walkable floor, up to `reach`
+## px; ZERO if none runs `need` px.
+func _clear_way(from: Vector2, reach: float = 120.0, need: float = 96.0) -> Vector2:
 	var best := Vector2.ZERO
 	var best_run := 0.0
 	for step: int in range(8):
 		var way := Vector2.RIGHT.rotated(step * PI / 4.0)
 		var run := 0.0
-		while run < 120.0 and bool(hall.call("is_player_position_walkable", from + way * (run + 8.0))):
+		while run < reach and bool(hall.call("is_player_position_walkable", from + way * (run + 8.0))):
 			run += 8.0
 		if run > best_run:
 			best_run = run
 			best = way
-	return best if best_run >= 96.0 else Vector2.ZERO
+	return best if best_run >= need else Vector2.ZERO
 
 
 func _walkable_near(target: Vector2) -> Vector2:

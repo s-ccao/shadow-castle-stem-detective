@@ -99,6 +99,12 @@ func _add_overlay(hall: Node) -> void:
 	)
 
 
+func _physics_process(delta: float) -> bool:
+	if characters != null:
+		characters.track(delta)
+	return false
+
+
 func _process(delta: float) -> bool:
 	if glows != null:
 		glows.advance(delta)
