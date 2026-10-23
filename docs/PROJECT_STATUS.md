@@ -19,7 +19,7 @@
   - **HD characters** (stage 48): the detective and the Castle Guardian are now Blender models too, rendered walking in all eight directions.
     - The detective keeps his look: messy brown hair, big eyes, an open trench coat over a vest with a gold buckle. The Guardian is a bronze-trimmed knight with a glowing violet visor and core, and a tattered cloak.
     - In the playable preview they walk, turn and stand exactly as the pixel figures did, at the same size and on the same spot.
-    - The user found these primitive-built figures look like wooden puppets; they will be regenerated with Tripo in the game's style.
+    - The user found these primitive-built figures look like wooden puppets, so both were regenerated with Tripo (stage 49): stylized chibi 3D models made from the game's own sprites, auto-rigged and walking. The Guardian's visor and core glow violet.
   - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/).
   - **Second art pass:** the user found the first pass too plain to invite exploration, so this pass adds:
     - smooth walls instead of 4 px stairs, with dark tops and lit stone outlines;

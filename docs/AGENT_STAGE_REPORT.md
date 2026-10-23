@@ -2,6 +2,62 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-49
+
+- **Date:** 2026-10-22
+- **Status:** reviewed by the user, who approved committing it. Their verdict: tweak, adding a running animation ("需要奔跑动画"). Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 48 (committed and pushed as `4db9b59`), the user found the primitive-built figures look like wooden puppets ("有点像木偶人"), off the game's style. They asked for characters generated with Tripo in the game's style and background, and approved uploading the pixel sprites as references.
+
+### What changed
+
+- **Two Tripo characters**, made in Tripo Studio on the project owner's account (they logged in themselves; I never touched credentials), in the integrated browser:
+  1. **References:** the game's own pixel sprites. Each front frame was enlarged with nearest neighbour onto white.
+  2. **Concept:** Generate Image (Nano Banana, 1:1, 2 images) with a prompt that keeps each design and asks for a stylized 3D T-pose. I chose one image of each pair.
+  3. **Model:** Generate Model from the chosen image: HD Model, H3.1 Best Quality, 4K PBR texture, about 38k triangles, private.
+  4. **Rig:** Auto Rig, humanoid, Mixamo skeleton (65 bones).
+  5. **Walk:** the preset "walk", retargeted onto the rig.
+  6. **Export:** GLB with 2k textures, skeleton and walk, in place.
+  - The detective keeps his design: messy chestnut hair, big grey-blue eyes, an open brown trench coat over a waistcoat, a gold buckle, rolled cuffs, dark trousers and brown shoes.
+  - The Guardian is dark steel with bronze trim, a flat-topped great helm with a glowing violet visor slit, a violet core in the breastplate, pauldrons, gauntlets, a tattered tabard and a tattered cloak.
+- **Provenance:** recorded in `prototypes/blender_chars/source/sources.json` (local only, like every prototype output). It lists the two prompts, the chosen images and the task ids for concept, model and export, so the models can be found again in the account. The GLBs, concepts and references sit beside it.
+- **`tools/blender/character_prototype.py` now renders the Tripo GLBs.** The stage-48 primitive models are gone; the camera, lights, sheet layout and JSON are unchanged, so the preview module needed no change.
+  - Import: it imports the GLB and removes a stray untextured icosphere that Tripo's export carries around the origin.
+  - Walk: it finds the walk's period from the feet. Each clip holds two identical 28-frame cycles, 1.17 s each at 24 fps. The cycle starts on the frame where the right foot passes the left.
+  - **Standing pose (frame 0):** the cycle's mean pose (bone rotations averaged over the cycle), with legs under the body and arms hanging, set down on the walk's floor.
+  - **Walk frames 1–7:** the rest of the cycle, evenly spaced (sub-frame sampling).
+  - **Centring:** each figure is centred on where its feet stand on average. The Guardian's in-place walk sits about 0.07 units forward of the origin and would otherwise swing sideways as it turns.
+  - **Glow:** the Guardian's visor and core glow. Tripo's GLB has no emission, so violet texels (blue well above green, 0.6% of the texture and none of the steel, bronze or cloth) drive emission at strength 4.
+- **In the preview,** both figures walk, turn and stand on the game's own logic, at the stage-48 sizes and footing: the detective 49.7 px tall like the pixel one, the Guardian on its pixel sheet's layout.
+
+### Exact files
+
+- Changed: `tools/blender/character_prototype.py` (primitive modelling replaced by the GLB renderer).
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`:
+  - rebuilt sheets `32-hd-characters.png`, `33-character-walks.png`, `34-characters-standing-zh.png` and `35-characters-close.png`;
+  - rebuilt comparisons 01–04, 11, 12, 14, 17, 20, `26-hall-doors.png`, `28-hd-props.png` and `31-door-behaviour.png`, where the HD detective appears;
+  - new `36-tripo-characters.png`: for each character, the pixel sprite, the Tripo concept made from it, and the rigged model standing and walking.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_chars/` (sheets, JSON, 3× turnarounds) and `prototypes/blender_chars/source/` (GLBs, concepts, references, `sources.json`).
+
+### Verification
+
+- **Blender:** both sheets render with every frame of every direction inside its cell. Standing figures: detective rows 14–116 of 128 (feet row 114); Guardian rows 34–137 of 156 (feet row 134; the pixel Guardian spans 34–133). The toes reach 2–3 px past the feet row because they point toward the camera.
+- **Native captures:** `capture_prototype.gd` passes all 167 checks in EN and ZH, including the stage-48 character checks: both sheets load and play, all 8 walks have 8 frames, the detective is 49.7 vs 49.7 px on the body origin (0.00 px off), standing holds frame 0, walking cycles every frame, and restoring returns the pixel figures.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `region [0, 0, 1920, 1280], 347 glows, 9 HD props, 7 doors, depth true (9 props), 2 HD character sheets (2 figures)`.
+- **Tripo credits:** the Studio balance fell from 4395 to 3885 (510) between the first generation and the last export. The buttons showed 190: concepts 2 × 20, models 2 × 55, rigs 2 × 20; the walk retargets and exports were free. The billing page lists payments only, so the difference is unconfirmed; the HD models probably cost more than their button showed.
+
+### Limits / next stage
+
+- **Preview only, Hall only:** the game's sprites are unchanged.
+- **Local models:** the GLBs live only in the gitignored `prototypes/` folder and in the Tripo account; they are AI-generated prototype assets, not yet shipping assets.
+- **Lighting:** the figures use the stage-48 light rig, not the Hall's lanterns, and the detective's hair reads a little more orange than the sprite's.
+- **One walk:** both characters share Tripo's preset walk, so the Guardian has no heavier gait or separate chase run.
+- **Next (user's choice):** a running animation for the characters. Then move the HD Hall, props, doors, depth shader, 50 px Hall figures and these characters into the game itself, with each Hall door matching its room's own door.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+---
+
 ## Stage: UX-20261021-48
 
 - **Date:** 2026-10-22
