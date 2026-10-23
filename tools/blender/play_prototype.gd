@@ -6,8 +6,9 @@ extends SceneTree
 ## and doors: each prop is staged on its stand in the HD Hall, its node moved
 ## with it so its prompt and focus box follow; each door opens ajar for a
 ## player at it, swings open on E, or rattles if locked, before the game's own
-## handler runs. Collision, fog, the route, the Guardian and saves are the
-## game's own.
+## handler runs. The detective and the Guardian walk in their HD sheets from
+## prototypes/blender_chars/. Collision, fog, the route, the Guardian's
+## behaviour and saves are the game's own.
 ##
 ##   HOME="$PWD/.godot/blender-proto-play/home" godot --path . \
 ##     --script res://tools/blender/play_prototype.gd [-- --hall]
@@ -16,6 +17,7 @@ extends SceneTree
 ## out of the Wake Room into the rendered region.
 
 const DATA := "res://prototypes/blender_hall/"
+const CHARACTER_DATA := "res://prototypes/blender_chars/"
 const RENDER_SCALE := 2.0
 const HALL_SCENE := "res://scenes/game_world.tscn"
 const OVERLAY_NAME := "BlenderPrototypeOverlay"
@@ -23,11 +25,13 @@ const Glows := preload("res://tools/blender/prototype_glows.gd")
 const Props := preload("res://tools/blender/prototype_props.gd")
 const Depth := preload("res://tools/blender/prototype_depth.gd")
 const Doors := preload("res://tools/blender/prototype_doors.gd")
+const Characters := preload("res://tools/blender/prototype_characters.gd")
 
 var glows: Glows
 var props: Props
 var depth: Depth
 var doors: Doors
+var characters: Characters
 
 
 func _initialize() -> void:
@@ -80,9 +84,18 @@ func _add_overlay(hall: Node) -> void:
 			depth.add_fixed(item["sprite"], item["feet"])
 		depth_props = depth.add_props((meta as Dictionary).get("props", {}))
 		depth.apply()
+	characters = Characters.new()
+	var character_sheets := characters.attach(hall, CHARACTER_DATA)
+	characters.apply()
 	print(
-		"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, %d doors, depth %s (%d props)"
-		% [region, halos, swapped, door_count, has_depth, depth_props]
+		(
+			"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, %d doors, depth %s (%d props), "
+			+ "%d HD character sheets (%d figures)"
+		)
+		% [
+			region, halos, swapped, door_count, has_depth, depth_props,
+			character_sheets, characters.staged(),
+		]
 	)
 
 
@@ -91,6 +104,8 @@ func _process(delta: float) -> bool:
 		glows.advance(delta)
 	if depth != null:
 		depth.advance(delta)
+	if characters != null:
+		characters.advance(delta)
 	return false
 
 

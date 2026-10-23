@@ -2,6 +2,87 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-48
+
+- **Date:** 2026-10-22
+- **Status:** reviewed by the user, who approved committing it. Their verdict: restyle. The figures feel like wooden puppets ("有点像木偶人") and don't match the game's style, so they asked for characters generated with Tripo in the game's style. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 47 (committed and pushed as `3d75ff1`), the user chose HD characters made in Blender next, so the figures match the HD Hall. They had asked for the characters too ("人物也是") when the Hall moved to Blender.
+
+### What changed
+
+- **Two 3D characters**, built in Blender by the new `tools/blender/character_prototype.py` from smooth primitives: lathed bodies, ellipsoids, tapered limbs, and hair locks that follow the head's surface. Each is rigged with plain pivots at hips, knees and shoulders.
+  - **The detective**, after the pixel sprite:
+    - messy brown hair with a heavy fringe, big slate eyes under serious brows, and a light blush;
+    - a long brown trench coat worn open over a vest, a white shirt and a gold-buckled belt, with lapels, pockets, a back belt and light rolled cuffs;
+    - charcoal trousers and brown shoes.
+    - The proportions are chibi like the sprite's (the head is about a third of the figure). Facing down, its width at every height measured is within 4% of the figure's height of the sprite's. The side view is slimmer, because the sprite's side frame swings a hand clear of the body.
+  - **The Castle Guardian**, a knight in slate steel with bronze trim:
+    - a flat-topped great helm with a bronze ridge and a visor slit whose eyes glow violet;
+    - two-lame pauldrons, and a bronze V down the breastplate to a glowing violet core;
+    - plated arms and dark gauntlets;
+    - a tattered brown front cloth in two halves that swing with the legs, and a long tattered cloak.
+- **Walks:** each character has an 8-frame cycle in each of the game's 8 directions.
+  - The hips swing ±24° (the Guardian's ±20°), the trailing knee bends to lift the foot, and the arms swing against the legs.
+  - The body drops so the lowest foot stays on the floor.
+  - Frame 0 is the standing pose, because the game shows idle by stopping a walk on frame 0.
+- **Rendering:** an orthographic camera 72° from straight down, the near-front view the pixel sprites use, so faces read.
+  - Unlike the Hall, characters are not stretched to the floor plan: a figure stands on one point.
+  - A warm key from the upper left, a cool fill and a violet rim from behind; transparent background; AgX like the Hall.
+  - The detective's sheet is 8 × 8 cells of 128 px with a 100 px figure, twice the 50 px the preview shows, so it shrinks smoothly with mipmaps.
+  - The Guardian's sheet is laid out like its pixel sheet (128 × 156 cells, boots on row 134, a 100 px figure). The game's own scale and foot anchor therefore still fit it, and so does the preview's depth pass, which rescales that sprite.
+  - `<character>.json` gives the rows by animation name, the cell, the feet, the height and the angle.
+- **In the preview** (`tools/blender/prototype_characters.gd`), the player's and the Guardian's sprites get the HD frames.
+  - The game's own walk, facing, idle and distance-driven stride timing play them.
+  - The detective stands exactly as tall as the pixel one (49.7 px in the preview) on the same feet; the Guardian keeps its scale and anchor.
+  - A Guardian that appears later is picked up. `restore()` gives back the pixel frames and placement.
+- **Captures:**
+  - new shot 34 shows both figures standing face to face, fog lifted, in both looks. The Hall tutorial, which walks the Guardian along its route every frame, is held only for that still.
+  - new shot 35 shows the HD detective mid-stride.
+- **How it got there:**
+  - At the Hall's own 40° the camera looked down on the head and faces did not read.
+  - 72° matched the sprite better than 65°.
+  - The first hair was a smooth bowl, then spikes. The final hair is a darker cap under lighter locks whose tips lift off to break the outline, clear of the face and ear in profile.
+
+### Exact files
+
+- New: `tools/blender/character_prototype.py`, `tools/blender/prototype_characters.gd` (and its `.uid`).
+- Changed: `tools/blender/capture_prototype.gd`, `tools/blender/play_prototype.gd`.
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`:
+  - rebuilt comparisons 01–04, 11, 12, 14, 17, 20, `26-hall-doors.png`, `28-hd-props.png` and `31-door-behaviour.png`, because the HD detective now appears in every HD shot;
+  - new `32-hd-characters.png`: both characters in every facing, pixel sprite above HD;
+  - new `33-character-walks.png`: the side and front walk cycles, frames 0–7;
+  - new `34-characters-standing-zh.png`: the pair in game, current and HD;
+  - new `35-characters-close.png`: close crops of the pixel pair, the HD pair and the HD detective walking.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_chars/` (two sheets and their JSON).
+
+### Verification
+
+- **Blender:** 64 frames a sheet at 64 samples, about 1 s a frame. The framing check found every frame of both sheets inside its cell. Measured standing figures: detective rows 14–115 of 128; Guardian rows 34–135 of 156, against the pixel Guardian's 34–133.
+- **Native captures:** `capture_prototype.gd` passes all 167 checks in EN and ZH (148 before). The 19 new ones include:
+  - "Both HD character sheets load (2 of 2)";
+  - "The detective plays the HD sheet" and "The Guardian plays the HD sheet";
+  - "Every one of the game's 8 walks has 8 HD frames", for each character;
+  - "The HD detective stands as tall as the pixel one (49.7 vs 49.7 px)";
+  - "The HD detective's feet are on the body's origin (0.00 px off)";
+  - "The standing Guardian keeps its facing on its standing frame";
+  - "Restoring gives both figures their pixel frames and place back";
+  - "Walking plays the HD walk frames": all 8 frames cycle as the game walks the player;
+  - "Stopping shows the HD standing frame".
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `region [0, 0, 1920, 1280], 347 glows, 9 HD props, 7 doors, depth true (9 props), 2 HD character sheets (2 figures)`.
+
+### Limits / next stage
+
+- **Preview only, Hall only:** the game's sprites are unchanged, and other rooms keep the pixel figures.
+- **Fixed lighting:** the figures are lit by a fixed rig, not by the Hall's lanterns, so they don't pick up local light colour.
+- **Rigid cloth:** the coat and cloak don't sway; the Guardian's front cloth swings with the legs.
+- **Nearest filtering elsewhere:** the potion afterimage and the near-miss CG copy whatever frames the sprites carry, so in the preview they show HD frames with their own nearest filtering.
+- **Next (user's choice):** regenerate both characters with Tripo (AI 3D generation) in the game's style, and render them through this stage's sheet layout, camera and preview swap, which stay. Then move the HD Hall, props, doors, depth shader, 50 px Hall figures and the characters into the game itself, with each Hall door matching its room's own door.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+---
+
 ## Stage: UX-20261021-47
 
 - **Date:** 2026-10-22
