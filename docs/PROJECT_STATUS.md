@@ -13,6 +13,9 @@
     - Each backs onto a wall face with room to walk up to it, instead of floating on open floor, standing in a pit or covering walls, and casts real shadows into the room.
     - Each shows its science: a reaction glowing in a bronze core, red, green and blue light adding up on a console, photosynthesis under glass, and a clock, candle clock and hourglass telling the time.
     - In the playable preview the game's prompts and focus boxes follow the props to their new places.
+  - **Doors that open** (stage 47): every door is now a stone portal with a real doorway, double oak doors and its room's emblem (flask, lightning, clock, star, leaf, book, moon); the Wake Room door is an arched gate at the head of its stair again.
+    - Walking up to a door the player may use leaves it ajar; E swings it open, light spills out, and the player goes through.
+    - At a locked door, E rattles it, then the game says what it needs.
   - Side-by-side in-game comparisons are in [the prototype evidence](evidence/2026-10-21-blender-hall-prototype/).
   - **Second art pass:** the user found the first pass too plain to invite exploration, so this pass adds:
     - smooth walls instead of 4 px stairs, with dark tops and lit stone outlines;

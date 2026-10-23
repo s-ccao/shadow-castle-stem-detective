@@ -2,6 +2,86 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-47
+
+- **Date:** 2026-10-22
+- **Status:** approved by the user, who chose HD characters next and approved committing this stage. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **The user's rule for the doors, for when they move into the game:** each Hall door must look the same as that room's door seen from inside, so the player never sees two different doors. They need not copy today's textures; redesign them freely, but give each one character that fits the game and its room.
+- **Request:** on stage 46 (committed and pushed as `db3791a`), the user said three things:
+  - the doors look plain;
+  - the Wake Room door is missing: it is only a stair, so the space reads as nothing but the Hall;
+  - doors should open by themselves as the player goes in.
+- **What they chose:**
+  - larger stone portals with room emblems;
+  - an arched double door at the head of the Wake stair;
+  - walking up to an unlocked door leaves it slightly open and E opens it fully, while at a locked door E makes it shake slightly and then the requirement pops up.
+
+### What changed
+
+- **Stone portals.** Every door is a 3D portal, 40 px wide and about 61 px tall, so its crest rises above the 40 px walls. It has:
+  - quoin jambs and a voussoir arch with a violet gem in its keystone;
+  - spandrels, a cornice, and a crest bearing the room's emblem on a dark enamel plaque: flask (Chemistry), lightning (Circuit), clock (Dining), star (Final), leaf (Greenhouse), open book (Library), crescent moon (Wake);
+  - a fanlight: an iron sunburst over stained glass in the room's colour.
+  - The lanterns beside each door move out to clear the wider portal. Ivy, wall-top candles and floor clutter keep off it.
+- **Real doorways.** A 24 × 14 px recess is cut into the wall behind each face door. Through an open door the player sees a passage lit in the room's colour.
+- **Leaves that open.** Each door has two oak leaves with planks, iron straps, studs, ring handles and a kick plate, hung on hinges.
+  - They are rendered apart as a 10-frame opening sequence from 0° to 72°. They stop at 72° so open leaves still show along the doorway instead of turning edge-on.
+  - The walls and the portal are holdouts in those renders, so stone in front correctly cuts the leaves.
+  - Each door gets one sprite sheet, listed in `render-doors.json`.
+- **The Wake Room door.**
+  - The stair is now a straight-topped stairwell (x 235–259), cut where the floor's edge is straightest and into wall only.
+  - The same portal and double door stand at its head, facing down the stair, and the leaves open toward the camera.
+  - A player on the landing behind the door shows as a ghost behind the stone, with the door in front.
+- **The doors in the preview** (`prototype_doors.gd`):
+  - At an unlocked door's prompt, the door swings ajar (23°); walking away shuts it.
+  - E there swings it fully open, holds a beat, then the game's own handler runs and the player enters.
+  - E at a locked door rattles it three times (about 0.36 s), then the game's handler shows what it needs: the key message or the knowledge question.
+  - Light from the room spills out as a door opens.
+  - "Unlocked" is the game's own rule: `door_<room>_unlocked`, plus `circuit_door_open` for the Circuit door. The Wake door is always open.
+  - The preview holds E back from the game only while a door's prompt shows or a door is moving. It gives E back before the game's message appears, and while the game is paused.
+- **Depth:** each portal's stone is in the depth map, so a figure behind a portal is hidden behind it. The doorway and fanlight stay open.
+- **Captures:**
+  - door shots 05–10 now place the player beside each door so it stays in view;
+  - new shots 30–33 cover the door behaviours;
+  - the capture now keeps the depth shader on the figures' current feet, as the preview does.
+
+### Exact files
+
+- New: `tools/blender/prototype_doors.gd` (and its `.uid`).
+- Changed: `tools/blender/hall_prototype.py`, `tools/blender/capture_prototype.gd`, `tools/blender/play_prototype.gd`.
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`:
+  - rebuilt comparisons 01–04, 11, 12, 14, 17, 20, `26-hall-doors.png`, `28-hd-props.png`, `29-hd-prop-models.png` and `silhouette-diff.png`;
+  - new `30-hd-doors.png`: all seven doors shut, ajar and open;
+  - new `31-door-behaviour.png`: the locked door's rattle and message, a door ajar, a door open, and the Wake gate (ZH).
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: `prototypes/blender_hall/` (now also `render-doors.json` and 7 door sheets).
+
+### Verification
+
+- **Layout loop:** every face door's face is flush across the portal's width, and every doorway recess is cut.
+- **Blender:** final render at 128 samples: 136 s for the Hall, then the props and 7 × 10 door frames at about 1 s each. Footprint is unchanged: IoU 1.0; against the collision beyond 3 game px, 20 extra and 0 missing px. The recesses and the stairwell count as deliberate cuts.
+- **Native captures:** `capture_prototype.gd` passes all 148 checks in EN and ZH. The new ones are:
+  - "Every Hall door plays in HD (7 of 7)";
+  - "A locked door stays shut as the player walks up";
+  - "E at a locked door rattles it, then the game takes E";
+  - "The game then says what the locked door needs";
+  - "An open door stands ajar for the player at it";
+  - "E at an open door swings it wide before the game goes through";
+  - "The door shuts behind a player who walks away";
+  - "The Wake gate stands ajar in front of a player behind it".
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+- **Preview:** relaunched. Its log reads `region [0, 0, 1920, 1280], 347 glows, 9 HD props, 7 doors, depth true (9 props)`.
+
+### Limits / next stage
+
+- **Preview only:** the game's doors and scenes are unchanged.
+- **Mouse clicks skip the animation:** clicking a door to walk to it goes through the game's own path.
+- **Untranslated message:** in the ZH run, the locked door's message ("The key fits, but the knowledge lock is still sealed.") is English. The game never localized that text; this stage did not change it.
+- **Next (user's choice):** HD characters made in Blender, matching the HD Hall. After that, move the HD Hall, its props and doors, the depth shader and the 50 px Hall figures into the game itself, with each door matching its room's own door.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+---
+
 ## Stage: UX-20261021-46
 
 - **Date:** 2026-10-22
@@ -91,7 +171,7 @@
 - **The Circuit exhibit sits beside its door.** The door's prompt covers the floor in front of the exhibit and to its left, so the player reads it from a step further south, still well inside its 72 px reach.
 - **Slower Hall render:** 184 s, up from 148 s.
 - **Next (user's notes):** richer doors that open by themselves as the player goes in, and a visible Wake Room door; after that, move the HD Hall, its props on their stands, the depth shader and the 50 px Hall figures into the game itself.
-- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+- **GitHub:** committed and pushed as `db3791a` with the user's approval.
 
 ---
 

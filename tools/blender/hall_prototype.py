@@ -85,6 +85,15 @@ GATE_HALF_WIDTH_PX = 40
 GATE_FACE_PX = 84
 DOOR_HALF_WIDTH_PX = 17
 DOOR_SPRING_PX = 52
+# Doors are stone portals standing on the face. Each doorway is
+# DOORWAY_HALF_PX either side of the door's x and recessed DOORWAY_DEPTH_PX
+# into the wall, so its two leaves can swing in. The surround reaches
+# PORTAL_HALF_PX either side. The Wake gate's doorway is a little narrower,
+# to fit the corner it stands in.
+DOORWAY_HALF_PX = 12
+DOORWAY_DEPTH_PX = 14
+PORTAL_HALF_PX = 20
+WAKE_GATE_HALF_PX = 11
 # Lamps hang over open floor, never against the stone they would wash out.
 LAMP_CLEARANCE_PX = 16
 LAMP_HEIGHT_PX = 36
@@ -137,6 +146,11 @@ def parse_args():
         elif key == "--props-only":
             # Iteration: render only the HD props, not the Hall behind them.
             options["props_only"] = True
+            index += 1
+            continue
+        elif key == "--doors-only":
+            # Iteration: render only the doors' opening sequences.
+            options["doors_only"] = True
             index += 1
             continue
         elif key == "--prop":
@@ -331,16 +345,18 @@ class Layout:
     def _face_door(self, name, point):
         """A door on the south face of the wall it is drawn in.
 
-        The face is cut back to one straight line across the door's width:
-        smoothing leaves it a few px ragged, and an arch must sit flush. Only
-        drawn wall is removed, never added over floor the player walks on.
+        The face is cut back to one straight line across the portal's width:
+        smoothing leaves it a few px ragged, and a portal must sit flush.
+        Behind the face a doorway is recessed into the wall, for the leaves
+        to swing into. Only drawn wall is removed, never added over floor
+        the player walks on.
         """
         x, y = int(point[0]), int(point[1])
         below = np.flatnonzero(~self.wall[y:, x])
         if len(below) == 0:
             return
         own = y + int(below[0])
-        half = int(DOOR_SCREEN_PX[0] / 2.0) + 2
+        half = PORTAL_HALF_PX + 2
         faces = {}
         for column in range(max(x - half, 0), min(x + half + 1, self.columns)):
             free = np.flatnonzero(~self.wall[y:, column])
@@ -353,7 +369,14 @@ class Layout:
             self.kind[cut, column] = CLASS_FLOOR
             self.footprint[cut, column] = False
             self.carved[cut, column] = True
-        self.face_doors.append({"name": name.split("_")[0].title(), "x": float(x), "face_y": float(face_y)})
+        recess = (slice(face_y - DOORWAY_DEPTH_PX, face_y), slice(x - DOORWAY_HALF_PX, x + DOORWAY_HALF_PX))
+        inside = self.wall[recess]
+        self.height[recess][inside] = 0.0
+        self.kind[recess][inside] = CLASS_FLOOR
+        self.footprint[recess][inside] = False
+        self.carved[recess][inside] = True
+        self.face_doors.append({"name": name.split("_")[0].title(), "x": float(x), "face_y": float(face_y),
+                                "half": float(DOORWAY_HALF_PX), "opens": "in"})
 
     @staticmethod
     def _enclosed_floor(wall, outside, spawn, step=2):
@@ -431,8 +454,13 @@ class Layout:
         """The Wake Room door, seen from the side the player stands on.
 
         The player reaches the door from the north, and a north-facing door
-        is invisible to this camera. So the way back reads as a stair that
-        drops south through the wall and runs under the mass beyond it.
+        is invisible to this camera. So the way back is a stairwell dropping
+        south into the wall, with an arched double door at its head: across
+        the stairwell the camera sees the door's face, and the player behind
+        it once it opens. The gate stands where the floor's edge is
+        straightest near the old stair; the few px of wall between that edge
+        and the gate's line become a landing. Only wall is cut, never floor
+        the player walks on.
         """
         door_x, door_y = int(door[0]), int(door[1])
 
@@ -455,9 +483,22 @@ class Layout:
                     break
                 columns.append(column)
                 column += direction
-        columns.sort()
-        deepest = top
-        for column in columns:
+        middle = (min(columns) + max(columns) + 1) // 2
+        best = None
+        for centre in range(middle - 12, middle + 13):
+            edges = [north_edge(column)
+                     for column in range(centre - WAKE_GATE_HALF_PX - 1, centre + WAKE_GATE_HALF_PX + 1)]
+            if None in edges:
+                continue
+            score = (max(edges) - min(edges), abs(centre - middle))
+            if best is None or score < best[0]:
+                best = (score, centre, max(edges))
+        if best is None:
+            return
+        (spread, _offset), centre, line = best
+        left, right = centre - WAKE_GATE_HALF_PX - 1, centre + WAKE_GATE_HALF_PX + 1
+        deepest = line
+        for column in range(left, right):
             # Stop short of the wall's south face: the stair runs under the
             # mass, it does not break through it.
             below = np.flatnonzero(~self.wall[door_y:, column])
@@ -467,13 +508,21 @@ class Layout:
             for row in range(north_edge(column), bottom):
                 if not self.wall[row, column]:
                     continue
-                step = 1 + max(row - top, 0) // STAIR_TREAD_PX
-                self.height[row, column] = -step * STAIR_DROP_PX / self.sin_alpha
-                self.kind[row, column] = CLASS_STAIRS
+                if row < line:
+                    # The landing behind the gate, level with the floor.
+                    self.height[row, column] = 0.0
+                    self.kind[row, column] = CLASS_FLOOR
+                else:
+                    step = 1 + (row - line) // STAIR_TREAD_PX
+                    self.height[row, column] = -step * STAIR_DROP_PX / self.sin_alpha
+                    self.kind[row, column] = CLASS_STAIRS
                 self.footprint[row, column] = False
                 self.carved[row, column] = True
-        self.stairs.append({"left": columns[0], "right": columns[-1] + 1, "top": top, "bottom": deepest})
-        print("STAIRS x %d-%d from y %d" % (columns[0], columns[-1] + 1, top))
+        self.stairs.append({"left": left, "right": right, "top": line, "bottom": deepest})
+        self.face_doors.append({"name": "Wake", "x": float(centre), "face_y": float(line),
+                                "half": float(WAKE_GATE_HALF_PX), "opens": "out"})
+        print("STAIRS x %d-%d from y %d; Wake gate at x %d (floor edge spread %d px)" % (
+            left, right, line, centre, spread))
 
     @staticmethod
     def _fill_pockets(collision, outside):
@@ -1501,80 +1550,310 @@ def _gear_material(name, color):
     return _material(name, build)
 
 
-DOOR_SCREEN_PX = (30.0, 36.0)
+# ---------------------------------------------------------------- doors
+#
+# Every Hall door is a stone portal on the camera-facing face of its wall:
+# quoin jambs, a voussoir arch with a violet gem in its keystone, a cornice
+# and a crest bearing the room's emblem, over a doorway recessed into the
+# wall. Two oak leaves hang in it on hinges. The Hall render shows the portal
+# and, behind the leaves, the passage lit in the room's colour; the leaves are
+# rendered apart, as an opening sequence the playable preview animates. The
+# Wake gate is the same portal at the head of its stairwell, seen from the
+# stair: its leaves open toward the camera.
+
+PORTAL_SPRING_PX = 30.0
+PORTAL_JAMB_PX = 6.0
+DOOR_LEAF_THICK_PX = 1.2
+# The room each door leads to: its emblem and the colour of its light.
+DOOR_THEMES = {
+    "Chemistry": ("flask", (0.35, 1.0, 0.5)),
+    "Greenhouse": ("leaf", (0.45, 1.0, 0.3)),
+    "Library": ("book", (1.0, 0.76, 0.42)),
+    "Dining": ("clock", (1.0, 0.6, 0.3)),
+    "Final": ("star", (0.66, 0.4, 1.0)),
+    "Circuit": ("bolt", (0.5, 0.78, 1.0)),
+    "Wake": ("moon", (0.62, 0.38, 1.0)),
+}
+# The leaves' angle in each frame of the opening sequence, in degrees. Frame
+# DOOR_RATTLE_FRAME is a locked door rattling, DOOR_AJAR_FRAME a door left
+# ajar for the player walking up to it, the last one open: at 72 degrees,
+# not 90, so the leaves still show along the doorway's sides rather than
+# turning edge-on to the camera.
+DOOR_ANGLES = (0.0, 3.0, 8.0, 15.0, 23.0, 32.0, 42.0, 52.0, 62.0, 72.0)
+DOOR_RATTLE_FRAME = 1
+DOOR_AJAR_FRAME = 4
 
 
-def material_face_door():
-    """An arched oak door in a pale stone surround, laid out in screen proportions."""
+def _arc(cx, cz, radius, start, end, steps):
+    """Points along a circle in screen px, from `start` to `end` degrees."""
+    return [(cx + radius * math.cos(math.radians(start + (end - start) * index / steps)),
+             cz + radius * math.sin(math.radians(start + (end - start) * index / steps)))
+            for index in range(steps + 1)]
+
+
+def _portal_stone(pale=False):
+    """Dressed limestone: the portal's blocks, paler for the keystone and crest."""
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = _noise(nodes, links, coords.outputs["Object"], scale=55.0, detail=7.0)
+        low, high = ((0.36, 0.34, 0.32), (0.58, 0.55, 0.51)) if pale else ((0.24, 0.225, 0.225), (0.42, 0.4, 0.385))
+        _principled(nodes, links, _mix(nodes, links, grain, low, high), roughness=0.82,
+                    normal=_bump(nodes, links, grain, 0.25, normal=_bevel(nodes, 0.005)))
+    return _material("PortalStonePale" if pale else "PortalStone", build)
+
+
+def _door_oak():
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = nodes.new("ShaderNodeTexWave")
+        grain.wave_type = "BANDS"
+        grain.bands_direction = "X"
+        grain.inputs["Scale"].default_value = 60.0
+        grain.inputs["Distortion"].default_value = 8.0
+        grain.inputs["Detail"].default_value = 4.0
+        links.new(coords.outputs["Object"], grain.inputs["Vector"])
+        _principled(nodes, links, _mix(nodes, links, grain.outputs["Fac"], (0.1, 0.05, 0.025), (0.24, 0.13, 0.06)),
+                    roughness=0.58, normal=_bevel(nodes, 0.003))
+    return _material("DoorOak", build)
+
+
+def material_passage(name, color):
+    """The passage behind a doorway: dark, with the room's light pooling low
+    in the middle, where the floor runs on toward it."""
     def build(nodes, links):
         op = _MathBuilder(nodes, links)
         _coords, u, v = _uv_parts(nodes, links)
-        aspect = DOOR_SCREEN_PX[1] / DOOR_SCREEN_PX[0]
-        across = op("ABSOLUTE", op("SUBTRACT", u, 0.5))
-        up = op("MULTIPLY", v, aspect)
-        spring = aspect - 0.5
-
-        def arch(half):
-            rise = op("SUBTRACT", up, spring)
-            rounded = op("LESS_THAN", op("ADD", op("MULTIPLY", across, across), op("MULTIPLY", rise, rise)),
-                         half * half)
-            return op("MAXIMUM", op("MULTIPLY", op("LESS_THAN", across, half), op("LESS_THAN", up, spring)), rounded)
-
-        surround = arch(0.5)
-        door = arch(0.36)
-        planks = op("LESS_THAN", op("FRACT", op("MULTIPLY", u, 7.0)), 0.12)
-        straps = op("MAXIMUM", op.between(up, 0.22, 0.29), op.between(up, 0.72, 0.79))
-        ring = op.between(op("SQRT", op("ADD", op("MULTIPLY", op("SUBTRACT", u, 0.62), op("SUBTRACT", u, 0.62)),
-                                         op("MULTIPLY", op("SUBTRACT", up, 0.5), op("SUBTRACT", up, 0.5)))),
-                          0.03, 0.055)
-        joints = op("MAXIMUM", op("LESS_THAN", op("FRACT", op("MULTIPLY", up, 5.0)), 0.08),
-                    op("LESS_THAN", op("FRACT", op("ADD", op("MULTIPLY", u, 4.0),
-                                                       op("MULTIPLY", op("FLOOR", op("MULTIPLY", up, 5.0)), 0.5))), 0.07))
-        # A wedge keystone of paler stone, a small violet gem set in it.
-        crown = op("SUBTRACT", up, spring + 0.36)
-        keystone = op("MULTIPLY", op("LESS_THAN", across, op("ADD", 0.06, op("MULTIPLY", crown, 0.3))),
-                      op("GREATER_THAN", crown, 0.0))
-        gem = op("LESS_THAN", op("ADD", op("DIVIDE", across, 0.035),
-                                 op("DIVIDE", op("ABSOLUTE", op("SUBTRACT", up, spring + 0.43)), 0.045)), 1.0)
-        stone = _mix(nodes, links, joints, (0.4, 0.38, 0.39), (0.16, 0.15, 0.16))
-        stone = _mix(nodes, links, op("MULTIPLY", keystone, op("SUBTRACT", 1.0, joints)), stone, (0.52, 0.49, 0.47))
-        stone = _mix(nodes, links, gem, stone, (0.42, 0.22, 0.75))
-        wood = _mix(nodes, links, planks, (0.22, 0.12, 0.055), (0.07, 0.04, 0.02))
-        wood = _mix(nodes, links, op("MAXIMUM", straps, ring), wood, (0.1, 0.09, 0.09))
-        color = _mix(nodes, links, door, stone, wood)
-        shader = _principled(nodes, links, color, roughness=op("SUBTRACT", 0.8, op("MULTIPLY", straps, 0.4)))
-        links.new(op("MULTIPLY", op("MAXIMUM", straps, ring), door), shader.inputs["Metallic"])
-        shader.inputs["Emission Color"].default_value = (0.62, 0.36, 1.0, 1.0)
-        links.new(op("MULTIPLY", gem, 1.4), shader.inputs["Emission Strength"])
-        _alpha_cut(nodes, links, shader, surround)
-    return _material("FaceDoor", build)
+        across = op("MAXIMUM", op("SUBTRACT", 1.0, op("MULTIPLY", op("ABSOLUTE", op("SUBTRACT", u, 0.5)), 1.8)), 0.0)
+        low = op("POWER", op("SUBTRACT", 1.0, v), 2.4)
+        light = op("MULTIPLY", across, op("ADD", 0.06, op("MULTIPLY", low, 0.94)))
+        _principled(nodes, links, (0.015, 0.013, 0.017), roughness=0.9, emission=color,
+                    emission_strength=op("MULTIPLY", light, 0.75))
+    return _material(name, build)
 
 
-def add_face_doors(layout, stretch):
-    """Doors the player walks up to from the south, on the wall face they see."""
-    faces = _south_faces(layout)
-    material = material_face_door()
-    for door in layout.face_doors:
-        x, face_y = door["x"], door["face_y"]
-        _face_plane("Door" + door["name"], x, face_y, 0.0, DOOR_SCREEN_PX[1] / SIN_ALPHA, DOOR_SCREEN_PX[0],
-                    material, stretch, out=0.4)
-        _glow("crystal", x, face_y, (DOOR_SCREEN_PX[1] - 3.0) / SIN_ALPHA, (0.62, 0.36, 1.0), 8.0)
-        row = int(face_y) - 1
+def material_fan_glass(name, color):
+    """Stained glass in a door's fanlight, lit from the room behind it."""
+    return _material(name, lambda nodes, links: _principled(
+        nodes, links, tuple(channel * 0.25 for channel in color), roughness=0.2, emission=color,
+        emission_strength=1.1))
+
+
+def _emblem(k, kind, color, x, z, scale, front):
+    """A room's emblem on its door's crest, `scale` px across its unit circle."""
+    brass = _brass()
+    glow = _glow_material("Emblem" + kind.title(), color, 4.0, tuple(channel * 0.35 for channel in color))
+    if kind == "clock":
+        k.dial("EmblemClock", x, front, z, scale * 0.95, material_dial("ClockFace", "clock"))
+        k.ring("EmblemRim", x, front - 0.4, z, scale, 0.35, brass)
+        return
+    pieces = []
+    if kind == "star":
+        pieces.append(([(math.cos(math.radians(90.0 + 36.0 * index)) * (1.0 if index % 2 == 0 else 0.42),
+                         math.sin(math.radians(90.0 + 36.0 * index)) * (1.0 if index % 2 == 0 else 0.42))
+                        for index in range(10)], glow))
+    elif kind == "bolt":
+        pieces.append(([(0.32, 1.0), (-0.42, 0.05), (-0.02, 0.05), (-0.34, -1.0), (0.46, 0.12), (0.06, 0.12)], glow))
+    elif kind == "moon":
+        centre = 0.42
+        radius = math.hypot(0.5 - centre, math.sin(math.radians(60.0)))
+        start = math.degrees(math.atan2(-math.sin(math.radians(60.0)), 0.5 - centre))
+        outer = _arc(0.0, 0.0, 1.0, 60.0, 300.0, 18)
+        inner = _arc(centre, 0.0, radius, start, -360.0 - start, 18)
+        pieces.append((outer + inner[1:-1], glow))
+    elif kind == "leaf":
+        right = [(0.5 * max(math.cos(along * math.pi / 2.0), 0.0) ** 0.8, along)
+                 for along in (-1.0 + 2.0 * index / 12.0 for index in range(13))]
+        outline = right + [(-across, along) for across, along in reversed(right)][1:-1]
+        turn = math.radians(-30.0)
+        pieces.append(([(px * math.cos(turn) - pz * math.sin(turn), px * math.sin(turn) + pz * math.cos(turn))
+                        for px, pz in outline], glow))
+    elif kind == "book":
         for side in (-1.0, 1.0):
-            # The nearest face beside the surround: a smoothed face wanders a
-            # few px, and a door by a corner has a face on one side only.
-            for gap in range(7, 21):
-                lamp_x = x + side * (DOOR_SCREEN_PX[0] / 2.0 + gap)
-                if not 0 <= int(lamp_x) < layout.columns:
-                    break
-                rows = np.flatnonzero(faces[max(row - 4, 0):row + 5, int(lamp_x)]) + max(row - 4, 0)
-                if len(rows):
-                    face_row = int(rows[np.argmin(np.abs(rows - row))])
-                    if not _prop_on_face(lamp_x - 3.0, lamp_x + 3.0, face_row + 1.0):
-                        add_lantern("Door%sLamp" % door["name"],
-                                    (lamp_x, face_row + 1.0, float(layout.height[face_row, int(lamp_x)])), stretch)
-                    break
-    print("FACE DOORS %d" % len(layout.face_doors))
+            pieces.append(([(side * 0.06, -0.72), (side * 1.05, -0.55), (side * 1.05, 0.86), (side * 0.06, 0.68)],
+                           _parchment()))
+        pieces.append(([(-0.06, -0.78), (0.06, -0.78), (0.06, 0.74), (-0.06, 0.74)], brass))
+    elif kind == "flask":
+        glass = _glow_material("EmblemFlaskGlass", (0.72, 0.84, 0.78), 0.5, (0.5, 0.56, 0.53))
+        pieces.append(([(-0.2, 1.0)] + _arc(0.0, -0.3, 0.68, 107.1, 432.9, 26) + [(0.2, 1.0)], glass))
+        pieces.append((_arc(0.0, -0.3, 0.54, 190.0, 350.0, 12), glow))
+    for index, (outline, material) in enumerate(pieces):
+        k.slab("Emblem%d" % index, [(x + px * scale, z + pz * scale) for px, pz in outline], front - 0.15 * index,
+               0.5, material)
+
+
+def build_portal(k, door):
+    """A door's stone portal in its kit's frame: x across the doorway's centre,
+    y north of the door's line, z screen px up. The doorway reaches
+    door["half"] each side. Behind it is the recess its leaves swing into, or,
+    for the Wake gate, the corridor the player comes from. Returns the leaves'
+    hinges as (turn, side, objects)."""
+    half, spring, jamb = door["half"], PORTAL_SPRING_PX, PORTAL_JAMB_PX
+    outer = half + jamb
+    top = spring + outer + 0.5
+    stone, pale, iron = _portal_stone(), _portal_stone(pale=True), _cast_iron()
+    kind, color = DOOR_THEMES.get(door["name"], ("star", (0.62, 0.38, 1.0)))
+    inward = door["opens"] == "in"
+    for side in (-1.0, 1.0):
+        k.box("Plinth", side * (half + jamb / 2.0 + 0.3), 0.0, jamb + 1.6, 3.0, -3.8, 4.6, stone)
+        levels = (3.0, 9.6, 16.2, 22.8, spring - 1.2)
+        for index, (low, high) in enumerate(zip(levels[:-1], levels[1:])):
+            wide = jamb + (0.9 if index % 2 == 0 else 0.0)
+            k.box("Quoin", side * (half + wide / 2.0), low + 0.18, wide, high - low - 0.36, -3.0, 3.8, stone)
+        k.box("Impost", side * (half + jamb / 2.0 + 0.2), spring - 1.2, jamb + 1.8, 1.8, -3.6, 4.2, pale)
+    # Nine voussoirs; the middle one is the keystone, larger and paler.
+    for index in range(9):
+        low, high = index * 20.0 + 0.4, (index + 1) * 20.0 - 0.4
+        key = index == 4
+        reach = outer + (3.0 if key else 0.5)
+        outline = _arc(0.0, spring, half, low, high, 4) + list(reversed(_arc(0.0, spring, reach, low, high, 4)))
+        k.slab("Voussoir", outline, -4.2 if key else -3.2, 4.4 if key else 3.9, pale if key else stone)
+    k.slab("SpandrelWest", [(-(outer + 1.5), spring), (-(outer + 1.5), top)]
+           + _arc(0.0, spring, outer + 0.5, 90.0, 180.0, 12), -2.6, 3.0, stone)
+    k.slab("SpandrelEast", [(outer + 1.5, top), (outer + 1.5, spring)]
+           + _arc(0.0, spring, outer + 0.5, 0.0, 90.0, 12), -2.6, 3.0, stone)
+    k.box("Frieze", 0.0, top - 0.9, 2.0 * (outer + 1.5), 0.9, -3.6, 4.0, stone)
+    k.box("Cornice", 0.0, top, 2.0 * (outer + 3.0), 3.0, -4.6, 5.2, pale)
+    crest = top + 3.0
+    k.slab("Crest", _arc(0.0, crest, 9.5, 0.0, 180.0, 24), -3.4, 3.0, stone)
+    k.slab("CrestRim", _arc(0.0, crest, 10.2, 0.0, 180.0, 24) + list(reversed(_arc(0.0, crest, 9.2, 0.0, 180.0, 24))),
+           -3.8, 3.4, pale)
+    plaque = crest + 4.6
+    # A dark enamel plaque in a brass rim, so the emblem stands out on it.
+    k.disc("Plaque", 0.0, -4.0, plaque, 5.6, 0.6, _painted("PlaqueEnamel", (0.025, 0.022, 0.04)))
+    k.ring("PlaqueRim", 0.0, -4.3, plaque, 5.6, 0.4, _brass())
+    _emblem(k, kind, color, 0.0, plaque, 3.9, -4.5)
+    if kind != "book":
+        k.glow("crystal", 0.0, -4.5, plaque, color, 7.0)
+    gem = spring + half + 4.2
+    k.ball("KeyGem", 0.0, -4.6, gem, 1.2, _glow_material("FaceDoorGem", (0.62, 0.36, 1.0), 3.0, (0.3, 0.12, 0.6)))
+    k.glow("crystal", 0.0, -4.6, gem, (0.62, 0.36, 1.0), 6.0)
+    # The fanlight over the leaves: an iron sunburst over stained glass.
+    fan = 0.2 if inward else -0.2
+    k.slab("FanGlass", _arc(0.0, spring, half - 0.5, 0.0, 180.0, 24), fan + 0.5, 0.2,
+           material_fan_glass("FanGlass" + door["name"], color))
+    k.slab("FanRing", _arc(0.0, spring, half, 0.0, 180.0, 24)
+           + list(reversed(_arc(0.0, spring, half - 1.0, 0.0, 180.0, 24))), fan, 0.6, iron)
+    for turn in (30.0, 60.0, 90.0, 120.0, 150.0):
+        along = (math.cos(math.radians(turn)), math.sin(math.radians(turn)))
+        across = (-along[1] * 0.28, along[0] * 0.28)
+        k.slab("FanBar", [(along[0] * 2.0 + across[0], spring + along[1] * 2.0 + across[1]),
+                          (along[0] * (half - 0.6) + across[0], spring + along[1] * (half - 0.6) + across[1]),
+                          (along[0] * (half - 0.6) - across[0], spring + along[1] * (half - 0.6) - across[1]),
+                          (along[0] * 2.0 - across[0], spring + along[1] * 2.0 - across[1])], fan, 0.6, iron)
+    k.slab("FanHub", _arc(0.0, spring, 2.2, 0.0, 180.0, 10), fan - 0.1, 0.8, iron)
+    k.box("Transom", 0.0, spring - 0.6, 2.0 * half, 1.2, fan - 0.1, 0.8, iron)
+    if inward:
+        k.box("Threshold", 0.0, 0.0, 2.0 * half + 3.0, 1.3, -4.5, 4.5, stone)
+        depth = DOORWAY_DEPTH_PX
+        k.box("RecessRoof", 0.0, 40.5, 2.0 * half + 1.0, 3.5, 1.0, depth - 1.0, stone)
+        k.plane("Passage", 0.0, depth - 0.3, 0.0, spring + half + 1.0, 2.0 * half,
+                material_passage("Passage" + door["name"], color))
+        k.light("Passage", 0.0, depth * 0.55, 13.0, color, 0.12, radius=0.03)
+    else:
+        k.box("Threshold", 0.0, -0.9, 2.0 * half + 3.0, 1.0, -2.6, 2.6, stone)
+    oak = _door_oak()
+    return [_door_leaf(k, door, side, oak, iron) for side in (-1.0, 1.0)]
+
+
+def _door_leaf(k, door, side, oak, iron):
+    """One leaf of a double door, hung at its outer edge `side` (-1 west, +1
+    east) and built in its hinge's frame. The hinge is two empties: the outer
+    one stretches like every prop, the inner one turns, so the leaf swings in
+    true plan space. Returns (turn, side, objects)."""
+    half, height = door["half"], PORTAL_SPRING_PX - 0.5
+    width = half - 0.06
+    thick = DOOR_LEAF_THICK_PX
+    inward = door["opens"] == "in"
+    # A door opening in hangs from its back face, the Wake gate from its front.
+    front = -thick if inward else 0.0
+    up = 1.0 / SIN_ALPHA
+    pivot = bpy.data.objects.new("%sHinge%+d" % (k.id, side), None)
+    pivot.location = k.at(side * half, thick if inward else 0.0, 0.0)
+    pivot.scale = (1.0, k.stretch, 1.0)
+    turn = bpy.data.objects.new("%sTurn%+d" % (k.id, side), None)
+    turn.parent = pivot
+    for empty in (pivot, turn):
+        bpy.context.scene.collection.objects.link(empty)
+    wood, metal = bmesh.new(), bmesh.new()
+
+    def block(shape, t0, t1, y0, y1, z0, z1):
+        # t runs from the hinge toward the doorway's middle.
+        bmesh.ops.create_cube(shape, size=1.0, matrix=(
+            Matrix.Translation((-side * (t0 + t1) / 2.0 * PX, (y0 + y1) / 2.0 * PX, (z0 + z1) / 2.0 * up * PX))
+            @ Matrix.Diagonal(((t1 - t0) * PX, (y1 - y0) * PX, (z1 - z0) * up * PX, 1.0))))
+
+    for index in range(3):
+        block(wood, index * width / 3.0 + 0.06, (index + 1) * width / 3.0 - 0.06, front, front + thick, 0.2, height)
+    for low in (6.0, height - 8.2):
+        block(metal, 0.3, width - 0.6, front - 0.28, front + 0.02, low, low + 1.2)
+        for index in range(int((width - 1.2) / 2.6) + 1):
+            bmesh.ops.create_uvsphere(metal, u_segments=8, v_segments=5, radius=0.32 * PX, matrix=(
+                Matrix.Translation((-side * (1.0 + index * 2.6) * PX, (front - 0.32) * PX, (low + 0.6) * up * PX))
+                @ Matrix.Diagonal((1.0, 0.6, 0.8 * up, 1.0))))
+    block(metal, 0.2, width - 0.2, front - 0.16, front + 0.02, 0.2, 1.8)
+    ring = width - 2.4
+    _torus(metal, 1.3, 0.28, 24, 8, Matrix.Translation((-side * ring * PX, (front - 0.5) * PX,
+                                                          height * 0.48 * up * PX)) @ FACE_ON)
+    _cylinder(metal, 0.9, 0.3, segments=16, matrix=Matrix.Translation(
+        (-side * ring * PX, (front - 0.15) * PX, (height * 0.48 + 1.3) * up * PX)) @ FACE_ON)
+    made = []
+    for shape, material, suffix in ((wood, oak, "Wood"), (metal, iron, "Iron")):
+        mesh = bpy.data.meshes.new("%sLeaf%+d%s" % (k.id, side, suffix))
+        shape.to_mesh(mesh)
+        shape.free()
+        mesh.materials.append(material)
+        obj = bpy.data.objects.new(mesh.name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        obj.parent = turn
+        obj["door_leaf"] = door["name"]
+        made.append(obj)
+    return turn, side, made
+
+
+def _door_lanterns(layout, faces, door, stretch):
+    """A lantern on the face either side of a portal, where the face allows."""
+    x, face_y = door["x"], door["face_y"]
+    row = int(face_y) - 1
+    for side in (-1.0, 1.0):
+        # The nearest face beside the portal: a smoothed face wanders a few
+        # px, and a door by a corner has a face on one side only.
+        for gap in range(5, 19):
+            lamp_x = x + side * (PORTAL_HALF_PX + gap)
+            if not 0 <= int(lamp_x) < layout.columns:
+                break
+            rows = np.flatnonzero(faces[max(row - 4, 0):row + 5, int(lamp_x)]) + max(row - 4, 0)
+            if len(rows):
+                face_row = int(rows[np.argmin(np.abs(rows - row))])
+                if not _prop_on_face(lamp_x - 3.0, lamp_x + 3.0, face_row + 1.0):
+                    add_lantern("Door%sLamp" % door["name"],
+                                (lamp_x, face_row + 1.0, float(layout.height[face_row, int(lamp_x)])), stretch)
+                break
+
+
+def add_doors(layout, stretch):
+    """A stone portal on every face door and at the head of the Wake stair,
+    each with hinged leaves. The leaves stay out of the Hall render's camera
+    but cast their shadows, closed; render_doors() animates them."""
+    faces = _south_faces(layout)
+    doors = []
+    for door in layout.face_doors:
+        stand = {"centre": door["x"], "feet": door["face_y"], "width": 2.0 * PORTAL_HALF_PX, "height": 64.0,
+                 "depth": 6.0}
+        kit = PropKit("Door" + door["name"], stand, stretch)
+        hinges = build_portal(kit, door)
+        for obj in kit.made:
+            obj["door"] = door["name"]
+        for _turn, _side, objects in hinges:
+            for obj in objects:
+                obj.visible_camera = False
+        if door["opens"] == "in":
+            _door_lanterns(layout, faces, door, stretch)
+        else:
+            # The Wake gate faces the stairwell, away from any lantern.
+            kit.light("Key", 0.0, -24.0, 34.0, (1.0, 0.86, 0.7), 0.9, radius=0.15, mirrored=False)
+        doors.append({"door": door, "kit": kit, "hinges": hinges})
+    print("DOORS %d" % len(doors))
+    return doors
 
 
 def _near_door(layout, x, face_y, reach=40.0):
@@ -3053,7 +3332,7 @@ def add_cap_candles(layout, meta, stretch, count=None):
     chosen = []
     for index in rng.permutation(len(rows)):
         x, y = x0 + columns[index] + 0.5, y0 + rows[index] + 0.5
-        if _behind_prop(x, y):
+        if _behind_prop(x, y) or _behind_portal(layout, x, y):
             continue
         if any((x - a) ** 2 + (y - b) ** 2 < 70.0 ** 2 for a, b in chosen):
             continue
@@ -3112,7 +3391,9 @@ def add_ivy(layout, meta, stretch, count=None):
         left_side = rng.random() < 0.5
         x = start + width / 2.0 + 1.0 if left_side else end - width / 2.0 - 1.0
         drop = float(rng.uniform(20.0, 32.0))
-        if _prop_on_face(x - width / 2.0, x + width / 2.0, face_y):
+        if _prop_on_face(x - width / 2.0, x + width / 2.0, face_y) or any(
+                abs(x - door["x"]) < PORTAL_HALF_PX + width / 2.0 + 2.0 and abs(face_y - door["face_y"]) <= 4.0
+                for door in layout.face_doors):
             continue
         top = wall_height * 0.99
         _face_plane("Ivy%d" % placed, x, face_y, top - drop / SIN_ALPHA, top, width, material_ivy(), stretch, out=1.0)
@@ -3214,6 +3495,12 @@ def _behind_prop(x, y):
     """Whether a wall-top spot lies behind a staged prop, which hides it on screen."""
     return any(stand["left"] - 10.0 < x < stand["right"] + 10.0 and stand["back"] - FACE_PX * 1.5 < y <= stand["back"]
                for stand in STANDS.values())
+
+
+def _behind_portal(layout, x, y):
+    """Whether a wall-top spot lies behind a door's portal, whose crest rises over it."""
+    return any(abs(x - door["x"]) < PORTAL_HALF_PX + 8.0 and door["face_y"] - FACE_PX * 1.6 < y <= door["face_y"] + 2.0
+               for door in layout.face_doors)
 
 
 def _prop_floor():
@@ -3411,6 +3698,20 @@ class PropKit:
         obj = bpy.data.objects.new(self.id + name, mesh)
         bpy.context.scene.collection.objects.link(obj)
         return self.keep(obj)
+
+    def slab(self, name, outline, front, depth, material):
+        """A flat piece facing the camera: `outline` is (x, z) points in screen
+        px, extruded from `front` px north of the feet back by `depth`."""
+        shape = bmesh.new()
+        layers = [[shape.verts.new((across * PX, plan * PX, up / SIN_ALPHA * PX)) for across, up in outline]
+                  for plan in (front, front + depth)]
+        shape.faces.new(layers[0])
+        shape.faces.new(list(reversed(layers[1])))
+        for index in range(len(outline)):
+            following = (index + 1) % len(outline)
+            shape.faces.new((layers[0][index], layers[0][following], layers[1][following], layers[1][index]))
+        bmesh.ops.recalc_face_normals(shape, faces=shape.faces[:])
+        return self.mesh(name, shape, material, 0.0, 0.0, 0.0)
 
     def light(self, name, x, y, z, color, power, radius=0.03, mirrored=True):
         light = add_point_light(self.id + name, (self.cx + x, self.feet - y), z / SIN_ALPHA, color, power, radius,
@@ -4231,7 +4532,7 @@ def _stair_lights(layout, stairs, number, stretch):
         z = float(layout.height[int(y), int(centre)]) + 6.0
         add_point_light("StairGlow%d_%d" % (number, index), (centre, y), z, (0.62, 0.38, 1.0), 0.5, 0.05, stretch, mirrored=False)
         _glow("crystal", centre, y, z, (0.62, 0.38, 1.0), 14.0)
-    for side, x in (("West", stairs["left"] - 6.0), ("East", stairs["right"] + 6.0)):
+    for side, x in (("West", stairs["left"] - 14.0), ("East", stairs["right"] + 14.0)):
         y = stairs["top"] + 8.0
         if layout.height[int(y), int(x)] > 0.0:
             _candle_group("StairCandles%d%s" % (number, side), x, y, float(layout.height[int(y), int(x)]), stretch)
@@ -4255,18 +4556,24 @@ def add_hd_props(meta, stretch, only=None):
     return props
 
 
-def _crop_shown(path, left, top, size, scale, origin):
-    """Crops a prop's render to the px the game counts as shown (alpha above
-    VISIBLE_ALPHA); returns their rect on screen in game px. The render's
-    top-left render px is (left, top) of the region's render."""
+def _read_rgba(path):
+    """An 8-bit PNG's px as stored, top row first."""
     image = bpy.data.images.load(os.path.abspath(path), check_existing=False)
     width, height = image.size
     pixels = np.empty(width * height * 4, dtype=np.float32)
     image.pixels.foreach_get(pixels)
     bpy.data.images.remove(image)
+    return np.rint(pixels.reshape(height, width, 4)[::-1] * 255.0).astype(np.uint8)
+
+
+def _crop_shown(path, left, top, size, scale, origin):
+    """Crops a prop's render to the px the game counts as shown (alpha above
+    VISIBLE_ALPHA); returns their rect on screen in game px. The render's
+    top-left render px is (left, top) of the region's render."""
+    rgba = _read_rgba(path)
+    height, width = rgba.shape[:2]
     if (width, height) != tuple(size):
         print("WARNING prop render %s is %dx%d, expected %dx%d" % (path, width, height, size[0], size[1]))
-    rgba = np.rint(pixels.reshape(height, width, 4)[::-1] * 255.0).astype(np.uint8)
     shown = rgba[..., 3] > VISIBLE_ALPHA * 255.0
     rows, columns = np.flatnonzero(shown.any(axis=1)), np.flatnonzero(shown.any(axis=0))
     if len(rows) == 0:
@@ -4297,13 +4604,7 @@ def render_props(props, out, meta, listed, scale):
         right = min(int(math.ceil((stand["right"] + margin - x0) * scale)), columns)
         top = max(int(math.floor((stand["feet"] - stand["height"] - margin - y0) * scale)), 0)
         bottom = min(int(math.ceil((stand["feet"] + margin - y0) * scale)), rows)
-        # Blender truncates the border to whole px: aim at px centres.
-        render.use_border = True
-        render.use_crop_to_border = True
-        render.border_min_x = (left + 0.5) / columns
-        render.border_max_x = (right + 0.5) / columns
-        render.border_min_y = (rows - bottom + 0.5) / rows
-        render.border_max_y = (rows - top + 0.5) / rows
+        _set_border(render, left, top, right, bottom)
         render.film_transparent = True
         render.image_settings.color_mode = "RGBA"
         image = os.path.splitext(out)[0] + "-prop-%s.png" % prop_id
@@ -4327,6 +4628,84 @@ def render_props(props, out, meta, listed, scale):
     with open(path, "w", encoding="utf-8") as handle:
         json.dump({"generator": "tools/blender/hall_prototype.py", "props": entries}, handle, indent=1)
     print("PROPS %d -> %s" % (len(entries), path))
+
+
+def _set_border(render, left, top, right, bottom):
+    """Render only render px left..right x top..bottom (top row first).
+    Blender truncates the border to whole px: aim at px centres."""
+    columns, rows = render.resolution_x, render.resolution_y
+    render.use_border = True
+    render.use_crop_to_border = True
+    render.border_min_x = (left + 0.5) / columns
+    render.border_max_x = (right + 0.5) / columns
+    render.border_min_y = (rows - bottom + 0.5) / rows
+    render.border_max_y = (rows - top + 0.5) / rows
+
+
+def render_doors(doors, hall, out, meta, scale):
+    """Each door's leaves through the opening sequence, alone over transparency,
+    with the walls and the door's own portal as holdouts so stone in front
+    cuts them. All frames are cropped to the px any of them shows and laid
+    side by side in one sheet per door; <render>-doors.json lists the sheets."""
+    scene = bpy.context.scene
+    render = scene.render
+    x0, y0, width, height = meta["region"]
+    columns, rows = render.resolution_x, render.resolution_y
+    shown = [obj for obj in scene.objects if obj.type in ("MESH", "CURVE")]
+    camera_flags = {obj.name: obj.visible_camera for obj in shown}
+    entries = []
+    for record in doors:
+        door, kit, hinges = record["door"], record["kit"], record["hinges"]
+        name, inward = door["name"], door["opens"] == "in"
+        leaves = {obj.name for _turn, _side, objects in hinges for obj in objects}
+        held = {hall.name} | {obj.name for obj in kit.made}
+        for obj in shown:
+            obj.visible_camera = obj.name in leaves or obj.name in held
+            obj.is_holdout = obj.name in held
+        left = max(int(math.floor((door["x"] - PORTAL_HALF_PX - 4 - x0) * scale)), 0)
+        right = min(int(math.ceil((door["x"] + PORTAL_HALF_PX + 4 - x0) * scale)), columns)
+        top = max(int(math.floor((door["face_y"] - 50.0 - y0) * scale)), 0)
+        bottom = min(int(math.ceil((door["face_y"] + 18.0 - y0) * scale)), rows)
+        _set_border(render, left, top, right, bottom)
+        render.film_transparent = True
+        render.image_settings.color_mode = "RGBA"
+        frames = []
+        for index, angle in enumerate(DOOR_ANGLES):
+            for turn, side, _objects in hinges:
+                turn.rotation_euler = (0.0, 0.0, math.radians(angle) * (-side if inward else side))
+            path = os.path.splitext(out)[0] + "-door-%s-%02d.png" % (name, index)
+            render_to(path)
+            frames.append(_read_rgba(path))
+            os.remove(path)
+        for turn, _side, _objects in hinges:
+            turn.rotation_euler = (0.0, 0.0, 0.0)
+        shown_any = np.zeros(frames[0].shape[:2], dtype=bool)
+        for frame in frames:
+            shown_any |= frame[..., 3] > VISIBLE_ALPHA * 255.0
+        used_rows, used_columns = np.flatnonzero(shown_any.any(axis=1)), np.flatnonzero(shown_any.any(axis=0))
+        crop = (slice(used_rows[0], used_rows[-1] + 1), slice(used_columns[0], used_columns[-1] + 1))
+        sheet = np.ascontiguousarray(np.concatenate([frame[crop] for frame in frames], axis=1))
+        image = os.path.splitext(out)[0] + "-door-%s.png" % name
+        _write_png(image, sheet)
+        frame_height, frame_width = frames[0][crop].shape[:2]
+        rect = [round(x0 + (left + int(used_columns[0])) / scale, 2), round(y0 + (top + int(used_rows[0])) / scale, 2),
+                round(frame_width / scale, 2), round(frame_height / scale, 2)]
+        entries.append({"name": name, "image": os.path.basename(image), "frames": len(DOOR_ANGLES),
+                        "angles": list(DOOR_ANGLES), "rattle": DOOR_RATTLE_FRAME, "ajar": DOOR_AJAR_FRAME,
+                        "rect": rect, "x": door["x"], "line": door["face_y"], "opens": door["opens"],
+                        "glow": list(DOOR_THEMES.get(name, ("", (0.62, 0.38, 1.0)))[1])})
+        print("DOOR %s: %d frames of %.1f x %.1f at (%.1f, %.1f)" % (name, len(frames), rect[2], rect[3], rect[0],
+                                                                      rect[1]))
+    render.use_border = False
+    render.film_transparent = False
+    render.image_settings.color_mode = "RGB"
+    for obj in shown:
+        obj.visible_camera = camera_flags[obj.name]
+        obj.is_holdout = False
+    path = os.path.splitext(out)[0] + "-doors.json"
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump({"generator": "tools/blender/hall_prototype.py", "doors": entries}, handle, indent=1)
+    print("DOORS %d -> %s" % (len(entries), path))
 
 
 def add_camera(meta, alpha, stretch, scale):
@@ -4426,6 +4805,34 @@ def _write_png(path, rgba):
                      + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
 
 
+def _portal_depth(layout, meta, depth):
+    """Each door's portal stands on its line and rises above the wall: a figure
+    behind the line is hidden wherever its stone covers it. The doorway and
+    fanlight stay open, so a figure behind the Wake gate shows through them."""
+    x0, y0, width, height = meta["region"]
+    for door in layout.face_doors:
+        half, line, centre = door["half"], door["face_y"], door["x"]
+        outer = half + PORTAL_JAMB_PX
+        top = PORTAL_SPRING_PX + outer + 0.5
+        left, right = max(int(centre - outer - 4) - x0, 0), min(int(centre + outer + 5) - x0, width)
+        upper, lower = max(int(line - top - 15) - y0, 0), min(int(line + 6) - y0, height)
+        if right <= left or lower <= upper:
+            continue
+        across = np.arange(left, right)[None, :] + x0 + 0.5 - centre
+        solid = np.zeros((lower - upper, right - left), dtype=bool)
+        # The portal's back stands on the line; its front is about 4 px nearer.
+        for nearer in (0.0, 4.0):
+            rise = line + nearer - (np.arange(upper, lower)[:, None] + y0 + 0.5)
+            above = rise - PORTAL_SPRING_PX
+            solid |= (np.abs(across) >= half) & (np.abs(across) <= outer + 1.0) & (rise >= -1.0) & (above <= 0.0)
+            solid |= (above >= 0.0) & (rise <= top) & (np.abs(across) <= outer + 1.5) & (across ** 2 + above ** 2 >= half ** 2)
+            solid |= (rise >= top) & (rise <= top + 3.0) & (np.abs(across) <= outer + 3.0)
+            solid |= (rise >= top + 3.0) & (across ** 2 + (rise - top - 3.0) ** 2 <= 10.2 ** 2)
+        window = depth[upper:lower, left:right]
+        depth[upper:lower, left:right] = np.where(solid, np.maximum(window, int(line)), window)
+    return depth
+
+
 def export_depth(layout, meta, path):
     """Per screen px of the region, the ground y of the raised surface seen there.
 
@@ -4447,6 +4854,7 @@ def export_depth(layout, meta, path):
         # A raised px at ground row y covers screen rows y - lift .. y.
         source = window[k:k + height]
         depth = np.maximum(depth, np.where(source >= max(k, 1), ground[k:k + height], -1))
+    depth = _portal_depth(layout, meta, depth)
     rgba = np.zeros((height, width, 4), dtype=np.uint8)
     seen = depth >= 0
     rgba[..., 0] = np.where(seen, depth // 256, 0)
@@ -4537,7 +4945,7 @@ def main():
         add_runner_rug(layout, route[1], route[2], stretch)
     setup_world()
     add_sun()
-    add_face_doors(layout, stretch)
+    doors = add_doors(layout, stretch)
     mounts = add_lamps(layout, meta, stretch)
     add_stair_lights(layout, stretch)
     add_gallery_machinery(layout, meta, stretch)
@@ -4547,7 +4955,9 @@ def main():
     dress_faces(layout, meta, stretch, [(mount[0], mount[1], 6.0) for mount in mounts]
                 + [(x, y, BANNER_WIDTH_PX / 2.0 + 2.0) for x, y in banners])
     route = [tuple(point) for point in meta.get("opening_route") or []]
-    keep_clear = [mount[:2] for mount in mounts] + route + _prop_floor()
+    thresholds = [(door["x"] + offset, door["face_y"] + 6.0) for door in layout.face_doors
+                  for offset in (-12.0, 0.0, 12.0)]
+    keep_clear = [mount[:2] for mount in mounts] + route + _prop_floor() + thresholds
     add_floor_details(layout, meta, stretch, keep_clear)
     add_floor_story(layout, meta, stretch, keep_clear)
     add_cap_candles(layout, meta, stretch)
@@ -4571,8 +4981,12 @@ def main():
     if options.get("props_only"):
         render_props(props, options["out"], meta, listed, options["scale"])
         return
+    if options.get("doors_only"):
+        render_doors(doors, hall, options["out"], meta, options["scale"])
+        return
     render_to(options["out"])
     render_props(props, options["out"], meta, listed, options["scale"])
+    render_doors(doors, hall, options["out"], meta, options["scale"])
     if options["silhouette"]:
         # Floor quads would fill the outline; hide them by giving the silhouette
         # pass a walls-only copy. Props stay: they must fit inside the outline.

@@ -2,10 +2,12 @@ extends SceneTree
 
 ## Playable preview of the Blender Hall prototype. Runs the real game (title
 ## screen, saves, every room) and lays the prototype render over the Hall
-## region it covers whenever the Hall loads. Visual only, but for the HD props:
-## each is staged on its stand in the HD Hall, its node moved with it so its
-## prompt and focus box follow. Collision, fog, the route, the Guardian and
-## saves are the game's own.
+## region it covers whenever the Hall loads. Visual only, but for the HD props
+## and doors: each prop is staged on its stand in the HD Hall, its node moved
+## with it so its prompt and focus box follow; each door opens ajar for a
+## player at it, swings open on E, or rattles if locked, before the game's own
+## handler runs. Collision, fog, the route, the Guardian and saves are the
+## game's own.
 ##
 ##   HOME="$PWD/.godot/blender-proto-play/home" godot --path . \
 ##     --script res://tools/blender/play_prototype.gd [-- --hall]
@@ -20,10 +22,12 @@ const OVERLAY_NAME := "BlenderPrototypeOverlay"
 const Glows := preload("res://tools/blender/prototype_glows.gd")
 const Props := preload("res://tools/blender/prototype_props.gd")
 const Depth := preload("res://tools/blender/prototype_depth.gd")
+const Doors := preload("res://tools/blender/prototype_doors.gd")
 
 var glows: Glows
 var props: Props
 var depth: Depth
+var doors: Doors
 
 
 func _initialize() -> void:
@@ -64,6 +68,10 @@ func _add_overlay(hall: Node) -> void:
 	props = Props.new()
 	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
 	props.apply()
+	doors = Doors.new()
+	var door_count := doors.attach(hall, DATA + "render-doors.json", DATA, RENDER_SCALE)
+	hall.add_child(doors)
+	doors.apply()
 	depth = Depth.new()
 	var has_depth := depth.attach(hall, DATA + "render-depth.png", region)
 	var depth_props := 0
@@ -73,8 +81,8 @@ func _add_overlay(hall: Node) -> void:
 		depth_props = depth.add_props((meta as Dictionary).get("props", {}))
 		depth.apply()
 	print(
-		"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, depth %s (%d props)"
-		% [region, halos, swapped, has_depth, depth_props]
+		"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, %d doors, depth %s (%d props)"
+		% [region, halos, swapped, door_count, has_depth, depth_props]
 	)
 
 

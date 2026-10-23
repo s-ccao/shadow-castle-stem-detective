@@ -20,22 +20,24 @@ const RENDER_SCALE := 2.0
 const Glows := preload("res://tools/blender/prototype_glows.gd")
 const Props := preload("res://tools/blender/prototype_props.gd")
 const Depth := preload("res://tools/blender/prototype_depth.gd")
+const Doors := preload("res://tools/blender/prototype_doors.gd")
 ## Gameplay shots: where the player stands. Each keeps the zoomed camera view
 ## inside the rendered region so no old art shows at the frame edges.
 const PLAYER_SHOTS: Dictionary = {
 	"01-arrival": Vector2(224, 984),
 	"02-first-corridor": Vector2(430, 1000),
-	"03-wake-gate": Vector2(258, 1090),
+	# On the landing behind the Wake gate: it stands ajar in front of them.
+	"03-wake-gate": Vector2(247, 1098),
 	# Feet against a wall's north side: the wall stands in front.
 	"04-behind-wall": Vector2(519, 1019),
-	# Every Hall door from the floor in front of its arch: the art draws each
-	# on the wall's camera-facing south face.
-	"05-chemistry-door": Vector2(302, 136),
-	"06-final-door": Vector2(933, 130),
-	"07-library-door": Vector2(1667, 290),
-	"08-greenhouse-door": Vector2(185, 392),
-	"09-circuit-door": Vector2(133, 736),
-	"10-dining-door": Vector2(1787, 712),
+	# Every Hall door, the player at its prompt just beside the portal so the
+	# door itself stays in view.
+	"05-chemistry-door": Vector2(330, 140),
+	"06-final-door": Vector2(961, 128),
+	"07-library-door": Vector2(1695, 292),
+	"08-greenhouse-door": Vector2(213, 394),
+	"09-circuit-door": Vector2(161, 738),
+	"10-dining-door": Vector2(1815, 714),
 }
 ## Art-only shots with the fog lifted: camera centres at gameplay zoom.
 const ART_SHOTS: Dictionary = {
@@ -69,6 +71,7 @@ var hall: Node2D
 var overlay: Sprite2D
 var props: Props
 var depth: Depth
+var doors: Doors
 var failures: Array[String] = []
 var out_dir := ""
 
@@ -76,6 +79,13 @@ var out_dir := ""
 func _initialize() -> void:
 	root.size = Vector2i(1024, 768)
 	call_deferred("_run")
+
+
+## Keeps the depth shader on the figures' current feet, as the preview does.
+func _process(delta: float) -> bool:
+	if depth != null:
+		depth.advance(delta)
+	return false
 
 
 func _run() -> void:
@@ -114,6 +124,12 @@ func _run() -> void:
 	for item: Dictionary in props.standing():
 		depth.add_fixed(item["sprite"], item["feet"])
 	_expect(depth.add_props(listed) == listed.size(), "Every listed prop takes the depth shader")
+	doors = Doors.new()
+	# Captures never go through a door: a press plays it but stops short of the game.
+	doors.dry_run = true
+	var door_count := doors.attach(hall, DATA + "render-doors.json", DATA, RENDER_SCALE)
+	hall.add_child(doors)
+	_expect(door_count == 7, "Every Hall door plays in HD (%d of 7)" % door_count)
 	if overlay == null:
 		_finish()
 		return
@@ -129,6 +145,7 @@ func _run() -> void:
 		await _wait(0.9)
 		await _pair(shot)
 	await _prop_shots(player)
+	await _door_checks(player)
 	var fog := hall.get("fog_sprite") as CanvasItem
 	if fog != null:
 		fog.visible = false
@@ -178,19 +195,83 @@ func _make_overlay(origin: Vector2) -> Sprite2D:
 
 
 func _pair(label: String) -> void:
-	overlay.visible = false
-	depth.restore()
-	props.restore()
+	_show_prototype(false)
 	await _wait(0.15)
 	await _shot("current", label)
-	overlay.visible = true
-	props.apply()
-	depth.apply()
-	await _wait(0.15)
+	_show_prototype(true)
+	# Long enough for a door at the player to swing ajar.
+	await _wait(0.35)
 	await _shot("blender", label)
-	overlay.visible = false
-	depth.restore()
-	props.restore()
+	_show_prototype(false)
+
+
+## The prototype's look (render, staged props, depth, doors) on or off.
+func _show_prototype(shown: bool) -> void:
+	overlay.visible = shown
+	if shown:
+		props.apply()
+		depth.apply()
+		doors.apply()
+	else:
+		depth.restore()
+		props.restore()
+		doors.restore()
+
+
+## The doors do as the user asked. A locked door stays shut as the player
+## walks up; E rattles it, then the game says what it needs. An open door
+## stands ajar for the player, swings wide on E and shuts behind them. The
+## Wake gate, always open, stands ajar in front of a player behind it.
+func _door_checks(player: CharacterBody2D) -> void:
+	var state := root.get_node("GameState")
+	_show_prototype(true)
+	player.global_position = _walkable_near(PLAYER_SHOTS["05-chemistry-door"] as Vector2)
+	await _wait(0.5)
+	_expect(doors.frame_of("Chemistry") == 0, "A locked door stays shut as the player walks up")
+	doors.dry_run = false
+	doors.press("Chemistry")
+	var rattled := false
+	for _step: int in range(14):
+		await _wait(0.03)
+		rattled = rattled or doors.frame_of("Chemistry") == 1
+	await _wait(0.25)
+	var panel := hall.get("message_panel") as CanvasItem
+	_expect(
+		rattled and doors.last_handled == "Chemistry",
+		"E at a locked door rattles it, then the game takes E"
+	)
+	_expect(panel != null and panel.visible, "The game then says what the locked door needs")
+	await _shot("blender", "30-door-locked")
+	hall.call("close_message_panel")
+	doors.dry_run = true
+	await _wait(0.3)
+	state.call("set_story_flag", "door_library_unlocked")
+	player.global_position = _walkable_near(PLAYER_SHOTS["07-library-door"] as Vector2)
+	await _wait(0.6)
+	_expect(doors.frame_of("Library") == 4, "An open door stands ajar for the player at it")
+	await _shot("blender", "31-door-ajar")
+	doors.last_handled = ""
+	doors.press("Library")
+	var opened := false
+	for _step: int in range(20):
+		await _wait(0.03)
+		opened = opened or doors.frame_of("Library") == 9
+	_expect(
+		opened and doors.last_handled == "Library",
+		"E at an open door swings it wide before the game goes through"
+	)
+	doors.force("Library", 9)
+	await _wait(0.2)
+	await _shot("blender", "32-door-open")
+	doors.force("Library", -1)
+	player.global_position = _walkable_near(PLAYER_SHOTS["04-behind-wall"] as Vector2)
+	await _wait(0.6)
+	_expect(doors.frame_of("Library") == 0, "The door shuts behind a player who walks away")
+	player.global_position = _walkable_near(PLAYER_SHOTS["03-wake-gate"] as Vector2)
+	await _wait(0.6)
+	_expect(doors.frame_of("Wake") == 4, "The Wake gate stands ajar in front of a player behind it")
+	await _shot("blender", "33-wake-gate-ajar")
+	_show_prototype(false)
 
 
 func _walkable_near(target: Vector2) -> Vector2:

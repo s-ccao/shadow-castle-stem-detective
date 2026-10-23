@@ -263,7 +263,13 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): the whole Hall and all nine props are built, user review pending.** See stages UX-20261021-39 to -46 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. `26-hall-doors.png` shows every door in game, `28-hd-props.png` every prop in game, and `29-hd-prop-models.png` each pixel sprite above its HD model.
+1. **Blender Hall prototype (HD): the whole Hall, all nine props and every door are built, user review pending.** See stages UX-20261021-39 to -47 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour). `29-hd-prop-models.png` shows each pixel sprite above its HD model, and `30-hd-doors.png` every door shut, ajar and open.
+   - **Doors** (stage 47): every face door and the Wake gate is a stone portal (`build_portal` in `hall_prototype.py`) with a 24 × 14 px doorway recess cut behind it and the room's emblem on its crest (`DOOR_THEMES`).
+     - The two leaves hang on two empties each: the outer one stretches, the inner one turns, so the swing happens in true plan space.
+     - `render_doors()` renders the leaves through `DOOR_ANGLES` (0°–72°) with the hall mesh and the portal as holdouts, and writes one sheet per door plus `<render>-doors.json`.
+     - The Wake gate stands at the head of a straight-topped stairwell and opens toward the camera.
+     - `_portal_depth()` adds each portal's stone to the depth map.
+     - `tools/blender/prototype_doors.gd` plays them in the preview: ajar at an unlocked door's prompt; on E, open and then the game's handler; at a locked door, a rattle and then the game's handler. Unlocked means `door_<room>_unlocked`, plus `circuit_door_open` for Circuit; Wake is always open. It erases E from the `interact` InputMap action only while a door's prompt shows or a door is moving, and restores it on exit and on pause.
    - **HD props** (stage 46): all nine (5 knowledge exhibits, the storage rack, 3 Final Key machines) are Blender models, staged on new stands in the preview only.
      - `HD_PROP_STANDS` in `hall_prototype.py` holds each stand: centre x, face row, width, height (the pixel sprite's at `FIGURE_SCALE`) and plan depth.
      - Each prop backs onto a straight stretch of a wall's south face, with at least 40 + depth + 6 px of open floor in front, walk-up floor that no door's prompt claims, and 48 px from door arches. `prop_stands()` re-measures them on every build.
@@ -271,7 +277,7 @@ Manual acceptance flow:
      - In the Hall render props are invisible to the camera but cast shadows and bounce light. Each is then rendered alone and cropped to alpha above 0.05; `<render>-props.json` lists its node, image, shown rect and the move from its game place.
      - Lanterns, banners, decor, cobwebs, ivy, wall-top candles and floor clutter keep clear of the stands.
    - **Whole Hall** (stage 45): the export covers the full map, `--region=0,0,1920,1280`. Its `region.json` lists every occluding prop (`props`: path and rect) and each door's real prompt rect (`door_prompts`, from `get_interaction_rect`).
-     - A door is drawn on the camera-facing south face whenever the player can stand south of it inside the game's prompt area, and its face is cut back flush. Only Wake keeps the stair from the north. Greenhouse, Library and Circuit have floor on both sides, but their arches face south, as the old art paints them.
+     - A door is drawn on the camera-facing south face whenever the player can stand south of it inside the game's prompt area, and its face is cut back flush. Only Wake keeps the stair from the north, now with its own gate at the stair's head (stage 47). Greenhouse, Library and Circuit have floor on both sides, but their arches face south, as the old art paints them.
      - Gallery works scale with pit area: pipe runs of at most 170 px ending in valve housings, gear trains that never overlap, and crystal clusters.
      - Every listed prop and its contact shadow takes the depth shader (`Depth.add_props`).
      - The final render takes about 185 s at 128 samples (3840×2560), plus about 2 s per prop.
@@ -282,7 +288,7 @@ Manual acceptance flow:
      - In the preview it also shows the Hall figures at 50 px (`FIGURE_SCALE`); only the visual nodes change.
      - Floor that no player body can reach (and that no reachable floor touches) is drawn as castle mass.
      - A prop left at its game place inside a wall mass would get an alcove; the staged props stand in front of the faces, so none is cut now.
-     - Doors the player reaches from the north need a visible treatment from that side; the Wake gate is a stair down.
+     - Doors the player reaches from the north need a visible treatment from that side: the Wake gate is a portal at the head of a stair down, facing the stair, with the player seen behind it.
      - The old "silhouette = collision" rule is gone: it put each wall's top edge exactly where the player stops on its north side.
    - Pipeline:
      - `tools/blender/export_hall_region.gd` (headless Godot) exports the real collision as `wall_mask.png`, plus `outside_mask.png` and `region.json`.
@@ -301,8 +307,9 @@ Manual acceptance flow:
        - The game reads feet, prompt, focus box and occlusion from the sprite's opaque bounds (`RoomSpatialRuntime.get_visual_rect`), so all of them follow the HD prop. `restore()` puts every node back.
    - Materials are CC0 Poly Haven photo textures with provenance in `prototypes/blender_hall/textures/sources.json`; there is a procedural fallback.
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
-   - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45), then asked for every prop in HD, moved or remade to blend in (stage 46). They allow replacing anything in the Hall with details that fit the game.
-     - Next: move the HD Hall, its props on their stands, the depth shader and the 50 px Hall figure into the game itself.
+   - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45), then asked for every prop in HD, moved or remade to blend in (stage 46), then for richer doors that open by themselves and a visible Wake Room door (stage 47). They allow replacing anything in the Hall with details that fit the game.
+     - Next (user's choice after stage 47): HD characters made in Blender. Then move the HD Hall, its props on their stands, the doors, the depth shader and the 50 px Hall figure into the game itself.
+     - **Door rule for that move:** each Hall door must look the same as its room's door seen from inside; redesign both freely, with each room's own character, rather than copying today's textures.
      - Dressing tips: floor items must be flat (tagged `floor_decal`); wall and top items must sit inside the outline; and the AO nodes use `only_local`, so props don't darken the stone in squares.
      - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.
    - Characters stay as they are until the Hall is settled.
