@@ -8,8 +8,9 @@ extends RefCounted
 ## each character, footprint and HD prop hides what a wall in front covers.
 ## Characters and footprints still show there as faint ghosts, so neither the
 ## player nor the route is ever lost behind a wall. The Hall's figures are
-## shown at 50 px instead of 66 so the 40 px walls read as walls; only the
-## visual nodes change, never the collision.
+## shown at 50 px instead of 66 so the 40 px walls read as walls; a room shows
+## them at full size (figure_scale 1). Only the visual nodes change, never the
+## collision.
 
 const SHADER_CODE := """
 shader_type canvas_item;
@@ -57,6 +58,10 @@ const FOOTPRINT_SCRIPT := "hall_footprint_marker.gd"
 const SHADOW_NAME := "PrototypeContactShadow"
 
 var hall: Node
+## How the figures are shown against the render: the Hall shrinks them, a room
+## keeps them, and their contact shadows follow their size.
+var figure_scale := FIGURE_SCALE
+var shadow_size := Vector2(22.0, 7.0)
 var depth_texture: ImageTexture
 var origin := Vector2.ZERO
 var size := Vector2.ONE
@@ -147,7 +152,7 @@ func advance(delta: float) -> void:
 	# The game may set its own visual scale again; the preview keeps its own.
 	for item: Dictionary in shrunk:
 		var node: Variant = item["node"]
-		var target: Vector2 = (item["scale"] as Vector2) * FIGURE_SCALE
+		var target: Vector2 = (item["scale"] as Vector2) * figure_scale
 		if is_instance_valid(node) and not (node as Node2D).scale.is_equal_approx(target):
 			(node as Node2D).scale = target
 	for sprite: Variant in entries:
@@ -196,14 +201,14 @@ func _rescan() -> void:
 
 
 func _shrink(node: Node2D) -> void:
-	if node == null:
+	if node == null or is_equal_approx(figure_scale, 1.0):
 		return
 	for item: Dictionary in shrunk:
 		if item["node"] == node:
 			return
 	shrunk.append({"node": node, "scale": node.scale, "position": node.position})
-	node.scale *= FIGURE_SCALE
-	node.position *= FIGURE_SCALE
+	node.scale *= figure_scale
+	node.position *= figure_scale
 
 
 func _track(sprite: CanvasItem, body: Node2D, look: Dictionary) -> void:
@@ -247,7 +252,7 @@ func _add_shadow(body: Node2D) -> void:
 	var shadow := Sprite2D.new()
 	shadow.name = SHADOW_NAME
 	shadow.texture = texture
-	shadow.scale = Vector2(22.0, 7.0) / 32.0
+	shadow.scale = shadow_size / 32.0
 	shadow.position = Vector2(0.0, -1.0)
 	shadow.z_index = -1
 	body.add_child(shadow)

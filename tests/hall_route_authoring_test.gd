@@ -34,6 +34,7 @@ func _run() -> void:
 	await _check_recorder_captures_a_walk()
 	await _check_tutorial_prefers_the_authored_route()
 	await _check_recording_is_not_dragged_back()
+	await _check_recording_never_strands_the_knowledge_stop()
 	await _check_leaving_the_tracks_is_seen_not_silent()
 
 	game_state.set("developer_mode", false)
@@ -345,6 +346,160 @@ func _check_recording_is_not_dragged_back() -> void:
 
 	hall.queue_free()
 	await process_frame
+
+
+## 停在铜芯前时开始录制，作者会走开。录制期间阶段一直是 STUDY（录制放开了
+## 停步），所以录制一结束、停步重新生效的那一刻，若人已不在铜芯旁，就会被
+## 锁在新位置：既走不动，铜芯的交互又只在跟前才出现，归档也做不了。三种结束
+## 方式都要验——手动取消、关掉开发者模式、走到化学室门口自动保存（录制器先
+## 置 _finished 再发 route_saved）。离开了铜芯就退回 APPROACH 并从脚下重建
+## 路线；仍在铜芯旁才恢复停步。
+func _check_recording_never_strands_the_knowledge_stop() -> void:
+	HallRouteStore.clear_route()
+	var game_state := root.get_node("GameState")
+	game_state.set("developer_mode", false)
+	var packed := load("res://scenes/game_world.tscn") as PackedScene
+	if packed == null:
+		_expect(false, "The Hall scene loads for the knowledge-stop recording check")
+		return
+	var hall: Node = packed.instantiate()
+	root.add_child(hall)
+	for _frame: int in range(45):
+		await process_frame
+
+	hall.set("dialogue_active", false)
+	hall.set("guardian_entry_sequence_active", false)
+	hall.set("guardian_near_miss_active", false)
+	hall.set("game_over", false)
+	hall.call("_begin_hall_arrival_route")
+	await process_frame
+
+	var constants: Dictionary = (hall.get_script() as GDScript).get_script_constant_map()
+	var steps: Dictionary = constants["HallArrivalStep"]
+	var walker: Node2D = hall.get("player") as Node2D
+	var route: Array = hall.get("hall_tutorial_route")
+	_expect(
+		walker != null and route.size() >= 2
+		and int(hall.get("hall_arrival_step")) == int(steps["APPROACH_CHEMISTRY_CORE"]),
+		"A fresh arrival approaches the brass core along a route"
+	)
+	if walker == null or route.size() < 2:
+		hall.queue_free()
+		await process_frame
+		return
+	# The approach route ends where the core's interaction reaches the player.
+	var at_core: Vector2 = route.back()
+	var away: Vector2 = hall.call("_nearest_guardian_walkable_position", Vector2(1120, 1120))
+	var door_focus: Vector2 = hall.get("CHEMISTRY_ROOM_DOOR_FOCUS_POSITION")
+	var core: Vector2 = hall.call(
+		"_hall_arrival_target_position", int(steps["APPROACH_CHEMISTRY_CORE"])
+	)
+	var at_door := _floor_in_front_of(hall, door_focus, core)
+	_expect(
+		at_door != Vector2.INF and at_door.distance_to(door_focus) <= HallRouteRecorder.FINISH_RADIUS,
+		"There is floor close enough to the Chemistry door to finish a recording (%s)" % at_door
+	)
+	if at_door == Vector2.INF:
+		hall.queue_free()
+		await process_frame
+		return
+
+	# Ended where it began, beside the core: the stop comes back.
+	await _settle_into_knowledge_stop(hall, walker, at_core, steps, "at the core")
+	game_state.set("developer_mode", true)
+	hall.call("toggle_hall_route_recording")
+	await process_frame
+	hall.call("toggle_hall_route_recording")
+	await process_frame
+	_expect(
+		int(hall.get("hall_arrival_step")) == int(steps["STUDY_CHEMISTRY_CORE"])
+		and bool(walker.get("movement_locked")),
+		"A recording ended beside the core puts the knowledge stop back"
+	)
+
+	for ending: String in ["cancelled", "developer mode turned off", "saved at the Chemistry door"]:
+		await _settle_into_knowledge_stop(hall, walker, at_core, steps, ending)
+		game_state.set("developer_mode", true)
+		hall.call("toggle_hall_route_recording")
+		await process_frame
+		_expect(
+			bool(hall.call("_is_recording_hall_route")) and not bool(walker.get("movement_locked")),
+			"Recording releases the knowledge stop so the author can walk (%s)" % ending
+		)
+		match ending:
+			"cancelled":
+				walker.global_position = away
+				await process_frame
+				hall.call("toggle_hall_route_recording")
+			"developer mode turned off":
+				walker.global_position = away
+				await process_frame
+				# The real path: GameState emits state_changed and the Hall follows.
+				game_state.call("toggle_developer_mode")
+			"saved at the Chemistry door":
+				walker.global_position = at_door
+		for _frame: int in range(3):
+			await process_frame
+		var where: Vector2 = walker.global_position
+		var rebuilt: Array = hall.get("hall_tutorial_route")
+		_expect(not bool(hall.call("_is_recording_hall_route")), "The recording has ended (%s)" % ending)
+		_expect(
+			int(hall.get("hall_arrival_step")) == int(steps["APPROACH_CHEMISTRY_CORE"]),
+			"Ended away from the core, the player is sent back to approaching it (%s)" % ending
+		)
+		_expect(
+			not bool(walker.get("movement_locked")),
+			"Ended away from the core, the player is free to walk (%s)" % ending
+		)
+		_expect(
+			rebuilt.size() >= 2 and (rebuilt[0] as Vector2).distance_to(where) <= 24.0,
+			(
+				"The approach is rebuilt from where the player stands (%s: starts %s, player %s)"
+				% [ending, rebuilt[0] if not rebuilt.is_empty() else "none", where]
+			)
+		)
+		if ending == "saved at the Chemistry door":
+			game_state.set("developer_mode", false)
+			hall.call("_sync_hall_route_recorder")
+		HallRouteStore.clear_route()
+
+	game_state.set("developer_mode", false)
+	hall.call("_sync_hall_route_recorder")
+	hall.queue_free()
+	await process_frame
+
+
+## Stands the player where the core's interaction reaches them and lets the
+## Hall raise the knowledge stop, as walking up to it would.
+func _settle_into_knowledge_stop(
+	hall: Node, walker: Node2D, spot: Vector2, steps: Dictionary, context: String
+) -> void:
+	walker.global_position = spot
+	await process_frame
+	hall.call("_update_hall_knowledge_stop")
+	await process_frame
+	_expect(
+		bool(hall.call("_is_near_hall_interaction", "arrival_chemistry_core"))
+		and int(hall.get("hall_arrival_step")) == int(steps["STUDY_CHEMISTRY_CORE"])
+		and bool(walker.get("movement_locked")),
+		"Standing at the core raises the knowledge stop (before: %s)" % context
+	)
+
+
+## The floor a player stands on in front of `focus`, a door's interaction
+## point set into its wall: the first spot south of it that is walkable and
+## joined to the Hall's floor, so a route to `target` can start there. The
+## nearest Guardian-walkable point is no use: it can lie in the void behind
+## the wall, where no player can stand.
+func _floor_in_front_of(hall: Node, focus: Vector2, target: Vector2) -> Vector2:
+	for step: int in range(0, int(HallRouteRecorder.FINISH_RADIUS), 4):
+		var spot := focus + Vector2(0.0, float(step))
+		if (
+			bool(hall.call("is_player_position_walkable", spot))
+			and (hall.call("_hall_route_points", spot, target) as Array).size() >= 2
+		):
+			return spot
+	return Vector2.INF
 
 
 ## 离开踪迹的规则要能被学会，而不是只能被惩罚：先警告一拍，还站在外面才

@@ -1,5 +1,5 @@
 {
-  "purpose": "CC0 photo textures used by tools/blender/hall_prototype.py. Fetch them with tools/blender/fetch_textures.py; the binaries are not committed.",
+  "purpose": "CC0 photo textures used by tools/blender/hall_prototype.py and tools/blender/room_prototype.py. Fetch them with tools/blender/fetch_textures.py; the binaries are not committed.",
   "license": "CC0 1.0 Universal (public domain dedication), Poly Haven",
   "destination": "prototypes/blender_hall/textures",
   "assets": [
@@ -130,6 +130,115 @@
           "file": "rough_pine_door_rough_1k.jpg",
           "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_pine_door/rough_pine_door_rough_1k.jpg",
           "sha256": "ff2e2058c19e963619df52880c224f589a1b68cbe7a0245121c9ceeed3789d3a"
+        }
+      }
+    },
+    {
+      "asset": "dark_wood",
+      "name": "Dark Wood",
+      "authors": [
+        "Dario Barresi",
+        "Dimitrios Savva",
+        "Rico Cilliers"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/dark_wood",
+      "maps": {
+        "diff": {
+          "file": "dark_wood_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dark_wood/dark_wood_diff_1k.jpg",
+          "sha256": "d68da31655bf47024af893156a6a01a6c95bb60f55d97e2dc9bdd47be320e5b5"
+        },
+        "nor_gl": {
+          "file": "dark_wood_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dark_wood/dark_wood_nor_gl_1k.jpg",
+          "sha256": "c42541f1bda0a14b39f120c24407eeba699af8ac85b371c7cef98ffd7d7b13bf"
+        },
+        "rough": {
+          "file": "dark_wood_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dark_wood/dark_wood_rough_1k.jpg",
+          "sha256": "47ea12dbf649109b02eaa164dde9732a74e839957f29ad0ec7f5266b575d1835"
+        }
+      }
+    },
+    {
+      "asset": "wood_table_worn",
+      "name": "Wood Table Worn",
+      "authors": [
+        "Dimitrios Savva",
+        "Rico Cilliers"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/wood_table_worn",
+      "maps": {
+        "diff": {
+          "file": "wood_table_worn_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_worn/wood_table_worn_diff_1k.jpg",
+          "sha256": "092ab3465a6a24b24d092ea86865f332c3bd239b8eb2fd664b70357082031a3f"
+        },
+        "nor_gl": {
+          "file": "wood_table_worn_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_worn/wood_table_worn_nor_gl_1k.jpg",
+          "sha256": "0d494f3fe08320a05f0f966a7a3ca3c4cd6e3f7cde5b176b9bc167b5593fd00d"
+        },
+        "rough": {
+          "file": "wood_table_worn_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_worn/wood_table_worn_rough_1k.jpg",
+          "sha256": "ebc4a15d7d3495ee1b67ba18f67bffcefac3f93881d1394fa3e22a25f9fe5c72"
+        }
+      }
+    },
+    {
+      "asset": "velour_velvet",
+      "name": "Velour Velvet",
+      "authors": [
+        "Rico Cilliers",
+        "colormass"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/velour_velvet",
+      "maps": {
+        "diff": {
+          "file": "velour_velvet_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_diff_1k.jpg",
+          "sha256": "e6e92d808b3456deb892ff17905f3b44717fcfbcbce9fcf03ad7abcabda799df"
+        },
+        "nor_gl": {
+          "file": "velour_velvet_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_nor_gl_1k.jpg",
+          "sha256": "046c92c48c1cb36656d394addf21dea9582f563479b73f2c0b16f356128e872b"
+        },
+        "rough": {
+          "file": "velour_velvet_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_rough_1k.jpg",
+          "sha256": "82b6f22e9a225af76dc8960dab3ed4a936ad8a8061e9272137c3367af2970952"
+        }
+      }
+    },
+    {
+      "asset": "cotton_jersey",
+      "name": "Cotton Jersey",
+      "authors": [
+        "Rico Cilliers",
+        "colormass"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/cotton_jersey",
+      "maps": {
+        "diff": {
+          "file": "cotton_jersey_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cotton_jersey/cotton_jersey_diff_1k.jpg",
+          "sha256": "0f1b790e4087223275aaa6fdffdd46a556a26d2af72cd811acf72ba9c21ec1f6"
+        },
+        "nor_gl": {
+          "file": "cotton_jersey_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cotton_jersey/cotton_jersey_nor_gl_1k.jpg",
+          "sha256": "9b79709806511b62567fb007ff61009c3b194bb0d0821fbaee3faf1b2bff0318"
+        },
+        "rough": {
+          "file": "cotton_jersey_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cotton_jersey/cotton_jersey_rough_1k.jpg",
+          "sha256": "89bed18f5c3f03fc7b4c2382446891629716278e521e06e8b7f6c8f02dd22590"
         }
       }
     }

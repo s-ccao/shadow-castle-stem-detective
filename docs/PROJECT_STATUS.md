@@ -1,11 +1,22 @@
 # Project status
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-23
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
-## Latest actual-project update (2026-10-22)
+## Latest actual-project update (2026-10-23)
 
+- **Blender HD rooms (not shipped):** every room is being rebuilt in Blender the Hall's way, one per stage, before the HD art moves into the game. The Wake Room is the first (stage 52):
+  - **What it is:** the painted guest chamber rebuilt in 3D on the room's real collision and lit by its own candles, so movement, prompts and the story stay exactly as they are.
+  - **Window:** moonlight falls through the arched leaded window in a pool across the floor.
+  - **Furniture:**
+    - the bed has folded velvet;
+    - the desk holds Mrs. Lin's three candles under glass jars;
+    - the candle note sits on the window seat;
+    - a brass compass rose is set into the floor;
+    - the exit is the Hall's own Wake gate, between two violet crystal lamps.
+  - **In the playable preview:** the bed, desk, bookshelf and gate are HD, and their prompts and highlight boxes follow them. The room hides the player behind its furniture, and the HD detective walks in it at the room's size.
+  - **Comparisons:** side-by-side in-game shots are in [the Wake Room evidence](evidence/2026-10-23-blender-wake-room/).
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.

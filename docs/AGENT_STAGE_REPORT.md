@@ -2,6 +2,96 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-52
+
+- **Date:** 2026-10-23
+- **Status:** reviewed. The user approved committing it but asked for a restyle: "现在的感觉太假了，和墙壁和大厅的风格不匹配，特别是床和书架" (it feels fake, out of keeping with the walls and the Hall, especially the bed and the bookshelf). Stage 53 restyles the room. The east gate stays true to perspective (the user's choice), and the Chemistry Room follows. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** "可以现在继续跟改各个房间，重新使用blender建模，以及各个npc" — rebuild every room and every NPC the Hall's way, before moving the HD art into the game. Stage 51 was committed and pushed as `75c4115`.
+- **User's choices:**
+  - one room per stage, the Wake Room first;
+  - all of it in the preview first, moved into the game together at the end;
+  - NPC portraits rendered from their new 3D models;
+  - about 1000 Tripo credits for the four NPCs (butler, gardener, mechanic, Dr. Lin).
+
+### What changed
+
+- **A room pipeline**, shared by every room to come:
+  - `tools/blender/export_room_layout.gd` (headless Godot) exports a room's real collision, props, spawns and interaction points to `prototypes/blender_rooms/<room>/layout.json` and `collision.png`.
+  - `tools/blender/room_prototype.py` (Blender) renders a room from those, using the Hall's projection and materials:
+    - **Walls:** a vertical back wall with openings, and side walls that lean out like the painted room's.
+    - **Room image:** the room alone, at 2 px per game px.
+    - **Props:** each interactive prop rendered alone and cut where the room stands in front of it (holdouts).
+    - **Depth:** a map of each wall and fixed piece's ground y.
+    - **Glows:** the candles' and crystals' halos.
+  - A room's furniture and lights live in `tools/blender/room_<name>.py`.
+- **The Wake Room** (`tools/blender/room_wake.py`, 472 objects), everything standing on the floor its collision blocks:
+  - **Window:** an arched leaded window with a rose head. Moonlight falls through it in a pool on the floor, carrying the mullion's shadow.
+  - **Bed:** a four-poster with folded velvet, a draped throw and the brass key's bow showing under the pillow.
+  - **Bookshelf:** books, potions, an hourglass, a skull and a globe.
+  - **Desk:** Mrs. Lin's three candles under glass jars of three sizes (her drill), the scroll the desk clue reads, an open book, ink and quill.
+  - **Window seat:** the candle note folded on it, between two candles.
+  - **Furniture along the walls:** a nightstand, two wall sconces, a side table with an oil lamp, a travelling trunk, the alchemy bench and the crates with an armillary sphere.
+  - **Floor:** a brass compass rose let into the floor, and a purple runner.
+  - **The Wake gate:** the Hall's own Wake portal (moon emblem, violet seal), mapped onto the east wall between two violet crystal lamps.
+- **Preview:** `tools/blender/prototype_room.gd` stages a room's HD look, and `play_prototype.gd` uses it whenever the Wake Room loads.
+  - It re-reads the room's highlight boxes and walk-up points from the HD props, and from the painted ones on restore.
+  - Figures keep their room size (the depth pass gained `figure_scale` and `shadow_size`).
+- **Textures:** four more CC0 Poly Haven sets, with authors and checksums, in `tools/blender/cc0_textures.json`: `dark_wood`, `wood_table_worn`, `velour_velvet` and `cotton_jersey`.
+
+### Design decisions
+
+- **Gameplay stays the game's own.** Collision, prompts, the first lead and saves are untouched.
+- **Walk-up rule for HD props:** the game walks the player to a 13.5 px band round a prop's art, and that band must clear the prop's collision by 14 px. So each HD prop's visible front must reach within 7.5 px of its collision edge. The room capture caught the desk and bookshelf short of it (9–12 px); both now stand on their collision edge.
+- **Side-wall doors are true to perspective.** Seen from this camera, a door in the east wall is foreshortened. The painting draws its vault door facing the player instead. The HD gate is about 100 px wide on screen; the painted door is 112. Asked, the user kept the true perspective.
+- **Helpers added to the renderer:**
+  - Hall pieces keep their exact shape on a leaning wall: the shear is split between two empties.
+  - Photo textures are box-projected, so wood keeps its grain on every face.
+  - Cloth (the blanket, the throw, the trunk's cloth) is a wrinkled height field.
+
+### Exact files
+
+- New: `tools/blender/room_prototype.py`, `tools/blender/room_wake.py`, `tools/blender/export_room_layout.gd`, `tools/blender/prototype_room.gd`, `tools/blender/capture_room.gd` (each `.gd` with its `.uid`).
+- Changed:
+  - `tools/blender/play_prototype.gd` (stages rooms);
+  - `tools/blender/prototype_depth.gd` (`figure_scale`, `shadow_size`; the Hall keeps its defaults);
+  - `tools/blender/cc0_textures.json` (4 assets).
+- From the code-review feedback after stage 51, also in the working tree: `tests/hall_route_authoring_test.gd` (new check `_check_recording_never_strands_the_knowledge_stop`) and the new `tests/change_sorting_seal_test.gd` with its `.uid`.
+- Evidence: `docs/evidence/2026-10-23-blender-wake-room/`:
+  - `01`–`07`: current against HD, in game;
+  - `08`: the render over the collision;
+  - `09`: the four props, painted against HD;
+  - `10`: the HD detective standing and running.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only (gitignored, regenerable): `prototypes/blender_rooms/wake_room/` and the new textures.
+
+### Evidence and verification
+
+- **Blender:** the final render (128 samples, 2048×1536) takes 47 s on the M3, about 60 s with the props, depth and glows. The first run compiles Cycles kernels once, about 4 minutes, for the wax's subsurface scattering.
+- **Room capture:** `capture_room.gd` passes all 65 checks in EN and in ZH:
+  - all 4 props staged, 18 glows, depth, both character sheets;
+  - each highlight box follows its HD prop and goes back on restore;
+  - each prop's walk-up point sits on the 13.5 px band and offers that prop;
+  - the door is offered at its standing point, and the candle note is in reach, in both looks;
+  - the alchemy bench hides the player's legs, and open floor never does;
+  - the HD detective is 90.4 px tall, idles and runs.
+- **Hall regression:** `capture_prototype.gd` passes 176/176 after the shared depth change.
+- **Feedback tests:** `hall_route_authoring_test.gd` and `change_sorting_seal_test.gd` both pass.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **The room reads as fake to the user,** especially the bed and the bookshelf, and does not match the walls or the Hall: stage 53 restyles it before the next room.
+- **Preview only:** the HD room shows only in `play_prototype.gd` and the captures.
+- **Prompt boxes change shape with the art:** the bed's box is taller and the gate's smaller. Prompts and walk-ups are verified, but a player may notice the change.
+- **Next (user's choice):** after the restyle, the Chemistry Room, with the butler and Dr. Lin's memory echo made in Tripo.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+### GitHub documentation proposal
+
+- Add stage 52 to `docs/PROJECT_STATUS.md`: the room pipeline and the HD Wake Room, preview only, linking `docs/evidence/2026-10-23-blender-wake-room/`.
+
+---
+
 ## Stage: UX-20261021-51
 
 - **Date:** 2026-10-23

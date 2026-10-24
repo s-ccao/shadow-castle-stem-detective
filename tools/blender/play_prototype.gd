@@ -8,7 +8,9 @@ extends SceneTree
 ## player at it, swings open on E, or rattles if locked, before the game's own
 ## handler runs. The detective and the Guardian walk in their HD sheets from
 ## prototypes/blender_chars/. Collision, fog, the route, the Guardian's
-## behaviour and saves are the game's own.
+## behaviour and saves are the game's own. Rooms rebuilt in Blender
+## (tools/blender/room_prototype.py) show in HD whenever they load, through
+## tools/blender/prototype_room.gd: so far the Wake Room.
 ##
 ##   HOME="$PWD/.godot/blender-proto-play/home" godot --path . \
 ##     --script res://tools/blender/play_prototype.gd [-- --hall]
@@ -26,12 +28,14 @@ const Props := preload("res://tools/blender/prototype_props.gd")
 const Depth := preload("res://tools/blender/prototype_depth.gd")
 const Doors := preload("res://tools/blender/prototype_doors.gd")
 const Characters := preload("res://tools/blender/prototype_characters.gd")
+const Room := preload("res://tools/blender/prototype_room.gd")
 
 var glows: Glows
 var props: Props
 var depth: Depth
 var doors: Doors
 var characters: Characters
+var room_look: Room
 
 
 func _initialize() -> void:
@@ -45,6 +49,20 @@ func _initialize() -> void:
 func _on_node_added(node: Node) -> void:
 	if node.scene_file_path == HALL_SCENE:
 		_add_overlay.call_deferred(node)
+	elif not Room.room_for(node.scene_file_path).is_empty():
+		_add_room.call_deferred(node, Room.room_for(node.scene_file_path))
+
+
+## Stages a room's HD look once its script has read its props.
+func _add_room(room: Node, room_name: String) -> void:
+	if not is_instance_valid(room) or room.has_node(Room.OVERLAY_NAME):
+		return
+	var look := Room.new()
+	if not look.attach(room, room_name):
+		return
+	look.apply()
+	room_look = look
+	print("BLENDER_PROTOTYPE_ROOM " + look.summary())
 
 
 func _add_overlay(hall: Node) -> void:
@@ -102,6 +120,8 @@ func _add_overlay(hall: Node) -> void:
 func _physics_process(delta: float) -> bool:
 	if characters != null:
 		characters.track(delta)
+	if room_look != null:
+		room_look.track(delta)
 	return false
 
 
@@ -112,6 +132,8 @@ func _process(delta: float) -> bool:
 		depth.advance(delta)
 	if characters != null:
 		characters.advance(delta)
+	if room_look != null:
+		room_look.advance(delta)
 	return false
 
 
