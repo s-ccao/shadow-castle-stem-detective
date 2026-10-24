@@ -375,6 +375,32 @@
       }
     },
     {
+      "asset": "seaside_rock",
+      "name": "Seaside Rock",
+      "authors": [
+        "Dimitrios Savva"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/seaside_rock",
+      "maps": {
+        "diff": {
+          "file": "seaside_rock_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/seaside_rock/seaside_rock_diff_1k.jpg",
+          "sha256": "7e1f1ce252c30d36fe442fcc529183b87cad112d26f6f656705172128efd936e"
+        },
+        "nor_gl": {
+          "file": "seaside_rock_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/seaside_rock/seaside_rock_nor_gl_1k.jpg",
+          "sha256": "a08c85d5c5b57484892ecfc0569512ecfd75d4e499a15bc142779aaf61d8d6a7"
+        },
+        "rough": {
+          "file": "seaside_rock_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/seaside_rock/seaside_rock_rough_1k.jpg",
+          "sha256": "308e154e8b68c79e119609bfc6a724299b1454e52c68b90fa9f5814cff5b18dc"
+        }
+      }
+    },
+    {
       "asset": "wood_table",
       "name": "Wood Table",
       "authors": [

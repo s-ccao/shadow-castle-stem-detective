@@ -2,10 +2,109 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-61 (room audit, Chemistry brightening, Greenhouse bench)
+
+- **Date:** 2026-10-24
+- **Status:** approved by the user (both rooms "满意"), then committed and pushed together with the whole Greenhouse room (stages 54 and 56), at the user's request. Nothing ships: the game, its scenes, its saves and the Web build are unchanged.
+- **Request:** after approving stage 58 ("很好"; committed and pushed as `aadec6c`), the user asked: "可以继续修改其他的房间，而且可以按照你的这个标准检查其他chat修改的房间，看一下是否符合你的标准" (go on with the other rooms, and check the rooms the other chats changed against your standard).
+- **The user's choices at the audit:**
+  - record the findings in the handoff, so the active sessions fix their own rooms;
+  - fix the idle Greenhouse here (its session has been idle since 01:37);
+  - brighten the Chemistry Room;
+  - build the Final Room next.
+- **Parallel work:** the Library (stages 57 and 59) and the Dining Hall (stage 60) sessions are working in this checkout.
+
+### What changed
+
+- **The other rooms, audited against the stage 58 standard.** Sizes were measured in the code, light on the renders at the painting's size, and wood at 2x. The standard and the findings are in `docs/AGENT_HANDOFF.md` ("Room standard" and "Audit").
+  - **Greenhouse:** the bench is 1.85 m deep and its book 64 × 53 cm; its wood is graded to about a 4 % albedo, so it reads dark and flat. Fixed here.
+  - **Library**, for its session: `wake.oak()` wood, and the render is brighter than its painting (mean luminance 39.7 against 27.9).
+  - **Dining Hall**, for its session:
+    - the banquet table is 5.1 × 2.8 m and 53 cm high;
+    - its floor joints are too dark (luminance standard deviation 14.5–19 against 9–11);
+    - its hearth burns weaker than the painted fire.
+    - The handoff's "Real size vs the painting (stage 60, open)" note now records that stage 58 is approved, so the real-size rule stands.
+  - **Chemistry** (this session's): a third darker and cooler than its painting. Brightened here.
+- **The Chemistry Room is as bright as its painting.**
+  - `grade()` sets exposure 0.9, and white balance at 7100 K (warmer). The lights are unchanged.
+  - The room with its props: mean luminance 42.7 and warmth (R − B) +7.7, against the painting's 43.8 and +7.8. Stage 58 was 31.8 and +2.9.
+- **The Greenhouse's potting bench is a real bench.**
+  - **Size:** 2.5 × 1.0 m and 78 cm high. Stage 56 was 1.85 m deep and 65 cm high.
+    - Its front stays where the painting's is, so the walk-up spot and the stool's footprint are unchanged.
+    - The preview swaps its footprint into `RoomCollisions/table`. The floor behind it, inside the painted bench's footprint, is open: a player there is hidden to the shins and can gather from the seedling trays.
+  - **Its clutter, re-laid on the shallower top:**
+    - a back row: seed jars, a potted plant, the basket of blossom, the lantern, a bowl of bulbs, the fern in its pot and the seedlings;
+    - the work in front: the seedling tray, cut herbs, twigs and dried flowers, the open handbook, a fallen pot, the trowel, the drying rack, the mortar and the repair map.
+    - The tray and the rack lie under the game's glow markers for them, which are drawn on screen at (440, 965) and (590, 965).
+    - The handbook is a real one, open: 46 × 31 cm.
+    - The watering can moved to the slatted shelf, which now has three 17 cm slats centred between its rails.
+  - **Weathered oak:**
+    - rough-sawn `wood_table` boards, greyed to about a weathered oak's albedo (sRGB about 114, 87, 71) and matte, because a potting bench is unfinished wood;
+    - each board has its own shade, worn rims and grime in its corners.
+    - Stage 56 graded `wood_table_worn` to about a 4 % albedo, which lost the grain.
+  - **The lantern** stands 7 px further forward and burns at 18 W instead of 6, so its pool reaches across the top, as the painting's does.
+  - **Light, measured in game:** the bench top's median luminance is 45 and its warmth +29, against the painting's 50 and +27. Stage 56 was 24 and +20.
+- **Pipeline (backward compatible):**
+  - `prototype_room.gd`'s footprint swap also takes a `CollisionShape2D` with a `RectangleShape2D`, given as its four world px corners.
+    - A centred copy of the shape is swapped in; the scene's own shape and position come back on restore.
+    - Tested headless on the Dining Hall's table. This was the gap that session's note named.
+  - `room_greenhouse.laid_photo` takes optional `coat`, `coat_roughness`, `roughness` and `bevel`. Their defaults leave every existing material as it was, the Dining Hall's included.
+
+### Exact files
+
+- **Changed:**
+  - `tools/blender/room_chemistry.py`: `grade()`.
+  - `tools/blender/prototype_room.gd`: rectangle footprints.
+  - `tools/blender/room_greenhouse.py` (the Greenhouse session's, untracked):
+    - `BENCH`, `BENCH_TOP` and the shelf;
+    - `bench_wood`, the clutter and the lantern;
+    - `laid_photo`'s options;
+    - the paving's culling under the bench;
+    - the footprint in `build()`.
+  - `tools/blender/capture_greenhouse.gd` (untracked): footprint checks and the `11-behind-bench` shot.
+- **Evidence:**
+  - `docs/evidence/2026-10-23-blender-chemistry/`:
+    - `01`–`12` regenerated from the brighter captures;
+    - new `14-brighter-room.png`: stage 58, stage 61 and the painting, each with its light.
+    - `13` stays as stage 58's record.
+  - New `docs/evidence/2026-10-24-greenhouse-bench/`:
+    - `01-workbench.png`: painted, stage 56 and stage 61 in game, each with the bench top's light;
+    - `02-bench-2x.png`, `03-behind-bench.png` and `04-render-on-collision.png`.
+  - The audit's sheets are kept outside the repo, in the session's `files/audit-2026-10-24/`.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+
+### Verification
+
+- **Blender 5.2.2, 128 samples:**
+  - the Chemistry Room renders in 115 s (28 glows, 2 props);
+  - the Greenhouse in 113 s (64 glows, 5 props).
+- **Captures:** `capture_chemistry.gd` passes 86/86, and `capture_greenhouse.gd` 97/97 (89 before), each in EN and in ZH.
+  - The new Greenhouse checks:
+    - the HD bench's footprint is swapped in;
+    - the freed floor behind it is open, and the bench itself still blocks;
+    - behind it, the bench draws in front of the player and the seedling trays are offered;
+    - the painted footprint comes back on restore.
+- **No regressions:** the Dining Hall's `laid_photo` calls are unchanged (positional arguments and keywords only from the original set), and pyflakes is clean on `room_dining_hall.py`.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean.
+- **Playable preview:** `play_prototype.gd -- --greenhouse` stages the room with 64 glows, 5 HD props, depth and 2 HD character sheets, and no script errors.
+
+### Risks / follow-up
+
+- **Preview only:** the game's own Greenhouse, its painted bench and its collision are unchanged. Moving the HD room into the game means moving the bench's collision with it.
+- **A new way to reach the herbs:** in HD the seedling trays and the drying rack can also be gathered from behind the bench. The painted bench kept the player to its sides.
+- **Committing:** at the user's choice, this stage is committed with the whole Greenhouse room, which had never been committed:
+  - `room_greenhouse.py` and `capture_greenhouse.gd`;
+  - its evidence (`docs/evidence/2026-10-23-blender-greenhouse/`), its stage 54 and 56 entries, and its handoff lessons and status lines;
+  - the `seaside_rock` texture its gate and pavers use.
+  - The Library's and the Dining Hall's work in this checkout stays uncommitted for their sessions, including their entries and lessons in these docs and the Dining Hall's `"overhead"` pipeline.
+- **The Greenhouse's overall light:** 11 % darker than its painting in game (39.7 against 44.7), within the standard's 15 %.
+- **The other rooms:** the Library and Dining Hall sessions may not act on the audit; their notes are in the handoff.
+- **Next:** the Final Room (the user's choice), then the Tripo NPCs.
+
 ## Stage: UX-20261021-58 (Chemistry restyle)
 
 - **Date:** 2026-10-24
-- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Status:** approved by the user ("很好"), committed and pushed as `aadec6c`. Nothing ships: the game, its scenes and the Web build are unchanged.
 - **Request:** the user's review of stage 55 (committed and pushed as `9bb97b8`): "中间的桌子做的太大了，而且每个桌子的质感都不好，地板也是，没有让人惊艳的感觉，需要优化" (the middle table is too big, every table's material is poor, the floor too; nothing stunning; optimise it).
 - **Parallel work:** the Greenhouse (stages 54 and 56) and the Library (stage 57) are being built in this checkout by other sessions.
 
@@ -77,6 +176,66 @@
 - **Preview only:** the game's own Chemistry Room, its painted table and its collision are unchanged. Moving the HD room into the game means moving the table's collision with it.
 - **NPCs:** the butler and Dr. Lin's echo are still the pixel NPCs.
 - **Next:** the user's review, then the butler and Dr. Lin's echo in Tripo (the user's choice), then the Dining Hall.
+
+## Stage: UX-20261021-56 (Greenhouse door, bench and floor)
+
+- **Date:** 2026-10-24
+- **Status:** approved by the user ("很好，按照你目前的优化方向的这个效果优化下一个房间", in stage 60's request); committed and pushed with stage 61, at the user's request. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** the user's verdict on stage 54: "门和桌子和地板需要修改" (the door, the table and the floor need changing). The stage-54 versions did not follow the painted room:
+  - **Door:** the Hall's portal scaled 3.25×, a dark dungeon door between lantern piers.
+  - **Bench:** a plain oak slab on a box.
+  - **Floor:** a square tile photo, purple-grey and uniform; it also had a vent grate, puddles and petal confetti.
+- **What changed:** all three are now built from the painted room's own design (`greenhouse_arch_door.png`, `greenhouse_workbench.png` and `greenhouse_room_bg.png`), in the Hall's materials and light.
+
+### What changed
+
+- **Door (`gate()`):**
+  - A deep round arch of eleven dressed voussoirs and a proud keystone, on two square plinths cut with a diamond point.
+  - In the arch, an oak frame with a centre post and a door each side. Each door is planked below its mid rail and glazed above it in small panes of dark green glass, with riveted strap hinges and a ring pull, on a stone threshold.
+  - A bronze shield on the keystone carries the Greenhouse leaf, faintly lit like the Hall door emblem. Ivy climbs the east side, and the south wall now stops at the plinths.
+  - An iron lantern on a stone post stands on the wall either side, with pink blossom along the wall's top (`gate_dressing()`), as the painting has them.
+  - **Depth:** at the gate's prompt the arch now ghosts the player's legs (22 of 45 rows), as the painted shield covers them. In stage 54 the taller portal ghosted the whole figure.
+- **Bench (`workbench()`):**
+  - Six worn boards run across the top, each a separate piece of the photo with paler worn edges. The corners are bound in riveted iron.
+  - It stands on square legs, with aprons and a slatted shelf below.
+  - On it, placed as in the painting:
+    - a fern in a big pot, the lantern, seedlings in small pots, seed jars, a small potted plant, the watering can;
+    - a basket of picked blossom and a bowl;
+    - the seedling tray, the open handbook, a stone mortar of crushed violet petals;
+    - moonleaf laid on a drying rack (leaves with ribs and veins), cut herbs, twigs, dried flowers;
+    - the trowel, the repair map, a pot on its side, spilt earth.
+  - On the shelf: stacked pots, a basket and a bucket. The tray and drying rack stay where the game marks its two herb plots.
+- **Floor (`paving()`):**
+  - 353 slate pavers in north-south columns of mixed widths (36–48 px) and lengths, joints staggered, as the painting lays them.
+  - Each paver is a slab with a two-step chamfered rim that catches the light, shaded and textured individually from the new CC0 `seaside_rock`. 36 are cracked.
+  - Dark earth fills the joints, greening with moss toward the beds (`joints_material()`).
+  - Its tone matches the painting's to within about 0.03 per channel, slightly bluer under the moonlight.
+  - The floor dressing is calmer: vines creeping out of the beds, a few fallen leaves along the kerbs, petals by the beds and the gate, the spade and the bucket. The vent grate, puddles and petal confetti are gone.
+- **Planter:** each lantern post now stands on a square plinth, as in the painting. The collision's bump south of the ring is that plinth, so the planter's prompt still reaches a player stopped there.
+
+### Exact files
+
+- **Changed:**
+  - `tools/blender/room_greenhouse.py`: gate constants, `laid_photo`, `joints_material`, `Models.group`, the bench (`workbench`, `bench_wood`, `clutter`, `blades`, `shelf_things`, `wood_boxes`, `turned_box`, `turned_quad`), the gate (`gate`, `diamond`, `voussoir`, `doors`, `gate_glass`, `shield`, `gate_ivy`), the floor (`paving`, `_paver`, `floor_dressing`, `gate_dressing`), the post plinths, and `seed_jars(scale)`.
+  - `tools/blender/capture_greenhouse.gd`: the gate check now asks for legs ghosted, never the whole figure.
+  - `tools/blender/cc0_textures.json`: CC0 `seaside_rock` (Dimitrios Savva), its three maps with SHA-256.
+- **Evidence:** `docs/evidence/2026-10-23-blender-greenhouse/`. `01`–`10` are re-shot. The new `11-restyle-door-bench-floor.png` shows the painted room, stage 54 and this pass side by side for the gate and for the bench on its floor.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`.
+
+### Verification
+
+- **Blender 5.2.2:** the final render takes 110 s at 128 samples (1395 objects, 64 glows).
+- **Capture:** `capture_greenhouse.gd` passes 89/89 in EN and in ZH:
+  - all 5 props are staged, and every highlight box follows its HD prop;
+  - every prompt is offered where the player stands beside it;
+  - the planter's rim hides the player's legs north of it, and the arch ghosts the legs at the gate's prompt.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean, including the new files. `fetch_textures.py` verifies all 45 texture maps.
+
+### Risks / follow-up
+
+- **Preview only**, as before. The gardener is still the pixel NPC.
+- **Shared manifest:** `cc0_textures.json` is shared with the parallel Chemistry and Library sessions. Only the `seaside_rock` entry is this stage's.
+- **Next (proposed):** the user's review of the door, bench and floor.
 
 ## Stage: UX-20261021-55 (Chemistry)
 
@@ -176,6 +335,67 @@
 - **NPCs:** the butler and Dr. Lin's memory echo are still the pixel NPCs. Tripo models need the owner's Tripo Studio account, as for the detective and the Guardian.
 - **Duplicate model loaders:** the Greenhouse has its own `Models` loader. Merge it with `ModelSet` once neither session is editing.
 - **Next:** the restyle the user asked for (a table of real size, richer wood and flagstones, a room that impresses), then the butler and Dr. Lin's echo in Tripo, then the Dining Hall.
+
+## Stage: UX-20261021-54 (Greenhouse)
+
+- **Date:** 2026-10-23
+- **Status:** reviewed: the user asked for its door, bench and floor to be changed ("门和桌子和地板需要修改"), which stage 56 did; committed and pushed with stage 61, at the user's request. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** "你现在负责优化green_house，用blender重新搭建，符合我游戏的风格，搭建风格向大厅看齐" (rebuild the Greenhouse in Blender, in the game's style, built the way the Hall is built).
+- **Parallel work:** other sessions are rebuilding Chemistry (`room_chemistry.py`) and Library (`room_library.py`) in this checkout at the same time. If one of them also reports as stage 54, renumber by commit order. Their edits to shared files are listed under "Exact files".
+
+### What the room is now
+
+- **Built like the Hall:** the Hall's moonlight (`moon_sky`), the Hall's own wall tops (dark mossy slate with broken cracks, outlined in lit stone), flagstones and slate walls from the same CC0 photo sets, iron lanterns of the Hall's design, and the Hall's Greenhouse portal (`hall.build_portal`, leaf emblem) as the gate, seen from inside. The render's mean luminance is 38.0, the restyled Wake Room's 37.9.
+- **Two screens tall (1024×1536), on the game's own collision:** the camera still follows the player through it.
+  - **North:** a pointed gothic window (two lancets, an oculus with a quatrefoil, a hood moulding) over a two-step plinth, with moonlight thrown through it; a lancet either side; lanterns on stone pedestals in the collision's pockets; hanging baskets; a copper pipe to the beds.
+  - **West bed:** blue blossom, the ironvine trellis, nettles and ferns, and the three brass valves for light, water and air that its text describes.
+  - **East bed:** moonleaf (calathea's silver bands turned toward moonlight), glowing silver pods, and the mineral patch of grit and pale crystals.
+  - **Middle:** the great stone planter, a moulded ring with a faint green groove and a lantern on each of its three posts. A violet flower glows at its heart; blue blossom grows to the north, dewcap in the shaded west and emberroot in the east, matching its three herb plots.
+  - **Bench:** the gardener's potting bench in worn oak, with seedling trays, a drying rack hung with moonleaf, the open handbook, the repair map, seed jars, a watering can, a trowel, a lantern, a bucket, a basket and his stool.
+  - **South:** two clusters of terracotta pots (blue blossom, the emberroot pot, a fern; a leafy plant ringed with calathea), a drain grate, puddles, fallen leaves and petals; the gate between two lantern piers, with steps down to the Hall.
+- **Plants and tools:** 34 CC0 Poly Haven models at their real size (one game px across is a centimetre). Flower colours are graded into the palette (blue blossom from periwinkle, blue-white heliophila); dewcap, emberroot, the magic flower, pods, ivy and ironvine are modelled.
+- **Depth:** the walls, both bed kerbs, the planter and the gate stand in the depth map.
+  - North of the planter its rim hides the player's legs. At the gate's prompt the taller portal shows the player as a ghost, as the Hall's portals do; an earlier pass hid them completely.
+  - The aisles and the floor in front of the planter hide nothing.
+
+### Pipeline additions (shared, backward compatible)
+
+- **Props outside `Props/`:** `export_room_layout.gd` reads a room's prop nodes from its spec (`"props"`), exports its `INTERACT_ITEMS` and `HERB_PLOTS` (`"items"`, `"plots"`), each polygon's own name (`"shape"`) and finds a y-sorted player. The Wake Room's export is unchanged apart from the new `shape` field (checked).
+- **`roots` and `in_room`:** a room's `build()` may return `"roots"` (the node each prop render stands in for, here `Worldsort/<prop>`) and `"in_room"` (props the room render and depth map keep, because the player walks round or behind them).
+  - `prototype_props.gd` stages those sprites undrawn (`self_modulate` alpha 0, restored on `restore()`), so the game's prompt box still follows the HD prop.
+- **Preview:** `prototype_room.gd` registers the Greenhouse and re-reads its footprints through `_sync_interaction_footprints()`. `prototype_depth.gd` and `prototype_characters.gd` find a player under `Worldsort/`. `play_prototype.gd -- --greenhouse` opens the room directly.
+- **CC0 models:** `tools/blender/cc0_models.json` (authors, pages, SHA-256 per file) and `tools/blender/fetch_models.py`. The binaries go to the gitignored `prototypes/blender_rooms/models/` (≈58 MB for the Greenhouse's 21 models). The Chemistry session has since added its 13 models to the same manifest.
+
+### Exact files
+
+- **New (this stage):**
+  - `tools/blender/room_greenhouse.py`, `tools/blender/capture_greenhouse.gd` (+ `.uid`), `tools/blender/fetch_models.py`, `tools/blender/cc0_models.json`.
+  - Evidence: `docs/evidence/2026-10-23-blender-greenhouse/`, with `01`–`08` painted vs HD pairs (native 1024×768), `09-room-overview.png` and `10-hd-props.png`.
+- **Changed (this stage):**
+  - `tools/blender/export_room_layout.gd`: the greenhouse entry, `props`/`items`/`plots`, `shape`, the `Worldsort/player` fallback.
+  - `tools/blender/room_prototype.py`: `roots` and `in_room` in the docstring, `render_props`, `render_depth` and `main`.
+  - `tools/blender/prototype_props.gd`, `prototype_room.gd`, `prototype_depth.gd`, `prototype_characters.gd`, `play_prototype.gd`.
+- **Shared files also changed by the parallel Chemistry session (not this stage):** `room_prototype.py` (`ModelSet`, opening `depth`), `export_room_layout.gd` (its `chemistry_room` entry), `cc0_models.json` (13 models), `cc0_textures.json`.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`.
+
+### Verification
+
+- **Blender 5.2.2 (Cycles Metal):** the final render takes 181 s at 128 samples (2048×3072; the room pass 112 s) and builds 1232 objects with 66 glows.
+- **Capture:** `capture_greenhouse.gd` passes 89/89 in EN and in ZH:
+  - all 5 props are staged on their own `Worldsort/` nodes, and each highlight box follows its HD art and returns to the painted one;
+  - each prop's prompt is offered beside it in both looks, as are the gardener's and a herb plot's;
+  - the depth checks pass, and the HD detective stands 90.4 px tall like the pixel one, idles and runs.
+- **No regressions:** `capture_room.gd` (Wake Room) passes 65/65 and `capture_prototype.gd` (Hall) passes. Their capture folders were restored afterwards.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean, including the new files.
+- **Playable preview:** `play_prototype.gd -- --greenhouse` stages the room with 66 glows, 5 HD props, depth and 2 HD character sheets, and no script errors.
+
+### Risks / follow-up
+
+- **Preview only:** the game's own Greenhouse is unchanged.
+- **The gardener** is still the pixel NPC. A Tripo model needs the owner's Tripo Studio account, as for the detective and the Guardian.
+- **Duplicate model loader:** `room_greenhouse.py` has its own `Models` loader (`materials`, `tilt`, `anchor`). The parallel Chemistry session added a simpler `ModelSet` to `room_prototype.py`. Merge them once neither session is editing.
+- **Glow placement:** the herb-plot markers are the game's own green squares. They sit on the HD planting, but the room's own pods and dewcap now glow too.
+- **Next (proposed):** the user's review of this room, then the gardener in Tripo.
 
 ## Stage: UX-20261021-53
 

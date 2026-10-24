@@ -179,26 +179,49 @@ func _resync() -> void:
 		if rect.size.x > 0.0 and rect.size.y > 0.0:
 			room.set("door_interaction_rect", rect)
 
-## The collision polygons render.json changes, with the scene's own points.
+
+## The collision render.json changes, with the scene's own: a polygon's
+## points, or a rectangle's shape and place (a CollisionShape2D, given as its
+## four world px corners; its own copy of the shape is swapped in, so a shape
+## the scene shares between nodes is never changed).
 func _read_footprints() -> void:
 	footprints.clear()
 	var listed: Variant = meta.get("collision", {})
 	if not listed is Dictionary:
 		return
 	for path: Variant in (listed as Dictionary).keys():
-		var polygon := room.get_node_or_null(NodePath(str(path))) as CollisionPolygon2D
-		if polygon == null:
-			push_warning("No collision polygon to swap at " + str(path))
-			continue
-		var to_local := polygon.global_transform.affine_inverse()
-		var points := PackedVector2Array()
-		for point: Variant in (listed as Dictionary)[path]:
-			points.append(to_local * Vector2(float(point[0]), float(point[1])))
-		footprints.append({"polygon": polygon, "painted": polygon.polygon, "hd": points})
+		var node := room.get_node_or_null(NodePath(str(path)))
+		var corners: Array = (listed as Dictionary)[path]
+		if node is CollisionPolygon2D:
+			var polygon := node as CollisionPolygon2D
+			var to_local := polygon.global_transform.affine_inverse()
+			var points := PackedVector2Array()
+			for point: Variant in corners:
+				points.append(to_local * Vector2(float(point[0]), float(point[1])))
+			footprints.append({"polygon": polygon, "painted": polygon.polygon, "hd": points})
+		elif node is CollisionShape2D and (node as CollisionShape2D).shape is RectangleShape2D:
+			var holder := node as CollisionShape2D
+			var bounds := Rect2(Vector2(float(corners[0][0]), float(corners[0][1])), Vector2.ZERO)
+			for point: Variant in corners:
+				bounds = bounds.expand(Vector2(float(point[0]), float(point[1])))
+			var shape := (holder.shape as RectangleShape2D).duplicate() as RectangleShape2D
+			shape.size = bounds.size / holder.global_scale.abs()
+			footprints.append({
+				"rectangle": holder, "painted": holder.shape, "painted_at": holder.global_position,
+				"hd": shape, "hd_at": bounds.get_center(),
+			})
+		else:
+			push_warning("No collision polygon or rectangle to swap at " + str(path))
 
 
 func _swap_footprints(hd: bool) -> void:
 	for footprint: Dictionary in footprints:
-		var polygon := footprint["polygon"] as CollisionPolygon2D
-		if is_instance_valid(polygon):
-			polygon.polygon = footprint["hd"] if hd else footprint["painted"]
+		if footprint.has("polygon"):
+			var polygon := footprint["polygon"] as CollisionPolygon2D
+			if is_instance_valid(polygon):
+				polygon.polygon = footprint["hd"] if hd else footprint["painted"]
+			continue
+		var holder := footprint["rectangle"] as CollisionShape2D
+		if is_instance_valid(holder):
+			holder.shape = footprint["hd"] if hd else footprint["painted"]
+			holder.global_position = footprint["hd_at"] if hd else footprint["painted_at"]

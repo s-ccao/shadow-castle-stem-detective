@@ -20,11 +20,12 @@
   - **The Chemistry Room** (stage 55, restyled in stage 58) is Mrs. Lin's laboratory rebuilt the same way:
     - the Hall's Chemistry portal frames the way back;
     - the potion cabinet and the alchemy table are HD. The table, now a real table's size on a great rug, carries the painting's glass still, oil press, candles and spilt red, with a blue coat over its edge, and the player walks round it;
-    - the floor is laid stone by stone, and the furniture is worn, waxed oak;
+    - the floor is laid stone by stone, and the furniture is worn, waxed oak; since stage 61 the room is as bright and as warm as its painting;
     - apothecary shelves, a counter and a work bench line the walls, and a brick hearth with a bubbling cauldron stands at the south wall;
     - the floor tells what happened: the red stain flung across the flagstones, broken glass and red crystal round it, and a trail of fallen bottles.
     - Every interaction still works in the preview. The butler and Dr. Lin's echo are still pixel figures.
     - [Comparisons](evidence/2026-10-23-blender-chemistry/).
+  - **The Greenhouse** (stage 54; its gate, bench and floor rebuilt from the painting in stage 56) has the painting's round-arched glazed gate, the six-board potting bench with its clutter, real CC0 plants in the beds and pots, and slate pavers laid one by one. Since stage 61 the bench is a real bench's size, 2.5 × 1.0 m, of weathered oak under its lantern, and the player can walk behind it. Every interaction still works in the preview; the gardener is still a pixel figure. [Comparisons](evidence/2026-10-23-blender-greenhouse/), [the bench](evidence/2026-10-24-greenhouse-bench/).
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.

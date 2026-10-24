@@ -1664,9 +1664,12 @@ GRADES = (
 
 
 def grade(scene):
-    """The room's exposure, set after the shared Cycles setup: the Wake
-    Room's, so the rooms match the Hall."""
-    wake.grade(scene)
+    """The room's exposure and white balance, set after the shared Cycles
+    setup: as bright and as warm as the painted laboratory (mean luminance
+    44, red over blue +7), which its fire and candles light."""
+    scene.view_settings.exposure = 0.9
+    scene.view_settings.use_white_balance = True
+    scene.view_settings.white_balance_temperature = 7100.0
 
 
 def build(rp, layout):
