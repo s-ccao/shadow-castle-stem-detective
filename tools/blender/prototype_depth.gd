@@ -169,6 +169,9 @@ func _rescan() -> void:
 	if not is_instance_valid(hall):
 		return
 	var player := hall.get_node_or_null("player") as Node2D
+	if player == null:
+		# A room may y-sort its player with its props (the Greenhouse's Worldsort/).
+		player = hall.find_child("player", true, false) as Node2D
 	if player != null:
 		_shrink(player.get_node_or_null("VisualRoot") as Node2D)
 		_track(player.get_node_or_null("VisualRoot/CharacterSprite") as CanvasItem, player, PLAYER_GHOST)

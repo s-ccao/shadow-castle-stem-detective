@@ -347,6 +347,32 @@
           "sha256": "a2e13692bd7e5af9875150130ce9904c11879e693e70753d417b93121cf65be4"
         }
       }
+    },
+    {
+      "asset": "castle_brick_02_red",
+      "name": "Castle Brick 02 Red",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/castle_brick_02_red",
+      "maps": {
+        "diff": {
+          "file": "castle_brick_02_red_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/castle_brick_02_red/castle_brick_02_red_diff_1k.jpg",
+          "sha256": "526019deb0533920273a0a2272f7735ca17bb578427515c6b972e2bbecf5726c"
+        },
+        "nor_gl": {
+          "file": "castle_brick_02_red_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/castle_brick_02_red/castle_brick_02_red_nor_gl_1k.jpg",
+          "sha256": "ab172b4bb8d9a2492774336f223e7725eecf1aae1efca2923c67db3e978106a6"
+        },
+        "rough": {
+          "file": "castle_brick_02_red_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/castle_brick_02_red/castle_brick_02_red_rough_1k.jpg",
+          "sha256": "8c829bed4cc530dd93dca19eff5fb595ee40d83c486fcf1d28519cc787f5cfd5"
+        }
+      }
     }
   ]
 }

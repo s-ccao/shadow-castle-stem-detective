@@ -2,10 +2,12 @@ extends SceneTree
 
 ## Exports a room's layout for the Blender room prototype
 ## (tools/blender/room_prototype.py): every collision polygon in world px,
-## named for the node it belongs to and sorted into walls (StaticBody2D) and
-## props (Area2D under Props/), each prop's visible rect and focus point (as
-## RoomSpatialRuntime reads them, so the HD props can be checked against
-## them), the room's spawn points, and a collision mask.
+## named for the node it belongs to (and the polygon's own name, "shape") and
+## sorted into walls (StaticBody2D) and props (Area2D under Props/), each
+## interactive prop's visible rect and focus point (as RoomSpatialRuntime reads
+## them, so the HD props can be checked against them; a room whose props stand
+## elsewhere lists them in "props"), the room's spawn points, its interaction
+## items and herb plots where it has them, and a collision mask.
 ##
 ##   HOME="$PWD/.godot/blender-proto-home" godot --headless --path . \
 ##     --script res://tools/blender/export_room_layout.gd \
@@ -22,6 +24,44 @@ const ROOMS: Dictionary = {
 			"first_step": "WAKE_FIRST_STEP_TARGET",
 		},
 		"fixed_spawns": {"return": Vector2(500.0, 550.0)},
+	},
+	# Its interactive props stand in Worldsort/ beside the player, not under
+	# Props/; its herb beds are painted, listed only in INTERACT_ITEMS.
+	"greenhouse_room": {
+		"scene": "res://scenes/floor_1/greenhouse_room.tscn",
+		"size": Vector2i(1024, 1536),
+		"spawns": {
+			"arrival": "PLAYER_SPAWN_POSITION",
+			"exit": "EXIT_POSITION",
+			"gardener": "GARDENER_POSITION",
+		},
+		"props": {
+			"MagicPlanter": "Worldsort/MagicPlanter",
+			"Workbench": "Worldsort/Workbench",
+			"PlantPotsA": "Worldsort/PlantPotsA",
+			"PlantPotsB": "Worldsort/PlantPotsB",
+			"ArchDoor": "Worldsort/ArchDoor",
+		},
+		"items": "INTERACT_ITEMS",
+		"plots": "HERB_PLOTS",
+	},
+	# A camera follows the player through it. Its props stand in Worldsort/;
+	# the butler and Dr. Lin's memory echo are made by the script.
+	"chemistry_room": {
+		"scene": "res://scenes/floor_1/chemistry_room.tscn",
+		"size": Vector2i(1305, 1206),
+		"spawns": {
+			"arrival": "PLAYER_SPAWN_POSITION",
+			"exit": "EXIT_POSITION",
+			"butler": "BUTLER_POSITION",
+			"cabinet": "CABINET_INTERACTION_POSITION",
+			"table": "ALCHEMY_TABLE_INTERACTION_POSITION",
+			"red_stain": "RED_STAIN_POSITION",
+		},
+		"props": {
+			"ChemistryLabTable": "Worldsort/ChemistryLabTable",
+			"ChemistryPotionCabinet": "Worldsort/ChemistryPotionCabinet",
+		},
 	},
 }
 
@@ -66,28 +106,27 @@ func _run() -> void:
 			var world := polygon.global_transform * point
 			points.append([snappedf(world.x, 0.01), snappedf(world.y, 0.01)])
 		var entry := {
-			"name": str(owner_body.name), "path": str(room.get_path_to(owner_body)), "points": points,
+			"name": str(owner_body.name), "shape": str(polygon.name),
+			"path": str(room.get_path_to(owner_body)), "points": points,
 		}
 		if owner_body is StaticBody2D:
 			walls.append(entry)
 		elif owner_body is Area2D:
 			props.append(entry)
 	var spatial := RoomSpatialRuntime.new()
-	var props_root := room.get_node_or_null("Props")
 	var prop_info: Dictionary = {}
-	if props_root != null:
-		for child: Node in props_root.get_children():
-			if not child is Node2D:
-				continue
-			var rect := spatial.get_visual_rect(child)
-			var focus := child.get_node_or_null("InteractionFocusPoint") as Node2D
-			var visual := spatial.find_visual_node(child)
-			prop_info[str(child.name)] = {
-				"path": str(room.get_path_to(child)),
-				"visual_path": str(room.get_path_to(visual)) if visual != null else "",
-				"rect": _rect(rect),
-				"focus": _point(focus.global_position) if focus != null else null,
-			}
+	for child: Node in _prop_nodes(room, spec):
+		if not child is Node2D:
+			continue
+		var rect := spatial.get_visual_rect(child)
+		var focus := child.get_node_or_null("InteractionFocusPoint") as Node2D
+		var visual := spatial.find_visual_node(child)
+		prop_info[str(child.name)] = {
+			"path": str(room.get_path_to(child)),
+			"visual_path": str(room.get_path_to(visual)) if visual != null else "",
+			"rect": _rect(rect),
+			"focus": _point(focus.global_position) if focus != null else null,
+		}
 	var spawns: Dictionary = {}
 	var script := room.get_script() as GDScript
 	var constants: Dictionary = script.get_script_constant_map() if script != null else {}
@@ -109,7 +148,13 @@ func _run() -> void:
 	var door_rect: Variant = room.get("door_interaction_rect")
 	if door_rect is Rect2:
 		extras["door_interaction_rect"] = _rect(door_rect)
+	if spec.has("items"):
+		extras["items"] = _items(room.get(str(spec["items"])))
+	if spec.has("plots"):
+		extras["plots"] = _items(constants.get(str(spec["plots"]), []))
 	var player := room.get_node_or_null("player") as Node2D
+	if player == null:
+		player = room.get_node_or_null("Worldsort/player") as Node2D
 	var layout := {
 		"generator": "tools/blender/export_room_layout.gd",
 		"room": room_id,
@@ -145,6 +190,43 @@ func _run() -> void:
 	room.queue_free()
 	await process_frame
 	quit(0)
+
+
+## The room's interactive props: the nodes its spec lists, or else Props/'s children.
+func _prop_nodes(room: Node, spec: Dictionary) -> Array[Node]:
+	var nodes: Array[Node] = []
+	if spec.has("props"):
+		for id: String in spec["props"]:
+			var node := room.get_node_or_null(NodePath(str(spec["props"][id])))
+			if node != null:
+				nodes.append(node)
+		return nodes
+	var props_root := room.get_node_or_null("Props")
+	if props_root != null:
+		nodes.assign(props_root.get_children())
+	return nodes
+
+
+## A list of dictionaries (interaction items, herb plots) with every Vector2 and
+## Rect2 written as px, and the strings and numbers as they are.
+func _items(source: Variant) -> Array:
+	var listed: Array = []
+	if not source is Array:
+		return listed
+	for item: Variant in source:
+		if not item is Dictionary:
+			continue
+		var entry: Dictionary = {}
+		for key: Variant in item:
+			var value: Variant = item[key]
+			if value is Vector2:
+				entry[str(key)] = _point(value)
+			elif value is Rect2:
+				entry[str(key)] = _rect(value)
+			elif value is String or value is StringName or value is int or value is float:
+				entry[str(key)] = value
+		listed.append(entry)
+	return listed
 
 
 func _packed(points: Array) -> PackedVector2Array:

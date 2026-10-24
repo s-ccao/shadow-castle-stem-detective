@@ -2,10 +2,109 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-55 (Chemistry)
+
+- **Date:** 2026-10-24
+- **Status:** reviewed. The user asked for a restyle: the middle table is too big, and the tables' and the floor's materials are not good enough to impress. They also asked to commit this pass now as the baseline, with the shared pipeline changes it needs, and to make the butler and Dr. Lin's echo in Tripo after the restyle. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** "可以现在继续跟改各个房间，重新使用blender建模，以及各个npc" (go on rebuilding each room in Blender, and each NPC). The user chose the Chemistry Room after the Wake Room.
+- **Parallel work:** the Greenhouse (stages 54 and 56) and the Library (stage 57) are being built in this checkout by other sessions. Renumber by commit order if needed.
+
+### What the room is now
+
+- **Built like the Hall and the restyled Wake Room:**
+  - the Hall's moonlight and exposure (0.35), and the Hall's mossy slate wall tops outlined in lit stone;
+  - flagstones and slate walls from the same CC0 photo sets;
+  - worn warm oak, leather books and a cloth dropped with the cloth solver.
+- **On the game's own collision:** 1305×1206, the camera still follows the player through it. Every interaction (doorway, cabinet, table, red stain, butler) is still the game's own rect.
+- **North:**
+  - The way back to the Hall is the Hall's Chemistry portal seen from inside: quoins, eleven voussoirs, the flask emblem on an enamel plaque on the keystone, and green fan glass over oak double doors at the back of the deep alcove.
+  - The arch is a half ellipse, so the doors stand taller than the detective under the 180 px wall.
+  - Two stone pilasters carry iron candle bowls.
+  - **The potion cabinet** (`Worldsort/ChemistryPotionCabinet`): an oak dresser with cupboards, a counter and a hutch crowded with stock.
+  - **An open rack** to the east with CC0 brass goblets, vases, a lantern, a mantel clock, books and a candle, and crates and a lantern before it.
+- **West:**
+  - an apothecary counter that follows the slanted wall, with jars, a balance, a mortar, a tube rack, a herb basket, books and candles, and a shelf of stock on brackets over it;
+  - a stone pedestal with a great violet flask;
+  - the round candle table with a CC0 three-branch candleholder;
+  - a barrel, a bucket and a sea chest;
+  - a raised herb bed of CC0 plants; a purple runner.
+- **Middle: the alchemy table** (`Worldsort/ChemistryLabTable`), a working bench:
+  - a plank top with breadboard ends, ringed with water marks and scorched by the burner;
+  - a two-tier reagent shelf down its north side;
+  - the great flask boiling green over a burner on a slate slab, with a glass condenser dripping into a receiver;
+  - the open book on a blotter with ink and quill;
+  - a CC0 candelabra, specimen jars, flasks, a balance, books and notes;
+  - a knocked-over bottle in a purple spill with broken glass, and a velvet cloth slipping off the front edge.
+- **The floor tells what happened:**
+  - the red stain, flung south-west with a dried rim, streaks breaking into drops, and satellite drops round it;
+  - red crystal shards, a red bottle, glass and dropped notes round it;
+  - a trail of green bottles, a tipped purple flask in its own spill, and scattered notes between the table and the herb bed.
+- **East:** a long work bench with a stepped reagent rack, a copper alembic over a brazier dripping into green distillates, a retort over a burner, a tube rack, books, a lantern and a balance, with a shelf of stock over it.
+- **South:**
+  - a brick hearth (CC0 `castle_brick_02_red`) against the south wall where the painting has its arch: embers under an iron cauldron of glowing green brew;
+  - crates, barrels and jars stored at either side.
+- **Stock in apothecary colours:** shelf glass is mostly amber, brown, bottle green, oxblood, cobalt and violet, with few bright potions. Stored liquids barely glow; only the brewing ones and the experiments do.
+- **CC0 models:** 13 Poly Haven models at real size (crates, barrels, chest, bucket, basket, brass candleholders and goblets, vases, clock, lanterns, bowl), plus the Greenhouse's plant models.
+
+### Pipeline additions (shared, backward compatible)
+
+- `room_prototype.py`:
+  - `ModelSet` loads a CC0 model once and places linked copies at real size: `place` for one object, `group` for an asset's objects as modelled. `grade` darkens a photo-scanned model's colours toward the palette.
+  - A back-wall opening may give its reveal's own `depth`.
+- `cc0_textures.json`: `castle_brick_02_red` (Rob Tuytel, CC0). Fetch it with `fetch_textures.py`.
+- `export_room_layout.gd`: the `chemistry_room` entry.
+- Preview:
+  - `prototype_room.gd` registers the Chemistry Room.
+  - `play_prototype.gd -- --chemistry` opens it directly.
+  - `capture_chemistry.gd` shoots and checks it.
+
+### Exact files
+
+- **New (this stage):**
+  - `tools/blender/room_chemistry.py`, `tools/blender/capture_chemistry.gd` (+ `.uid`).
+  - Evidence: `docs/evidence/2026-10-23-blender-chemistry/`:
+    - `01`–`09`: painted vs HD pairs at native 1024×768;
+    - `10-room-overview.png`, `11-render-on-collision.png`, `12-hd-props.png`.
+- **Changed (this stage):**
+  - `tools/blender/room_prototype.py`: `ModelSet`, `MODELS_DIR`, opening `depth`.
+  - `tools/blender/export_room_layout.gd`: the `chemistry_room` entry.
+  - `tools/blender/cc0_textures.json`: the brick.
+  - `tools/blender/cc0_models.json`: 13 models, in the Greenhouse session's new manifest.
+  - `tools/blender/prototype_room.gd`, `tools/blender/play_prototype.gd`.
+- **Shared pipeline from the parallel Greenhouse session**, committed with this stage at the user's request, without the Greenhouse room itself:
+  - `cc0_models.json` and `fetch_models.py`;
+  - `roots` and `in_room` in `room_prototype.py` and `prototype_props.gd`;
+  - the export's `props`, `items`, `plots` and `shape`, and its `Worldsort/player` fallback (`export_room_layout.gd`);
+  - the `Worldsort/` player lookups in `prototype_depth.gd` and `prototype_characters.gd`;
+  - `_sync_interaction_footprints()` in `prototype_room.gd`, and `--greenhouse` in `play_prototype.gd`.
+  - The Greenhouse's and the Library's rooms, captures, evidence and report entries stay with their sessions.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`.
+
+### Verification
+
+- **Blender 5.2.2 (Cycles Metal):** the final render takes 135 s at 128 samples (2610×2412; the room pass 98 s). It builds 1882 objects with 31 glows; the table cloth simulates in about 10 s.
+  - Under load from other sessions a render took up to 378 s.
+- **Capture:** `capture_chemistry.gd` passes 80/80 in EN and in ZH.
+  - Both props are staged on their own `Worldsort/` nodes, and each highlight box follows its HD art and returns to the painted one.
+  - The doorway, cabinet, table, red stain and butler are each offered beside them in both looks.
+  - The table draws in front of a player north of it (z 20) and behind one south of it (z −20).
+  - The cauldron hides the legs of a player behind it (17 rows); the doorway and the open floor hide nothing.
+  - The HD detective stands 90.4 px tall like the pixel one, and runs.
+- **No regressions:** `capture_room.gd` (Wake Room) passes 65/65; its capture folder was restored afterwards.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean, and the new files have no trailing whitespace.
+- **Playable preview:** `play_prototype.gd -- --chemistry` stages the room with 31 glows, 2 HD props, depth and 2 HD character sheets, and no script errors.
+
+### Risks / follow-up
+
+- **Preview only:** the game's own Chemistry Room is unchanged.
+- **NPCs:** the butler and Dr. Lin's memory echo are still the pixel NPCs. Tripo models need the owner's Tripo Studio account, as for the detective and the Guardian.
+- **Duplicate model loaders:** the Greenhouse has its own `Models` loader. Merge it with `ModelSet` once neither session is editing.
+- **Next:** the restyle the user asked for (a table of real size, richer wood and flagstones, a room that impresses), then the butler and Dr. Lin's echo in Tripo, then the Dining Hall.
+
 ## Stage: UX-20261021-53
 
 - **Date:** 2026-10-23
-- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Status:** approved by the user, committed and pushed as `ddcbc66`. Nothing ships: the game, its scenes and the Web build are unchanged.
 - **Request:** the user's verdict on stage 52 (committed and pushed as `d283383`): "现在的感觉太假了，和墙壁和大厅的风格不匹配，特别是床和书架" (it feels fake and does not match the walls or the Hall, especially the bed and the bookshelf).
 
 ### What made it fake, and what changed

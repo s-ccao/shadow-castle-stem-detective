@@ -29,7 +29,11 @@ the Hall's projection, materials and lighting language
   the desk, ...) are rendered alone, cropped to the px they show and listed
   in <render>-props.json, so the preview can draw each in its node's Visual
   sprite: the game's focus box, prompt range and y-sort then follow the HD
-  prop. They stay out of the room render but cast their shadows into it.
+  prop. They stay out of the room render but cast their shadows into it. A
+  room whose props stand elsewhere names their nodes in build()'s "roots";
+  props it lists in "in_room" (one the player walks round, such as the
+  Greenhouse's planter) stay in the room render and its depth map as well,
+  and the preview stages their sprite undrawn, for the prompt box alone.
 
 A room's furniture, lights and dressing live in tools/blender/room_<name>.py.
 
@@ -334,6 +338,112 @@ def map_glows(recorded, in_game, scale):
     for kind, x, plan_y, z, color, radius in recorded:
         point = in_game @ Vector((x, plan_y, z * SIN))
         glow(kind, point.x, point.y, point.z, color, radius * scale)
+
+
+# ---------------------------------------------------------------- models
+
+
+MODELS_DIR = os.path.join("prototypes", "blender_rooms", "models")
+
+
+class ModelSet:
+    """CC0 models (tools/blender/cc0_models.json, fetched by
+    tools/blender/fetch_models.py), each imported once into a collection the
+    scene does not show and placed as linked copies at their real size (a game
+    px across is a centimetre) times `scale`. grade(asset, value, saturation)
+    darkens a photo-scanned model's colours toward the castle's palette."""
+
+    def __init__(self, directory=MODELS_DIR):
+        self.directory = directory
+        self.templates = {}
+        self.hidden = bpy.data.collections.new("RoomModelTemplates")
+
+    def load(self, asset):
+        if asset in self.templates:
+            return self.templates[asset]
+        folder = os.path.join(self.directory, asset)
+        found = {}
+        name = next((entry for entry in sorted(os.listdir(folder)) if entry.endswith(".gltf")), None) \
+            if os.path.isdir(folder) else None
+        if name is None:
+            print("MODEL MISSING %s (run tools/blender/fetch_models.py)" % asset)
+        else:
+            before = set(bpy.data.objects)
+            bpy.ops.import_scene.gltf(filepath=os.path.abspath(os.path.join(folder, name)))
+            for obj in [obj for obj in bpy.data.objects if obj not in before]:
+                for collection in list(obj.users_collection):
+                    collection.objects.unlink(obj)
+                self.hidden.objects.link(obj)
+                if obj.type == "MESH":
+                    found[obj.name] = obj
+        self.templates[asset] = found
+        return found
+
+    def grade(self, asset, value=0.8, saturation=0.85):
+        """Every material of `asset` with its base colour scaled in value and
+        saturation, once."""
+        for obj in self.load(asset).values():
+            for material in obj.data.materials:
+                if material is None or material.get("room_graded"):
+                    continue
+                material["room_graded"] = True
+                nodes, links = material.node_tree.nodes, material.node_tree.links
+                for shader in [node for node in nodes if node.type == "BSDF_PRINCIPLED"]:
+                    socket = shader.inputs["Base Color"]
+                    hsv = nodes.new("ShaderNodeHueSaturation")
+                    hsv.inputs["Value"].default_value = value
+                    hsv.inputs["Saturation"].default_value = saturation
+                    if socket.is_linked:
+                        links.new(socket.links[0].from_socket, hsv.inputs["Color"])
+                    else:
+                        hsv.inputs["Color"].default_value = socket.default_value
+                    links.new(hsv.outputs["Color"], socket)
+
+    def place(self, kit, asset, name, x, y, h=0.0, scale=1.0, turn=0.0, depth=True):
+        """A copy of `asset`'s object `name` (or of its only object, for None)
+        with the centre of its foot at game (x, y, h), turned `turn` degrees
+        about the vertical. Returns the copy, or None if the model is missing."""
+        objects = self.load(asset)
+        template = objects.get(name) if name else next(iter(objects.values()), None)
+        if template is None:
+            return None
+        corners = [template.matrix_world @ Vector(corner) for corner in template.bound_box]
+        foot = Vector(((min(c.x for c in corners) + max(c.x for c in corners)) / 2.0,
+                       (min(c.y for c in corners) + max(c.y for c in corners)) / 2.0,
+                       min(c.z for c in corners)))
+        copy = template.copy()
+        bpy.context.scene.collection.objects.link(copy)
+        copy.parent = None
+        copy.matrix_world = (Matrix.Translation(world(x, y, h)) @ Matrix.Rotation(math.radians(turn), 4, "Z")
+                             @ Matrix.Scale(scale, 4) @ Matrix.Translation(-foot) @ template.matrix_world)
+        kit.keep(copy)
+        if not depth:
+            copy["no_depth"] = True
+        return copy
+
+    def group(self, kit, asset, x, y, h=0.0, scale=1.0, turn=0.0, depth=True):
+        """Every object of `asset` as it was modelled, together, the centre of
+        their joint foot at game (x, y, h). Returns the copies."""
+        objects = list(self.load(asset).values())
+        if not objects:
+            return []
+        corners = [obj.matrix_world @ Vector(corner) for obj in objects for corner in obj.bound_box]
+        foot = Vector(((min(c.x for c in corners) + max(c.x for c in corners)) / 2.0,
+                       (min(c.y for c in corners) + max(c.y for c in corners)) / 2.0,
+                       min(c.z for c in corners)))
+        placed = Matrix.Translation(world(x, y, h)) @ Matrix.Rotation(math.radians(turn), 4, "Z") \
+            @ Matrix.Scale(scale, 4) @ Matrix.Translation(-foot)
+        copies = []
+        for obj in objects:
+            copy = obj.copy()
+            bpy.context.scene.collection.objects.link(copy)
+            copy.parent = None
+            copy.matrix_world = placed @ obj.matrix_world
+            kit.keep(copy)
+            if not depth:
+                copy["no_depth"] = True
+            copies.append(copy)
+        return copies
 
 
 # ---------------------------------------------------------------- kits
@@ -742,9 +852,10 @@ class Shell:
         obj = polygon_mesh("RoomBackWall", outline, holes, lambda u, v: (u, y, v), self.materials["wall"],
                            uv_of=lambda u, v: (u / (100.0 * ROOM_TEXTURE_SCALE), v / SIN / (100.0 * ROOM_TEXTURE_SCALE)))
         self._keep(obj)
-        depth = self.spec.get("cap", 40.0)
         for index, opening in enumerate(back.get("openings", [])):
-            # The opening's reveal: its sides run back through the wall.
+            # The opening's reveal: its sides run back through the wall, as
+            # deep as the wall's top unless the opening says otherwise.
+            depth = opening.get("depth", self.spec.get("cap", 40.0))
             outline_points = opening["outline"]
             shape = bmesh.new()
             front = [shape.verts.new((u, y, v)) for u, v in outline_points]
@@ -853,9 +964,11 @@ def render_to(path):
     hall.render_to(path)
 
 
-def render_props(kits, out, size):
+def render_props(kits, out, size, roots=None):
     """Each interactive prop alone over transparency, cropped to the px it
-    shows, and <render>-props.json: per prop its node, image and rect."""
+    shows, and <render>-props.json: per prop its node (Props/<prop>, or the
+    room's own path from `roots`), image and rect, and "in_room" where the
+    room render and depth map keep it too."""
     scene = bpy.context.scene
     render = scene.render
     columns, rows = render.resolution_x, render.resolution_y
@@ -882,7 +995,12 @@ def render_props(kits, out, size):
         render_to(image)
         rect = hall._crop_shown(image, px_left, px_top, (px_right - px_left, px_bottom - px_top), RENDER_SCALE,
                                 (0.0, 0.0))
-        entries.append({"id": prop, "root": "Props/" + prop, "image": os.path.basename(image), "rect": rect})
+        entry = {"id": prop, "root": "Props/" + prop, "image": os.path.basename(image), "rect": rect}
+        if roots and prop in roots:
+            entry["root"] = roots[prop]
+        if any(obj.get("room_in_room") for obj in kit.made):
+            entry["in_room"] = True
+        entries.append(entry)
         print("PROP %s shows %.1f x %.1f at (%.1f, %.1f)" % (prop, rect[2], rect[3], rect[0], rect[1]))
     render.use_border = False
     render.film_transparent = False
@@ -931,7 +1049,8 @@ def render_depth(out, size):
     links.new(emission.outputs["Emission"], output.inputs["Surface"])
     hidden = []
     for obj in scene.objects:
-        if obj.type in ("MESH", "CURVE") and (obj.get("no_depth") or obj.get("room_prop")) and not obj.hide_render:
+        if obj.type in ("MESH", "CURVE") and not obj.hide_render and (
+                obj.get("no_depth") or (obj.get("room_prop") and not obj.get("room_in_room"))):
             obj.hide_render = True
             hidden.append(obj)
     layer = bpy.context.view_layer
@@ -1023,15 +1142,21 @@ def main():
     hall.setup_world()
     built = room.build(sys.modules[__name__], layout)
     kits = built["props"]
+    # Props a room keeps in its own render and depth map (a planter the
+    # player walks round): rendered alone as well, for the game's prompt box.
+    in_room = set(built.get("in_room", ()))
+    for name in in_room:
+        for obj in kits[name].made:
+            obj["room_in_room"] = True
     for material in bpy.data.materials:
         material.cycles.emission_sampling = "NONE"
     add_camera(size)
     hall.setup_cycles(options["samples"], options["preview"])
     if hasattr(room, "grade"):
         room.grade(bpy.context.scene)
-    for kit in kits.values():
+    for name, kit in kits.items():
         for obj in kit.made:
-            obj.visible_camera = False
+            obj.visible_camera = name in in_room
     glows_path = os.path.splitext(options["out"])[0] + "-glows.json"
     with open(glows_path, "w", encoding="utf-8") as handle:
         json.dump({"generator": "tools/blender/room_prototype.py", "region": [0, 0, size[0], size[1]],
@@ -1048,7 +1173,7 @@ def main():
     for kit in kits.values():
         for obj in kit.made:
             obj.visible_camera = True
-    meta["props"] = render_props(kits, options["out"], size)
+    meta["props"] = render_props(kits, options["out"], size, built.get("roots"))
     with open(os.path.splitext(options["out"])[0] + ".json", "w", encoding="utf-8") as handle:
         json.dump(meta, handle, indent=1)
     print("ROOM %s rendered in %.1fs" % (options["room"], time.time() - started))

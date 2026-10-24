@@ -214,8 +214,12 @@ func _rescan() -> void:
 	if not is_instance_valid(hall):
 		return
 	var player := hall.get_node_or_null("player") as Node2D
+	if player == null:
+		# A room may y-sort its player with its props (the Greenhouse's Worldsort/).
+		player = hall.find_child("player", true, false) as Node2D
 	if player != null:
-		_swap(hall.get_node_or_null(PLAYER_SPRITE) as AnimatedSprite2D, player, "detective")
+		var sprite := player.get_node_or_null(PLAYER_SPRITE.trim_prefix("player/")) as AnimatedSprite2D
+		_swap(sprite, player, "detective")
 	for node: Node in hall.find_children("*", "CharacterBody2D", true, false):
 		if node.scene_file_path == GUARDIAN_SCENE:
 			_swap(node.get_node_or_null(GUARDIAN_SPRITE) as AnimatedSprite2D, node as Node2D, "guardian")

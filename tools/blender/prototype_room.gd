@@ -16,7 +16,11 @@ extends RefCounted
 ## so staging reads them again from the HD props, and restoring from the
 ## painted ones. Collision, prompts and every story step stay the game's own.
 
-const ROOMS: Dictionary = {"res://scenes/wake_room.tscn": "wake_room"}
+const ROOMS: Dictionary = {
+	"res://scenes/wake_room.tscn": "wake_room",
+	"res://scenes/floor_1/greenhouse_room.tscn": "greenhouse_room",
+	"res://scenes/floor_1/chemistry_room.tscn": "chemistry_room",
+}
 const DATA := "res://prototypes/blender_rooms/"
 const CHARACTER_DATA := "res://prototypes/blender_chars/"
 const OVERLAY_NAME := "BlenderRoomOverlay"
@@ -136,10 +140,13 @@ func summary() -> String:
 
 
 ## The room's highlight boxes, prompt anchors and walk-up points follow the
-## props' Visual sprites (wake_room.gd create_prop_interactions/create_door).
+## props' Visual sprites (wake_room.gd create_prop_interactions/create_door;
+## greenhouse_room.gd _sync_interaction_footprints).
 func _resync() -> void:
 	if not is_instance_valid(room):
 		return
+	if room.has_method("_sync_interaction_footprints"):
+		room.call("_sync_interaction_footprints")
 	var spatial := RoomSpatialRuntime.new()
 	var listed: Variant = room.get("props")
 	if listed is Dictionary:

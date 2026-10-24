@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-10-23
+**Last updated:** 2026-10-24
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
@@ -17,6 +17,13 @@
     - the exit is the Hall's own Wake gate, between two violet crystal lamps.
   - **In the playable preview:** the bed, desk, bookshelf and gate are HD, and their prompts and highlight boxes follow them. The room hides the player behind its furniture, and the HD detective walks in it at the room's size.
   - **Comparisons:** side-by-side in-game shots are in [the Wake Room evidence](evidence/2026-10-23-blender-wake-room/).
+  - **The Chemistry Room** (stage 55) is Mrs. Lin's laboratory rebuilt the same way:
+    - the Hall's Chemistry portal frames the way back;
+    - the potion cabinet and the alchemy table are HD, the table now a working bench where the great flask boils green and distils into a receiver;
+    - apothecary shelves, a counter and a work bench line the walls, and a brick hearth with a bubbling cauldron stands at the south wall;
+    - the floor tells what happened: the red stain flung across the flagstones, broken glass and red crystal round it, and a trail of fallen bottles.
+    - Every interaction still works in the preview. The butler and Dr. Lin's echo are still pixel figures.
+    - [Comparisons](evidence/2026-10-23-blender-chemistry/).
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.

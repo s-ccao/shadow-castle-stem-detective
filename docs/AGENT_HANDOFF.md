@@ -334,11 +334,21 @@ Manual acceptance flow:
      - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.
    - **Rooms** (stage 52 on, preview only), one room per stage:
      - **Order:** Wake Room (done, stage 52), Chemistry (butler, and Dr. Lin's echo, from Tripo), Greenhouse (gardener), Circuit (mechanic), Library, Dining, Final (Dr. Lin); then NPC portraits rendered from the 3D models; then the move into the game.
-     - **Evidence:** `docs/evidence/2026-10-23-blender-wake-room/`.
+       - The Chemistry Room is done (stage 55); its butler and Dr. Lin's echo are still the pixel NPCs.
+     - **Evidence:** `docs/evidence/2026-10-23-blender-wake-room/`, `docs/evidence/2026-10-23-blender-chemistry/`.
      - **Export:** `tools/blender/export_room_layout.gd` (headless Godot; add the room to its `ROOMS`) writes `prototypes/blender_rooms/<room>/layout.json` and `collision.png`.
+       - A room whose props are not under `Props/` names their nodes in its entry's `"props"` (the Greenhouse's stand in `Worldsort/`).
+       - `"items"` and `"plots"` export its interaction list and herb plots, so placements can follow them.
      - **Render:** run `tools/blender/room_prototype.py -- --room <room> [--samples N] [--preview]` (Blender). It imports `tools/blender/room_<name>.py`, whose `build(rp, layout)` builds the shell from a spec and the furniture with `rp.Kit`, and returns the interactive props' kits. It writes `render.png` (2 px per px), `render.json`, `render-glows.json`, `render-depth.png` and `render-props.json`, with one cropped PNG per prop.
+       - `build()` may also return `"roots"`, each prop render's node path (default `Props/<prop>`).
+       - It may return `"in_room"`: props the room render and depth map keep because the player walks round or behind them (the Greenhouse's planter and gate). The preview stages their sprites undrawn, for the prompt box alone.
+     - **Models:** CC0 Poly Haven models are listed in `tools/blender/cc0_models.json` and fetched by `tools/blender/fetch_models.py` into the gitignored `prototypes/blender_rooms/models/`. They are placed at real size: a game px across is a centimetre.
+       - `rp.ModelSet` (Chemistry) places them: `place` for one object, `group` for an asset's objects as modelled (a crate and its lid), `grade` to darken a photo-scanned model toward the palette.
+       - A model's screen height is its height in cm × scale × sin 40°. Stack on `group`ed models, since a lid placed alone loses its place.
      - **Preview:** `tools/blender/prototype_room.gd` stages a room. `play_prototype.gd` does so whenever the room's scene loads (add the scene to `ROOMS` in `prototype_room.gd`). It re-reads the room's highlight boxes and walk-up points from the HD props.
-     - **Capture:** `tools/blender/capture_room.gd` shoots and checks the Wake Room (65 checks).
+       - A room with `_sync_interaction_footprints()` (the Greenhouse) re-reads them itself.
+       - `play_prototype.gd -- --greenhouse` opens the Greenhouse directly; `-- --chemistry` opens the Chemistry Room.
+     - **Capture:** `tools/blender/capture_room.gd` shoots and checks the Wake Room (65 checks); `tools/blender/capture_chemistry.gd` checks the Chemistry Room (80 checks).
      - **Walk-up rule:** an HD prop's visible front must reach within 7.5 px of its collision edge. Otherwise the game's walk-up band lands in blocked floor and the prompt never shows.
      - **Doors on side walls:** Hall pieces go onto side walls with `rp.place_on_frame` and `Shell.mount`. Side-wall doors are drawn true to perspective, so they are narrow; asked in stage 52, the user kept that rather than folding them out to face the player like the painting.
      - **Style (stage 52 review):** the user found the first HD Wake Room fake and out of keeping with the walls and the Hall, especially the bed and the bookshelf. Stage 53 restyled it; its lessons apply to every room:
@@ -347,6 +357,10 @@ Manual acceptance flow:
        - **Wood:** worn, warm photo textures, never a dark, even wood.
        - **Cloth:** dropped with `rp.simulate_cloth`, with soft creases raised where it lies face up. Rest a cloth just above what it lies on: one dropped from a height tunnels through thin cloth. A cloth caught between two colliders that touch tears itself apart.
        - **Books:** leather boards and a page block, each book in its own muted colour, plus stacks and leaners.
+       - **Glass and potions (stage 55):** stock in old apothecary colours (amber, brown, bottle green, oxblood, cobalt, violet), with few bright potions. Stored liquids barely glow (`potion(color, 0.08)`); only brews and experiments glow.
+       - **Stains (stage 55):** a liquid flung from a falling flask streaks one way, dries darker at its rim, and breaks into drops at its ends (`room_chemistry.splatter`, `throw`/`carry`).
+       - **Cloth over an edge (stage 55):** a solidify modifier with even thickness spikes where simulated cloth folds sharply over a table's edge. Use a plain offset there, and collide the cloth with the table top alone, not with its apron as well.
+       - **Doorways under tall walls (stage 55):** a half-elliptical arch (spring 100, rise 45) keeps the doors taller than the detective. A round arch on the alcove's width leaves them shorter than him.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
 4. **Room spatial audit drift.** `tests/room_spatial_audit.gd` still expects a 14px contact band for the five Hall knowledge exhibits and `arrival_chemistry_core`, but those deliberately use the 72px wall-aware approach zone. The six failures predate the 2026-10-21 stage; update the expectation rather than the margin.

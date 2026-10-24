@@ -46,6 +46,8 @@ func attach(hall_node: Node, path: String, data_dir: String, render_scale: float
 			"rect": Rect2(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3])),
 			"hd_texture": ImageTexture.create_from_image(image),
 			"hd_scale": Vector2.ONE / render_scale,
+			# Drawn by the room render: the sprite gives the prompt box alone.
+			"in_room": bool(prop.get("in_room", false)),
 			"pixel": _sprite_state(sprite),
 			"shadows": shadows,
 			"shadows_shown": shadows.map(func(item: CanvasItem) -> bool: return item.visible),
@@ -53,11 +55,13 @@ func attach(hall_node: Node, path: String, data_dir: String, render_scale: float
 	return swaps.size()
 
 
-## Each staged sprite with the ground y its prop stands on.
+## Each staged sprite with the ground y its prop stands on (not those the room
+## render draws).
 func standing() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for swap: Dictionary in swaps:
-		result.append({"sprite": swap["sprite"], "feet": (swap["rect"] as Rect2).end.y})
+		if not swap["in_room"]:
+			result.append({"sprite": swap["sprite"], "feet": (swap["rect"] as Rect2).end.y})
 	return result
 
 
@@ -82,6 +86,8 @@ func apply() -> void:
 		sprite.global_rotation = 0.0
 		sprite.global_scale = swap["hd_scale"]
 		sprite.global_position = (swap["rect"] as Rect2).position
+		if swap["in_room"]:
+			sprite.self_modulate.a = 0.0
 		for shadow: CanvasItem in swap["shadows"]:
 			if is_instance_valid(shadow):
 				shadow.visible = false
@@ -111,6 +117,7 @@ func restore() -> void:
 		sprite.position = pixel["position"]
 		sprite.rotation = pixel["rotation"]
 		sprite.scale = pixel["scale"]
+		sprite.self_modulate = pixel["self_modulate"]
 		var shadows: Array[CanvasItem] = swap["shadows"]
 		for index in shadows.size():
 			if is_instance_valid(shadows[index]):
@@ -134,6 +141,7 @@ func _sprite_state(sprite: Sprite2D) -> Dictionary:
 		"position": sprite.position,
 		"rotation": sprite.rotation,
 		"scale": sprite.scale,
+		"self_modulate": sprite.self_modulate,
 	}
 
 
