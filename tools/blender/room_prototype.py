@@ -132,6 +132,34 @@ def _link(obj):
 TOWARD_CAMERA = Vector((0.0, -math.sin(math.radians(hall.ALPHA_DEGREES)), math.cos(math.radians(hall.ALPHA_DEGREES))))
 
 
+def _turn_islands_outward(shape):
+    """recalc_face_normals can still leave a closed shape inside out, by
+    where it stands in the room, and a cloth collider facing inward pulls the
+    cloth into it. A closed island's signed volume cannot be fooled: each one
+    that comes out negative is turned the right way out."""
+    shape.normal_update()
+    shape.faces.index_update()
+    seen = set()
+    for start in shape.faces:
+        if start.index in seen:
+            continue
+        island, stack = [], [start]
+        seen.add(start.index)
+        while stack:
+            face = stack.pop()
+            island.append(face)
+            for edge in face.edges:
+                for other in edge.link_faces:
+                    if other.index not in seen:
+                        seen.add(other.index)
+                        stack.append(other)
+        if not all(edge.is_manifold for face in island for edge in face.edges):
+            continue
+        volume = sum(face.calc_center_median().dot(face.normal) * face.calc_area() for face in island)
+        if volume < 0.0:
+            bmesh.ops.reverse_faces(shape, faces=island)
+
+
 def mesh_from(name, shape, materials, smooth=False, sharp_angle=40.0, uv=None, facing=None):
     """A mesh object from a bmesh built in game px, converted to Blender space.
     `uv` projects UVs: "floor" (x, y), "front" (x, h) or "side" (y, h), in
@@ -163,6 +191,8 @@ def mesh_from(name, shape, materials, smooth=False, sharp_angle=40.0, uv=None, f
         vert.co = world(*vert.co)
     # The plan stretch flips y, so windings built in game px turn inside out.
     bmesh.ops.recalc_face_normals(shape, faces=shape.faces[:])
+    if facing is None:
+        _turn_islands_outward(shape)
     if facing is not None:
         shape.normal_update()
         backwards = [face for face in shape.faces if face.normal.dot(facing) < 0.0]
@@ -1167,6 +1197,10 @@ def main():
     meta = {"generator": "tools/blender/room_prototype.py", "room": options["room"],
             "region": [0, 0, size[0], size[1]], "render_scale": RENDER_SCALE,
             "image": os.path.basename(options["out"]), "figure_scale": 1.0}
+    # Footprints the HD room changes ({polygon node path: world px points}):
+    # the preview swaps them into the room's collision while it is staged.
+    if built.get("collision"):
+        meta["collision"] = built["collision"]
     if not options["props_only"]:
         render_to(options["out"])
         meta["depth"] = os.path.basename(render_depth(options["out"], size))

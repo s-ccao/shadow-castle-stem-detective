@@ -2,10 +2,86 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-58 (Chemistry restyle)
+
+- **Date:** 2026-10-24
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** the user's review of stage 55 (committed and pushed as `9bb97b8`): "中间的桌子做的太大了，而且每个桌子的质感都不好，地板也是，没有让人惊艳的感觉，需要优化" (the middle table is too big, every table's material is poor, the floor too; nothing stunning; optimise it).
+- **Parallel work:** the Greenhouse (stages 54 and 56) and the Library (stage 57) are being built in this checkout by other sessions.
+
+### What changed
+
+- **The table is a real table, and the floor around it is free.**
+  - Stage 55 filled the painted table's whole footprint, 481 × 336 px (4.8 × 4.4 m, about three times the detective's height each way).
+  - The HD table is now 390 × 165 px (3.9 × 2.2 m), centred where it was.
+  - The preview swaps its footprint into the room's collision while the HD room is staged, and gives the painted one back on restore. The player walks round the smaller table, and its prompt and focus box follow it.
+- **The table follows the painting's own design** (the lesson the Greenhouse's stage 56 recorded):
+  - heavy worn oak on turned legs with bun feet, an H-stretcher and a pot-board holding books, a copper pan and a crate of bottles;
+  - a drawer front with brass ring pulls and violet enamel lozenges between the drawers;
+  - a top of boards between breadboard ends, with a raised rim and brass corner caps.
+  - **On it, as painted:**
+    - the great glass still in the middle: a globe in a brass ring over a spirit burner, five glass arms running down into small receivers;
+    - an oil press, a tall amber flask, a dark flask on a stand, a three-candle brass candleholder and a spired globe along the back;
+    - yellow-green bottles, a rack of violet vials, iron tongs and strewn glass beads;
+    - at the south-east corner, the red spill running over the edge in drips to the floor.
+  - **The blue coat:** someone's coat with a buckled leather strap, dropped over the front edge with the cloth solver.
+  - **A great rug** stands under the table: burgundy field, crimson and indigo medallion, indigo border of running diamonds between gold guards, fringed ends, worn where feet cross it.
+- **Wood that reads as old oak** (every table, counter, bench, cabinet, rack and door):
+  - a new CC0 worn-tabletop photo (`wood_table`, Dimitrios Savva), graded warm and dark;
+  - each piece takes its own part and shade of the photo, so no two boards read as one printed sheet;
+  - edges are worn paler, grime sits in the corners, and a waxed coat catches the candles.
+- **Flagstones laid one by one, as the painting draws them:**
+  - 829 square-cut stones in east-west rows of mixed lengths, so their joints stagger;
+  - each stone a chamfered slab, turned and tipped a little, with its own part and shade of a CC0 rock photo (`rock_surface`, Amal Kumar) graded lavender-grey, and its rim worn paler;
+  - dark mortar in the sunken joints; 36 stones cracked.
+  - This replaces one tiled photo across the whole floor.
+- **Light:** the fire, the sconces, the candles and the lanterns carry the room; the moon only fills what they leave dark. Mean luminance is 30.4, against 31.2 before; the brightest 1 % is brighter (p99 108 vs 94).
+- **The stain:** brighter red, with longer, wider streaks thrown south-west that break into drops at their ends; it lies over the rug where they meet.
+
+### Pipeline (shared, backward compatible)
+
+- **Inside-out meshes:** `room_prototype.mesh_from` now turns every closed mesh island right way out by its signed volume, after Blender's `recalc_face_normals`.
+  - That call left closed boxes inside out depending on where they stood. For example, the same box at y 352–688 came out right, but at y 445–610 came out inverted.
+  - A cloth collider facing inward pulls the cloth through it, which is why the coat fell through the table.
+  - The Wake Room re-renders identically with the fix: mean difference 0.01 per channel, depth map 100 % identical.
+- **Footprint swap:** a room's `build()` may return `"collision"` (`{polygon node path: world px points}`). `room_prototype.py` writes it to `render.json`, and `prototype_room.gd` swaps those polygons in on `apply()` and back on `restore()`.
+- `cc0_textures.json`: `wood_table` and `rock_surface`.
+
+### Exact files
+
+- **Changed:**
+  - `tools/blender/room_chemistry.py`: the `laid` photo material, aged oak, flagstone and grout; the laid floor; the real-size table and its apparatus; the rug; lights; the footprint.
+  - `tools/blender/room_prototype.py`: `_turn_islands_outward`, `collision` in `render.json`.
+  - `tools/blender/prototype_room.gd`: the footprint swap.
+  - `tools/blender/capture_chemistry.gd`: footprint checks; each look's own walk-up spots and shots.
+  - `tools/blender/cc0_textures.json`: two textures.
+- **Evidence:** `docs/evidence/2026-10-23-blender-chemistry/`, regenerated:
+  - `01`–`09`: painted vs HD pairs;
+  - `10`–`12`: the overview, the render over its collision (the HD table's own footprint) and the props;
+  - new `13-restyle-table-floor.png`: before, after and the painted room.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+
+### Verification
+
+- **Blender 5.2.2 (Cycles Metal):** the final render takes 125 s at 128 samples (the room pass 93 s). It builds 1843 objects with 28 glows; the coat simulates in about 9 s.
+- **Capture:** `capture_chemistry.gd` passes 86/86 in EN and in ZH.
+  - New: the HD room swaps the table's footprint in; the freed floor beside it is open; the table itself still blocks; the painted footprint comes back on restore.
+  - Each interaction is offered from each look's own walk-up spot.
+  - North of the table, it covers the player to the shoulders.
+- **No regressions:** `capture_room.gd` (Wake Room) passes 65/65; its capture folder was restored afterwards. A Wake Room re-render matches its committed render.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean.
+- **Playable preview:** `play_prototype.gd -- --chemistry` stages the room with 28 glows, 2 HD props, depth and 2 HD character sheets, and no script errors.
+
+### Risks / follow-up
+
+- **Preview only:** the game's own Chemistry Room, its painted table and its collision are unchanged. Moving the HD room into the game means moving the table's collision with it.
+- **NPCs:** the butler and Dr. Lin's echo are still the pixel NPCs.
+- **Next:** the user's review, then the butler and Dr. Lin's echo in Tripo (the user's choice), then the Dining Hall.
+
 ## Stage: UX-20261021-55 (Chemistry)
 
 - **Date:** 2026-10-24
-- **Status:** reviewed. The user asked for a restyle: the middle table is too big, and the tables' and the floor's materials are not good enough to impress. They also asked to commit this pass now as the baseline, with the shared pipeline changes it needs, and to make the butler and Dr. Lin's echo in Tripo after the restyle. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Status:** reviewed, then committed and pushed as `9bb97b8` as the baseline, with the shared pipeline changes it needs. The user asked for a restyle (stage 58): the middle table is too big, and the tables' and the floor's materials are not good enough to impress. After it, the butler and Dr. Lin's echo in Tripo. Nothing ships: the game, its scenes and the Web build are unchanged.
 - **Request:** "可以现在继续跟改各个房间，重新使用blender建模，以及各个npc" (go on rebuilding each room in Blender, and each NPC). The user chose the Chemistry Room after the Wake Room.
 - **Parallel work:** the Greenhouse (stages 54 and 56) and the Library (stage 57) are being built in this checkout by other sessions. Renumber by commit order if needed.
 

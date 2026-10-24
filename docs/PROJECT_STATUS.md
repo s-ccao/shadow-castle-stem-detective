@@ -17,9 +17,10 @@
     - the exit is the Hall's own Wake gate, between two violet crystal lamps.
   - **In the playable preview:** the bed, desk, bookshelf and gate are HD, and their prompts and highlight boxes follow them. The room hides the player behind its furniture, and the HD detective walks in it at the room's size.
   - **Comparisons:** side-by-side in-game shots are in [the Wake Room evidence](evidence/2026-10-23-blender-wake-room/).
-  - **The Chemistry Room** (stage 55) is Mrs. Lin's laboratory rebuilt the same way:
+  - **The Chemistry Room** (stage 55, restyled in stage 58) is Mrs. Lin's laboratory rebuilt the same way:
     - the Hall's Chemistry portal frames the way back;
-    - the potion cabinet and the alchemy table are HD, the table now a working bench where the great flask boils green and distils into a receiver;
+    - the potion cabinet and the alchemy table are HD. The table, now a real table's size on a great rug, carries the painting's glass still, oil press, candles and spilt red, with a blue coat over its edge, and the player walks round it;
+    - the floor is laid stone by stone, and the furniture is worn, waxed oak;
     - apothecary shelves, a counter and a work bench line the walls, and a brick hearth with a bubbling cauldron stands at the south wall;
     - the floor tells what happened: the red stain flung across the flagstones, broken glass and red crystal round it, and a trail of fallen bottles.
     - Every interaction still works in the preview. The butler and Dr. Lin's echo are still pixel figures.

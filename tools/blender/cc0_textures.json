@@ -373,6 +373,58 @@
           "sha256": "8c829bed4cc530dd93dca19eff5fb595ee40d83c486fcf1d28519cc787f5cfd5"
         }
       }
+    },
+    {
+      "asset": "wood_table",
+      "name": "Wood Table",
+      "authors": [
+        "Dimitrios Savva"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/wood_table",
+      "maps": {
+        "diff": {
+          "file": "wood_table_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table/wood_table_diff_1k.jpg",
+          "sha256": "f81642ae141958feac6c5acac03e2aeb6cfe049dff301d0627e3c17f2dc5c7a5"
+        },
+        "nor_gl": {
+          "file": "wood_table_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table/wood_table_nor_gl_1k.jpg",
+          "sha256": "88ecc8e54c30314f4662696ddf8c05b031976e3cbc68e399daa5ebddfb4cec71"
+        },
+        "rough": {
+          "file": "wood_table_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table/wood_table_rough_1k.jpg",
+          "sha256": "5b98d4d6b22960c781050ba622cebe67d8710c7a7ba0060b24cb6752d50fde32"
+        }
+      }
+    },
+    {
+      "asset": "rock_surface",
+      "name": "Rock Surface",
+      "authors": [
+        "Amal Kumar"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/rock_surface",
+      "maps": {
+        "diff": {
+          "file": "rock_surface_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_surface/rock_surface_diff_1k.jpg",
+          "sha256": "07edda2bbe4715b01aae2e4bac9f21f204cf4aae37b4733ef01de33281e5e60e"
+        },
+        "nor_gl": {
+          "file": "rock_surface_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_surface/rock_surface_nor_gl_1k.jpg",
+          "sha256": "c645af7f6a20bf77421765e6f998873834821e1950a3a0a21c5ee9ced32cecc1"
+        },
+        "rough": {
+          "file": "rock_surface_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_surface/rock_surface_rough_1k.jpg",
+          "sha256": "ca710d895b01cf323bf00f53194c43504a39d2c964fbfc343c4f45c7d41b10dc"
+        }
+      }
     }
   ]
 }

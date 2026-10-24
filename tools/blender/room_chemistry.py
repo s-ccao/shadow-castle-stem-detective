@@ -31,6 +31,7 @@ chest, brass candelabra and goblets, a clock, a lantern, apothecary vessels and
 plants; tools/blender/cc0_models.json).
 """
 import math
+import os
 import random
 
 import bmesh
@@ -68,9 +69,13 @@ VIOLET = (0.62, 0.36, 1.0)
 ROUND = wake.ROUND
 POTIONS = ((0.62, 0.3, 1.0), (1.0, 0.16, 0.22), (1.0, 0.5, 0.12), (0.3, 1.0, 0.45), (0.25, 0.55, 1.0),
            (1.0, 0.38, 0.75), (0.95, 0.8, 0.25))
-# The table: its top's plan rect, as the collision has it, and its height.
-TABLE = (377.0, 858.0, 352.0, 688.0)
-TABLE_TOP = 44.0
+# The alchemy table at a great work table's size (3.9 m by 2.2 m, 81 cm
+# high), well inside the painted one's footprint: its plan rect, which the
+# preview makes its collision, and its height. The rug under it.
+TABLE = (425.0, 815.0, 445.0, 610.0)
+TABLE_TOP = 52.0
+RUG = (330.0, 910.0, 392.0, 688.0)
+RUG_H = 0.5
 
 
 def ellipse(cx, cz, rx, rz, start, end, steps):
@@ -99,6 +104,95 @@ SPEC = {
 
 
 # ---------------------------------------------------------------- materials
+
+
+def laid(name, asset, repeat, value, tint, saturation=0.6, per_island=False, variety=0.16, wear=0.0, ao=0.25,
+         roughness=1.0, coat=0.0, coat_roughness=0.2, bevel=0.0):
+    """A CC0 photo for pieces laid or built one by one (flagstones, boards, a
+    table's parts), after the Greenhouse's laid_photo: each piece, a mesh
+    island or with `per_island` False an object, shows its own part of the
+    photo in its own shade, so no two read as one slab cut up. With `wear`
+    its upper rims are worn paler; `ao` grimes its corners; `coat` lays a
+    waxed or polished sheen over it that catches the candles; `bevel` (m)
+    rounds its edges in the shading."""
+    def build(nodes, links):
+        op = hall._MathBuilder(nodes, links)
+        if per_island:
+            chance = nodes.new("ShaderNodeNewGeometry").outputs["Random Per Island"]
+        else:
+            chance = nodes.new("ShaderNodeObjectInfo").outputs["Random"]
+        if RP.TEXTURES is None or not os.path.exists(RP.TEXTURES._path(asset, "diff")):
+            low = tuple(channel * min(value, 1.0) * 0.2 for channel in tint)
+            high = tuple(channel * min(value, 1.0) * 0.32 for channel in tint)
+            hall._principled(nodes, links, hall._mix(nodes, links, chance, low, high), roughness=0.8)
+            return
+        maps = RP.TEXTURES.sample(nodes, links, asset, repeat=repeat)
+        coords = next(node for node in nodes if node.type == "TEX_COORD")
+        mapping = next(node for node in nodes if node.type == "MAPPING")
+        width, height = next(node.image for node in nodes if node.type == "TEX_IMAGE").size
+        if width and height and width != height:
+            scale = mapping.inputs["Scale"].default_value
+            mapping.inputs["Scale"].default_value = (scale[0], scale[1] * width / height, scale[2])
+        shift = nodes.new("ShaderNodeCombineXYZ")
+        links.new(op("MULTIPLY", chance, 7.31), shift.inputs["X"])
+        links.new(op("MULTIPLY", chance, 3.77), shift.inputs["Y"])
+        moved = nodes.new("ShaderNodeVectorMath")
+        moved.operation = "ADD"
+        links.new(coords.outputs["UV"], moved.inputs[0])
+        links.new(shift.outputs[0], moved.inputs[1])
+        links.new(moved.outputs[0], mapping.inputs["Vector"])
+        color = hall._grade(nodes, links, maps["diff"], value, tint, saturation=saturation)
+        tone = op("ADD", 1.0 - variety, op("MULTIPLY", chance, 2.0 * variety))
+        shade = nodes.new("ShaderNodeCombineColor")
+        for socket in ("Red", "Green", "Blue"):
+            links.new(tone, shade.inputs[socket])
+        color = hall._mix(nodes, links, 1.0, color, shade.outputs["Color"], blend="MULTIPLY")
+        if wear > 0.0:
+            geometry = nodes.new("ShaderNodeNewGeometry")
+            normal = nodes.new("ShaderNodeSeparateXYZ")
+            links.new(geometry.outputs["True Normal"], normal.inputs[0])
+            up = normal.outputs["Z"]
+            rim = op("MULTIPLY", hall._ramp(nodes, links, up, 0.995, 0.75), op("GREATER_THAN", up, 0.15))
+            pale = hall._mix(nodes, links, 1.0, color, (1.9, 1.85, 1.75), blend="MULTIPLY")
+            color = hall._mix(nodes, links, op("MULTIPLY", rim, wear), color, pale)
+        if ao > 0.0:
+            color = hall._ao_multiply(nodes, links, color, distance=ao, floor_value=0.4)
+        rough = maps["rough"]
+        if roughness != 1.0:
+            rough = op("MINIMUM", op("MULTIPLY", rough, roughness), 1.0)
+        normal_in = maps["normal"] if bevel <= 0.0 else hall._bevelled(nodes, links, maps["normal"], bevel)
+        shader = hall._principled(nodes, links, color, roughness=rough, normal=normal_in)
+        if coat > 0.0:
+            shader.inputs["Coat Weight"].default_value = coat
+            shader.inputs["Coat Roughness"].default_value = coat_roughness
+    return hall._material(name, build)
+
+
+def aged_oak():
+    """Mrs. Lin's furniture as the painting draws it: old, worn oak, dark and
+    warm, each piece its own part and shade of a worn tabletop photo, its
+    edges worn paler by hands and years, grime in its corners, under a
+    waxed sheen that catches the candles."""
+    return laid("ChemAgedOak", "wood_table", 1.0, 0.8, (0.94, 0.82, 0.7), saturation=0.78, variety=0.18,
+                wear=0.4, ao=0.3, roughness=0.9, coat=0.32, coat_roughness=0.24, bevel=0.012)
+
+
+def flagstone():
+    """The floor's stones: worn grey rock (a 2 m photo), each stone its own
+    part and shade of it, lavender as the painting grades them, its rim worn
+    paler, faintly polished by feet."""
+    return laid("ChemFlagstone", "rock_surface", 1.11, 1.0, (0.86, 0.82, 0.92), saturation=0.25, per_island=True,
+                variety=0.3, wear=0.6, ao=0.12, roughness=0.9, coat=0.12, coat_roughness=0.32)
+
+
+def grout():
+    """The joints between the flagstones: dark mortar and the dirt in it."""
+    def build(nodes, links):
+        coords = nodes.new("ShaderNodeTexCoord")
+        grain = hall._noise(nodes, links, coords.outputs["Object"], scale=300.0, detail=6.0)
+        hall._principled(nodes, links, hall._mix(nodes, links, grain, (0.02, 0.018, 0.024), (0.055, 0.048, 0.052)),
+                         roughness=0.95)
+    return hall._material("ChemGrout", build)
 
 
 def brick():
@@ -236,7 +330,7 @@ def splatter(name, color, radius, spikes=13, seed=0.0, droplets=1.0, throw=None,
             reach = op("ADD", reach, op("MULTIPLY", op("MULTIPLY", facing, facing),
                                         op("MULTIPLY", lane_noise.outputs["Value"], carry)))
         taper = op("SUBTRACT", 1.0, op("DIVIDE", op("ADD", r, op("MULTIPLY", op("SUBTRACT", ragged, 0.5), 0.2)), reach))
-        spike = op("MULTIPLY", op("LESS_THAN", lane, op("MULTIPLY", taper, 0.09 / max(1.0, 1.0 + carry * 0.5))),
+        spike = op("MULTIPLY", op("LESS_THAN", lane, op("MULTIPLY", taper, 0.15 / max(1.0, 1.0 + carry * 0.4))),
                    op("GREATER_THAN", taper, 0.0))
         # Toward its end a streak breaks into a run of drops.
         beads = hall._noise(nodes, links, uv, scale=9.0 / radius, detail=1.0)
@@ -437,7 +531,7 @@ def balance(kit, part, x, y, h):
 
 def tube_rack(kit, part, x, y, h, colors, along="x"):
     """A wooden rack of test tubes, coloured as `colors` (None leaves a hole)."""
-    oak = wake.oak()
+    oak = aged_oak()
     count = len(colors)
     if along == "x":
         kit.box(part + "Base", x - count * 2.6, x + count * 2.6, y - 3.0, y + 3.0, h, h + 2.0, oak, bevel=0.4)
@@ -549,7 +643,7 @@ def doorway():
     kit.box("Threshold", x0 - 2.0, x1 + 2.0, BACK_Y - 6.0, BACK_Y + 0.5, 0.0, 1.4, pale, bevel=0.6, uv="box")
     # The doors at the back of the reveal, and the fanlight over them.
     back = DOOR_BACK + 1.0
-    oak = wake.oak()
+    oak = aged_oak()
     leaf_h = spring - 1.0
     for side, (a, b) in (("W", (x0 + 0.5, centre - 0.4)), ("E", (centre + 0.4, x1 - 0.5))):
         planks = 4
@@ -619,7 +713,7 @@ def door_sconces():
                   plan=ROUND)
         for part, (dx, dy, tall) in enumerate(((-3.0, 0.0, 15.0), (3.2, 1.0, 11.0), (0.0, 3.0, 8.0))):
             kit.candle("Candle%d_%d" % (index, part), x + dx, out + dy, bowl_h - 1.0, height=tall, radius=2.6,
-                       power=4.5 if part == 0 else 0.6)
+                       power=11.0 if part == 0 else 1.5)
     return kit
 
 
@@ -628,7 +722,7 @@ def potion_cabinet():
     (Worldsort/ChemistryPotionCabinet): a tall oak dresser, cupboards below, a
     counter, and above it open shelves crowded with Mrs. Lin's potions."""
     kit = RP.Kit("PotionCabinet", prop="ChemistryPotionCabinet")
-    oak, brass = wake.oak(), hall._brass()
+    oak, brass = aged_oak(), hall._brass()
     rng = random.Random(1801)
     x0, x1, back, front = 262.0, 582.0, 189.0, 231.0
     upper_front = 222.0
@@ -667,7 +761,7 @@ def north_east_rack():
     the doorway, and before it (on the collision) a crate with a box on it
     and a lantern on the floor."""
     kit = RP.Kit("NorthEastRack")
-    oak, rng = wake.oak(), random.Random(77)
+    oak, rng = aged_oak(), random.Random(77)
     x0, x1, back, front = 906.0, 1138.0, 189.0, 227.0
     shelf_unit(kit, "Rack", x0, x1, back, front, 150.0, (44.0, 80.0, 116.0), oak)
     for level in (6.0, 44.0, 80.0):
@@ -677,7 +771,7 @@ def north_east_rack():
     MODELS.place(kit, "brass_vase_03", None, 984.0, 210.0, 116.0, scale=1.2)
     MODELS.place(kit, "antique_ceramic_vase_01", None, 1014.0, 210.0, 116.0, scale=0.72)
     MODELS.group(kit, "Lantern_01", 1050.0, 211.0, 116.0, scale=1.1)
-    kit.light("RackLantern", 1050.0, 211.0, 116.0 + 9.5 * 1.1 * RP.SIN, CANDLE, 1.4, radius=0.02)
+    kit.light("RackLantern", 1050.0, 211.0, 116.0 + 9.5 * 1.1 * RP.SIN, CANDLE, 2.5, radius=0.02)
     RP.glow("lantern", 1050.0, 211.0, 122.0, CANDLE, 12.0)
     MODELS.place(kit, "ceramic_vase_04", None, 1084.0, 210.0, 116.0, scale=0.85)
     jar(kit, "RackJar", 1116.0, 209.0, 116.0, JAR_CONTENTS[1], tall=13.0, radius=5.5)
@@ -686,14 +780,14 @@ def north_east_rack():
     for index, (x, colour) in enumerate(((1030.0, wake.BOOK_COLOURS[0]), (1033.0, wake.BOOK_COLOURS[2]),
                                          (1029.0, wake.BOOK_COLOURS[3]))):
         wake.closed_book(kit, "RackBook%d" % index, x, x + 32.0, 197.0, 219.0, top + index * 5.0, 5.0, colour)
-    wake.candlestick(kit, "RackCandle", 1096.0, 208.0, top, wax_height=10.0, radius=2.2, power=2.6, stick=7.0)
+    wake.candlestick(kit, "RackCandle", 1096.0, 208.0, top, wax_height=10.0, radius=2.2, power=4.0, stick=7.0)
     # Before it: a long crate on its side, a box on that, a lantern by them.
     crate_h = model_top("wooden_crate_02")
     MODELS.group(kit, "wooden_crate_02", 1056.0, 290.0, scale=1.0, turn=90.0)
     MODELS.group(kit, "wooden_crate_01", 1046.0, 289.0, h=crate_h, scale=0.9, turn=4.0)
     jar(kit, "CrateJar", 1092.0, 291.0, crate_h, JAR_CONTENTS[0], tall=12.0, radius=5.0)
     MODELS.group(kit, "wooden_lantern_01", 1100.0, 320.0, scale=0.9, turn=-20.0)
-    kit.light("CrateLantern", 1100.0, 320.0, 8.0, CANDLE, 2.2, radius=0.02)
+    kit.light("CrateLantern", 1100.0, 320.0, 8.0, CANDLE, 3.5, radius=0.02)
     RP.glow("lantern", 1100.0, 320.0, 10.0, CANDLE, 16.0)
     return kit
 
@@ -707,7 +801,7 @@ def west_counter(shell):
     the wall's slant), crowded with jars, bottles, books and a balance, and
     two shelves on the leaning wall over it."""
     kit = RP.Kit("WestCounter")
-    oak, rng = wake.oak(), random.Random(5150)
+    oak, rng = aged_oak(), random.Random(5150)
     y0, y1, front, top = 192.0, 553.0, 245.0, 46.0
 
     def wall(y, h=0.0):
@@ -729,7 +823,7 @@ def west_counter(shell):
     kit.ball("EndKnob", front - 10.0, y1 + 2.4, top / 2.0, 1.4, hall._brass())
     # Along the back, tall bottles and jars; along the front, the things in use.
     stock_column(kit, "Back", lambda y: wall(y, top) + 8.0, y0 + 4.0, y1 - 4.0, top, rng, gaps=0.2, books=0.12)
-    wake.candlestick(kit, "CounterCandle", front - 9.0, 214.0, top, wax_height=9.0, radius=2.2, power=2.8, stick=6.0)
+    wake.candlestick(kit, "CounterCandle", front - 9.0, 214.0, top, wax_height=9.0, radius=2.2, power=4.5, stick=6.0)
     for index, (colour, lift) in enumerate(((wake.BOOK_COLOURS[1], 0.0), (wake.BOOK_COLOURS[0], 5.0),
                                             (wake.BOOK_COLOURS[6], 9.5))):
         wake.closed_book(kit, "CounterBook%d" % index, front - 26.0 + index, front - 4.0 + index * 0.5, 246.0,
@@ -750,7 +844,7 @@ def west_counter(shell):
     kit.quad("BookText", [(front - 32.0, 506.0, top + 2.05), (front - 6.0, 506.0, top + 2.05),
                           (front - 6.0, 478.0, top + 2.05), (front - 32.0, 478.0, top + 2.05)],
              wake.writing("ChemCounterBook", lines=8.0, gutter=True))
-    wake.candlestick(kit, "CounterCandle2", front - 10.0, 532.0, top, wax_height=6.0, radius=2.2, power=2.4, stick=6.0)
+    wake.candlestick(kit, "CounterCandle2", front - 10.0, 532.0, top, wax_height=6.0, radius=2.2, power=4.0, stick=6.0)
     # Two shelves on the wall over it, on iron brackets.
     iron = hall._cast_iron()
     for shelf, level in enumerate((104.0,)):
@@ -798,7 +892,7 @@ def wall_sconces(shell):
         kit.rod("Arm%d" % index, (wall.x, y, wall.z - 2.0), (cup.x, cup.y, cup.z), 1.0, iron)
         kit.lathe("Cup%d" % index, cup.x, cup.y, [(0.0, cup.z - 2.0), (2.0, cup.z - 2.0), (4.6, cup.z),
                                                     (4.6, cup.z + 1.4), (0.0, cup.z + 1.4)], iron)
-        kit.candle("Sconce%d" % index, cup.x, cup.y, cup.z + 1.4, height=14.0, radius=2.8, power=4.8)
+        kit.candle("Sconce%d" % index, cup.x, cup.y, cup.z + 1.4, height=14.0, radius=2.8, power=13.0)
     return kit
 
 
@@ -806,7 +900,7 @@ def candle_table():
     """The round candle table by the niche, the painting's candles on it in
     a three-branched brass holder."""
     kit = RP.Kit("CandleTable")
-    oak = wake.oak()
+    oak = aged_oak()
     cx, cy, radius, top = 214.0, 702.0, 37.0, 38.0
     kit.lathe("Top", cx, cy, [(0.0, top - 3.0), (radius, top - 3.0), (radius + 0.6, top - 1.5), (radius, top),
                               (0.0, top)], oak, plan=ROUND, segments=48, uv="box")
@@ -815,7 +909,7 @@ def candle_table():
     for turn in (90.0, 210.0, 330.0):
         dx, dy = math.cos(math.radians(turn)), math.sin(math.radians(turn)) * ROUND
         kit.rod("Foot", (cx, cy, 5.0), (cx + dx * 18.0, cy + dy * 18.0, 0.8), 1.7, oak)
-    holder(kit, "Candles", "brass_candleholder_02", cx - 2.0, cy - 4.0, top, scale=1.1, power=2.2)
+    holder(kit, "Candles", "brass_candleholder_02", cx - 2.0, cy - 4.0, top, scale=1.1, power=5.0)
     wake.closed_book(kit, "Book", cx + 8.0, cx + 30.0, cy + 6.0, cy + 22.0, top, 4.5, wake.BOOK_COLOURS[2])
     vial(kit, "Vial", cx - 24.0, cy + 10.0, top, POTIONS[1], tall=10.0)
     return kit
@@ -887,6 +981,73 @@ def runner():
     return kit
 
 
+def carpet(name, length, width):
+    """The great rug under the table: a burgundy field with a lattice of
+    small diamonds, a crimson medallion ringed in gold, an indigo border of
+    running diamonds between gold guard stripes, indigo corners, knotted
+    fringes at its ends; worn paler where feet cross it. UVs are px: u along
+    its length (east), v across it (south)."""
+    def build(nodes, links):
+        op = hall._MathBuilder(nodes, links)
+        coords, u, v = hall._uv_parts(nodes, links)
+        to_end = op("MINIMUM", u, op("SUBTRACT", length, u))
+        to_side = op("MINIMUM", v, op("SUBTRACT", width, v))
+        edge = op("MINIMUM", op("SUBTRACT", to_end, 5.0), to_side)
+        guard = op("MAXIMUM", op("LESS_THAN", edge, 4.0), op.between(edge, 30.0, 34.0))
+        border = op("MULTIPLY", op("GREATER_THAN", edge, 5.5), op("LESS_THAN", edge, 28.5))
+        diagonal_a = op("ABSOLUTE", op("SUBTRACT", op("FRACT", op("DIVIDE", op("ADD", u, v), 17.0)), 0.5))
+        diagonal_b = op("ABSOLUTE", op("SUBTRACT", op("FRACT", op("DIVIDE", op("SUBTRACT", u, v), 17.0)), 0.5))
+        running = op("MULTIPLY", border, op("LESS_THAN", op("ADD", diagonal_a, diagonal_b), 0.22))
+        lattice_u = op("ABSOLUTE", op("SUBTRACT", op("FRACT", op("DIVIDE", u, 14.0)), 0.5))
+        lattice_v = op("ABSOLUTE", op("SUBTRACT", op("FRACT", op("DIVIDE", v, 14.0)), 0.5))
+        field = op("GREATER_THAN", edge, 34.0)
+        lattice = op("MULTIPLY", field, op("LESS_THAN", op("ADD", lattice_u, lattice_v), 0.14))
+        across = op("DIVIDE", op("ABSOLUTE", op("SUBTRACT", v, width / 2.0)), width / 2.0 - 40.0)
+        along = op("DIVIDE", op("ABSOLUTE", op("SUBTRACT", u, length / 2.0)), length / 2.0 - 40.0)
+        lozenge = op("ADD", across, along)
+        medallion = op("MULTIPLY", field, op("LESS_THAN", lozenge, 0.36))
+        rings = op("MULTIPLY", field, op("MAXIMUM", op.between(lozenge, 0.36, 0.385), op.between(lozenge, 0.22, 0.235)))
+        heart = op("MULTIPLY", field, op("LESS_THAN", lozenge, 0.08))
+        corners = op("MULTIPLY", field, op("GREATER_THAN", lozenge, 1.82))
+        color = hall._mix(nodes, links, lattice, (0.19, 0.03, 0.05), (0.28, 0.07, 0.06))
+        color = hall._mix(nodes, links, op("MAXIMUM", medallion, corners), color, (0.05, 0.035, 0.12))
+        color = hall._mix(nodes, links, op("MULTIPLY", medallion, op("LESS_THAN", lozenge, 0.22)), color,
+                          (0.22, 0.03, 0.05))
+        color = hall._mix(nodes, links, border, color, (0.045, 0.035, 0.11))
+        color = hall._mix(nodes, links, op("MINIMUM", op("ADD", op("ADD", guard, rings), op("ADD", running, heart)),
+                                           1.0), color, (0.46, 0.32, 0.1))
+        weave = hall._noise(nodes, links, coords.outputs["UV"], scale=0.012, detail=5.0)
+        path = op("SUBTRACT", 1.0, op("MINIMUM", op("ABSOLUTE", op("SUBTRACT", v, width * 0.82)), 40.0))
+        wear = hall._ramp(nodes, links, op("ADD", weave, op("MULTIPLY", path, 0.006)), 0.58, 0.9)
+        color = hall._mix(nodes, links, op("MULTIPLY", wear, 0.45), color, (0.3, 0.25, 0.22))
+        fringe = op("LESS_THAN", to_end, 5.0)
+        threads = op("LESS_THAN", op("FRACT", op("DIVIDE", v, 1.8)), 0.55)
+        color = hall._mix(nodes, links, fringe, color, (0.52, 0.45, 0.34))
+        roughness, normal = 0.95, None
+        if RP.TEXTURES is not None and RP.TEXTURES.available():
+            pile = RP.TEXTURES.sample(nodes, links, "dirty_carpet", repeat=40.0)
+            fibres = hall._grade(nodes, links, pile["diff"], 2.6, (1.0, 1.0, 1.0), saturation=0.0)
+            color = hall._mix(nodes, links, 0.55, color, hall._mix(nodes, links, 1.0, color, fibres, blend="MULTIPLY"))
+            roughness, normal = pile["rough"], pile["normal"]
+        shader = hall._principled(nodes, links, color, roughness=roughness, normal=normal)
+        hall._alpha_cut(nodes, links, shader, op("SUBTRACT", 1.0, op("MULTIPLY", fringe, op("SUBTRACT", 1.0, threads))))
+    return hall._material(name, build)
+
+
+def table_rug():
+    """The great rug the alchemy table stands on, east-west across the room's
+    middle: the warmth in a stone room, and its frame."""
+    kit = RP.Kit("TableRug", depth=False)
+    x0, x1, y0, y1 = RUG
+    length, width = x1 - x0, y1 - y0
+    kit.box("Backing", x0 + 5.5, x1 - 5.5, y0 + 1.0, y1 - 1.0, -0.2, RUG_H - 0.1, hall._cloth("ChemRugBack",
+                                                                                              (0.06, 0.02, 0.03)),
+            bevel=0.0)
+    kit.quad("Rug", [(x0, y1, RUG_H), (x1, y1, RUG_H), (x1, y0, RUG_H), (x0, y0, RUG_H)],
+             carpet("ChemTableRug", length, width), uvs=((0.0, width), (length, width), (length, 0.0), (0.0, 0.0)))
+    return kit
+
+
 # ---------------------------------------------------------------- the south
 
 
@@ -945,8 +1106,8 @@ def hearth():
                  squash=0.55)
     for side in (-1.0, 1.0):
         kit.ring("Handle", (pot_x + side * 26.5, pot_y, 36.0), (0.0, 1.0, 0.0), 3.6, 0.8, iron, segments=20, sides=6)
-    kit.light("Fire", cx, cy - 16.0, 12.0, (1.0, 0.42, 0.12), 55.0, radius=0.3)
-    kit.light("FireLow", cx - 40.0, cy - 10.0, 6.0, (1.0, 0.35, 0.08), 18.0, radius=0.2)
+    kit.light("Fire", cx, cy - 16.0, 12.0, (1.0, 0.42, 0.12), 110.0, radius=0.3)
+    kit.light("FireLow", cx - 40.0, cy - 10.0, 6.0, (1.0, 0.35, 0.08), 28.0, radius=0.2)
     kit.light("Brew", pot_x, pot_y, 48.0, GREEN, 6.0, radius=0.15)
     RP.glow("candle", cx, cy - 16.0, 8.0, (1.0, 0.45, 0.14), 70.0)
     RP.glow("crystal", pot_x, pot_y, 40.0, GREEN, 36.0)
@@ -997,7 +1158,7 @@ def east_bench(shell):
     green distillates, a retort, test tubes, books and a lantern; two shelves
     of jars on the leaning wall over it."""
     kit = RP.Kit("EastBench")
-    oak, rng = wake.oak(), random.Random(909)
+    oak, rng = aged_oak(), random.Random(909)
     x0, x1, y0, y1, top = 1143.0, RIGHT_X + 2.0, 189.0, 764.0, 46.0
     kit.box("Plinth", x0 + 3.0, x1, y0, y1 - 2.0, 0.0, 5.0, oak, uv="box")
     kit.box("Body", x0 + 1.5, x1, y0, y1, 5.0, top - 4.0, oak, uv="box")
@@ -1025,7 +1186,7 @@ def east_bench(shell):
         wake.closed_book(kit, "BenchBook%d" % index, front - 16.0, front + 12.0 - index * 2.0, 548.0 + index,
                          572.0, top + lift, 5.5, colour)
     MODELS.group(kit, "wooden_lantern_01", front, 610.0, top, scale=0.9, turn=15.0)
-    kit.light("BenchLantern", front, 610.0, top + 8.0, CANDLE, 2.6, radius=0.02)
+    kit.light("BenchLantern", front, 610.0, top + 8.0, CANDLE, 4.0, radius=0.02)
     RP.glow("lantern", front, 610.0, top + 10.0, CANDLE, 16.0)
     balance(kit, "BenchBalance", front, 670.0, top)
     wake.paper(kit, "BenchNote", front - 4.0, 720.0, top + 0.2, 24.0, 16.0, 0.2, wake.writing("ChemBenchNote",
@@ -1058,166 +1219,374 @@ def decal(kit, part, cx, cy, h, radius, material, turn=0.0):
     return kit.quad(part, corners, material, uvs=((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)))
 
 
+def sphere_profile(radius, centre, start=-90.0, end=90.0, steps=16):
+    """A lathe profile for a true sphere (x px radius) centred at screen
+    height `centre`, from `start` to `end` degrees of latitude: with plan
+    ROUND it is round in the 3D room, so the camera draws it as a circle."""
+    return [(radius * math.cos(math.radians(start + (end - start) * index / steps)),
+             centre + radius * math.sin(math.radians(start + (end - start) * index / steps)) * RP.SIN)
+            for index in range(steps + 1)]
+
+
+def spider_still(kit, part, x, y, h):
+    """The painting's centrepiece: a great glass globe in a brass ring over a
+    spirit burner, its neck stoppered, five glass arms running out of it and
+    down into small receivers, a pale distillate glowing in it."""
+    brass, glass = hall._brass(), wake.jar_glass()
+    kit.lathe(part + "Burner", x, y, [(0.0, h), (6.0, h), (6.4, h + 3.5), (4.2, h + 7.0), (1.2, h + 8.0),
+                                      (0.0, h + 8.0)], brass, plan=ROUND)
+    kit.flame(part + "Burner", x, y, h + 8.0, size=1.4, power=2.6, color=(0.5, 0.7, 1.0))
+    ring_h = h + 14.0
+    kit.ring(part + "Ring", (x, y, ring_h), (0.0, 0.0, 1.0), 11.0, 0.8, brass, segments=36, sides=6)
+    for turn in (90.0, 210.0, 330.0):
+        dx, dy = math.cos(math.radians(turn)), math.sin(math.radians(turn)) * ROUND
+        kit.rod(part + "Leg", (x + dx * 11.0, y + dy * 11.0, ring_h), (x + dx * 15.0, y + dy * 15.0, h), 0.8, brass)
+    radius = 17.0
+    centre = ring_h + radius * RP.SIN * 0.82
+    globe = kit.lathe(part + "Globe", x, y, sphere_profile(radius, centre, -66.0, 78.0, 24)
+                      + [(3.6, centre + radius * RP.SIN + 3.0), (3.2, centre + radius * RP.SIN + 16.0),
+                         (4.0, centre + radius * RP.SIN + 17.0)], glass, plan=ROUND, segments=40, close=False)
+    globe.visible_shadow = False
+    kit.lathe(part + "Distillate", x, y, sphere_profile(radius - 1.0, centre, -62.0, -4.0, 12)
+              + [(0.0, centre - 0.3)], potion((0.15, 0.6, 0.52), 0.12), plan=ROUND, segments=40)
+    neck = centre + radius * RP.SIN + 17.0
+    kit.lathe(part + "Stopper", x, y, [(0.0, neck - 2.0), (3.0, neck - 2.0), (3.6, neck + 1.0), (0.0, neck + 6.0)],
+              tinted_glass("Stopper", (0.5, 0.75, 0.8)), plan=ROUND)
+    for index, turn in enumerate((200.0, 250.0, 300.0, 345.0, 30.0)):
+        dx, dy = math.cos(math.radians(turn)), math.sin(math.radians(turn)) * ROUND
+        start = (x + dx * (radius - 1.0), y + dy * (radius - 1.0), centre + 1.0)
+        bend = (x + dx * (radius + 14.0), y + dy * (radius + 14.0), centre + 4.0)
+        foot = (x + dx * (radius + 19.0), y + dy * (radius + 19.0), h + 8.0)
+        for piece, (a, b) in enumerate(((start, bend), (bend, foot))):
+            arm = kit.rod("%sArm%d_%d" % (part, index, piece), a, b, 1.2, glass, segments=10)
+            arm.visible_shadow = False
+        bulb = kit.lathe("%sReceiver%d" % (part, index), foot[0], foot[1],
+                         [(0.0, h)] + sphere_profile(4.2, h + 4.2 * RP.SIN, -70.0, 70.0, 8) + [(1.4, h + 8.6)],
+                         glass, plan=ROUND, segments=16, close=False)
+        bulb.visible_shadow = False
+        kit.lathe("%sDrops%d" % (part, index), foot[0], foot[1], [(0.0, h + 0.5), (3.2, h + 1.0), (3.4, h + 2.4),
+                                                                 (0.0, h + 2.4)],
+                  potion((0.55, 0.95, 0.9), 0.4), plan=ROUND, segments=16)
+    kit.light(part + "Glow", x, y + 22.0, centre + 10.0, (0.55, 0.95, 0.9), 0.9, radius=0.06)
+    RP.glow("crystal", x, y, centre, (0.55, 0.95, 0.9), 30.0)
+
+
+def globe_spire(kit, part, x, y, h, color):
+    """A great glass globe with a tall pointed stopper, on a short foot."""
+    glass = wake.jar_glass()
+    radius = 12.5
+    centre = h + 3.0 + radius * RP.SIN
+    kit.lathe(part + "Foot", x, y, [(0.0, h), (6.5, h), (6.5, h + 1.2), (3.0, h + 3.4), (0.0, h + 3.4)],
+              hall._brass(), plan=ROUND)
+    globe = kit.lathe(part + "Globe", x, y, sphere_profile(radius, centre, -75.0, 80.0, 20)
+                      + [(2.6, centre + radius * RP.SIN + 2.0)], glass, plan=ROUND, segments=36, close=False)
+    globe.visible_shadow = False
+    kit.lathe(part + "Fill", x, y, sphere_profile(radius - 0.8, centre, -72.0, -10.0, 10) + [(0.0, centre - 1.5)],
+              potion(color, 0.12), plan=ROUND, segments=36)
+    tip = centre + radius * RP.SIN + 2.0
+    spire = kit.lathe(part + "Spire", x, y, [(0.0, tip - 1.0), (3.0, tip - 1.0), (3.4, tip + 2.0), (1.6, tip + 7.0),
+                                             (1.1, tip + 16.0), (0.0, tip + 24.0)],
+                      tinted_glass("Spire", (0.75, 0.75, 0.8)), plan=ROUND, segments=16)
+    spire.visible_shadow = False
+
+
+def screw_press(kit, part, x, y, h):
+    """A small oak screw press for oils, iron-framed, its handle across."""
+    oak, iron = aged_oak(), hall._cast_iron()
+    kit.box(part + "Box", x - 16.0, x + 16.0, y - 8.0, y + 8.0, h, h + 14.0, oak, bevel=0.8, uv="box")
+    kit.box(part + "Lid", x - 13.0, x + 13.0, y - 6.5, y + 6.5, h + 14.0, h + 16.0, oak, bevel=0.6, uv="box")
+    for side in (-1.0, 1.0):
+        kit.box(part + "Post", x + side * 14.0 - 1.4, x + side * 14.0 + 1.4, y - 1.4, y + 1.4, h + 14.0, h + 34.0,
+                iron, bevel=0.3)
+        kit.box(part + "Band", x + side * 12.0 - 1.0, x + side * 12.0 + 1.0, y - 8.4, y + 8.4, h + 0.5, h + 13.5, iron,
+                bevel=0.2)
+    kit.box(part + "Head", x - 16.0, x + 16.0, y - 2.0, y + 2.0, h + 34.0, h + 37.5, iron, bevel=0.4)
+    kit.rod(part + "Screw", (x, y, h + 16.0), (x, y, h + 44.0), 1.4, iron)
+    kit.rod(part + "Handle", (x - 13.0, y + 2.0, h + 42.0), (x + 13.0, y - 2.0, h + 42.0), 0.8, iron)
+    for side in (-1.0, 1.0):
+        kit.ball(part + "Knob", x + side * 13.6, y - side * 2.0, h + 42.0, 1.6, hall._brass())
+    kit.box(part + "Spout", x - 3.0, x + 3.0, y + 8.0, y + 12.0, h + 2.0, h + 4.0, iron, bevel=0.3)
+
+
+def tongs(kit, part, x, y, h, turn):
+    """Iron crucible tongs lying open, `turn` degrees from east."""
+    iron = hall._cast_iron()
+    along = Vector((math.cos(math.radians(turn)), math.sin(math.radians(turn)) * ROUND, 0.0))
+    across = Vector((-math.sin(math.radians(turn)), math.cos(math.radians(turn)) * ROUND, 0.0)) * 3.0
+    pivot = Vector((x, y, h + 0.9))
+    for side in (-1.0, 1.0):
+        jaw = pivot + along * 14.0 + across * side * 0.6
+        grip = pivot - along * 22.0 + across * side * 3.4
+        kit.rod(part + "Jaw", tuple(pivot), tuple(jaw), 0.8, iron, segments=8)
+        kit.rod(part + "Grip", tuple(pivot), tuple(grip), 0.8, iron, segments=8)
+        kit.ring(part + "Bow", tuple(grip - along * 2.0), (0.0, 0.0, 1.0), 2.4, 0.6, iron, segments=16, sides=6)
+    kit.ball(part + "Pivot", x, y, h + 1.2, 1.3, iron)
+
+
+def beads(kit, part, rng, x0, x1, y0, y1, h, count):
+    """Glass beads, drops and marbles strewn across the top."""
+    glass = wake.jar_glass()
+    for index in range(count):
+        radius = rng.uniform(0.8, 2.0)
+        bead = kit.ball("%s%d" % (part, index), rng.uniform(x0, x1), rng.uniform(y0, y1), h + radius * RP.SIN,
+                        radius, glass if rng.random() < 0.7 else potion(rng.choice(POTIONS), 0.2), plan=ROUND,
+                        squash=RP.SIN)
+        bead.visible_shadow = False
+
+
 def alchemy_table():
     """The alchemy table the game asks the player to search
-    (Worldsort/ChemistryLabTable), a working bench: heavy oak on turned legs,
-    a two-tier reagent shelf down its north side, a slate heat slab in the
-    middle where the great flask boils over a burner and distils through a
-    glass condenser into a receiver, the open book on a leather blotter with
-    ink and quill, a mortar, powders and a rack of tubes to the west, flasks,
-    specimen jars and books to the east, and to the south a bottle knocked
-    over in a purple spill, broken glass and a cloth slipping off the edge.
-    The oak is ringed where wet glass stood and scorched by the burner."""
+    (Worldsort/ChemistryLabTable), as the painting draws it but at a real
+    table's size: heavy worn oak on turned legs, a panelled drawer front
+    with brass ring pulls and violet enamel, a top of boards between
+    breadboard ends with a raised rim along its sides, a pot-board below.
+    On it, as painted: the great glass still with its arms in the middle, an
+    oil press, a tall flask, a dark flask, a three-candle candelabra and a
+    spired globe along the back, yellow-green bottles, a rack of violet
+    vials, tongs, strewn beads and glass, and at its south-east corner the
+    red spill running over the edge to the floor. Someone's blue coat with
+    a buckled strap hangs over the front edge."""
     kit = RP.Kit("AlchemyTable", prop="ChemistryLabTable")
-    oak, brass, iron = wake.oak(), hall._brass(), hall._cast_iron()
+    oak, brass = aged_oak(), hall._brass()
     rng = random.Random(2024)
     x0, x1, y0, y1 = TABLE
     top = TABLE_TOP
-    for lx in (x0 + 14.0, (x0 + x1) / 2.0, x1 - 14.0):
-        for ly in (y0 + 12.0, y1 - 12.0):
-            kit.lathe("Leg", lx, ly, [(0.0, 0.0), (5.6, 0.0), (5.6, 4.0), (4.0, 6.0), (4.8, 12.0), (3.4, 18.0),
-                                      (4.4, 25.0), (3.6, 31.0), (5.2, top - 9.0), (5.2, top - 4.0), (0.0, top - 4.0)],
-                      oak, plan=ROUND, segments=16, uv="box_up")
-    for part, (a, b, c, d) in (("North", (x0 + 8.0, x1 - 8.0, y0 + 7.0, y0 + 10.0)),
-                               ("South", (x0 + 8.0, x1 - 8.0, y1 - 10.0, y1 - 7.0)),
-                               ("West", (x0 + 7.0, x0 + 10.0, y0 + 8.0, y1 - 8.0)),
-                               ("East", (x1 - 10.0, x1 - 7.0, y0 + 8.0, y1 - 8.0))):
-        kit.box("Apron" + part, a, b, c, d, top - 11.0, top - 4.0, oak, bevel=0.6, uv="box")
-    kit.box("Stretcher", x0 + 14.0, x1 - 14.0, (y0 + y1) / 2.0 - 2.0, (y0 + y1) / 2.0 + 2.0, 6.0, 9.0, oak,
-            bevel=0.5, uv="box")
-    # The top: seven boards running east-west between breadboard ends.
-    boards = []
-    for side, (a, b) in (("W", (x0, x0 + 13.0)), ("E", (x1 - 13.0, x1))):
-        boards.append(kit.box("TopEnd" + side, a, b, y0, y1, top - 4.0, top, oak, bevel=1.2, uv="box_up"))
-    count = 7
-    width = (y1 - y0) / count
+    # Legs: a block under the drawers and at the foot, turned between, on
+    # bun feet; an H-stretcher and a pot-board between them.
+    for lx in (x0 + 11.0, x1 - 11.0):
+        for ly in (y0 + 10.0, y1 - 10.0):
+            kit.lathe("LegFoot", lx, ly, [(0.0, 0.0), (7.2, 0.0), (8.0, 2.0), (6.8, 4.5), (0.0, 4.5)], oak, plan=ROUND,
+                      segments=20, uv="box_up")
+            kit.box("LegBlock", lx - 6.0, lx + 6.0, ly - 4.6, ly + 4.6, 4.5, 12.0, oak, bevel=0.8, uv="box_up")
+            kit.lathe("LegTurn", lx, ly, [(0.0, 12.0), (5.0, 12.0), (6.0, 14.5), (3.8, 18.0), (5.6, 23.0),
+                                          (6.2, 26.5), (4.2, 30.5), (3.6, top - 24.0), (5.2, top - 22.5),
+                                          (0.0, top - 22.5)], oak, plan=ROUND, segments=20, uv="box_up")
+            kit.box("LegTop", lx - 6.2, lx + 6.2, ly - 4.8, ly + 4.8, top - 23.0, top - 5.0, oak, bevel=0.8,
+                    uv="box_up")
+    for lx in (x0 + 11.0, x1 - 11.0):
+        kit.box("EndStretcher", lx - 2.4, lx + 2.4, y0 + 14.0, y1 - 14.0, 6.0, 10.0, oak, bevel=0.6, uv="box")
+    kit.box("PotBoard", x0 + 17.0, x1 - 17.0, y0 + 14.0, y1 - 14.0, 8.0, 10.0, oak, bevel=0.6, uv="box")
+    # On the pot-board: books, a copper pan, a crate of bottles.
+    for index, (bx, colour) in enumerate(((x0 + 30.0, wake.BOOK_COLOURS[0]), (x0 + 33.0, wake.BOOK_COLOURS[3]))):
+        wake.closed_book(kit, "LowBook%d" % index, bx, bx + 28.0, y0 + 40.0, y0 + 62.0, 10.0 + index * 5.0, 5.0, colour)
+    kit.lathe("LowPan", x0 + 120.0, (y0 + y1) / 2.0, [(0.0, 10.0), (13.0, 10.0), (14.5, 16.0), (15.0, 17.0),
+                                                     (13.6, 16.6)], copper(), plan=ROUND, close=False)
+    MODELS.group(kit, "wooden_crate_01", x1 - 80.0, (y0 + y1) / 2.0, h=10.0, scale=0.5, turn=3.0)
+    for index in range(4):
+        flask(kit, "LowBottle%d" % index, x1 - 98.0 + index * 11.0, (y0 + y1) / 2.0 - 2.0, 10.0 + 11.0, "bottle",
+              rng.choice(SHELF_GLASS), size=0.8)
+    # The drawers along the front, with ring pulls; violet enamel between.
+    low, high = top - 21.0, top - 5.0
+    front = y1 - 3.0
+    kit.box("ApronFront", x0 + 6.0, x1 - 6.0, front - 3.0, front, low, high, oak, bevel=0.6, uv="box")
+    kit.box("ApronBack", x0 + 6.0, x1 - 6.0, y0 + 6.0, y0 + 9.0, low, high, oak, bevel=0.6, uv="box")
+    for side, x in (("W", x0 + 6.0), ("E", x1 - 9.0)):
+        kit.box("ApronEnd" + side, x, x + 3.0, y0 + 9.0, front - 3.0, low, high, oak, bevel=0.6, uv="box")
+    count, stile = 4, 9.0
+    width = (x1 - x0 - 24.0 - stile * (count - 1)) / count
+    middle = (low + high) / 2.0
+    enamel = hall._painted("ChemEnamelViolet", (0.32, 0.12, 0.5))
     for index in range(count):
-        boards.append(kit.box("TopBoard%d" % index, x0 + 13.3, x1 - 13.3, y0 + width * index + 0.35,
-                              y0 + width * (index + 1) - 0.35, top - 4.0 - 0.15 * (index % 2), top - 0.15 * (index % 2),
+        a = x0 + 12.0 + index * (width + stile)
+        b = a + width
+        kit.box("Drawer%d" % index, a, b, front, front + 1.3, low + 2.0, high - 2.0, oak, bevel=0.7, uv="box")
+        kit.box("DrawerPanel%d" % index, a + 5.0, b - 5.0, front + 1.1, front + 2.0, low + 4.6, high - 4.6, oak,
+                bevel=0.9, uv="box")
+        cx = (a + b) / 2.0
+        kit.ball("PullBoss%d" % index, cx, front + 2.3, middle + 2.4, 1.3, brass, plan=0.5)
+        kit.ring("Pull%d" % index, (cx, front + 2.6, middle - 0.4), (0.0, 1.0, 0.0), 2.6, 0.55, brass, segments=20,
+                 sides=6)
+        if index < count - 1:
+            sx = b + stile / 2.0
+            diamond = [(sx, middle + 4.2), (sx + 3.0, middle), (sx, middle - 4.2), (sx - 3.0, middle)]
+            kit.slab("Lozenge%d" % index, diamond, front + 0.2, front + 1.2, enamel)
+            rim = [(sx, middle + 5.0), (sx + 3.7, middle), (sx, middle - 5.0), (sx - 3.7, middle)]
+            kit.slab("LozengeRim%d" % index, rim, front + 0.4, front + 0.9, brass)
+    # The top: boards between breadboard ends, a raised rim along its sides,
+    # brass caps on its corners.
+    boards = []
+    for side, (a, b) in (("W", (x0, x0 + 12.0)), ("E", (x1 - 12.0, x1))):
+        boards.append(kit.box("TopEnd" + side, a, b, y0, y1, top - 5.0, top, oak, bevel=1.2, uv="box_up"))
+    rows = 5
+    depth = (y1 - y0) / rows
+    for index in range(rows):
+        boards.append(kit.box("TopBoard%d" % index, x0 + 12.3, x1 - 12.3, y0 + depth * index + 0.35,
+                              y0 + depth * (index + 1) - 0.35, top - 5.0 - 0.15 * (index % 2), top - 0.15 * (index % 2),
                               oak, bevel=1.0, uv="box"))
-    # Marks on the oak: rings where wet glass stood, burns by the burner.
+    for side, (a, b) in (("North", (y0, y0 + 4.5)), ("South", (y1 - 4.5, y1))):
+        kit.box("Rim" + side, x0 + 12.0, x1 - 12.0, a, b, top, top + 1.6, oak, bevel=0.6, uv="box")
+    for cx in (x0 + 6.0, x1 - 6.0):
+        for cy in (y0 + 5.0, y1 - 5.0):
+            kit.box("CornerCap", cx - 6.4, cx + 6.4, cy - 5.4, cy + 5.4, top, top + 1.0, brass, bevel=0.4)
+    # Marks on the oak: rings where wet glass stood, burns by the burners.
     marks = RP.Kit("AlchemyTableMarks", prop="ChemistryLabTable")
-    for index in range(14):
-        decal(marks, "Ring%d" % index, rng.uniform(x0 + 20.0, x1 - 20.0), rng.uniform(y0 + 50.0, y1 - 20.0),
-              top + 0.04 + index * 0.002, rng.uniform(4.0, 8.0), ring_stain(), turn=rng.uniform(0.0, 6.28))
-    for index, (cx, cy, radius) in enumerate(((556.0, 466.0, 14.0), (660.0, 548.0, 11.0), (410.0, 600.0, 9.0))):
+    for index in range(10):
+        decal(marks, "Ring%d" % index, rng.uniform(x0 + 20.0, x1 - 20.0), rng.uniform(y0 + 12.0, y1 - 12.0),
+              top + 0.04 + index * 0.002, rng.uniform(4.0, 7.0), ring_stain(), turn=rng.uniform(0.0, 6.28))
+    for index, (cx, cy, radius) in enumerate(((616.0, 528.0, 20.0), (468.0, 520.0, 9.0))):
         decal(marks, "Scorch%d" % index, cx, cy, top + 0.03, radius, scorch(), turn=index * 1.7)
     for obj in marks.made:
         kit.keep(obj)
-    # The reagent shelf down the north side, two tiers of stock.
-    sx0, sx1, sy0, sy1 = 396.0, 690.0, 362.0, 392.0
-    for side, x in (("W", sx0), ("E", sx1 - 4.0)):
-        kit.box("ShelfEnd" + side, x, x + 4.0, sy0, sy1, top, top + 44.0, oak, bevel=0.6, uv="box_up")
-    for tier, level in enumerate((top + 18.0, top + 41.0)):
-        kit.box("ShelfBoard%d" % tier, sx0 + 4.0, sx1 - 4.0, sy0, sy1, level - 3.0, level, oak, bevel=0.5, uv="box")
-    kit.box("ShelfBack", sx0 + 4.0, sx1 - 4.0, sy0, sy0 + 2.0, top, top + 41.0, oak, bevel=0.3, uv="box_up")
-    stock_shelf(kit, "ShelfLow", sx0 + 6.0, sx1 - 6.0, (sy0 + sy1) / 2.0 + 1.0, top, rng, scale=0.8, gaps=0.25)
-    stock_shelf(kit, "ShelfHigh", sx0 + 6.0, sx1 - 6.0, (sy0 + sy1) / 2.0 + 1.0, top + 18.0, rng, scale=0.8,
-                gaps=0.3)
-    for index, x in enumerate((420.0, 520.0, 610.0)):
-        jar(kit, "ShelfTopJar%d" % index, x, (sy0 + sy1) / 2.0, top + 41.0, JAR_CONTENTS[index], tall=13.0, radius=5.5)
-    # The heat slab, the great flask boiling green over its burner, and the
-    # condenser carrying its vapour east into a receiver.
-    kit.box("HeatSlab", 566.0, 640.0, 470.0, 532.0, top, top + 1.6, slate(), bevel=0.6, uv="box")
-    fx, fy = 600.0, 500.0
-    kit.lathe("Burner", fx, fy, [(0.0, top + 1.6), (6.5, top + 1.6), (7.0, top + 5.0), (4.5, top + 9.0),
-                                 (1.2, top + 10.0), (0.0, top + 10.0)], brass, plan=ROUND)
-    kit.flame("Burner", fx, fy, top + 10.0, size=1.5, power=4.0, color=(0.55, 0.75, 1.0))
-    ring_h = top + 18.0
-    kit.ring("StandRing", (fx, fy, ring_h), (0.0, 0.0, 1.0), 14.0, 0.9, iron, segments=36, sides=6)
-    for turn in (90.0, 210.0, 330.0):
-        dx, dy = math.cos(math.radians(turn)), math.sin(math.radians(turn)) * ROUND
-        kit.rod("StandLeg", (fx + dx * 14.0, fy + dy * 14.0, ring_h), (fx + dx * 19.0, fy + dy * 19.0, top + 1.6), 0.9,
-                iron)
-    wake.flask(kit, "Great", fx, fy, ring_h - 4.0, "round", (0.3, 1.0, 0.45), size=2.5)
-    neck = ring_h - 4.0 + 23.0 * 2.5
-    kit.light("GreatGlow", fx, fy, ring_h + 12.0, GREEN, 5.0, radius=0.08)
-    RP.glow("crystal", fx, fy, ring_h + 14.0, GREEN, 34.0)
-    glass = wake.jar_glass()
-    rx, ry = 664.0, 512.0
-    kit.rod("Condenser", (fx + 2.0, fy, neck - 2.0), (rx - 2.0, ry, top + 26.0), 1.6, glass, segments=12)
-    kit.rod("CondenserJacket", (fx + 18.0, fy + 2.4, neck - 9.0), (rx - 14.0, ry - 2.4, top + 32.0), 3.4, glass,
-            segments=16)
-    kit.made[-1].visible_shadow = False
-    kit.made[-2].visible_shadow = False
-    kit.lathe("ClampFoot", rx + 14.0, ry - 8.0, [(0.0, top + 1.6), (6.0, top + 1.6), (6.0, top + 3.0),
-                                                 (0.0, top + 3.0)], iron, plan=ROUND)
-    kit.rod("ClampPost", (rx + 14.0, ry - 8.0, top + 1.6), (rx + 14.0, ry - 8.0, top + 40.0), 0.8, iron)
-    kit.rod("ClampArm", (rx + 14.0, ry - 8.0, top + 33.0), (rx - 12.0, ry - 3.0, top + 33.0), 0.6, iron)
-    flask(kit, "Receiver", rx, ry, top + 1.6, "cone", (0.3, 1.0, 0.45), size=1.15, glow=0.3)
-    for index in range(4):
-        kit.ball("Drop%d" % index, rx - 1.0, ry, top + 26.0 - index * 3.5, 0.5, potion((0.3, 1.0, 0.45)), plan=ROUND)
-    # West: the book on its blotter, ink and quill, the tube rack, the mortar
-    # and dishes of ground powders.
-    kit.box("Blotter", 410.0, 500.0, 418.0, 470.0, top, top + 0.6, wake.book_leather((0.12, 0.07, 0.05)),
-            bevel=0.2)
-    for part, (a, b) in (("L", (424.0, 453.0)), ("R", (453.8, 483.0))):
-        kit.box("BookCover" + part, a - 1.0, b + 1.0, 424.0, 461.0, top + 0.6, top + 1.6,
-                wake.book_leather((0.2, 0.08, 0.05)), bevel=0.3)
-        kit.box("BookPages" + part, a, b, 425.0, 460.0, top + 1.6, top + 3.8, wake.parchment(), bevel=0.3)
-    kit.quad("BookText", [(424.0, 460.0, top + 3.85), (483.0, 460.0, top + 3.85), (483.0, 425.0, top + 3.85),
-                          (424.0, 425.0, top + 3.85)], wake.writing("ChemTableBook", lines=11.0, gutter=True))
-    kit.lathe("Inkwell", 492.0, 432.0, [(0.0, top + 0.6), (3.6, top + 0.6), (3.8, top + 3.5), (2.0, top + 5.0),
-                                        (1.4, top + 6.0), (0.0, top + 6.0)], tinted_glass("Ink", (0.08, 0.1, 0.2)),
-              plan=ROUND)
-    kit.rod("Quill", (492.0, 432.0, top + 5.5), (506.0, 416.0, top + 22.0), 0.6, wake.parchment())
-    wake.candlestick(kit, "BookCandle", 400.0, 404.0, top, wax_height=7.0, radius=2.2, power=2.4, stick=5.0)
-    tube_rack(kit, "Tubes", 420.0, 506.0, top, (POTIONS[0], POTIONS[3], None, POTIONS[1], POTIONS[0], POTIONS[6]))
-    MODELS.place(kit, "wooden_bowl_01", "wooden_bowl_01", 470.0, 540.0, top, scale=0.55)
-    kit.lathe("MortarPowder", 470.0, 540.0, [(0.0, top + 2.6), (6.0, top + 2.6), (6.0, top + 2.2), (0.0, top + 2.2)],
-              powder((0.62, 0.15, 0.12)), plan=ROUND)
-    kit.rod("Pestle", (470.0, 540.0, top + 3.0), (480.0, 532.0, top + 12.0), 1.3, wake.stone())
-    for index, (dx, contents) in enumerate(((0.0, (0.82, 0.8, 0.72)), (17.0, (0.75, 0.55, 0.12)),
-                                            (34.0, (0.3, 0.42, 0.65)))):
-        kit.lathe("Dish%d" % index, 404.0 + dx, 580.0, [(0.0, top), (5.0, top), (6.5, top + 2.4), (6.0, top + 2.6),
-                                                        (0.0, top + 1.0)], wake.stone(), plan=ROUND)
-        kit.lathe("DishPowder%d" % index, 404.0 + dx, 580.0, [(0.0, top + 2.4), (5.2, top + 1.9), (0.0, top + 1.6)],
-                  powder(contents), plan=ROUND)
-    # East: the candelabra, flasks, specimen jars and a stack of books.
-    holder(kit, "Candelabra", "brass_candleholder_03", 742.0, 398.0, top, scale=1.0, tall=10.0, radius=1.4,
-           power=2.4)
-    flask(kit, "ConeFlask", 760.0, 488.0, top, "cone", POTIONS[4], size=1.2)
-    flask(kit, "Bottle", 782.0, 474.0, top, "bottle", POTIONS[1], size=1.1)
-    vial(kit, "LooseVial", 744.0, 508.0, top, POTIONS[5], tall=10.0)
-    for index, (x, y, contents) in enumerate(((810.0, 430.0, (0.3, 0.36, 0.22)), (832.0, 452.0, (0.55, 0.45, 0.3)))):
-        jar(kit, "Specimen%d" % index, x, y, top, contents, tall=22.0, radius=8.0)
-    for index, (colour, lift) in enumerate(((wake.BOOK_COLOURS[3], 0.0), (wake.BOOK_COLOURS[5], 6.0),
-                                            (wake.BOOK_COLOURS[0], 11.0))):
-        wake.closed_book(kit, "Stack%d" % index, 790.0 + index * 2.0, 830.0 - index, 586.0 + index, 616.0, top + lift,
-                         6.0 - index * 0.5, colour)
-    balance(kit, "Balance", 748.0, 584.0, top)
+    # Along the back, west to east: a tall flask, the oil press, a dark
+    # flask on its stand, the candelabra and the spired globe.
+    flask(kit, "TallFlask", 450.0, 466.0, top, "round", (0.6, 0.34, 0.08), size=1.5)
+    kit.rod("StirRod", (448.0, 466.0, top + 6.0), (457.0, 460.0, top + 44.0), 0.6, wake.jar_glass())
+    screw_press(kit, "Press", 512.0, 466.0, top)
+    kit.lathe("DarkStand", 672.0, 464.0, [(0.0, top), (7.0, top), (7.0, top + 1.4), (2.2, top + 3.0), (2.2, top + 8.0),
+                                          (5.6, top + 9.0), (0.0, top + 9.0)], brass, plan=ROUND)
+    flask(kit, "DarkFlask", 672.0, 464.0, top + 9.0, "round", (0.12, 0.08, 0.16), size=1.35, glow=0.05)
+    holder(kit, "Candelabra", "brass_candleholder_02", 730.0, 462.0, top, scale=1.0, tall=11.0, radius=1.5,
+           power=7.0)
+    globe_spire(kit, "Spire", 786.0, 468.0, top, (0.85, 0.55, 0.2))
+    # The still in the middle, on a slate slab.
+    kit.box("HeatSlab", 586.0, 646.0, 506.0, 552.0, top, top + 1.4, slate(), bevel=0.5, uv="box")
+    spider_still(kit, "Still", 616.0, 528.0, top + 1.4)
+    # West: a round flask on a cork ring, the yellow-green bottles, tongs.
+    kit.lathe("CorkRing", 462.0, 524.0, [(5.0, top), (8.0, top), (8.4, top + 1.6), (4.6, top + 1.6)], cork(),
+              plan=ROUND, close=False)
+    flask(kit, "RoundFlask", 462.0, 524.0, top + 0.6, "round", (0.12, 0.22, 0.62), size=1.45, glow=0.1)
+    for index, (dx, dy, size) in enumerate(((0.0, 0.0, 1.0), (9.0, 4.0, 0.85), (-8.0, 6.0, 0.9), (4.0, 10.0, 0.75))):
+        flask(kit, "Yellow%d" % index, 500.0 + dx, 560.0 + dy, top, "bottle", (0.72, 0.82, 0.16), size=size, glow=0.18)
+    flask(kit, "YellowCone", 524.0, 572.0, top, "cone", (0.72, 0.82, 0.16), size=0.8, glow=0.18)
+    tongs(kit, "Tongs", 452.0, 594.0, top, 200.0)
+    # The front: violet vials in a rack, papers; beads strewn round the still.
+    tube_rack(kit, "VioletVials", 572.0, 590.0, top, (VIOLET, VIOLET, None, VIOLET, VIOLET))
     note = wake.writing("ChemTableNotes", lines=8.0)
-    for index, (cx, cy, angle) in enumerate(((396.0, 640.0, 0.2), (700.0, 612.0, -0.35), (720.0, 452.0, 0.6),
-                                             (508.0, 650.0, -0.1), (840.0, 650.0, 0.15), (530.0, 488.0, 0.4))):
-        wake.paper(kit, "Note%d" % index, cx, cy, top + 0.2 + index * 0.05, 26.0, 18.0, angle, note)
-    # The knocked-over bottle, its purple run across the oak, and the glass.
-    lying_bottle(kit, "Spilt", 572.0, 604.0, 20.0, 4.6, 20.0, POTIONS[0], h=top)
-    spill = splatter("TableSpill", (0.16, 0.05, 0.26), 26.0, spikes=9, seed=0.4, droplets=0.6)
-    reach = 40.0
-    kit.quad("Spill", [(596.0 - reach, 614.0 + reach * ROUND, top + 0.12), (596.0 + reach, 614.0 + reach * ROUND,
-                                                                             top + 0.12),
-                       (596.0 + reach, 614.0 - reach * ROUND, top + 0.12),
-                       (596.0 - reach, 614.0 - reach * ROUND, top + 0.12)], spill,
+    for index, (cx, cy, angle) in enumerate(((548.0, 520.0, 0.3), (690.0, 560.0, -0.3), (770.0, 520.0, 0.15))):
+        wake.paper(kit, "Note%d" % index, cx, cy, top + 0.2 + index * 0.05, 24.0, 17.0, angle, note)
+    beads(kit, "Bead", rng, 560.0, 700.0, 500.0, 596.0, top, 14)
+    flask(kit, "Decanter", 720.0, 540.0, top, "bottle", (0.55, 0.12, 0.6), size=1.05)
+    wake.closed_book(kit, "TableBook", 770.0, 800.0, 500.0, 524.0, top, 5.0, wake.BOOK_COLOURS[3])
+    # The red spill at the south-east corner, over the edge and down.
+    spill = splatter("TableRed", (0.22, 0.015, 0.02), 22.0, spikes=11, seed=0.3, droplets=0.8, throw=330.0, carry=0.5)
+    reach = 46.0
+    kit.quad("RedSpill", [(774.0 - reach, 590.0 + reach * ROUND, top + 0.12), (774.0 + reach, 590.0 + reach * ROUND,
+                                                                               top + 0.12),
+                          (774.0 + reach, 590.0 - reach * ROUND, top + 0.12),
+                          (774.0 - reach, 590.0 - reach * ROUND, top + 0.12)], spill,
              uvs=((-reach, -reach), (reach, -reach), (reach, reach), (-reach, reach)))
-    shards(kit, "TableShard", 614.0, 626.0, top, 22.0, 9, random.Random(12))
-    # The cloth over the front edge, crumpled and askew, dropped with the
-    # cloth solver: its slack falls into folds where it hangs.
-    cloth = kit.sheet("Cloth", 552.0, 742.0, 634.0, 726.0,
-                      lambda x, y: top + 1.6 + 1.8 * (1.0 + math.sin(0.21 * x + 0.4 * math.sin(0.09 * y))),
-                      wake.velvet(), columns=84, rows=40)
-    centre = RP.world(647.0, 680.0, 0.0)
-    cloth.data.transform(Matrix.Translation(centre) @ Matrix.Rotation(math.radians(7.0), 4, "Z")
-                         @ Matrix.Translation(-centre))
-    RP.simulate_cloth(cloth, boards + [bpy.data.objects["RoomFloor"]], frames=80, mass=0.3, bending=1.2,
-                      friction=40.0)
-    wake.fold(cloth, wake.creases(random.Random(31), 552.0, 742.0, 634.0, 690.0, 7, 2.2, 2.4, (-40.0, 40.0)))
-    # Even thickness spikes where the cloth folds sharply over the table's
-    # edge; a plain offset keeps the fold.
-    wake.thicken(cloth, 0.6).modifiers["Solidify"].use_even_offset = False
+    red = potion((0.3, 0.02, 0.03), 0.0)
+    for index, (dx, length) in enumerate(((-12.0, 26.0), (-4.0, 44.0), (3.0, 18.0), (9.0, 34.0))):
+        x = 788.0 + dx
+        kit.rod("RedDrip%d" % index, (x, y1 + 0.4, top + 0.6), (x + 0.4, front + 2.8, top - length * 0.55), 0.9, red,
+                segments=8)
+        kit.ball("RedBead%d" % index, x + 0.4, front + 2.8, top - length * 0.55, 1.4, red, plan=ROUND)
+    lying_bottle(kit, "SpiltRed", 760.0, 578.0, 18.0, 4.2, 330.0, (1.0, 0.16, 0.22), h=top)
+    shards(kit, "TableShard", 772.0, 590.0, top, 20.0, 9, random.Random(12))
+    # The blue coat over the front edge, dropped with the cloth solver, a
+    # leather strap across it.
+    wool = RP.textured("ChemCoatWool", "cotton_jersey", 0.3, 0.75, (0.2, 0.28, 0.55), saturation=0.0, ao=0.35)
+    strap = wake.book_leather((0.2, 0.11, 0.05))
+    # Crumpled where it lies, waved across where it hangs, so the solver
+    # drops it into folds rather than a flat sheet.
+
+    def rumple(x, y):
+        lying = top + 3.6 + 1.6 * (1.0 + math.sin(0.31 * x + 0.9 * math.sin(0.06 * y)))
+        return lying + (2.6 * math.sin(0.42 * x) if y > y1 - 4.0 else 0.0)
+
+    coat = kit.sheet("Coat", 664.0, 734.0, y1 - 74.0, y1 + 40.0, rumple, [wool, strap], columns=56, rows=80,
+                     material_of=lambda x, y: 1 if 703.0 < x < 709.0 else 0)
+    centre = RP.world(699.0, y1 - 10.0, 0.0)
+    coat.data.transform(Matrix.Translation(centre) @ Matrix.Rotation(math.radians(-14.0), 4, "Z")
+                        @ Matrix.Translation(-centre))
+    collider = kit.box("SimTop", x0, x1, y0, y1, top - 5.0, top + 1.6, oak, bevel=0.0)
+    RP.simulate_cloth(coat, [collider, bpy.data.objects["RoomFloor"]], frames=110, quality=8, mass=0.3, bending=0.5,
+                      shear=3.0, friction=60.0)
+    kit.made.remove(collider)
+    bpy.data.objects.remove(collider)
+    wake.fold(coat, wake.creases(random.Random(41), 650.0, 748.0, y1 - 80.0, y1, 7, 2.4, 2.6, (-50.0, 50.0)))
+    wake.thicken(coat, 1.2).modifiers["Solidify"].use_even_offset = False
+    # The buckle where the strap hangs over the edge.
+    mesh = coat.data
+    best = min(mesh.vertices, key=lambda vertex: (RP.game(coat.matrix_world @ vertex.co) - Vector(
+        (708.0, y1 + 6.0, top - 14.0))).length)
+    point = RP.game(coat.matrix_world @ best.co)
+    kit.box("Buckle", point.x - 3.0, point.x + 3.0, point.y + 1.0, point.y + 1.8, point.z - 2.5, point.z + 2.5, brass,
+            bevel=0.3)
+    kit.box("BuckleBar", point.x - 0.5, point.x + 0.5, point.y + 1.6, point.y + 2.2, point.z - 2.0, point.z + 2.0,
+            brass, bevel=0.2)
     return kit
 
 
 # ---------------------------------------------------------------- the floor
+
+
+# The painting's flagstones: rows about 38 px deep, stones of mixed length.
+FLAG_ROW = (35.0, 41.0)
+FLAG_LENGTH = (30.0, 50.0)
+FLAG_JOINT = 1.6
+# How far the room's floor lies under the stones' tops: the joints' depth.
+JOINT_DEPTH = 1.5
+
+
+def flagstones(shell):
+    """The floor as the painting lays it: square-cut flagstones in east-west
+    rows, their lengths mixed so the joints stagger, each a slab whose
+    chamfered rim catches the light and is worn paler, a few of them
+    cracked. Their tops are the floor (h 0); the room's dark floor, lowered
+    under them, shows in the joints."""
+    kit = RP.Kit("Flagstones", depth=False)
+    rng = random.Random(1609)
+    shape = bmesh.new()
+    cracks = []
+    laid_count = 0
+    y = DOOR_BACK - 6.0
+    while y < SOUTH_Y + 10.0:
+        y1 = y + rng.uniform(*FLAG_ROW)
+        x = shell.side_x("left", min(y1, 1150.0)) - 24.0 - rng.uniform(0.0, 30.0)
+        while x < RIGHT_X + 8.0:
+            length = rng.uniform(*FLAG_LENGTH)
+            x1 = x + length
+            top = rng.uniform(-0.25, 0.15)
+            _flagstone(shape, x + FLAG_JOINT / 2.0, x1 - FLAG_JOINT / 2.0, y + FLAG_JOINT / 2.0, y1 - FLAG_JOINT / 2.0,
+                       top, rng)
+            laid_count += 1
+            if rng.random() < 0.06:
+                cracks.append(((x + x1) / 2.0, (y + y1) / 2.0, length - 8.0, y1 - y - 8.0, top))
+            x = x1
+        y = y1
+    stones = kit.shape("Stones", shape, flagstone(), uv="floor")
+    stones.visible_shadow = True
+    crack = hall.material_floor_crack(False)
+    for index, (cx, cy, across, along, top) in enumerate(cracks):
+        wake.paper(kit, "Crack%d" % index, cx, cy, top + 0.05, across, along, rng.uniform(-0.4, 0.4), crack)
+    floor = bpy.data.objects["RoomFloor"]
+    floor.location.z -= JOINT_DEPTH / RP.SIN * RP.PX
+    print("FLAGSTONES %d stones, %d cracked" % (laid_count, len(cracks)))
+    return kit
+
+
+def _flagstone(shape, x0, x1, y0, y1, top, rng):
+    """One flagstone into `shape`: its corners cut, a two-step chamfer round
+    its top, turned and tipped a little at random so no two catch the light
+    alike (the Greenhouse's paver, squared)."""
+    cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+    turn = math.radians(rng.uniform(-0.8, 0.8))
+    slope_x, slope_y = rng.uniform(-0.01, 0.01), rng.uniform(-0.008, 0.008)
+    cosine, sine = math.cos(turn), math.sin(turn)
+
+    def ring(inset, drop):
+        a0, a1, b0, b1 = x0 + inset, x1 - inset, y0 + inset, y1 - inset
+        cut = max(2.2 - inset * 0.6, 0.7)
+        outline = ((a0 + cut, b0), (a1 - cut, b0), (a1, b0 + cut), (a1, b1 - cut), (a1 - cut, b1), (a0 + cut, b1),
+                   (a0, b1 - cut), (a0, b0 + cut))
+        verts = []
+        for px, py in outline:
+            dx, dy = px - cx, py - cy
+            verts.append(shape.verts.new((cx + dx * cosine - dy * sine, cy + dx * sine + dy * cosine,
+                                          top - drop + dx * slope_x + dy * slope_y)))
+        return verts
+
+    outer = ring(0.0, 1.1)
+    middle = ring(0.7, 0.35)
+    inner = ring(1.5, 0.0)
+    bottom = [shape.verts.new((vert.co.x, vert.co.y, -JOINT_DEPTH - 1.0)) for vert in outer]
+    shape.faces.new(inner)
+    shape.faces.new(list(reversed(bottom)))
+    for upper, lower in ((inner, middle), (middle, outer), (outer, bottom)):
+        for index in range(8):
+            following = (index + 1) % 8
+            shape.faces.new((lower[index], lower[following], upper[following], upper[index]))
 
 
 def tipped_flask(kit, part, x, y, kind, color, size, turn):
@@ -1248,13 +1617,14 @@ def floor_dressing():
     bottles, a purple flask on its side, glass and scattered notes."""
     kit = RP.Kit("ChemFloor", depth=False)
     for name, (cx, cy), colour, radius, spikes, seed, drops, throw, carry in (
-            ("RedStain", (992.0, 624.0), (0.2, 0.014, 0.02), 104.0, 17, 0.0, 1.3, 225.0, 0.8),
+            ("RedStain", (992.0, 624.0), (0.3, 0.018, 0.024), 96.0, 21, 0.0, 1.4, 225.0, 1.3),
             ("GreenSpill", (700.0, 796.0), (0.05, 0.26, 0.08), 22.0, 9, 0.35, 0.6, 200.0, 0.6),
             ("PurpleSpill", (590.0, 868.0), (0.18, 0.05, 0.3), 26.0, 9, 0.7, 0.7, 250.0, 0.8),
             ("PurpleDrip", (652.0, 732.0), (0.2, 0.05, 0.32), 16.0, 7, 0.2, 0.5, None, 0.0)):
         reach = radius * (1.55 + carry)
-        kit.quad(name, [(cx - reach, cy + reach * ROUND, 0.15), (cx + reach, cy + reach * ROUND, 0.15),
-                        (cx + reach, cy - reach * ROUND, 0.15), (cx - reach, cy - reach * ROUND, 0.15)],
+        lift = RUG_H + 0.4
+        kit.quad(name, [(cx - reach, cy + reach * ROUND, lift), (cx + reach, cy + reach * ROUND, lift),
+                        (cx + reach, cy - reach * ROUND, lift), (cx - reach, cy - reach * ROUND, lift)],
                  splatter(name, colour, radius, spikes=spikes, seed=seed, droplets=drops, throw=throw, carry=carry),
                  uvs=((-reach, -reach), (reach, -reach), (reach, reach), (-reach, reach)))
     green = (0.3, 1.0, 0.45)
@@ -1307,7 +1677,7 @@ def build(rp, layout):
     for asset, value, saturation in GRADES:
         MODELS.grade(asset, value, saturation)
     shell_materials = {
-        "floor": rp.textured("ChemFloor", "large_floor_tiles_02", 1.6, 0.66, (0.76, 0.7, 0.8), ao=0.25),
+        "floor": grout(),
         "wall": rp.textured("ChemWall", "castle_wall_slates", 1.5, 0.56, (0.72, 0.66, 0.78), ao=0.3),
         "cap": (hall.material_cap_textured(rp.TEXTURES, lit=False) if rp.TEXTURES.available()
                 else rp.textured("ChemCap", "large_grey_tiles", 1.2, 0.44, (0.64, 0.6, 0.72), saturation=0.6)),
@@ -1318,6 +1688,7 @@ def build(rp, layout):
     shell = rp.Shell(SPEC, shell_materials)
     shell.build()
     open_sill()
+    flagstones(shell)
     doorway()
     door_sconces()
     north_east_rack()
@@ -1328,14 +1699,22 @@ def build(rp, layout):
     west_storage()
     herb_bed(shell)
     runner()
+    table_rug()
     south_west_crates()
     hearth()
     south_east_storage()
     east_bench(shell)
     floor_dressing()
     wake.moon_sky()
+    # No window lets the moon in here: it only fills what the fire and the
+    # candles leave dark.
+    bpy.data.objects["WakeMoonSky"].data.energy = 0.7
     props = {"ChemistryLabTable": alchemy_table(), "ChemistryPotionCabinet": potion_cabinet()}
     roots = {"ChemistryLabTable": "Worldsort/ChemistryLabTable",
              "ChemistryPotionCabinet": "Worldsort/ChemistryPotionCabinet"}
+    # The table is a real table's size now, smaller than the painted one:
+    # the preview swaps its footprint into the room's collision.
+    x0, x1, y0, y1 = TABLE
+    collision = {"RoomCollisions/AlchemyTableCollision": [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]}
     print("CHEMISTRY ROOM built: %d objects, %d glows" % (len(bpy.data.objects), len(rp.GLOWS)))
-    return {"props": props, "roots": roots}
+    return {"props": props, "roots": roots, "collision": collision}

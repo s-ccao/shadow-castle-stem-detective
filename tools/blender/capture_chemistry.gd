@@ -5,6 +5,8 @@ extends SceneTree
 ## the painted room and once in HD (tools/blender/prototype_room.gd). It checks
 ## that the alchemy table and the potion cabinet are staged in HD, that their
 ## highlight boxes follow the HD art and go back with the painted ones, that
+## the HD table (a real table's size, smaller than the painted one) swaps its
+## footprint into the room's collision and gives the painted one back, that
 ## every interaction (the doorway, the cabinet, the table, the red stain and
 ## the butler) still reaches the player standing beside it, that the table
 ## draws in front of a player behind it and behind one in front of it, that
@@ -25,10 +27,17 @@ const DATA := "res://prototypes/blender_rooms/chemistry_room/"
 const Room := preload("res://tools/blender/prototype_room.gd")
 const Characters := preload("res://tools/blender/prototype_characters.gd")
 ## chemistry_room.gd's interactions by the render's prop ids, and where the
-## player stands to use each (the room's own walk-up points).
+## player stands to use each in the HD room and in the painted one (the HD
+## table is smaller, so its front is nearer the room's middle).
 const PROPS: Dictionary = {
-	"ChemistryPotionCabinet": {"item": "cabinet", "stand": Vector2(422, 248), "shot": "02-cabinet"},
-	"ChemistryLabTable": {"item": "alchemy_table", "stand": Vector2(620, 700), "shot": "03-table"},
+	"ChemistryPotionCabinet": {
+		"item": "cabinet", "stand": Vector2(422, 248), "painted": Vector2(422, 248),
+		"shot": "02-cabinet",
+	},
+	"ChemistryLabTable": {
+		"item": "alchemy_table", "stand": Vector2(620, 628), "painted": Vector2(620, 700),
+		"shot": "03-table",
+	},
 }
 ## The interactions the render does not stage, and where to stand for each:
 ## out of reach of every interaction the room offers before it.
@@ -40,7 +49,12 @@ const OTHERS: Dictionary = {
 ## North of the table it stands in front of the player; behind the cauldron
 ## the cauldron hides their legs; in the doorway and on the open floor
 ## nothing hides them.
-const BEHIND_TABLE := Vector2(520, 318)
+const BEHIND_TABLE := Vector2(560, 428)
+const PAINTED_BEHIND_TABLE := Vector2(560, 336)
+## Inside the painted table's footprint but beside the HD table, and the HD
+## table's own middle.
+const FREED_FLOOR := Vector2(400, 520)
+const TABLE_MIDDLE := Vector2(620, 527)
 const BEHIND_CAULDRON := Vector2(700, 1124)
 const DOORWAY := Vector2(742, 140)
 const OPEN_FLOOR := Vector2(700, 880)
@@ -115,6 +129,7 @@ func _run() -> void:
 	var painted := _interaction_rects()
 	await _clear_toasts()
 	_rect_checks(hd_rects, painted)
+	await _footprint_checks()
 	await _prop_checks()
 	await _other_checks()
 	await _depth_checks()
@@ -152,30 +167,66 @@ func _rect_checks(hd_rects: Dictionary, painted: Dictionary) -> void:
 	_expect(_interaction_rects() == painted, "The painted room gets its own highlight boxes back")
 
 
+## The HD table's footprint is the room's collision while it is staged; the
+## painted table's comes back with the painted room.
+func _footprint_checks() -> void:
+	_show(true)
+	await _wait(0.15)
+	_expect(
+		look.footprints.size() == 1,
+		"The HD room swaps the table's footprint into the collision (%d)" % look.footprints.size()
+	)
+	_expect(
+		spatial.is_position_clear(player, FREED_FLOOR, 0.0),
+		"Where the painted table stood, beside the HD table, the floor is open (%s)" % FREED_FLOOR
+	)
+	_expect(
+		not spatial.is_position_clear(player, TABLE_MIDDLE, 0.0),
+		"The HD table itself still blocks the player (%s)" % TABLE_MIDDLE
+	)
+	await _stand(FREED_FLOOR)
+	await _shot("blender", "11-beside-table")
+	_show(false)
+	await _wait(0.15)
+	_expect(
+		not spatial.is_position_clear(player, FREED_FLOOR, 0.0),
+		"With the painted room back, its table blocks that floor again (%s)" % FREED_FLOOR
+	)
+
+
 ## Each prop's prompt, standing beside it in the HD room and in the painted one.
 func _prop_checks() -> void:
 	for id: String in PROPS:
-		await _offer_checks(PROPS[id]["item"], PROPS[id]["stand"], id)
-		await _pair(PROPS[id]["shot"])
+		var spots: Dictionary = await _offer_checks(
+			PROPS[id]["item"], PROPS[id]["stand"], id, PROPS[id]["painted"]
+		)
+		await _pair_at(PROPS[id]["shot"], spots)
 
 
 ## The doorway, the stain and the butler: the game's own boxes, offered in
 ## the HD room as in the painted one.
 func _other_checks() -> void:
 	for item: String in OTHERS:
-		await _offer_checks(item, OTHERS[item]["stand"], item)
-		await _pair(OTHERS[item]["shot"])
+		var spots: Dictionary = await _offer_checks(item, OTHERS[item]["stand"], item)
+		await _pair_at(OTHERS[item]["shot"], spots)
 
 
-func _offer_checks(item: String, target: Vector2, label: String) -> void:
+## Where the player stands to be offered `item` in each look: {"hd", "painted"}.
+func _offer_checks(
+	item: String, target: Vector2, label: String, painted_target: Vector2 = Vector2.INF
+) -> Dictionary:
+	var spots := {"hd": Vector2.INF, "painted": Vector2.INF}
 	for shown: bool in [true, false]:
 		_show(shown)
-		var spot := _clear_near(target)
+		# A swapped footprint reaches the physics server on its next step.
+		await _wait(0.15)
+		var spot := _clear_near(target if shown or painted_target == Vector2.INF else painted_target)
 		_expect(
 			spot != Vector2.INF, "There is open floor beside the %s (%s look)" % [label, _look_name(shown)]
 		)
 		if spot == Vector2.INF:
 			continue
+		spots["hd" if shown else "painted"] = spot
 		await _stand(spot)
 		var offered := str(room.get("current_interaction"))
 		_expect(
@@ -184,12 +235,14 @@ func _offer_checks(item: String, target: Vector2, label: String) -> void:
 				spot, label, _look_name(shown), offered, room.call("get_interaction_rect", item),
 			]
 		)
+	return spots
 
 
 ## The table and the cauldron stand in front of a player behind them; the
 ## doorway and the open floor hide nothing.
 func _depth_checks() -> void:
 	_show(true)
+	await _wait(0.15)
 	var image := look.depth.depth_texture.get_image()
 	var table := room.get_node("Worldsort/ChemistryLabTable/TableOverlay") as CanvasItem
 	var behind := _clear_near(BEHIND_TABLE)
@@ -199,8 +252,11 @@ func _depth_checks() -> void:
 		"North of the table it draws in front of the player (z %d at %s)" % [table.z_index, behind]
 	)
 	_show(false)
-	await _pair("04-behind-table")
+	await _wait(0.15)
+	var painted_behind := _clear_near(PAINTED_BEHIND_TABLE)
+	await _pair_at("04-behind-table", {"hd": behind, "painted": painted_behind})
 	_show(true)
+	await _wait(0.15)
 	var front := _clear_near(PROPS["ChemistryLabTable"]["stand"])
 	await _stand(front)
 	_expect(
@@ -332,6 +388,20 @@ func _show(shown: bool) -> void:
 		look.apply()
 	else:
 		look.restore()
+
+
+## The same moment in both looks, the player at each look's own spot: the HD
+## table is smaller, so a spot beside it can lie inside the painted one.
+func _pair_at(label: String, spots: Dictionary) -> void:
+	for shown: bool in [false, true]:
+		_show(shown)
+		await _wait(0.15)
+		var spot: Vector2 = spots["hd" if shown else "painted"]
+		if spot != Vector2.INF:
+			await _stand(spot)
+		await _wait(0.2)
+		await _shot("blender" if shown else "current", label)
+	_show(false)
 
 
 func _pair(label: String) -> void:

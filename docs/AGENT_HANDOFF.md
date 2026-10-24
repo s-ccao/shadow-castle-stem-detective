@@ -334,7 +334,7 @@ Manual acceptance flow:
      - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.
    - **Rooms** (stage 52 on, preview only), one room per stage:
      - **Order:** Wake Room (done, stage 52), Chemistry (butler, and Dr. Lin's echo, from Tripo), Greenhouse (gardener), Circuit (mechanic), Library, Dining, Final (Dr. Lin); then NPC portraits rendered from the 3D models; then the move into the game.
-       - The Chemistry Room is done (stage 55); its butler and Dr. Lin's echo are still the pixel NPCs.
+       - The Chemistry Room is done (stage 55, restyled in stage 58: a real-size table on a rug, laid flagstones, aged oak); its butler and Dr. Lin's echo are still the pixel NPCs.
      - **Evidence:** `docs/evidence/2026-10-23-blender-wake-room/`, `docs/evidence/2026-10-23-blender-chemistry/`.
      - **Export:** `tools/blender/export_room_layout.gd` (headless Godot; add the room to its `ROOMS`) writes `prototypes/blender_rooms/<room>/layout.json` and `collision.png`.
        - A room whose props are not under `Props/` names their nodes in its entry's `"props"` (the Greenhouse's stand in `Worldsort/`).
@@ -348,7 +348,7 @@ Manual acceptance flow:
      - **Preview:** `tools/blender/prototype_room.gd` stages a room. `play_prototype.gd` does so whenever the room's scene loads (add the scene to `ROOMS` in `prototype_room.gd`). It re-reads the room's highlight boxes and walk-up points from the HD props.
        - A room with `_sync_interaction_footprints()` (the Greenhouse) re-reads them itself.
        - `play_prototype.gd -- --greenhouse` opens the Greenhouse directly; `-- --chemistry` opens the Chemistry Room.
-     - **Capture:** `tools/blender/capture_room.gd` shoots and checks the Wake Room (65 checks); `tools/blender/capture_chemistry.gd` checks the Chemistry Room (80 checks).
+     - **Capture:** `tools/blender/capture_room.gd` shoots and checks the Wake Room (65 checks); `tools/blender/capture_chemistry.gd` checks the Chemistry Room (86 checks).
      - **Walk-up rule:** an HD prop's visible front must reach within 7.5 px of its collision edge. Otherwise the game's walk-up band lands in blocked floor and the prompt never shows.
      - **Doors on side walls:** Hall pieces go onto side walls with `rp.place_on_frame` and `Shell.mount`. Side-wall doors are drawn true to perspective, so they are narrow; asked in stage 52, the user kept that rather than folding them out to face the player like the painting.
      - **Style (stage 52 review):** the user found the first HD Wake Room fake and out of keeping with the walls and the Hall, especially the bed and the bookshelf. Stage 53 restyled it; its lessons apply to every room:
@@ -361,6 +361,11 @@ Manual acceptance flow:
        - **Stains (stage 55):** a liquid flung from a falling flask streaks one way, dries darker at its rim, and breaks into drops at its ends (`room_chemistry.splatter`, `throw`/`carry`).
        - **Cloth over an edge (stage 55):** a solidify modifier with even thickness spikes where simulated cloth folds sharply over a table's edge. Use a plain offset there, and collide the cloth with the table top alone, not with its apron as well.
        - **Doorways under tall walls (stage 55):** a half-elliptical arch (spring 100, rise 45) keeps the doors taller than the detective. A round arch on the alcove's width leaves them shorter than him.
+       - **Furniture at real size (stage 58):** the user found the Chemistry table too big at the painting's footprint (4.8 × 4.4 m). Build furniture at a real size against the detective (about 1.4 m), and when that is smaller than its painted collision, return the new footprint from `build()` as `"collision"`. The preview swaps it into the room's polygon while staged.
+       - **Wood and floors (stage 58):** never one photo across a whole surface.
+         - Lay floors stone by stone (`room_chemistry.flagstones`).
+         - Give each piece of furniture its own part and shade of a worn wood photo, with paler worn edges, grime in the corners and a waxed coat (`room_chemistry.laid`, `aged_oak`).
+       - **Inside-out boxes (stage 58):** `recalc_face_normals` can leave a closed box inside out depending on where it stands. `mesh_from` now turns every closed island right way out by its signed volume. A cloth collider facing inward lets the cloth fall straight through it.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
 4. **Room spatial audit drift.** `tests/room_spatial_audit.gd` still expects a 14px contact band for the five Hall knowledge exhibits and `arrival_chemistry_core`, but those deliberately use the 72px wall-aware approach zone. The six failures predate the 2026-10-21 stage; update the expectation rather than the margin.

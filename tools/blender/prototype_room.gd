@@ -4,7 +4,8 @@ extends RefCounted
 ## rebuilds a room in 3D on its own collision and writes, under
 ## prototypes/blender_rooms/<room>/:
 ##   render.png            the room without its interactive props, 2 px per px;
-##   render.json           its region, render scale and figure scale;
+##   render.json           its region, render scale and figure scale, and
+##                         any footprint it changes ("collision");
 ##   render-glows.json     the candles' and crystals' halos;
 ##   render-depth.png      every wall and fixed piece's own ground y;
 ##   render-props.json     each interactive prop rendered alone, cut where the
@@ -14,7 +15,9 @@ extends RefCounted
 ## in front of them, and draws the characters in HD. The room's script read its
 ## props' highlight boxes and walk-up points off those sprites when it loaded,
 ## so staging reads them again from the HD props, and restoring from the
-## painted ones. Collision, prompts and every story step stay the game's own.
+## painted ones. Collision, prompts and every story step stay the game's own,
+## but for a footprint the HD room changes (a table built at a real table's
+## size), whose polygon is swapped in while the room is staged.
 
 const ROOMS: Dictionary = {
 	"res://scenes/wake_room.tscn": "wake_room",
@@ -43,6 +46,8 @@ var halos := 0
 var swapped := 0
 var sheets := 0
 var has_depth := false
+## {"polygon", "painted", "hd"} for each collision polygon the HD room changes.
+var footprints: Array[Dictionary] = []
 
 
 ## The prototype room a scene shows, or "" for any other scene.
@@ -64,6 +69,7 @@ func attach(room_node: Node, name: String) -> bool:
 		push_warning("Prototype room render unreadable under " + data_dir)
 		return false
 	meta = parsed as Dictionary
+	_read_footprints()
 	var region: Array = meta["region"]
 	var render_scale := float(meta.get("render_scale", 2.0))
 	var origin := Vector2(float(region[0]), float(region[1]))
@@ -100,6 +106,7 @@ func apply() -> void:
 		return
 	overlay.visible = true
 	props.apply()
+	_swap_footprints(true)
 	_resync()
 	if has_depth:
 		depth.apply()
@@ -114,6 +121,7 @@ func restore() -> void:
 	if has_depth:
 		depth.restore()
 	props.restore()
+	_swap_footprints(false)
 	_resync()
 	overlay.visible = false
 
@@ -170,3 +178,27 @@ func _resync() -> void:
 		var rect := spatial.get_visual_rect(door)
 		if rect.size.x > 0.0 and rect.size.y > 0.0:
 			room.set("door_interaction_rect", rect)
+
+## The collision polygons render.json changes, with the scene's own points.
+func _read_footprints() -> void:
+	footprints.clear()
+	var listed: Variant = meta.get("collision", {})
+	if not listed is Dictionary:
+		return
+	for path: Variant in (listed as Dictionary).keys():
+		var polygon := room.get_node_or_null(NodePath(str(path))) as CollisionPolygon2D
+		if polygon == null:
+			push_warning("No collision polygon to swap at " + str(path))
+			continue
+		var to_local := polygon.global_transform.affine_inverse()
+		var points := PackedVector2Array()
+		for point: Variant in (listed as Dictionary)[path]:
+			points.append(to_local * Vector2(float(point[0]), float(point[1])))
+		footprints.append({"polygon": polygon, "painted": polygon.polygon, "hd": points})
+
+
+func _swap_footprints(hd: bool) -> void:
+	for footprint: Dictionary in footprints:
+		var polygon := footprint["polygon"] as CollisionPolygon2D
+		if is_instance_valid(polygon):
+			polygon.polygon = footprint["hd"] if hd else footprint["painted"]
