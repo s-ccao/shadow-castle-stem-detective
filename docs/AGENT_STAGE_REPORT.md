@@ -2,6 +2,39 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-51
+
+- **Date:** 2026-10-23
+- **Status:** approved by the user ("很好"), who also approved committing it and chose the next step: move the HD Hall into the game. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** on stage 50 (committed and pushed as `404aaf9`), the user found what was enlarged too big ("现在的太大了，就正常一点就可以了"). Asked which part, they chose the hands, which stage 50 had drawn 1.4× (detective) and 1.3× (Guardian).
+
+### What changed
+
+- **Hand size:** both characters' hands are back to the models' own size (`"hand": 1.0` in `character_motion.py`). They stay visible because the arms are still held out from the coat. The arm swing, run, idle, strides and gait logic are unchanged.
+- **Re-rendered:** all six gait sheets and the 3× previews. The sheet layouts and strides are identical (detective walk 54.5 px and run 111.3 px; Guardian 89.3 px and 128.2 px), so the preview needed no change.
+
+### Exact files
+
+- Changed: `tools/blender/character_motion.py` (hand scale 1.0 and its docstring).
+- Evidence in `docs/evidence/2026-10-21-blender-hall-prototype/`: rebuilt `32-hd-characters.png`, `33-character-walks.png`, `34-characters-standing-zh.png`, `35-characters-close.png` and `36-tripo-characters.png`, plus the comparisons where the HD detective appears.
+- Docs: this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- Local only: the re-rendered sheets and previews in `prototypes/blender_chars/`.
+
+### Verification
+
+- **Blender:** all six sheets render with every frame of every facing inside its cell.
+- **Native captures:** `capture_prototype.gd` passes all 176 checks in EN and ZH, including idle, walk, run, the planted-feet stride (55.3 px a cycle against 55.4 px) and restoring.
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+- **Preview:** relaunched with the new frames.
+
+### Limits / next stage
+
+- Same as stage 50: preview only, and the detective always runs because the game moves him at 180 px/s.
+- **Next (user's choice):** move the HD Hall, props, doors, depth shader, 50 px Hall figures and these characters into the game itself, with each Hall door matching its room's own door.
+- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+
+---
+
 ## Stage: UX-20261021-50
 
 - **Date:** 2026-10-23

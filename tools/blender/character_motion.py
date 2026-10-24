@@ -12,7 +12,7 @@ every frame keeps the clip's legs and hips and rebuilds the rest:
     forward; a run pumps them with fists;
   * the chest twists with the arms and the head turns back against it, looks
     where the figure goes and nods with the steps;
-  * the hands are drawn 1.3-1.4 times larger, the way chibi art draws them;
+  * the hands keep the model's own size ("hand" can scale them);
   * the run's stride is lengthened, with the body lowered so the stance foot
     still meets the floor, so legs at game speed don't blur;
   * standing breathes, sways and looks around.
@@ -43,7 +43,7 @@ FOOT_BONES = ("Foot", "ToeBase", "Toe_End")
 # coming forward, "cross" how far the forearms swing in across the body.
 STYLES = {
     "detective": {
-        "hand": 1.4,
+        "hand": 1.0,
         "idle": {"clip": "idle", "frames": 36, "seconds": 6.0, "out": 17.0, "swing": 4.0, "elbow": 16.0,
                  "curl": 18.0, "look": 26.0, "breath": 1.4, "sway": 1.6},
         "walk": {"clip": "walk", "frames": 8, "stride": 1.25, "knee": 1.1, "out": 15.0, "swing": 32.0,
@@ -54,7 +54,7 @@ STYLES = {
                 "nod": 2.0, "gaze": 2.0},
     },
     "guardian": {
-        "hand": 1.3,
+        "hand": 1.0,
         "idle": {"clip": "idle", "frames": 36, "seconds": 6.0, "out": 13.0, "swing": 3.0, "elbow": 12.0,
                  "curl": 45.0, "look": 34.0, "breath": 1.1, "sway": 1.0},
         "walk": {"clip": "walk", "frames": 8, "stride": 1.3, "knee": 1.1, "out": 12.0, "swing": 24.0,

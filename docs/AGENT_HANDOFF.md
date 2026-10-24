@@ -263,14 +263,14 @@ Manual acceptance flow:
 
 ## Next priorities
 
-1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -50 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their gaits (idle, walk, run) and `36-tripo-characters.png` where each came from.
+1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -51 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their gaits (idle, walk, run) and `36-tripo-characters.png` where each came from.
    - **Characters** (stages 48–50): the detective and the Castle Guardian are Tripo models (stage 49; stage 48's primitive models looked like wooden puppets to the user). Each is a rigged GLB in `prototypes/blender_chars/source/` holding Tripo's preset clips (`<character>_anims.glb`).
      - `sources.json` there records the pipeline, the prompts, the Tripo task ids and the clips: Studio Generate Image from the pixel sprite → Generate Model (HD, H3.1) → Auto Rig (Mixamo) → preset clips (free to retarget) → GLB export in place.
      - `tools/blender/character_prototype.py` renders three gaits in 8 directions into `prototypes/blender_chars/<character>_<idle|walk|run>_8dir.png`, plus `<character>.json`. The JSON gives the rows by animation name, cell, feet, height, angle, and per gait its image and frames, plus the idle's fps or a cycle's `stride` (ground covered, sheet px).
      - Gaits: the idle is 36 frames. Walk and run are one cycle each in 8 frames, starting on the right foot's footfall; the period comes from the feet.
      - `tools/blender/character_motion.py` (`STYLES`) keeps each clip's legs and restyles the rest so it reads at 50 px:
        - arms held out from the coat and swinging a beat behind the legs, with bending elbows and fists in a run;
-       - hands 1.3–1.4×;
+       - hands at the model's own size (`"hand"`; stage 50's 1.3–1.4× looked too big to the user, so stage 51 set 1.0);
        - chest twist, head counter-turn, nod and gaze;
        - run lean cut from 30° to 13–14°;
        - longer strides, with the lower shoe set back on the floor;
@@ -328,7 +328,7 @@ Manual acceptance flow:
    - The outputs in `prototypes/blender_hall/` are local and regenerable.
    - The user tuned one region until it satisfied, then chose to extend it to the whole Hall (stage 45), then asked for every prop in HD, moved or remade to blend in (stage 46), then for richer doors that open by themselves and a visible Wake Room door (stage 47). They allow replacing anything in the Hall with details that fit the game.
      - Stage 48 made the characters HD, the user's choice after stage 47; they found those primitive-built figures puppet-like, so stage 49 regenerated both with Tripo in the game's style. Stage 50 added the run and an idle and made the hands visible, after the user found the figures stiff, handless and without a running pose.
-     - Next (user's verdict on stage 50): what was enlarged is too big; bring it back toward normal. Then move the HD Hall, its props on their stands, the doors, the depth shader, the 50 px Hall figures and the characters into the game itself.
+     - Stage 51 set the hands back to normal size, the user's verdict on stage 50, and the user approved the characters. Next (user's choice): move the HD Hall, its props on their stands, the doors, the depth shader, the 50 px Hall figures and the characters into the game itself.
      - **Door rule for that move:** each Hall door must look the same as its room's door seen from inside; redesign both freely, with each room's own character, rather than copying today's textures.
      - Dressing tips: floor items must be flat (tagged `floor_decal`); wall and top items must sit inside the outline; and the AO nodes use `only_local`, so props don't darken the stone in squares.
      - Fast layout loop: stub `bpy`, `bmesh` and `mathutils`, then run `Layout` on the exported masks with Pillow (about 5 s). Use it to check door sides and placements before spending a render.
