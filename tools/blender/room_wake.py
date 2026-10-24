@@ -18,8 +18,9 @@ where the painted room has it and on the floor the collision blocks:
 import math
 import random
 
+import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, bvhtree
 
 import hall_prototype as hall
 
@@ -41,6 +42,9 @@ DOOR_SCALE = 3.25
 DOOR_PROUD = 3.0
 CRYSTAL_Y = (372.0, 562.0)
 VIOLET = (0.62, 0.36, 1.0)
+# A lathe's plan squash for a true circle (the plan is foreshortened by the
+# camera's tilt), so turned wood and brass are round in 3D as well as on screen.
+ROUND = math.cos(math.radians(hall.ALPHA_DEGREES))
 CANDLE = (1.0, 0.6, 0.28)
 MOON = (0.55, 0.68, 1.0)
 
@@ -68,23 +72,89 @@ SPEC = {
 # ---------------------------------------------------------------- materials
 
 
-def dark_wood():
-    return RP.textured("WakeDarkWood", "dark_wood", 0.5, 0.6, (0.8, 0.6, 0.5), saturation=0.85, ao=0.2)
+def oak():
+    """Worn, waxed oak with a figured grain, warm as the painted room's
+    furniture: the bed, the bookcase, the desk and the tables."""
+    return RP.textured("WakeOak", "wood_table_worn", 0.42, 1.0, (0.96, 0.8, 0.64), saturation=0.92, ao=0.25)
 
 
-def worn_wood():
-    return RP.textured("WakeWornWood", "wood_table_worn", 0.3, 0.62, (0.82, 0.66, 0.52), saturation=0.8, ao=0.2)
+def planks():
+    """Rough boards for the crates and the travelling trunk."""
+    return RP.textured("WakePlanks", "wood_cabinet_worn_long", 0.6, 0.8, (0.92, 0.76, 0.62), saturation=0.9,
+                       ao=0.25)
+
+
+def _sheen(material, tint, weight=1.0, roughness=0.35):
+    for node in material.node_tree.nodes:
+        if node.type == "BSDF_PRINCIPLED":
+            node.inputs["Sheen Weight"].default_value = weight
+            node.inputs["Sheen Roughness"].default_value = roughness
+            node.inputs["Sheen Tint"].default_value = tint + (1.0,)
+    return material
 
 
 def velvet():
     material = RP.textured("WakeVelvet", "velour_velvet", 0.3, 0.95, (0.38, 0.15, 0.6), saturation=0.0, ao=0.3)
-    for node in material.node_tree.nodes:
-        if node.type == "BSDF_PRINCIPLED":
-            # Velvet's pile catches light at grazing angles.
-            node.inputs["Sheen Weight"].default_value = 1.0
-            node.inputs["Sheen Roughness"].default_value = 0.35
-            node.inputs["Sheen Tint"].default_value = (0.75, 0.55, 1.0, 1.0)
-    return material
+    # Velvet's pile catches light at grazing angles.
+    return _sheen(material, (0.75, 0.55, 1.0))
+
+
+def damask():
+    """The bed's coverlet: plum silk damask, its woven pattern catching the light."""
+    material = RP.textured("WakeDamask", "floral_jacquard", 0.75, 1.55, (0.46, 0.2, 0.64), saturation=0.0, ao=0.35)
+    return _sheen(material, (0.85, 0.7, 1.0), weight=0.7, roughness=0.3)
+
+
+def sheet_linen():
+    return RP.textured("WakeSheet", "cotton_jersey", 0.25, 1.05, (0.92, 0.9, 0.84), saturation=0.1, ao=0.35)
+
+
+def throw_cloth():
+    return RP.textured("WakeThrow", "cotton_jersey", 0.25, 1.0, (0.88, 0.78, 0.58), saturation=0.2, ao=0.35)
+
+
+def gold_weave():
+    return RP.textured("WakeGoldWeave", "cotton_jersey", 0.15, 0.9, (0.66, 0.46, 0.16), saturation=0.3, ao=0.3)
+
+
+# Bindings of an old library: oxblood, bottle green, navy, tan, brown, black,
+# plum and ochre, all darkened with age.
+BOOK_COLOURS = ((0.25, 0.05, 0.045), (0.05, 0.12, 0.07), (0.05, 0.07, 0.16), (0.36, 0.22, 0.1),
+                (0.15, 0.085, 0.045), (0.04, 0.035, 0.035), (0.17, 0.06, 0.14), (0.4, 0.27, 0.09))
+
+
+def book_leather(color=None):
+    """Aged leather: the photo's grain and creases, coloured either by
+    `color` or, for shelved books, each book its own colour from BOOK_COLOURS."""
+    def build(nodes, links):
+        if RP.TEXTURES is None or not RP.TEXTURES.available():
+            hall._principled(nodes, links, color or (0.15, 0.08, 0.05), roughness=0.55)
+            return
+        maps = RP.TEXTURES.sample(nodes, links, "fabric_leather_02", repeat=0.12)
+        grain = hall._grade(nodes, links, maps["diff"], 1.9, (1.0, 1.0, 1.0), saturation=0.0)
+        if color is None:
+            info = nodes.new("ShaderNodeObjectInfo")
+            ramp = nodes.new("ShaderNodeValToRGB")
+            ramp.color_ramp.interpolation = "CONSTANT"
+            elements = ramp.color_ramp.elements
+            while len(elements) < len(BOOK_COLOURS):
+                elements.new(0.5)
+            for index, (element, colour) in enumerate(zip(elements, BOOK_COLOURS)):
+                element.position = index / len(BOOK_COLOURS)
+                element.color = colour + (1.0,)
+            links.new(info.outputs["Random"], ramp.inputs["Fac"])
+            tint = ramp.outputs["Color"]
+        else:
+            tint = color
+        shaded = hall._mix(nodes, links, 1.0, grain, tint, blend="MULTIPLY")
+        hall._principled(nodes, links, shaded, roughness=maps["rough"], normal=maps["normal"])
+    name = "WakeBookLeather" if color is None else "WakeBookLeather_%d_%d_%d" % tuple(int(c * 100) for c in color)
+    return hall._material(name, build)
+
+
+def gilt():
+    """Gold leaf on a spine: brighter and smoother than the brass fittings."""
+    return hall._prop_metal("WakeGilt", (0.74, 0.55, 0.22), 0.28)
 
 
 def linen():
@@ -207,7 +277,15 @@ def rug_material(length, width):
         fringe = op("LESS_THAN", to_end, 3.0)
         threads = op("LESS_THAN", op("FRACT", op("DIVIDE", v, 1.7)), 0.55)
         color = hall._mix(nodes, links, fringe, color, (0.5, 0.44, 0.34))
-        shader = hall._principled(nodes, links, color, roughness=0.95)
+        roughness, normal = 0.95, None
+        if RP.TEXTURES is not None and RP.TEXTURES.available():
+            # The pile: a carpet photo's fibres shade the woven pattern.
+            pile = RP.TEXTURES.sample(nodes, links, "dirty_carpet", repeat=40.0)
+            fibres = hall._grade(nodes, links, pile["diff"], 2.6, (1.0, 1.0, 1.0), saturation=0.0)
+            color = hall._mix(nodes, links, 0.55, color, hall._mix(nodes, links, 1.0, color, fibres,
+                                                                    blend="MULTIPLY"))
+            roughness, normal = pile["rough"], pile["normal"]
+        shader = hall._principled(nodes, links, color, roughness=roughness, normal=normal)
         hall._alpha_cut(nodes, links, shader, op("SUBTRACT", 1.0, op("MULTIPLY", fringe, op("SUBTRACT", 1.0, threads))))
     return hall._material("WakeRug", build)
 
@@ -250,32 +328,63 @@ def compass_material(radius):
 
 
 def closed_book(kit, part, x0, x1, y0, y1, h, thick, color):
-    """A book lying shut: boards, spine and the block of pages between."""
-    cover = leather("WakeLeather_%d_%d_%d" % tuple(int(channel * 100) for channel in color), color)
-    kit.box(part + "Pages", x0 + 0.7, x1 - 0.2, y0 + 0.7, y1 - 0.7, h + 0.6, h + thick - 0.6, parchment(),
-            bevel=0.2)
-    kit.box(part + "Lower", x0, x1, y0, y1, h, h + 0.7, cover, bevel=0.25)
-    kit.box(part + "Upper", x0, x1, y0, y1, h + thick - 0.7, h + thick, cover, bevel=0.25)
-    kit.box(part + "Spine", x0, x0 + 1.0, y0, y1, h, h + thick, cover, bevel=0.35)
+    """A book lying shut, spine to the west: its boards and spine in one
+    piece, the page block between them showing on three sides."""
+    cover = book_leather(color)
+    board = min(0.6, thick * 0.18)
+    kit.blocks(part + "Cover", [(x0, x1, y0, y1, h, h + board), (x0, x1, y0, y1, h + thick - board, h + thick),
+                                (x0, x0 + 1.0, y0, y1, h, h + thick)], cover, bevel=0.25)
+    kit.box(part + "Pages", x0 + 0.8, x1 - 0.35, y0 + 0.5, y1 - 0.5, h + board, h + thick - board, parchment(),
+            bevel=0.15)
 
 
-def standing_books(kit, x0, x1, front, h0, h1, rng, depth=(15.0, 19.0), lean_end=True):
-    """Books shelved spine out between x0 and x1, the last few leaning."""
-    material = hall._book_material()
+def shelf_book(kit, x0, width, front, h0, tall, deep, rng, turn=0.0):
+    """A book shelved spine out, its spine `front` px south: two boards and a
+    rounded spine in one piece (so one colour), the cream page block showing
+    on top between the boards, and gilt bands and a label on the spine.
+    `turn` leans it on its bottom-west edge, top to the west, in degrees."""
+    board = 0.45
+    back = front - deep
+    made = [kit.blocks("Book", [(x0, x0 + board, back, front - 0.6, h0, h0 + tall),
+                                (x0 + width - board, x0 + width, back, front - 0.6, h0, h0 + tall),
+                                (x0, x0 + width, front - 1.1, front, h0, h0 + tall)], book_leather(), bevel=0.32),
+            kit.box("BookPages", x0 + board, x0 + width - board, back + 0.25, front - 1.0, h0 + 0.3, h0 + tall - 0.55,
+                    parchment(), bevel=0.12)]
+    bands = []
+    for fraction in (0.14, 0.86) if rng.random() < 0.7 else (0.14, 0.32, 0.86):
+        middle = h0 + tall * fraction
+        bands.append((x0 + 0.15, x0 + width - 0.15, front - 0.4, front + 0.3, middle - 0.45, middle + 0.45))
+    if rng.random() < 0.6:
+        label = h0 + tall * rng.uniform(0.55, 0.66)
+        bands.append((x0 + 0.7, x0 + width - 0.7, front - 0.4, front + 0.2, label - 1.8, label + 1.8))
+    made.append(kit.blocks("BookGilt", bands, gilt(), bevel=0.1))
+    if turn:
+        for obj in made:
+            lean(obj, Vector((x0, front - deep / 2.0, h0)), -math.radians(turn))
+    return made
+
+
+def shelf_run(kit, x0, x1, front, h0, h1, rng, lean_end=True):
+    """Books standing from x0 to x1 on a shelf h0..h1, of every height and
+    depth, a few set back; the last leaning on the rest if there is room."""
     x = x0
     while x < x1 - 3.0:
-        width = rng.uniform(3.0, 6.4)
+        width = rng.uniform(2.8, 6.4)
         if x + width > x1:
             break
-        tall = (h1 - h0) * rng.uniform(0.6, 0.93)
-        deep = rng.uniform(*depth)
-        kit.box("Book", x, x + width, front - 1.2 - deep, front - 1.2, h0, h0 + tall, material, bevel=0.3)
-        x += width + rng.uniform(0.0, 0.35)
+        tall = (h1 - h0) * rng.uniform(0.66, 0.94)
+        deep = rng.uniform(15.0, 21.0)
+        shelf_book(kit, x, width, front - rng.uniform(0.6, 3.2), h0, tall, deep, rng)
+        x += width + rng.uniform(0.05, 0.45)
     if lean_end and x < x1 - 8.0:
-        width = rng.uniform(3.5, 5.5)
-        tall = (h1 - h0) * rng.uniform(0.7, 0.85)
-        obj = kit.box("Book", x + 1.0, x + 1.0 + width, front - 18.0, front - 1.2, h0, h0 + tall, material, bevel=0.3)
-        lean(obj, Vector((x + 1.0 + width, front - 9.0, h0)), -math.radians(rng.uniform(16.0, 24.0)))
+        turn = rng.uniform(14.0, 22.0)
+        tall = (h1 - h0) * rng.uniform(0.7, 0.84)
+        width = rng.uniform(3.5, 5.2)
+        # Its top rests on the last book standing.
+        foot = x + tall / RP.SIN * math.sin(math.radians(turn)) + 0.2
+        if foot + width < x1:
+            shelf_book(kit, foot, width, front - 1.5, h0, tall, rng.uniform(15.0, 19.0), rng, turn=turn)
+            x = foot + width
     return x
 
 
@@ -362,7 +471,7 @@ def floor_dressing():
 def back_wall_dressing():
     kit = RP.Kit("BackWall")
     face = BACK_Y + 0.6
-    brass, walnut = hall._brass(), dark_wood()
+    brass, walnut = hall._brass(), oak()
     # The castle's banner over the nightstand.
     x0, x1, low, high = 162.0, 228.0, 74.0, 170.0
     kit.quad("Banner", [(x0, face + 0.6, low), (x1, face + 0.6, low), (x1, face + 0.6, high), (x0, face + 0.6, high)],
@@ -429,7 +538,7 @@ def window():
                           (nx + 9.0, ny - 3.0, SEAT_H + 0.2), (nx - 9.0, ny - 3.0, SEAT_H + 0.2)], parchment())
     closed_book(kit, "SeatBook", 538.0, 560.0, 223.0, 233.0, SEAT_H, 4.0, (0.16, 0.05, 0.08))
     # A small chest tucked under the seat's east end.
-    wood, iron = worn_wood(), hall._cast_iron()
+    wood, iron = oak(), hall._cast_iron()
     kit.box("Chest", 530.0, 563.0, 236.0, 250.0, 0.0, 15.0, wood, bevel=0.7, uv="box")
     kit.box("ChestLid", 529.0, 564.0, 235.0, 251.0, 13.0, 17.0, wood, bevel=0.8, uv="box")
     for x in (535.0, 557.0):
@@ -452,13 +561,13 @@ def window():
 
 def nightstand():
     kit = RP.Kit("Nightstand")
-    wood = dark_wood()
+    wood = oak()
     kit.box("Plinth", 154.0, 238.0, 237.0, 277.0, 0.0, 4.0, wood, bevel=0.6, uv="box")
     kit.box("Body", 156.0, 236.0, 238.0, 274.0, 4.0, 42.0, wood, bevel=0.8, uv="box")
     kit.box("Top", 152.0, 240.0, 235.0, 278.0, 42.0, 46.0, wood, bevel=1.0, uv="box")
     kit.box("Drawer", 162.0, 230.0, 274.0, 275.4, 27.0, 38.0, wood, bevel=0.6, uv="box")
     kit.ball("Knob", 196.0, 276.0, 32.5, 1.7, hall._brass())
-    candlestick(kit, "Bedside", 222.0, 254.0, 46.0, wax_height=11.0, radius=2.6, power=3.6)
+    candlestick(kit, "Bedside", 222.0, 254.0, 46.0, wax_height=11.0, radius=2.6, power=6.0)
     closed_book(kit, "BedsideBook", 162.0, 194.0, 246.0, 268.0, 46.0, 5.0, (0.08, 0.1, 0.2))
     kit.lathe("Watch", 204.0, 270.0, [(0.0, 46.0), (4.6, 46.0), (4.8, 47.0), (4.4, 47.8), (0.0, 47.8)], hall._brass(),
               plan=0.62)
@@ -504,7 +613,7 @@ def crystal_lamps(shell):
 
 def side_table():
     kit = RP.Kit("SideTable")
-    wood, brass = worn_wood(), hall._brass()
+    wood, brass = oak(), hall._brass()
     x0, x1, y0, y1, top = 116.0, 246.0, 590.0, 650.0, 38.0
     for x, y in ((x0 + 4.0, y0 + 4.0), (x1 - 4.0, y0 + 4.0), (x0 + 4.0, y1 - 4.0), (x1 - 4.0, y1 - 4.0)):
         kit.box("Leg", x - 2.6, x + 2.6, y - 2.6, y + 2.6, 0.0, top - 4.0, wood, bevel=0.5, uv="box_up")
@@ -524,25 +633,26 @@ def side_table():
     closed_book(kit, "TableBook2", 198.0, 226.0, 603.0, 624.0, top + 5.5, 4.5, (0.06, 0.12, 0.1))
     paper(kit, "TableLetter", 186.0, 638.0, top + 0.2, 26.0, 16.0, 0.16, writing("WakeLetter", lines=8.0))
     # The travelling trunk below it, a purple cloth thrown over one end.
-    iron = hall._cast_iron()
-    kit.box("Trunk", 114.0, 264.0, 664.0, 712.0, 0.0, 28.0, wood, bevel=0.9, uv="box")
-    kit.box("TrunkLid", 112.0, 266.0, 662.0, 714.0, 26.0, 33.0, wood, bevel=1.4, uv="box")
+    iron, boards = hall._cast_iron(), planks()
+    trunk = [kit.box("Trunk", 114.0, 264.0, 664.0, 712.0, 0.0, 28.0, boards, bevel=0.9, uv="box"),
+             kit.box("TrunkLid", 112.0, 266.0, 662.0, 714.0, 26.0, 33.0, boards, bevel=1.4, uv="box")]
     for x in (126.0, 189.0, 252.0):
         kit.box("TrunkBand", x - 1.6, x + 1.6, 661.4, 714.6, 0.0, 33.6, iron, bevel=0.3)
     kit.box("TrunkLock", 182.0, 196.0, 714.0, 715.2, 18.0, 30.0, brass, bevel=0.4)
-    def cloth(x, y):
-        fall = max(y - 713.0, 0.0) / 2.6
-        ripple = (1.2 * math.sin(0.3 * x + 0.05 * y) + 0.8 * math.sin(0.16 * x - 0.21 * y + 1.0)
-                  + 1.4 * math.exp(-((x - 222.0 - 0.3 * (y - 660.0)) / 4.0) ** 2))
-        edge = max(204.0 - x, x - 256.0, 0.0) / 2.0
-        return 37.0 + ripple - 18.0 * min(fall, 1.0) ** 0.8 - 14.0 * min(edge, 1.0) ** 0.8
-    kit.sheet("TrunkCloth", 200.0, 260.0, 660.0, 716.0, cloth, velvet(), columns=30, rows=40)
+    cloth = kit.sheet("TrunkCloth", 200.0, 278.0, 656.0, 712.0, lambda x, y: 38.0 + 0.8 * math.sin(0.3 * x),
+                      velvet(), columns=70, rows=56)
+    centre = RP.world(239.0, 684.0, 0.0)
+    cloth.data.transform(Matrix.Translation(centre) @ Matrix.Rotation(math.radians(12.0), 4, "Z")
+                         @ Matrix.Translation(-centre))
+    RP.simulate_cloth(cloth, trunk + [bpy.data.objects["RoomFloor"]], frames=44, mass=0.3, bending=1.0)
+    fold(cloth, creases(random.Random(23), 200.0, 268.0, 656.0, 716.0, 8, 2.6, 2.4, (-50.0, 50.0)))
+    thicken(cloth, 0.6)
     return kit
 
 
 def alchemy_bench():
     kit = RP.Kit("AlchemyBench")
-    wood, brass = worn_wood(), hall._brass()
+    wood, brass = oak(), hall._brass()
     x0, x1, y0, y1, top = 388.0, 620.0, 664.0, 712.0, 34.0
     for x in (x0 + 5.0, x1 - 5.0):
         for y in (y0 + 5.0, y1 - 5.0):
@@ -574,7 +684,7 @@ def alchemy_bench():
 
 def crates():
     kit = RP.Kit("Crates")
-    wood, brass, iron = worn_wood(), hall._brass(), hall._cast_iron()
+    wood, brass, iron = planks(), hall._brass(), hall._cast_iron()
     for part, (x0, x1, y0, y1, tall) in (("Big", (786.0, 888.0, 612.0, 668.0, 54.0)),
                                          ("Small", (806.0, 894.0, 674.0, 712.0, 28.0))):
         kit.box(part, x0, x1, y0, y1, 0.0, tall, wood, bevel=0.8, uv="box")
@@ -605,119 +715,286 @@ def crates():
 # ---------------------------------------------------------------- the interactive props
 
 
+def creases(rng, x0, x1, y0, y1, count, height, width, angles):
+    """A field of soft creases over x0..x1, y0..y1: ridges along lines of
+    random place and angle (degrees from the plan's y), fading at their ends.
+    A sheet starts creased, and the cloth solver's bending keeps the creases
+    as it falls: fabric remembers how it was pushed about."""
+    lines = []
+    for _index in range(count):
+        angle = math.radians(rng.uniform(*angles))
+        lines.append((rng.uniform(x0, x1), rng.uniform(y0, y1), math.sin(angle), math.cos(angle),
+                      rng.uniform(0.35, 1.0) * (y1 - y0) * 0.35, rng.uniform(0.5, 1.0) * height,
+                      rng.uniform(0.7, 1.3) * width))
+
+    def field(x, y):
+        total = 0.0
+        for cx, cy, dx, dy, half, tall, wide in lines:
+            along = (x - cx) * dx + (y - cy) * dy
+            across = (x - cx) * dy - (y - cy) * dx
+            if abs(along) < half:
+                total += tall * math.exp(-(across / wide) ** 2) * math.cos(0.5 * math.pi * along / half) ** 2
+        return total
+    return field
+
+
+def fold(obj, field, facing_up=0.55):
+    """Raises soft folds into a simulated cloth where it lies face up: each
+    vertex rises by field(x, y) screen px, fully where its normal points
+    straight up and not at all where the cloth hangs. Fabric on a flat bed
+    only buckles where it has been pushed about, which a short fall cannot
+    show; the folds give the surface the camera sees its life."""
+    mesh = obj.data
+    for vertex in mesh.vertices:
+        up = (vertex.normal.z - facing_up) / (1.0 - facing_up)
+        if up <= 0.0:
+            continue
+        point = RP.game(obj.matrix_world @ vertex.co)
+        # Only ever up: a fold pushed down would sink into what the cloth lies on.
+        vertex.co.z += max(field(point.x, point.y), 0.0) / RP.SIN * RP.PX * min(up * 2.0, 1.0)
+    mesh.update()
+    return obj
+
+
+def thicken(obj, px):
+    """Gives a simulated cloth its thickness, so its edges read as fabric."""
+    modifier = obj.modifiers.new("Solidify", "SOLIDIFY")
+    modifier.thickness = px * RP.PX
+    modifier.offset = 0.0
+    modifier.use_even_offset = True
+    return obj
+
+
+def pillow(kit, part, cx, cy, h, half_x, half_y, top, bottom, angle, rng, dent=0.0):
+    """A filled pillow resting at screen height h: a puffed top and a flatter
+    underside sewn together at the seam, its corners pinched and wrinkled."""
+    shape = bmesh.new()
+    columns, rows = 40, 24
+    phase = rng.uniform(0.0, math.tau)
+
+    def bulge(u, v, power):
+        return ((1.0 - abs(u) ** 2.6) * (1.0 - abs(v) ** 2.6)) ** power
+
+    def place(u, v, z):
+        across, along = half_x * u, half_y * v
+        return (cx + across * math.cos(angle) - along * math.sin(angle),
+                cy + across * math.sin(angle) + along * math.cos(angle), h + bottom + z)
+
+    def wrinkle(u, v):
+        edge = max(abs(u), abs(v))
+        ripple = math.sin(7.0 * math.atan2(v, u) + phase) + 0.5 * math.sin(13.0 * math.atan2(v, u) - phase)
+        return 0.55 * ripple * max(min((edge - 0.55) / 0.35, 1.0), 0.0) * (1.0 - edge ** 8)
+
+    top_verts, bottom_verts = {}, {}
+    for j in range(rows + 1):
+        for i in range(columns + 1):
+            u, v = -1.0 + 2.0 * i / columns, -1.0 + 2.0 * j / rows
+            z = top * bulge(u, v, 0.5) + wrinkle(u, v)
+            z -= dent * math.exp(-((u + 0.1) / 0.42) ** 2 - ((v - 0.05) / 0.5) ** 2)
+            top_verts[i, j] = shape.verts.new(place(u, v, z))
+            if 0 < i < columns and 0 < j < rows:
+                bottom_verts[i, j] = shape.verts.new(place(u, v, -bottom * bulge(u, v, 0.15)))
+            else:
+                bottom_verts[i, j] = top_verts[i, j]
+    for j in range(rows):
+        for i in range(columns):
+            corners = ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))
+            shape.faces.new([top_verts[key] for key in corners])
+            shape.faces.new([bottom_verts[key] for key in reversed(corners)])
+    return kit.shape(part, shape, sheet_linen(), smooth=True, sharp_angle=70.0, uv="floor")
+
+
 def bed():
+    """A four-poster as the painting has it, its bedding fallen into place:
+    the coverlet and the throw are dropped onto the mattress with Blender's
+    cloth solver, so every fold hangs as cloth does."""
     kit = RP.Kit("Bed", prop="Bed")
-    wood, brass = dark_wood(), hall._brass()
+    wood, brass = oak(), hall._brass()
     x0, x1 = 130.0, 248.0
     head_y, foot_y = 290.0, 562.0
+    rng = random.Random(7)
+    colliders = []
 
     def post(part, x, y, tall):
-        kit.lathe(part, x, y, [(0.0, 0.0), (4.6, 0.0), (4.6, 3.0), (3.4, 5.0), (3.6, tall * 0.45), (4.4, tall * 0.5),
-                               (3.4, tall * 0.56), (3.4, tall - 3.0), (4.6, tall - 2.0), (4.6, tall), (0.0, tall)],
-                  wood, plan=0.6, uv="box_up")
-        kit.ball(part + "Finial", x, y, tall + 3.2, 3.6, brass, plan=0.6, squash=0.95)
+        # A square block where the rails join, a turned column, a brass finial.
+        colliders.append(kit.box(part + "Block", x - 4.6, x + 4.6, y - 4.6, y + 4.6, 0.0, 21.0, wood, bevel=0.9,
+                                 uv="box_up"))
+        kit.lathe(part, x, y, [(0.0, 21.0), (4.4, 21.0), (4.6, 22.2), (3.0, 23.8), (3.4, 25.2), (2.6, 28.0),
+                               (3.0, tall * 0.62), (3.9, tall * 0.65), (2.8, tall * 0.69), (2.6, tall - 4.0),
+                               (3.8, tall - 3.0), (4.0, tall - 1.2), (3.2, tall), (0.0, tall)], wood, plan=ROUND)
+        kit.lathe(part + "Finial", x, y, [(0.0, tall), (1.6, tall), (1.4, tall + 1.0), (3.0, tall + 2.8),
+                                          (3.3, tall + 4.4), (2.2, tall + 6.2), (0.9, tall + 7.2), (0.0, tall + 7.8)],
+                  brass, plan=ROUND)
 
     for x in (x0 + 4.6, x1 - 4.6):
-        post("HeadPost", x, head_y, 44.0)
-        post("FootPost", x, foot_y, 34.0)
-    arch = [(x0 + 8.0 + (x1 - x0 - 16.0) * step / 16.0,
-             32.0 + 8.0 * math.sin(math.pi * step / 16.0)) for step in range(17)]
-    kit.slab("Headboard", [(x0 + 8.0, 14.0), (x1 - 8.0, 14.0)] + list(reversed(arch)), head_y - 3.0, head_y + 3.0,
-             wood, bevel=0.8)
-    kit.slab("HeadPanel", [(x0 + 22.0, 18.0), (x1 - 22.0, 18.0), (x1 - 22.0, 31.0), (x0 + 22.0, 31.0)], head_y + 3.0,
-             head_y + 4.0, wood, bevel=0.6)
-    kit.slab("Footboard", [(x0 + 8.0, 10.0), (x1 - 8.0, 10.0), (x1 - 8.0, 28.0), (x0 + 8.0, 28.0)], foot_y - 3.0,
-             foot_y + 3.0, wood, bevel=0.8)
-    for x in (x0 + 2.0, x1 - 8.0):
-        kit.box("Rail", x, x + 6.0, head_y + 2.0, foot_y - 2.0, 9.0, 19.0, wood, bevel=0.8, uv="side")
-    kit.box("Mattress", x0 + 5.0, x1 - 5.0, head_y + 3.0, foot_y - 10.0, 15.0, 26.0, linen(), bevel=2.6, uv="box")
-    def blanket(x, y):
-        # On the mattress, falling over its sides; a hollow where the
-        # sleeper lay and soft folds that run down toward the foot.
-        side = max(x0 + 5.0 - x, x - (x1 - 5.0), 0.0)
-        foot = max(y - (foot_y - 14.0), 0.0)
-        sleeper = -2.6 * math.exp(-((x - 186.0) / 30.0) ** 2 - ((y - 430.0) / 80.0) ** 2)
-        folds = (1.6 * math.sin(0.11 * x + 0.05 * y) * math.sin(0.035 * y + 1.3)
-                 + 1.0 * math.sin(0.07 * x - 0.09 * y + 2.0) + 0.5 * math.sin(0.23 * x + 0.13 * y))
-        # Long creases where the blanket was pushed aside.
-        for start, slope, height in ((150.0, 0.32, 2.4), (214.0, -0.22, 1.8), (176.0, 0.12, 1.5)):
-            folds += height * math.exp(-((x - start - slope * (y - 340.0)) / 5.0) ** 2) * min(max((y - 350.0) / 60.0, 0.0), 1.0)
-        inside = 1.0 - min(side / 3.0, 1.0)
-        top = max(33.5 + sleeper + folds * inside, 28.0)
-        return top - 19.0 * min(side / 4.0, 1.0) ** 0.7 - 7.0 * min(foot / 10.0, 1.0) ** 1.2
-    kit.sheet("Blanket", x0 + 1.0, x1 - 1.0, 338.0, foot_y - 3.0, blanket, velvet(), columns=60, rows=110)
-    kit.box("SheetFold", x0 + 3.0, x1 - 3.0, 330.0, 344.0, 28.5, 33.0, linen(), bevel=2.2, uv="box")
-    for x in (163.0, 215.0):
-        kit.ball("Pillow", x, 312.0, 34.0, 23.0, linen(), plan=0.5, squash=0.3, segments=24)
-    # A cream throw across the blanket, falling with it over the bed's sides.
-    def throw(x, y):
-        along = (x - x0) / (x1 - x0)
-        lower = 452.0 + 18.0 * along
-        upper = lower + 27.0 + 4.0 * math.sin(6.0 * along)
-        inside = min(max(min(y - lower, upper - y) / 2.0 + 0.5, 0.0), 1.0)
-        inside = inside * inside * (3.0 - 2.0 * inside)
-        return blanket(x, y) - 3.0 + inside * (4.1 + 0.6 * math.sin(0.4 * x + 0.2 * y))
-    kit.sheet("Throw", x0, x1, 440.0, 508.0, throw, linen(), columns=150, rows=110)
+        post("HeadPost", x, head_y, 50.0)
+        post("FootPost", x, foot_y, 36.0)
+
+    def board(part, y, low, high, arch, panels):
+        """A headboard or footboard: rails and stiles framing raised panels."""
+        a, b = x0 + 9.2, x1 - 9.2
+
+        def top_of(x):
+            return high + arch * math.sin(math.pi * (x - a) / (b - a))
+        steps = 24
+        upper = [(a + (b - a) * step / steps, top_of(a + (b - a) * step / steps)) for step in range(steps + 1)]
+        kit.slab(part + "Infill", [(a, low)] + [(b, low)] + list(reversed(upper)), y - 1.0, y + 1.0, wood)
+        kit.slab(part + "TopRail", [(x, h - 4.5) for x, h in upper] + [(x, h + 0.8) for x, h in reversed(upper)],
+                 y - 2.6, y + 2.6, wood, bevel=0.9)
+        colliders.append(kit.box(part + "BottomRail", a, b, y - 2.6, y + 2.6, low, low + 4.5, wood, bevel=0.8,
+                                 uv="box"))
+        width = (b - a) / panels
+        for index in range(panels + 1):
+            x = a + width * index
+            if 0 < index < panels:
+                kit.box(part + "Stile", x - 2.0, x + 2.0, y - 2.2, y + 2.2, low + 4.5, top_of(x) - 3.5, wood,
+                        bevel=0.6, uv="box_up")
+        for index in range(panels):
+            left, right = a + width * index + 3.6, a + width * (index + 1) - 3.6
+            ceiling = min(top_of(left), top_of(right)) - 7.0
+            kit.box(part + "Panel", left, right, y + 0.6, y + 2.0, low + 7.5, ceiling, wood, bevel=1.4, uv="box_up")
+
+    board("Head", head_y, 17.0, 42.0, 7.0, 3)
+    board("Foot", foot_y, 7.0, 27.0, 0.0, 2)
+    for x in (x0 + 1.0, x1 - 8.0):
+        colliders.append(kit.box("Rail", x, x + 7.0, head_y + 4.6, foot_y - 4.6, 8.0, 19.0, wood, bevel=0.8,
+                                 uv="side"))
+    mattress = kit.box("Mattress", x0 + 5.0, x1 - 5.0, head_y + 3.0, foot_y - 7.0, 13.0, 26.0,
+                       RP.textured("WakeTicking", "cotton_jersey", 0.25, 0.92, (0.86, 0.8, 0.7), saturation=0.2,
+                                   ao=0.3), bevel=2.4, uv="box")
+    colliders.append(mattress)
+    colliders.append(pillow(kit, "PillowWest", 162.0, 309.0, 26.0, 26.0, 13.0, 7.2, 1.4, -0.06, rng, dent=1.6))
+    colliders.append(pillow(kit, "PillowEast", 214.5, 307.0, 26.0, 25.0, 12.5, 6.8, 1.4, 0.09, rng))
+
+    # The coverlet, its head turned down in a band of white sheet, creased
+    # where it was pushed down the bed and over the sleeper.
+    folds = creases(random.Random(12), x0 + 10.0, x1 - 10.0, 350.0, foot_y - 24.0, 18, 2.4, 3.4, (-30.0, 30.0))
+    turned = creases(random.Random(5), x0 + 10.0, x1 - 10.0, 336.0, 352.0, 6, 1.6, 2.2, (72.0, 108.0))
+
+    def lain(x, y):
+        return folds(x, y) + turned(x, y) + 0.5 * (1.0 + math.sin(0.08 * x + 0.05 * y))
+    blanket = kit.sheet("Blanket", x0 - 13.0, x1 + 13.0, 330.0, foot_y - 6.0,
+                        lambda x, y: 31.0 + 0.8 * math.sin(0.21 * x + 0.07 * y), [damask(), sheet_linen()],
+                        columns=110, rows=170, material_of=lambda x, y: 1 if y < 341.0 else 0)
+    RP.simulate_cloth(blanket, colliders, frames=48, mass=0.5, bending=1.5)
+    fold(blanket, lain)
+
+    # A cream throw with a woven gold border, thrown across the foot of the
+    # bed and falling over its east side. It lands on the coverlet alone: the
+    # coverlet already lies over the mattress and rails, and a cloth caught
+    # between two colliders that touch tears itself apart. The coverlet gets
+    # its thickness only after: a solidified collider would hold the throw a
+    # px proud of the cloth the camera sees.
+    # It starts a px above the coverlet, not dropped from a height: a fall
+    # onto a cloth as thin as this one tunnels straight through it.
+    surface = bvhtree.BVHTree.FromObject(blanket, bpy.context.evaluated_depsgraph_get())
+    turn = math.radians(-10.0)
+    tx0, tx1, ty0, ty1 = 146.0, 262.0, 448.0, 494.0
+    middle = ((tx0 + tx1) / 2.0, (ty0 + ty1) / 2.0)
+    edge = x1 - 1.0
+
+    def resting(u, v):
+        x = middle[0] + (u - middle[0]) * math.cos(turn) - (v - middle[1]) * math.sin(turn)
+        y = middle[1] + (u - middle[0]) * math.sin(turn) + (v - middle[1]) * math.cos(turn)
+        hit = surface.ray_cast(RP.world(min(x, edge), y, 80.0), Vector((0.0, 0.0, -1.0)))[0]
+        return (RP.game(hit).z if hit is not None else 30.0) + 1.4
+    throw = kit.sheet("Throw", tx0, tx1, ty0, ty1, resting, [throw_cloth(), gold_weave()], columns=120, rows=46,
+                      material_of=lambda x, y: 1 if min(x - tx0, tx1 - x, y - ty0, ty1 - y) < 2.6 else 0)
+    centre = RP.world(middle[0], middle[1], 0.0)
+    throw.data.transform(Matrix.Translation(centre) @ Matrix.Rotation(turn, 4, "Z") @ Matrix.Translation(-centre))
+    # Wool on silk damask grips: high friction holds it where it was thrown.
+    RP.simulate_cloth(throw, [blanket, bpy.data.objects["RoomFloor"]] + colliders[:4], frames=36, quality=10,
+                      mass=0.25, bending=1.0, distance=0.004, friction=60.0)
+    fold(throw, creases(random.Random(31), 150.0, 260.0, 436.0, 506.0, 12, 2.6, 2.4, (-75.0, 75.0)))
+    thicken(throw, 0.6)
+    thicken(blanket, 0.7)
     # The brass key's bow, just showing under the west pillow.
-    kit.ring("KeyBow", (184.0, 326.0, 34.5), (0.0, 0.0, 1.0), 2.4, 0.6, brass, segments=20, sides=6)
+    kit.ring("KeyBow", (182.0, 324.0, 26.6), (0.0, 0.0, 1.0), 2.4, 0.6, brass, segments=20, sides=6)
     return kit
 
 
 def bookshelf():
+    """A tall oak bookcase: plinth and crown mouldings, a cabinet of two
+    drawers, and three shelves of old books, a few laid flat or leaning."""
     kit = RP.Kit("Bookshelf", prop="Bookshelf")
-    wood, brass = dark_wood(), hall._brass()
-    # Its plinth stands at the shelf's collision edge (y 276.5) less the 7.5 px
-    # the game's walk-up band needs: the prompt reaches a player standing there.
+    wood, brass = oak(), hall._brass()
+    # Its plinth's front is the shelf's collision edge (y 276.5) less the
+    # 7.5 px the game's walk-up band needs, so the prompt reaches the player.
     x0, x1, back, front = 242.0, 404.0, 238.0, 266.0
-    kit.box("Plinth", x0 - 2.0, x1 + 2.0, back, front + 6.0, 0.0, 8.0, wood, bevel=0.8, uv="box")
-    kit.box("Back", x0 + 4.0, x1 - 4.0, back, back + 2.0, 8.0, 154.0, wood, bevel=0.0, uv="box")
-    for part, (a, b) in (("SideL", (x0, x0 + 6.0)), ("SideR", (x1 - 6.0, x1))):
-        kit.box(part, a, b, back, front, 0.0, 156.0, wood, bevel=0.8, uv="box_up")
-    kit.box("Cornice", x0 - 4.0, x1 + 4.0, back - 2.0, front + 4.0, 156.0, 164.0, wood, bevel=1.4, uv="box")
-    kit.box("CabinetTop", x0 + 3.0, x1 - 3.0, back, front + 4.0, 42.0, 46.0, wood, bevel=0.8, uv="box")
-    middle = (x0 + x1) / 2.0
-    for index, (a, b) in enumerate(((x0 + 7.0, middle - 1.0), (middle + 1.0, x1 - 7.0))):
-        kit.box("Door%d" % index, a, b, front, front + 2.0, 9.0, 41.0, wood, bevel=0.8, uv="box_up")
-        kit.box("Panel%d" % index, a + 6.0, b - 6.0, front + 1.8, front + 2.8, 15.0, 35.0, wood, bevel=0.8,
-                uv="box_up")
-        kit.ball("Pull%d" % index, b - 5.0 if index == 0 else a + 5.0, front + 3.0, 25.0, 1.6, brass)
-    for index, h in enumerate((80.0, 116.0)):
-        kit.box("Shelf%d" % index, x0 + 6.0, x1 - 6.0, back + 2.0, front, h, h + 3.0, wood, bevel=0.5, uv="box")
     rng = random.Random(41)
-    # Three shelves of books, each run broken by the odd curio.
-    standing_books(kit, x0 + 7.0, 352.0, front, 46.0, 80.0, rng)
-    flask(kit, "ShelfPotion", 368.0, 254.0, 46.0, "bottle", VIOLET, size=1.0)
-    flask(kit, "ShelfPotion2", 384.0, 256.0, 46.0, "round", (0.35, 1.0, 0.5), size=0.85)
-    standing_books(kit, x0 + 7.0, 330.0, front, 83.0, 116.0, rng)
-    kit.lathe("Hourglass", 352.0, 254.0, [(0.0, 83.0), (6.0, 83.0), (6.0, 85.0), (0.0, 85.0)], wood)
-    kit.lathe("HourglassTop", 352.0, 254.0, [(0.0, 107.0), (6.0, 107.0), (6.0, 109.0), (0.0, 109.0)], wood)
-    hourglass = kit.lathe("HourglassGlass", 352.0, 254.0, [(4.4, 85.0), (4.0, 92.0), (0.9, 96.0), (4.0, 100.0),
-                                                           (4.4, 107.0)], jar_glass(), close=False)
+    kit.box("Plinth", x0 - 1.0, x1 + 1.0, back, front + 5.0, 0.0, 6.0, wood, bevel=0.8, uv="box")
+    kit.box("PlinthMould", x0 - 2.5, x1 + 2.5, back - 0.5, front + 6.0, 5.0, 8.5, wood, bevel=1.1, uv="box")
+    for part, (a, b) in (("SideW", (x0, x0 + 7.0)), ("SideE", (x1 - 7.0, x1))):
+        kit.box(part, a, b, back, front + 1.0, 8.5, 150.0, wood, bevel=0.9, uv="box_up")
+    kit.box("Back", x0 + 7.0, x1 - 7.0, back, back + 2.0, 8.5, 150.0, wood, bevel=0.0, uv="box_up")
+    kit.box("Top", x0 - 1.0, x1 + 1.0, back - 0.5, front + 2.0, 150.0, 153.5, wood, bevel=0.8, uv="box")
+    for part, (grow, low, high) in (("Crown", (2.5, 153.5, 156.5)), ("CrownCove", (4.5, 156.5, 159.5)),
+                                    ("CrownCap", (5.5, 159.5, 162.0))):
+        kit.box(part, x0 - grow, x1 + grow, back - grow * 0.55, front + 1.0 + grow, low, high, wood, bevel=1.1,
+                uv="box")
+    # The cabinet: two drawers with escutcheons and ring pulls.
+    kit.box("CabinetTop", x0 + 7.0, x1 - 7.0, back + 2.0, front + 1.5, 40.0, 44.0, wood, bevel=0.8, uv="box")
+    kit.box("CabinetRail", x0 + 7.0, x1 - 7.0, front - 1.0, front + 1.0, 8.5, 11.0, wood, bevel=0.6, uv="box")
+    middle = (x0 + x1) / 2.0
+    kit.box("CabinetStile", middle - 2.0, middle + 2.0, front - 1.0, front + 1.0, 8.5, 40.0, wood, bevel=0.6,
+            uv="box_up")
+    for index, (a, b) in enumerate(((x0 + 8.0, middle - 2.5), (middle + 2.5, x1 - 8.0))):
+        kit.box("Drawer%d" % index, a, b, front - 1.0, front + 1.5, 11.5, 39.0, wood, bevel=0.9, uv="box")
+        kit.box("DrawerPanel%d" % index, a + 5.0, b - 5.0, front + 1.3, front + 2.3, 16.0, 34.5, wood, bevel=1.2,
+                uv="box")
+        cx = (a + b) / 2.0
+        kit.box("Escutcheon%d" % index, cx - 2.2, cx + 2.2, front + 2.2, front + 2.7, 27.5, 33.0, brass, bevel=0.4)
+        kit.box("Keyhole%d" % index, cx - 0.5, cx + 0.5, front + 2.6, front + 2.9, 29.0, 31.5, hall._bakelite(),
+                bevel=0.0)
+        kit.ring("Pull%d" % index, (cx, front + 3.2, 22.0), (0.0, 1.0, 0.0), 2.6, 0.45, brass, segments=24, sides=6)
+    for index, h in enumerate((79.0, 114.5)):
+        kit.box("Shelf%d" % index, x0 + 7.0, x1 - 7.0, back + 2.0, front - 1.0, h, h + 3.5, wood, bevel=0.6,
+                uv="box")
+        kit.box("ShelfLip%d" % index, x0 + 7.0, x1 - 7.0, front - 2.5, front, h - 0.5, h + 3.8, wood, bevel=0.9,
+                uv="box")
+    spine = front - 2.0
+    # The lowest shelf: books, then two potions.
+    shelf_run(kit, x0 + 7.5, 352.0, spine, 44.0, 79.0, rng)
+    flask(kit, "ShelfPotion", 368.0, 254.0, 44.0, "bottle", VIOLET, size=1.0)
+    flask(kit, "ShelfPotion2", 386.0, 256.0, 44.0, "round", (0.35, 1.0, 0.5), size=0.85)
+    # The middle shelf: books, an hourglass, more books.
+    shelf_run(kit, x0 + 7.5, 334.0, spine, 82.5, 114.5, rng)
+    sand_low = 82.5
+    for part, (low, high) in (("Hourglass", (sand_low, sand_low + 2.0)), ("HourglassTop", (106.0, 108.0))):
+        kit.lathe(part, 352.0, 254.0, [(0.0, low), (6.0, low), (6.0, high), (0.0, high)], wood, plan=ROUND)
+    hourglass = kit.lathe("HourglassGlass", 352.0, 254.0, [(4.4, sand_low + 2.0), (4.0, 91.0), (0.9, 95.0),
+                                                           (4.0, 99.0), (4.4, 106.0)], jar_glass(), plan=ROUND,
+                          close=False)
     hourglass.visible_shadow = False
-    kit.lathe("HourglassSand", 352.0, 254.0, [(0.0, 85.0), (3.8, 85.0), (3.2, 89.0), (0.0, 89.5)],
-              hall._painted("WakeSand", (0.62, 0.48, 0.28)))
+    kit.lathe("HourglassSand", 352.0, 254.0, [(0.0, sand_low + 2.0), (3.8, sand_low + 2.0), (3.2, 88.0),
+                                              (0.0, 88.5)], hall._painted("WakeSand", (0.62, 0.48, 0.28)), plan=ROUND)
     for x in (346.5, 357.5):
-        kit.rod("HourglassPost", (x, 254.0, 85.0), (x, 254.0, 107.0), 0.6, wood)
-    standing_books(kit, 372.0, x1 - 7.0, front, 83.0, 116.0, rng, lean_end=False)
-    standing_books(kit, x0 + 7.0, 300.0, front, 119.0, 156.0, rng)
-    kit.ball("Skull", 318.0, 252.0, 128.0, 8.5, hall._painted("WakeBone", (0.55, 0.5, 0.4)), plan=0.85, squash=0.85)
-    for x in (314.0, 322.0):
-        kit.ball("SkullEye", x, 259.0, 128.5, 2.0, hall._bakelite(), plan=0.5)
-    closed_book(kit, "LyingBook", 336.0, 372.0, 244.0, 264.0, 119.0, 6.0, (0.12, 0.05, 0.06))
-    closed_book(kit, "LyingBook2", 338.0, 368.0, 246.0, 262.0, 125.0, 5.0, (0.05, 0.08, 0.14))
-    standing_books(kit, 376.0, x1 - 7.0, front, 119.0, 156.0, rng, lean_end=False)
-    # On top: a globe on its stand and a scroll.
-    kit.lathe("GlobeStand", 270.0, 250.0, [(0.0, 164.0), (6.0, 164.0), (6.0, 165.6), (1.4, 167.0), (1.2, 172.0),
-                                           (0.0, 172.0)], brass)
-    kit.ball("Globe", 270.0, 250.0, 182.0, 10.0, hall._painted("WakeGlobeTop", (0.1, 0.2, 0.18)), plan=1.0)
-    kit.ring("GlobeMeridian", (270.0, 250.0, 182.0), (1.0, 0.0, 0.0), 11.6, 0.6, brass)
-    kit.rod("TopScroll", (360.0, 252.0, 167.0), (392.0, 254.0, 167.0), 3.0, parchment())
+        kit.rod("HourglassPost", (x, 254.0, sand_low + 2.0), (x, 254.0, 106.0), 0.6, wood)
+    shelf_run(kit, 368.0, x1 - 7.5, spine, 82.5, 114.5, rng, lean_end=False)
+    # The top shelf: books, a stack laid flat with a scroll on it, books.
+    shelf_run(kit, x0 + 7.5, 300.0, spine, 118.0, 150.0, rng)
+    for index, (left, right, thick, colour) in enumerate(((304.0, 342.0, 5.5, BOOK_COLOURS[0]),
+                                                          (306.0, 340.0, 4.5, BOOK_COLOURS[2]),
+                                                          (305.0, 338.0, 5.0, BOOK_COLOURS[3]))):
+        low = 118.0 + sum((5.5, 4.5, 5.0)[:index])
+        closed_book(kit, "LyingBook%d" % index, left, right, 243.0 + index, 263.0 - index * 0.5, low, thick, colour)
+    kit.rod("StackScroll", (308.0, 255.0, 133.0 + 2.6), (336.0, 257.0, 133.0 + 2.6), 2.6, parchment())
+    kit.rod("StackScrollTie", (321.0, 253.0, 135.6), (321.0, 259.0, 135.6), 2.8, hall._cloth("WakeTie", (0.3, 0.05, 0.04)))
+    shelf_run(kit, 360.0, x1 - 7.5, spine, 118.0, 150.0, rng, lean_end=False)
+    # On top: a globe on its stand, two books and a scroll.
+    kit.lathe("GlobeStand", 272.0, 250.0, [(0.0, 162.0), (6.5, 162.0), (6.5, 164.0), (2.0, 165.5), (1.4, 171.0),
+                                           (0.0, 171.0)], wood, plan=ROUND)
+    kit.ball("Globe", 272.0, 250.0, 181.0, 10.0, hall._painted("WakeGlobeTop", (0.12, 0.2, 0.17)), plan=ROUND)
+    kit.ring("GlobeMeridian", (272.0, 250.0, 181.0), (1.0, 0.0, 0.0), 11.4, 0.6, brass)
+    closed_book(kit, "TopBook0", 300.0, 336.0, 242.0, 262.0, 162.0, 5.5, BOOK_COLOURS[1])
+    closed_book(kit, "TopBook1", 303.0, 333.0, 244.0, 260.0, 167.5, 4.5, BOOK_COLOURS[4])
+    kit.rod("TopScroll", (356.0, 252.0, 164.6), (392.0, 254.0, 164.6), 2.6, parchment())
     return kit
 
 
 def desk():
     kit = RP.Kit("Desk", prop="Desk")
-    wood, brass = dark_wood(), hall._brass()
+    wood, brass = oak(), hall._brass()
     # Its front legs stand on the desk's collision edge, as the painted desk's.
     x0, x1, y0, y1, top = 594.0, 816.0, 228.0, 312.0, 45.0
     for x in (x0 + 9.0, x1 - 9.0):
@@ -749,7 +1026,7 @@ def desk():
     for x in (729.0, 785.0):
         kit.rod("ScrollRoll", (x, 267.0, top + 2.2), (x, 297.0, top + 2.2), 2.4, parchment())
         for y in (265.4, 298.6):
-            kit.ball("ScrollKnob", x, y, top + 2.2, 1.4, dark_wood(), plan=0.6)
+            kit.ball("ScrollKnob", x, y, top + 2.2, 1.4, oak(), plan=0.6)
     kit.box("BookCover", 650.0, 712.0, 268.0, 300.0, top, top + 1.0, leather("WakeDeskCover", (0.08, 0.1, 0.18)),
             bevel=0.3)
     for part, (a, b) in (("L", (651.0, 680.6)), ("R", (681.4, 711.0))):
@@ -872,22 +1149,21 @@ def door(shell):
 # ---------------------------------------------------------------- the room
 
 
-def fill():
-    """Light the open ceiling would let in: a dim, cool wash from overhead, so
-    the floor and the leaning walls read between the candles' pools."""
-    data = bpy.data.lights.new("WakeFill", "AREA")
-    data.shape = "RECTANGLE"
-    data.size, data.size_y = 9.0, 8.0
-    data.energy = 95.0
-    data.color = (0.82, 0.76, 0.9)
-    light = RP._link(bpy.data.objects.new("WakeFill", data))
-    light.location = RP.world(512.0, 470.0, 0.0) + Vector((0.0, 0.0, 7.0))
-    light.visible_glossy = False
+def moon_sky():
+    """The Hall's moonlight (hall_prototype.add_sun: its colour, strength and
+    softness), from the south-south-west and high, so the room's tall walls
+    cast their shadows behind the furniture as the painting draws them."""
+    data = bpy.data.lights.new("WakeMoonSky", "SUN")
+    data.energy = 1.15
+    data.color = (0.72, 0.74, 1.0)
+    data.angle = math.radians(12.0)
+    sun = RP._link(bpy.data.objects.new("WakeMoonSky", data))
+    sun.rotation_euler = Vector((0.12, 0.38, -0.92)).normalized().to_track_quat("-Z", "Y").to_euler()
 
 
 def grade(scene):
     """The room's exposure, set after the shared Cycles setup."""
-    scene.view_settings.exposure = 1.2
+    scene.view_settings.exposure = 0.35
 
 
 def build(rp, layout):
@@ -898,8 +1174,12 @@ def build(rp, layout):
         # 70 px, courses about 35 px.
         "floor": rp.textured("WakeFloor", "large_floor_tiles_02", 1.6, 0.66, (0.76, 0.7, 0.8), ao=0.25),
         "wall": rp.textured("WakeWall", "castle_wall_slates", 1.5, 0.56, (0.72, 0.66, 0.78), ao=0.3),
-        "cap": rp.textured("WakeCap", "large_grey_tiles", 1.2, 0.44, (0.64, 0.6, 0.72), saturation=0.6, ao=0.12),
-        "lip": rp.textured("WakeLip", "large_grey_tiles", 1.2, 0.9, (0.86, 0.83, 0.9), ao=0.1),
+        # The wall tops and their lit edges are the Hall's own: dark slate
+        # with moss and broken cracks, outlined in lit stone.
+        "cap": (hall.material_cap_textured(rp.TEXTURES, lit=False) if rp.TEXTURES.available()
+                else rp.textured("WakeCap", "large_grey_tiles", 1.2, 0.44, (0.64, 0.6, 0.72), saturation=0.6)),
+        "lip": (hall.material_cap_textured(rp.TEXTURES, lit=True) if rp.TEXTURES.available()
+                else rp.textured("WakeLip", "large_grey_tiles", 1.2, 0.9, (0.86, 0.83, 0.9), ao=0.1)),
         "reveal": rp.textured("WakeReveal", "castle_wall_slates", 1.5, 0.62, (0.74, 0.68, 0.8), ao=0.2),
     }
     shell = rp.Shell(SPEC, shell_materials)
@@ -913,7 +1193,7 @@ def build(rp, layout):
     side_table()
     alchemy_bench()
     crates()
-    fill()
+    moon_sky()
     props = {"Bed": bed(), "Bookshelf": bookshelf(), "Desk": desk(), "Door": door(shell)}
     print("WAKE ROOM built: %d objects, %d glows" % (len(bpy.data.objects), len(rp.GLOWS)))
     return {"props": props}

@@ -251,6 +251,52 @@ class Frame:
 G_TO_WORLD = Matrix.Diagonal((PX, -PX * STRETCH, PX / SIN, 1.0))
 
 
+def simulate_cloth(cloth, colliders, frames=45, quality=6, mass=0.4, stiffness=15.0, shear=5.0, bending=1.0,
+                   distance=0.004, friction=8.0, pressure=0.0, gravity=1.0):
+    """Drops `cloth` (a mesh object with no modifiers) onto `colliders` with
+    Blender's cloth solver for `frames` frames, then keeps the result as its
+    mesh. Sizes are metric: one game px across is a centimetre. Deterministic,
+    so a room renders the same each time."""
+    added = []
+    for collider in colliders:
+        if not any(modifier.type == "COLLISION" for modifier in collider.modifiers):
+            added.append((collider, collider.modifiers.new("Collision", "COLLISION")))
+        collider.collision.thickness_outer = 0.003
+        collider.collision.cloth_friction = friction
+    modifier = cloth.modifiers.new("Cloth", "CLOTH")
+    settings = modifier.settings
+    settings.quality = quality
+    settings.mass = mass
+    settings.tension_stiffness = stiffness
+    settings.compression_stiffness = stiffness
+    settings.shear_stiffness = shear
+    settings.bending_stiffness = bending
+    settings.effector_weights.gravity = gravity
+    if pressure:
+        settings.use_pressure = True
+        settings.uniform_pressure_force = pressure
+    modifier.collision_settings.distance_min = distance
+    modifier.collision_settings.collision_quality = 3
+    modifier.point_cache.frame_start = 1
+    modifier.point_cache.frame_end = frames + 1
+    scene = bpy.context.scene
+    started = time.time()
+    for frame in range(1, frames + 1):
+        scene.frame_set(frame)
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(cloth.evaluated_get(depsgraph))
+    cloth.modifiers.remove(modifier)
+    old = cloth.data
+    cloth.data = mesh
+    bpy.data.meshes.remove(old)
+    mesh.shade_smooth()
+    for collider, collision in added:
+        collider.modifiers.remove(collision)
+    scene.frame_set(1)
+    print("CLOTH %s: %d verts, %d frames, %.1fs" % (cloth.name, len(mesh.vertices), frames, time.time() - started))
+    return cloth
+
+
 def place_on_frame(objects, frame, virtual_centre, virtual_feet, scale=1.0, name="Placed"):
     """Moves objects built with the Hall's PropKit on a virtual south face
     (centred at x virtual_centre, its face on plan y virtual_feet) onto
@@ -330,6 +376,17 @@ class Kit:
         bmesh.ops.create_cube(shape, size=1.0, matrix=Matrix.Translation(
             ((x0 + x1) / 2.0, (y0 + y1) / 2.0, (h0 + h1) / 2.0)) @ Matrix.Diagonal(
             (max(x1 - x0, 0.05), max(y1 - y0, 0.05), max(h1 - h0, 0.05), 1.0)))
+        return self.shape(part, shape, material, bevel=bevel, uv=uv)
+
+    def blocks(self, part, boxes, material, bevel=0.3, uv=None):
+        """Several blocks as one object, each (x0, x1, y0, y1, h0, h1): one
+        object takes one colour where a material colours objects at random,
+        as a book's boards and spine do."""
+        shape = bmesh.new()
+        for x0, x1, y0, y1, h0, h1 in boxes:
+            bmesh.ops.create_cube(shape, size=1.0, matrix=Matrix.Translation(
+                ((x0 + x1) / 2.0, (y0 + y1) / 2.0, (h0 + h1) / 2.0)) @ Matrix.Diagonal(
+                (max(x1 - x0, 0.05), max(y1 - y0, 0.05), max(h1 - h0, 0.05), 1.0)))
         return self.shape(part, shape, material, bevel=bevel, uv=uv)
 
     def cylinder(self, part, x, y, h0, h1, radius, material, plan=None, tip=None, segments=24, bevel=0.0):
@@ -449,16 +506,21 @@ class Kit:
             shape.faces.new((bottom[index], bottom[following], top[following], top[index]))
         return self.shape(part, shape, material, bevel=bevel)
 
-    def sheet(self, part, x0, x1, y0, y1, height, material, columns=48, rows=48, smooth=True):
+    def sheet(self, part, x0, x1, y0, y1, height, material, columns=48, rows=48, smooth=True, material_of=None):
         """Cloth or any surface given as a height field: h = height(x, y) over
-        x0..x1, y0..y1, UVs as the floor's."""
+        x0..x1, y0..y1, UVs as the floor's. With a list of materials,
+        material_of(x, y) picks each face's. A sheet to be simulated keeps
+        these UVs: the pattern then follows the cloth as it falls."""
         shape = bmesh.new()
         verts = [[shape.verts.new((x0 + (x1 - x0) * i / columns, y0 + (y1 - y0) * j / rows,
                                    height(x0 + (x1 - x0) * i / columns, y0 + (y1 - y0) * j / rows)))
                   for i in range(columns + 1)] for j in range(rows + 1)]
         for j in range(rows):
             for i in range(columns):
-                shape.faces.new((verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i]))
+                face = shape.faces.new((verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i]))
+                if material_of is not None:
+                    face.material_index = material_of(x0 + (x1 - x0) * (i + 0.5) / columns,
+                                                      y0 + (y1 - y0) * (j + 0.5) / rows)
         obj = self.keep(mesh_from(self.name + part, shape, material, smooth=smooth, sharp_angle=89.0, uv="floor",
                                   facing=TOWARD_CAMERA))
         return obj
@@ -484,11 +546,19 @@ class Kit:
         return light
 
     def flame(self, part, x, y, h, size=1.0, power=0.12, color=(1.0, 0.62, 0.28)):
-        """A candle flame: a glowing teardrop, its light and its halo."""
-        self.ball(part + "Flame", x, y, h + 2.2 * size, 1.1 * size, flame_material(), plan=0.6, squash=2.0,
-                  segments=10)
-        self.ball(part + "Core", x, y + 0.2, h + 1.6 * size, 0.55 * size, flame_material(core=True), plan=0.6,
-                  squash=1.6, segments=8)
+        """A candle flame: a glowing teardrop round a brighter core, its light
+        and its halo. Flames cast no shadow: their light starts inside them."""
+        s = size
+        round_plan = math.cos(math.radians(hall.ALPHA_DEGREES))
+        outer = self.lathe(part + "Flame", x, y, [(0.0, h), (0.7 * s, h + 0.5 * s), (1.05 * s, h + 1.4 * s),
+                                                  (0.9 * s, h + 2.4 * s), (0.45 * s, h + 3.6 * s), (0.0, h + 4.6 * s)],
+                           flame_material(), plan=round_plan, segments=12)
+        core = self.lathe(part + "Core", x, y + 0.1, [(0.0, h + 0.2 * s), (0.45 * s, h + 0.7 * s),
+                                                      (0.5 * s, h + 1.3 * s), (0.25 * s, h + 2.2 * s),
+                                                      (0.0, h + 2.8 * s)], flame_material(core=True), plan=round_plan,
+                          segments=10)
+        for obj in (outer, core):
+            obj.visible_shadow = False
         self.light(part + "Light", x, y + 1.5, h + 4.0 * size, color, power, radius=0.012 * size)
         glow("candle", x, y, h + 2.5 * size, color, 16.0 * size)
 
@@ -527,8 +597,8 @@ def _material(name, build):
 
 
 def flame_material(core=False):
-    color = (1.0, 0.86, 0.55) if core else (1.0, 0.55, 0.18)
-    return hall._glow_material("RoomFlameCore" if core else "RoomFlame", color, 14.0 if core else 7.0, color)
+    color = (1.0, 0.8, 0.45) if core else (1.0, 0.5, 0.14)
+    return hall._glow_material("RoomFlameCore" if core else "RoomFlame", color, 8.0 if core else 4.0, color)
 
 
 def material_wax():
@@ -552,6 +622,13 @@ def textured(name, asset, repeat, value, tint, saturation=0.75, roughness_scale=
             hall._principled(nodes, links, hall._mix(nodes, links, grain, low, high), roughness=0.8)
             return
         maps = TEXTURES.sample(nodes, links, asset, repeat=repeat)
+        # A photo that is not square keeps its proportions: v repeats as
+        # many times more often as the image is wider than tall.
+        mapping = next(node for node in nodes if node.type == "MAPPING")
+        width, height = next(node.image for node in nodes if node.type == "TEX_IMAGE").size
+        if width and height and width != height:
+            scale = mapping.inputs["Scale"].default_value
+            mapping.inputs["Scale"].default_value = (scale[0], scale[1] * width / height, scale[2])
         color = hall._grade(nodes, links, maps["diff"], value, tint, saturation=saturation)
         if ao > 0.0:
             color = hall._ao_multiply(nodes, links, color, distance=ao, floor_value=0.42)

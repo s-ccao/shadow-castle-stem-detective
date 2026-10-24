@@ -241,6 +241,112 @@
           "sha256": "89bed18f5c3f03fc7b4c2382446891629716278e521e06e8b7f6c8f02dd22590"
         }
       }
+    },
+    {
+      "asset": "wood_cabinet_worn_long",
+      "name": "Wood Cabinet Worn Long",
+      "authors": [
+        "Dimitrios Savva",
+        "Rico Cilliers"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/wood_cabinet_worn_long",
+      "maps": {
+        "diff": {
+          "file": "wood_cabinet_worn_long_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_cabinet_worn_long/wood_cabinet_worn_long_diff_1k.jpg",
+          "sha256": "97edb74098efc27ca9891cb9dbab6d74b91f635d9fad5eba4f317b1e8e408a55"
+        },
+        "nor_gl": {
+          "file": "wood_cabinet_worn_long_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_cabinet_worn_long/wood_cabinet_worn_long_nor_gl_1k.jpg",
+          "sha256": "3e77e82f34f5d527f63299c8154905a7e3e9a87644b2054ab6194ac776adc7db"
+        },
+        "rough": {
+          "file": "wood_cabinet_worn_long_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_cabinet_worn_long/wood_cabinet_worn_long_rough_1k.jpg",
+          "sha256": "4a3201cdc2b1e6d0e20532fc1249998ff7a4f312601590e46fb58c0fb26315cb"
+        }
+      }
+    },
+    {
+      "asset": "fabric_leather_02",
+      "name": "Fabric Leather 02",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/fabric_leather_02",
+      "maps": {
+        "diff": {
+          "file": "fabric_leather_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/fabric_leather_02/fabric_leather_02_diff_1k.jpg",
+          "sha256": "97ba9480c7619efc9b8c08202c3e3773d1dd532dacce4dfe97f86e95339cf132"
+        },
+        "nor_gl": {
+          "file": "fabric_leather_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/fabric_leather_02/fabric_leather_02_nor_gl_1k.jpg",
+          "sha256": "2652ece55bd2780be1e16fb5ebc4171b139da45bcf9839a161b9ae236534e471"
+        },
+        "rough": {
+          "file": "fabric_leather_02_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/fabric_leather_02/fabric_leather_02_rough_1k.jpg",
+          "sha256": "bce3c63ead508ffa0c110c176fdd94e5dbf57b51efdbc6781026a21e217b0edd"
+        }
+      }
+    },
+    {
+      "asset": "floral_jacquard",
+      "name": "Floral Jacquard",
+      "authors": [
+        "Rico Cilliers",
+        "colormass"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/floral_jacquard",
+      "maps": {
+        "diff": {
+          "file": "floral_jacquard_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/floral_jacquard/floral_jacquard_diff_1k.jpg",
+          "sha256": "4534bf28534ebd8f24544c389a76f42630bca7621ae55feabbb8da32f98e6bf4"
+        },
+        "nor_gl": {
+          "file": "floral_jacquard_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/floral_jacquard/floral_jacquard_nor_gl_1k.jpg",
+          "sha256": "30defdd06c3afbfac3a22b98c2027d24dc739fee9dbb70281e23b8f7889af5f7"
+        },
+        "rough": {
+          "file": "floral_jacquard_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/floral_jacquard/floral_jacquard_rough_1k.jpg",
+          "sha256": "08070e242615135bc2420e3859659a5533325cb07c78a9decffe3e0373ec6ef7"
+        }
+      }
+    },
+    {
+      "asset": "dirty_carpet",
+      "name": "Dirty Carpet",
+      "authors": [
+        "Rohit Seervi"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/dirty_carpet",
+      "maps": {
+        "diff": {
+          "file": "dirty_carpet_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_carpet/dirty_carpet_diff_1k.jpg",
+          "sha256": "b0ef2b248cb7dfa1d33f1b2215fb3b83e815527d4091a2c3a423bdcd63bef60a"
+        },
+        "nor_gl": {
+          "file": "dirty_carpet_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_carpet/dirty_carpet_nor_gl_1k.jpg",
+          "sha256": "ba96f6f098ac64456f4cc310469200ff702596a9070d2553f990da8f7b86d29f"
+        },
+        "rough": {
+          "file": "dirty_carpet_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_carpet/dirty_carpet_rough_1k.jpg",
+          "sha256": "a2e13692bd7e5af9875150130ce9904c11879e693e70753d417b93121cf65be4"
+        }
+      }
     }
   ]
 }

@@ -341,7 +341,12 @@ Manual acceptance flow:
      - **Capture:** `tools/blender/capture_room.gd` shoots and checks the Wake Room (65 checks).
      - **Walk-up rule:** an HD prop's visible front must reach within 7.5 px of its collision edge. Otherwise the game's walk-up band lands in blocked floor and the prompt never shows.
      - **Doors on side walls:** Hall pieces go onto side walls with `rp.place_on_frame` and `Shell.mount`. Side-wall doors are drawn true to perspective, so they are narrow; asked in stage 52, the user kept that rather than folding them out to face the player like the painting.
-     - **Style (stage 52 review):** the user found the first HD Wake Room fake and out of keeping with the walls and the Hall, especially the bed and the bookshelf; stage 53 restyles it before the Chemistry Room.
+     - **Style (stage 52 review):** the user found the first HD Wake Room fake and out of keeping with the walls and the Hall, especially the bed and the bookshelf. Stage 53 restyled it; its lessons apply to every room:
+       - **Light:** the Hall's own moonlight (`moon_sky` in `room_wake.py`), never a studio fill.
+       - **Wall tops:** the Hall's own materials.
+       - **Wood:** worn, warm photo textures, never a dark, even wood.
+       - **Cloth:** dropped with `rp.simulate_cloth`, with soft creases raised where it lies face up. Rest a cloth just above what it lies on: one dropped from a height tunnels through thin cloth. A cloth caught between two colliders that touch tears itself apart.
+       - **Books:** leather boards and a page block, each book in its own muted colour, plus stacks and leaners.
 2. **First-time human Wake→Circuit playtest.** The deterministic audit is green, but record unfamiliar-player wrong turns, deaths, time-to-power, flashlight readability and whether 4.32s minimum return reaction feels actionable.
 3. **Hall visual scale pass.** The user requested smaller player/Guardian visuals in Hall. Preserve visual feet, collision and catch geometry; update character-scale contracts and native furniture comparisons.
 4. **Room spatial audit drift.** `tests/room_spatial_audit.gd` still expects a 14px contact band for the five Hall knowledge exhibits and `arrival_chemistry_core`, but those deliberately use the 72px wall-aware approach zone. The six failures predate the 2026-10-21 stage; update the expectation rather than the margin.

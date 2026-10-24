@@ -2,6 +2,68 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-53
+
+- **Date:** 2026-10-23
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** the user's verdict on stage 52 (committed and pushed as `d283383`): "现在的感觉太假了，和墙壁和大厅的风格不匹配，特别是床和书架" (it feels fake and does not match the walls or the Hall, especially the bed and the bookshelf).
+
+### What made it fake, and what changed
+
+- **The bedding was a stiff height field:** a flat velvet slab with painted-on ripples, ball pillows and a white band.
+  - It is now dropped onto the bed with Blender's cloth solver (`room_prototype.simulate_cloth`), so it hangs as cloth does.
+  - The coverlet is plum silk damask (CC0 `floral_jacquard`) with a turned-down sheet.
+  - Soft creases are raised only where the cloth lies face up.
+  - A cream throw with a woven gold border is thrown across the foot and hangs over the east side, resting on the coverlet.
+  - The pillows are sewn, puffed shapes with pinched corners.
+- **The bed was a plain box:** it is now a four-poster in the painting's shape.
+  - Square blocks where the rails join, turned posts with brass finials.
+  - Arched head and foot boards of rails, stiles and raised panels.
+- **The bookcase had flat bright books in a dark box.**
+  - Every book now has two boards and a rounded spine in one aged-leather piece (CC0 `fabric_leather_02`), each in its own muted binding colour.
+  - The books have a cream page block, gilt bands and labels.
+  - The shelves have flat stacks, a tied scroll and a leaning book resting on its neighbour.
+  - The case has plinth and crown mouldings, shelf lips, and two drawers with escutcheons and ring pulls.
+- **Wood:** the dark red-brown wood read as plastic. The furniture is now worn, waxed oak (CC0 `wood_table_worn`), warm like the painting's. Crates and the trunk are rough boards (CC0 `wood_cabinet_worn_long`).
+- **Out of keeping with the walls and the Hall:**
+  - **Light:** the overhead fill read as a studio light. The room is now lit as the Hall is: the Hall's own moonlight (colour, strength and softness), with the room's candles and its window.
+  - **Wall tops:** the Hall's own materials, dark slate with moss and broken cracks, outlined in lit stone.
+- **Smaller fixes:**
+  - The runner shows a carpet's pile.
+  - Flames are tapered teardrops that cast no shadow.
+  - Every turned piece is round in 3D.
+  - The trunk's cloth is simulated too.
+  - Photo textures keep their proportions on non-square images.
+
+### Exact files
+
+- Changed:
+  - `tools/blender/room_prototype.py`: `simulate_cloth`, `Kit.blocks`, per-face materials on `Kit.sheet`, texture aspect, flames.
+  - `tools/blender/room_wake.py`: bed, bookcase, books, woods, cloth, light, wall tops.
+  - `tools/blender/cc0_textures.json`: 4 more CC0 Poly Haven sets, `floral_jacquard`, `fabric_leather_02`, `wood_cabinet_worn_long` and `dirty_carpet`, with authors and checksums.
+- Evidence: `docs/evidence/2026-10-23-blender-wake-room/`.
+  - `01`–`10` are re-captured.
+  - New `11-restyle-bed-bookshelf.png` shows stage 52, stage 53 and the painted room side by side.
+- Docs: this report, `docs/AGENT_HANDOFF.md`.
+
+### Verification
+
+- **Blender:** the final render (128 samples, 2048×1536) takes 81 s in all. The three cloth simulations take about 29 s of that and come out the same each run.
+  - The throw lies on the coverlet: a probe found the coverlet showing through it in 0 of 342 grid cells, where an earlier drop let it through everywhere.
+- **Room capture:** `capture_room.gd` passes 65/65 in EN and in ZH. Every prop's walk-up point is still on the game's 13.5 px band.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **Same limits as stage 52:** preview only, and the east gate stays true to perspective (the user's choice).
+- **Next (user's choice):** the Chemistry Room, with the butler and Dr. Lin's memory echo made in Tripo, once the user accepts this style.
+
+### GitHub documentation proposal
+
+- None beyond stage 52's: this stage restyles the same prototype.
+
+---
+
 ## Stage: UX-20261021-52
 
 - **Date:** 2026-10-23
@@ -84,7 +146,7 @@
 - **Preview only:** the HD room shows only in `play_prototype.gd` and the captures.
 - **Prompt boxes change shape with the art:** the bed's box is taller and the gate's smaller. Prompts and walk-ups are verified, but a player may notice the change.
 - **Next (user's choice):** after the restyle, the Chemistry Room, with the butler and Dr. Lin's memory echo made in Tripo.
-- **GitHub:** committed and pushed with the user's approval (the hash is recorded in the next stage).
+- **GitHub:** committed and pushed as `d283383` with the user's approval.
 
 ### GitHub documentation proposal
 
