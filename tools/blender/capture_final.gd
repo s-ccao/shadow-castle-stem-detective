@@ -3,7 +3,8 @@ extends SceneTree
 ## Native in-game comparison for the Blender Final Room: starts a game in the
 ## Final Room and shoots the same moments twice at 1024x768, once with the
 ## painted room and once in HD (tools/blender/prototype_room.gd). It checks
-## that every HD prop is staged, that the room's highlight boxes and walk-up
+## that every HD prop is staged (Mrs. Lin, the Tripo Dr. Lin where she fell,
+## among them), that the room's highlight boxes and walk-up
 ## points follow the HD props and go back with the painted ones, that the HD
 ## footprints (the real-size table and engine, and the furniture the painted
 ## room lets the player walk through) are the collision while the HD room is
@@ -48,12 +49,15 @@ const PROPS: Dictionary = {
 		"item": "mrs_lin_notebook", "stand": Vector2(306, 684), "painted": Vector2(306, 684),
 		"shot": "05-notebook",
 	},
+	# Mrs. Lin, the Tripo Dr. Lin where she fell: her HD footprint ends where
+	# she meets the floor, so the room's own approach from the south offers her.
+	"MrsLinBody": {
+		"item": "mrs_lin_body", "stand": Vector2(346, 645), "painted": Vector2(360, 656),
+		"shot": "06-body",
+	},
 }
-## The interactions the render does not stage, and where to stand for each:
-## out of reach of every interaction the room offers before it.
-const OTHERS: Dictionary = {
-	"mrs_lin_body": {"stand": Vector2(360, 656), "shot": "06-body"},
-}
+## Where Mrs. Lin lies: her HD footprint blocks the player there.
+const LIN_MIDDLE := Vector2(346, 600)
 ## Where the safe spawn puts an arriving player (the painted collision closes
 ## the floor north of the gate, so the game's own spawn is moved up to here).
 const ARRIVAL := Vector2(724, 770)
@@ -149,7 +153,6 @@ func _run() -> void:
 	_rect_checks(hd_rects, painted)
 	await _footprint_checks()
 	await _prop_checks()
-	await _other_checks()
 	await _depth_checks()
 	await _gate_checks()
 	await _scene_shots()
@@ -195,7 +198,7 @@ func _footprint_checks() -> void:
 	await _wait(0.15)
 	var listed: Dictionary = look.meta.get("collision", {})
 	_expect(
-		look.footprints.size() == listed.size() and listed.size() == 10,
+		look.footprints.size() == listed.size() and listed.size() == 11,
 		"The HD room swaps its footprints into the collision (%d of %d)" % [
 			look.footprints.size(), listed.size(),
 		]
@@ -219,6 +222,10 @@ func _footprint_checks() -> void:
 	_expect(
 		not spatial.is_position_clear(player, WEST_VITRINE, 0.0),
 		"The HD west vitrine blocks the player (%s)" % WEST_VITRINE
+	)
+	_expect(
+		not spatial.is_position_clear(player, LIN_MIDDLE, 0.0),
+		"Mrs. Lin's HD footprint blocks the player where she lies (%s)" % LIN_MIDDLE
 	)
 	_show(false)
 	await _wait(0.15)
@@ -248,13 +255,6 @@ func _prop_checks() -> void:
 			PROPS[id]["item"], PROPS[id]["stand"], id, PROPS[id]["painted"]
 		)
 		await _pair_at(PROPS[id]["shot"], spots)
-
-
-## Mrs. Lin: the game's own box, offered in the HD room as in the painted one.
-func _other_checks() -> void:
-	for item: String in OTHERS:
-		var spots: Dictionary = await _offer_checks(item, OTHERS[item]["stand"], item)
-		await _pair_at(OTHERS[item]["shot"], spots)
 
 
 ## Where the player stands to be offered `item` in each look: {"hd", "painted"}.

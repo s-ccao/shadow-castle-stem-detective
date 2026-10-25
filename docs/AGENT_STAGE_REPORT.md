@@ -2,6 +2,70 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-65 (web deploy; every room and map built in Blender)
+
+- **Date:** 2026-10-25
+- **Status:** approved by the user ("满意"), then committed and pushed at their request, with this stage's hunks and the Circuit Room's only (the Library's and the Dining Hall's work stays uncommitted for review). The website serves stage 63's game fixes (deployed at the user's request); everything else here is preview only. Their choice for next: bring the Library and the Dining Hall to the room standard first, then move everything into the game and sync the website.
+- **Requests:**
+  - "所有的更新都同步上传到网站了吗，检查是否所有的room都完成了重建" (are all updates on the website, and is every room rebuilt?);
+  - at the review form: deploy the game's fixes now; take over the Library, the Dining Hall and the Circuit Room; and the note "优先修改其他的room，全部的小地图完成后再进行下一步" (the other rooms first; the next step once every map is done);
+  - "检测是否所有的room和小地图都是用blender搭建的" (check that every room and map is built in Blender);
+  - "如果是用blender搭建的话就直接同步到网页上，如果还有room没有用blender搭建，优先搭建那个room" (if they are, sync them to the website; build any that are not first).
+- **Taken over with the user's leave:** the Circuit Room session's work (worktree `circuit-room-blender`, stages 54-circuit and 55-circuit, never committed) is merged into this checkout. The Library and Dining Hall sessions' work stays as they left it; their standard fixes are not made yet.
+
+### The website
+
+- **What was live:** play.shadowcastledetective.com served the 2026-10-21 export (stage 38): the four files' ETags equalled the local export's MD5s. Neither Vercel project is connected to Git, so stages 39–64 never reached it; two of them changed the game itself (stage 62: the Final Room's way back; stage 63: the Wake door click, the Greenhouse beds and plot, the gardener's spot).
+- **The export would have shipped the preview:** `export_presets.cfg` excluded `tests/`, `tools/` and `docs/` but not `prototypes/`, whose rooms and characters (about 755 MB) Godot imports. The Web preset now excludes `prototypes/*` too.
+- **The new build:** 846 files, as before. Its directory differs from the live one only in the four game scripts (`chemistry_room`, `final_room`, `greenhouse_room`, `wake_room`) and two caches whose entries are the same, reordered. 55 of 56 headless suites pass; `room_spatial_audit` fails only its six known Hall cases.
+- **Browser test** (local server, then live): boots to the title; a new case reaches the Wake Room, and a click on the door from across the room walks the detective to it and opens its question (stage 63's fix), with no console errors.
+- **Deployed:** `shadow-castle-detective-play-znzqamw4e-cyc4.vercel.app` → https://play.shadowcastledetective.com. Live sizes and MIME types are right, every ETag equals the local MD5, the live `index.pck` has the local SHA-256 (`71a2a45b…`), and the service worker's cache is `1792958880|6394217` (was `1792622131|5145128`). A browser holding the old build shows "A new game update is ready"; "Restart now" loads the new one and drops the old cache. Rollback target: `shadow-castle-detective-play-ick3tv2wl-cyc4.vercel.app`.
+
+### What is built in Blender, measured
+
+- **New tool** `tools/blender/audit_blender_coverage.gd -- --room=<room>|hall`: opens the area, notes every textured thing it draws in the world (the HUD aside), stages the HD look as the preview does, and sorts what shows: drawn by the HD look, the game's own art covered by the render, or the game's own still showing, as art (from the project), generated (made in code) or self-drawn. It writes `audit/coverage.json` and a shot with what is left boxed (the Hall's whole map in one view).
+- **Found:** every room's own art is under its render, but for Mrs. Lin's body in the Final Room (`assets/props/FinalRoom/mrs_lin_fallen.png`, drawn over the HD floor). The Hall's only art left is the tutorial's footprints (guidance), and the rest is generated light. Not covered by the tool, and found by reading `map_hud.gd`: the Map Hub and the Guardian's minimap draw `assets/backgrounds/hall_map_hub.png`, the painted Hall map, and the Circuit repair map draws the painted workshop. The Circuit Room was rebuilt only in its worktree.
+- **After this stage:** no room's own art is left in any of the eight areas (Hall 0, Wake 0, Chemistry 0, Greenhouse 0, Library 0, Dining Hall 0, Circuit 0, Final 0), and the three maps are Blender renders.
+
+### What changed
+
+- **The Circuit Room is in this checkout's preview** (`play_prototype.gd -- --circuit`):
+  - its `room_circuit.py`, `capture_circuit_room.gd`, render data, four CC0 textures (SHA-256 checked) and evidence are copied over;
+  - its changes to the shared scripts are merged three-way on its base, `ddcbc66`: the light rig lifted onto the HD fixtures (`prototype_room.gd`), a south wall with doorways and `"meta"` from `build()` (`room_prototype.py`), and furniture and script constants in the layout export (`export_room_layout.gd`, behind `"furniture": true` so no other room's export changes);
+  - re-rendered with the merged pipeline: the same 1044 objects, 15 glows and 8 fixtures, the image within render noise of the worktree's (0.1 % of pixels), and its JSON identical; re-exported, its collision mask is identical.
+- **Mrs. Lin, the Tripo Dr. Lin where she fell** (`room_final.py` `fallen_lin()`, the prop `MrsLinBody`):
+  - the cast's model, imported into the room without touching the room's own meshes, posed from her rest pose and laid face down on the flagstones where the body lies (the model's eyes are painted open, so her face is turned to the floor): her lower arm reaches toward the notebook, her upper hand rests by her hip on the torn violet cuff, her knees are drawn up;
+  - 1.4 m tall like the cast against the detective, lit by the room and by a soft warm light linked to her alone, so her dark coat reads and the room's light is unchanged;
+  - her HD footprint ends where she meets the floor at the south, so the room offers her to a player who comes up from the room (from 292 floor cells; the painted body from 55).
+- **The Map Hub's maps in Blender** (`tools/blender/prototype_map.gd`, staged with the figures in every look):
+  - `hall_prototype.py --map <png>` renders the whole Blender Hall from straight above, props on their stands and doors shut, at the map's 1448 × 1086 with pixels drawn taller than wide, so `map_hud.gd`'s projection lands on it unchanged (20 s to render);
+  - the painted map no longer matches the Hall: its walls cross the current collision, while the Blender map's walls stand on it;
+  - the repair map's board is the Circuit Room's HD render with its props laid back in, at the painted background's size, so the switch markers land as before;
+  - MapHud is an autoload, so the HD look sets its panel's, minimap's and repair board's textures itself (smooth, with mipmaps) and gives the game's own back.
+- **The Final Room capture** (`capture_final.gd`) stages Mrs. Lin as an HD prop and checks her box, prompt and footprint: 114 checks (was 111).
+- **New capture** `tools/blender/capture_maps.gd` (24 checks): each map in each look, the screen change in each (21.3 and 22.7 of 255), a repair map built while HD shows, and the restore.
+
+### Exact files
+
+- **New:** `tools/blender/audit_blender_coverage.gd`, `tools/blender/prototype_map.gd`, `tools/blender/capture_maps.gd` (each with its `.uid`); from the Circuit worktree `tools/blender/room_circuit.py`, `tools/blender/capture_circuit_room.gd` and `.uid`, `docs/evidence/2026-10-24-blender-circuit-room/`; `docs/evidence/2026-10-25-blender-coverage/`.
+- **Changed:** `export_presets.cfg`; `tools/blender/room_final.py`, `hall_prototype.py`, `prototype_characters.gd`, `capture_final.gd`, `audit_interactions.gd`, `play_prototype.gd`; merged with the Circuit worktree: `prototype_room.gd`, `room_prototype.py`, `export_room_layout.gd`, `cc0_textures.json`; this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- **Local only (gitignored):** `prototypes/blender_rooms/circuit_room/`, the four textures in `prototypes/blender_hall/textures/`, `prototypes/blender_hall/map.png`, the Final Room's re-render, the audits and captures.
+
+### Verification
+
+- **Captures, EN and ZH:** Wake 65, Chemistry 102, Greenhouse 114, Final 114, Hall 176, portraits 80, Circuit 111, maps 24, Library 141, Dining Hall 114, all passing.
+- **Audits:** coverage as above; interactions in the Circuit Room (every item offered; its three switches stay concealed until surveyed, as in the painted look) and the Final Room (Mrs. Lin from 292 cells).
+- **Godot:** the headless editor parse has 0 errors and every changed tool script parses on its own (`--check-only`); gdlint is clean on them; pyflakes is clean on `room_final.py`, `hall_prototype.py`, `room_prototype.py` and `room_circuit.py`; `git diff --check` is clean.
+- **Web:** as above (deploy, hashes, browser).
+
+### Risks / follow-up
+
+- **The website still shows the painted game:** every HD room, figure, portrait and map is in the preview. Syncing them is the move into the game: copy the renders into `assets/`, make the HD look the game's own, and keep the web download in bounds (it is 131.6 MB now; the HD rooms' PNGs are large and need lossy compression).
+- **The Library and the Dining Hall** do not yet meet the room standard (stage 61's audit: the Library's flat wood and light 39.7 against its painting's 27.9; the Dining Hall's 5.1 m table, dark floor joints and weak hearth). The user has not reviewed the Circuit Room's stage 55-circuit, the Library's stage 59 or the Dining Hall's stage 60.
+- **Mrs. Lin** follows the cast's chibi Tripo model rather than the painted figure's proportions, and lies face down because the model cannot close its eyes.
+- **The Hall map** is a straight top-down render; the Map Hub's ink and fog still draw over it as before.
+- **Next:** the Library and the Dining Hall brought to the room standard (the user's choice), then the move of every HD room, figure, portrait and map into the game, and the deploy.
+
 ## Stage: UX-20261021-64 (dialogue portraits from the Tripo models)
 
 - **Date:** 2026-10-25
@@ -475,6 +539,215 @@
 - **Preview only:** the game's own Chemistry Room, its painted table and its collision are unchanged. Moving the HD room into the game means moving the table's collision with it.
 - **NPCs:** the butler and Dr. Lin's echo are still the pixel NPCs.
 - **Next:** the user's review, then the butler and Dr. Lin's echo in Tripo (the user's choice), then the Dining Hall.
+
+## Stage: UX-20261021-55-circuit (Circuit bench, floor and gate)
+
+- **Date:** 2026-10-24
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** the user's verdict on stage 54-circuit: "感觉桌子和地板需要修复，而且下方需要加一个符合房间特色的大门" (the bench and the floor need fixing, and a big gate in the room's own character should be added at the bottom).
+- **Where:** the same branch and worktree as stage 54-circuit (`agents/circuit-room-blender`, base `ddcbc66`), still uncommitted.
+- **Numbering:** provisional, like stage 54-circuit. The main checkout has since used 54 (Greenhouse), 55 (Chemistry, committed as `9bb97b8`), 56 (Greenhouse door, bench and floor) and 57 (Library). Give both circuit stages the next free numbers on merge.
+
+### What was wrong (stage 54-circuit)
+
+- **Bench:**
+  - The top was one even, dark board.
+  - The pale pegboard fought the room.
+  - The glove read as a hand and the pliers as two crossed lines.
+  - The rag read as a folded paper.
+  - The console was a plain dark box.
+- **Floor:** big, even slate squares read as a modern tiled floor, flat in tone, not as the castle's flagstones.
+- **Exit:** the runner ran out between the pillars into the dark, with no door at the room's bottom edge.
+
+### What changed (`tools/blender/room_circuit.py`)
+
+- **Workbench** (`workbench()` rebuilt; new helpers `shift_uvs`, `wedge`, `lying`, `glove`, `pliers`):
+  - **Top:** seven oak planks in three tones, their UVs shifted so no two match, with oil stains. It has a riveted steel nosing along the front, iron corner brackets, a vise, and drawers with brass pulls.
+  - **Shadow board:** dark green, with cream painted outlines. The cutters' outline is empty, the one missing tool.
+  - **Instrument console:** walnut-toned oak.
+    - A sloped desk with toggles and pilot lamps, and a riser with two dials.
+    - Plate 3's flush cover sits where `CircuitLayout` draws the master plate.
+  - **Lying on top:**
+    - a glove cut to a hand's outline, with a violet cuff;
+    - real pliers, wire coils, a soldering iron and a screw tin;
+    - the lantern;
+    - a rag dropped over the front edge with cloth simulation.
+- **Floor** (`flagstones()`):
+  - Castle flagstones of mixed sizes laid in courses (CC0 `rock_tile_floor`), graded, with patches of tone.
+  - The grates, mains, chalk and oil stay. The runner now ends just behind the gate.
+- **Gate** (`exit_gate()`):
+  - **Portal:** the Hall's stone portal (`build_portal`) at 2.8 times its size, 14 Hall px each side of the doorway.
+    - It stands across the passage at x 698.5, its foot at plan y 1090, just past the room's south edge.
+    - Crest, plaque and lit passage are left off.
+  - **Shut:** two leaves of riveted steel plate under a brass seal with the Circuit bolt on enamel, and a brass lock bar.
+  - **Electrical:**
+    - porcelain insulators on iron brackets on both jambs carry a copper bus over the arch on porcelain stand-offs;
+    - a blue indicator lamp sits in a brass cup on each jamb.
+  - **Light:** the blue fanlight is dimmed to matte at this size. A warm key from the floor in front and a blue fill light it.
+  - **Facing:** it faces the camera, as the Hall draws a door reached from the north. A player walking out is seen behind it as the depth pass's ghost, as at the Wake gate.
+  - **Clearance:** its top stands at screen y 939, below the arrival spawn (724, 930), so neither a player coming in nor the shadow at their feet is hidden.
+    - The first cut stood at y 1076, and its top covered the spawn's feet by 6 rows.
+- **Capture** (`tools/blender/capture_circuit_room.gd`):
+  - shot `01-room` now stands the player on the game's own `PLAYER_SPAWN_POSITION`;
+  - a new check: nothing hides a player at the spawn or the shadow under their feet (111 checks).
+- **Textures:** `rock_tile_floor` (Charlotte Baglioni) added to `tools/blender/cc0_textures.json`. `monastery_stone_floor` was tried and dropped.
+
+### Exact files
+
+- Changed:
+  - `tools/blender/room_circuit.py` and `tools/blender/capture_circuit_room.gd` (both new in stage 54-circuit, still untracked)
+  - `tools/blender/cc0_textures.json`
+  - `docs/AGENT_HANDOFF.md`
+  - `docs/PROJECT_STATUS.md`
+  - this report
+- Evidence, regenerated in `docs/evidence/2026-10-24-blender-circuit-room/`:
+  - `01`–`11` recaptured;
+  - `12-render.png` re-rendered;
+  - new: `13-bench-floor-gate-before-after.png`. Its left column is stage 54-circuit's render with its bench prop; its right column is this stage's.
+- Local only: `prototypes/blender_rooms/circuit_room/` re-rendered and recaptured.
+
+### Verification
+
+- **Blender:** the final render (128 samples, 2896×2172) takes 142 s in all, with 1044 objects, 15 glows and 8 fixtures.
+  - The three HD props stand on their collision rectangles within 4.1 px (Workbench 382 × 301 at (446, 439.5)).
+- **Depth,** measured over every feet position the player's 14 × 8 body can reach from the spawn on the collision mask (569,879). The map hides the player only:
+  - north of the exit pillars (13,350);
+  - in the low south wall's band, y 943–967 (17,359);
+  - walking out down the passage behind the gate, feet y 939–1085 (15,589);
+  - in a strip under the south wall, outside the room, reached only from the foot of the exit passage (19,488; see risks).
+- **Room capture:** `capture_circuit_room.gd` passes 111/111 in EN and in ZH.
+- **No regression:** `capture_room.gd` (Wake Room) passes 65/65.
+- **Tools:**
+  - gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean on `tools/blender/*.py`;
+  - the headless editor parse (isolated HOME) has 0 errors;
+  - `git diff --check` is clean;
+  - `fetch_textures.py` verifies all 51 maps.
+
+### Risks / follow-up
+
+- **Preview only:** the HD room shows only in the prototype preview. The Mechanic is still the pixel sprite.
+- **Gate:** the gate is drawn shut. A player stepping into the exit rect is seen behind it as a ghost before pressing E, the Wake gate's convention.
+  - Doors that swing (`prototype_doors.gd`) are a Hall-only feature for now.
+- **Pre-existing collision gap:** the room's `BottomLeftWall` and `BottomRightWall` polygons stop 18–28 px short of the room's bottom edge, and `room_size` limits only the spawn and the camera.
+  - A player who walks on past the exit prompt can follow that strip under the south wall, in the painted game too.
+  - The HD depth map ghosts them there. Not changed here.
+- **Merge:** besides stage 54-circuit's shared files, `cc0_textures.json` now also conflicts with the main checkout's additions; keep both sides' assets.
+- **Next (proposed):** the user's verdict on the bench, floor and gate. Then the Mechanic in Tripo, or the next room.
+
+### GitHub documentation proposal
+
+- README / project page: none until the user accepts the style. Then show the Circuit Room beside the Wake Room under "Blender HD rooms (preview)", with `01-overview.png`.
+
+---
+
+## Stage: UX-20261021-54-circuit
+
+- **Date:** 2026-10-24
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes and the Web build are unchanged.
+- **Request:** "你现在重新搭建electric_room，用blender搭建，风格向大厅看齐。保持审美优化" (rebuild the electric room in Blender, in the Hall's style, keeping the aesthetics refined). "electric_room" is the Circuit Room (`scenes/floor_1/circuit_room.tscn`, 电路室).
+- **User's choices:**
+  - work in a new, separate worktree, because a parallel session was building the Greenhouse in the main checkout;
+  - the room only: the Mechanic stays the pixel sprite until his Tripo model.
+- **Where:** branch `agents/circuit-room-blender` at `/Users/yaleshen/shadow-castle-stem-detective.worktrees/circuit-room-blender`, cut from `main` at `ddcbc66` (stage 53). Uncommitted, as the handoff requires.
+- **Numbering:** this stage was numbered provisionally. The Greenhouse session may also have taken 54; renumber on merge.
+
+### What changed
+
+- **The room** (`tools/blender/room_circuit.py`), rebuilt on the room's real collision (1448 × 1086, rendered at 2 px per px) with the Hall's floor, wall stone, wall tops, banners and moonlight:
+  - **Switchboard** along the back wall, standing exactly on the collision's slanted front:
+    - five framed slate sections: feeder knife switches under gauges, the regulator with a rheostat, resistor coils, a fuse bank with one fuse blown black, and the burnt bus;
+    - the burnt bus sits in sooted, cracked slate, its west bar snapped and bent, with a blue arc jumping the gap at the game's `BROKEN_BUS_POSITION`;
+    - louvred steel doors below, a slate counter with brown-glazed insulators, bus bars on stand-offs along the top, and two brass picture lights.
+  - **Maintenance door:** iron and riveted, left ajar in an arched opening, with the Circuit emblem (the Hall's bolt) above it.
+    - Dusty boot prints run from it to the burnt section; porcelain shards lie under the shattered stand-off.
+  - **Equipment cabinet** (`Worldsort/Cabinet`): riveted dark-enamelled iron, a padlocked locker door with bright scratches round the keyhole, and the flush junction cover where plate 1 is drawn.
+    - The loose access panel sits askew with one screw gone.
+    - On top: a coil of violet-wrapped cable, a toolbox and an oil can.
+  - **Workbench** (`Worldsort/Workbench`): worn oak with drawers.
+    - The shadow board has one painted outline left empty.
+    - The diagnostic console holds plate 3's flush cover, a galvanometer and binding posts.
+    - The open journal carries a sketched circuit and an oil smudge. One glove has a violet cuff. Also: pliers, wire, a soldering iron and the oil lantern.
+  - **Dynamo** (`Worldsort/Generator`) on a stone foundation with a tread-plate bedplate and a brass rail:
+    - flywheel, two field coils under an iron yoke, the armature, the commutator and its brushes;
+    - the regulator housing with plate 2's flush cover;
+    - a glass arc chamber with a violet core;
+    - the Prism Dust tray.
+  - **Light:** five caged bulb lamps, each with a warm floor pool; moonlit lancet windows in both side walls, with beams across the floor; the arc, the chamber and the bench lantern.
+  - **Floor:** violet-lit grates, copper mains with flanged collars, the circuit chalked on the flagstones, oil and soot, and the runner out.
+  - **Exit:** two stone pillars on the collision's own line, each with a capstone, a Hall lantern and the castle banner, and the Hall passage's cold light beyond.
+- **The pipeline** (shared, backward compatible; the Wake Room re-renders the same):
+  - `export_room_layout.gd` exports a `RoomInteractionRuntime` room:
+    - its props by node path, their `FurnitureCollision` rectangles (solid in the mask), its `INTERACT_ITEMS`;
+    - named script constants (the light fixtures, the exit).
+  - `room_prototype.py`:
+    - a south wall may have a doorway (`openings`);
+    - prop roots follow the layout's node paths;
+    - `build()` may add `render.json` metadata.
+  - `prototype_room.gd`:
+    - stages the Circuit Room;
+    - moves the room's own light rig (`ambience_layer`: 5 wall lamps, the bench lantern, the chamber glow and both arc emitters) onto the HD fixtures listed in `render.json` `fixtures`, and puts it back on restore.
+    - The game's brown-out and power-restored lamp states and arcing therefore play on the HD room.
+  - `prototype_depth.gd`, `prototype_characters.gd`: find a player kept under `Worldsort/`.
+  - `capture_circuit_room.gd`: new native capture (109 checks).
+- **Textures:** 3 more CC0 Poly Haven sets in `tools/blender/cc0_textures.json` with authors and checksums: `green_metal_rust` and `metal_plate_02` (Rob Tuytel), `slate_floor` (Dimitrios Savva).
+
+### Aesthetic passes (the final is the left column of `13-bench-floor-gate-before-after.png`; the folder's other images now show stage 55-circuit)
+
+1. **First pass:** too cold and even, with the room lit grey by the moonlight. The lamps were spots without pools, and the arc chamber's core clipped to white. The exit piers were 186 px deep tiled boxes, the floor pipes read as thin rails, and oil stains read as holes.
+2. **Final pass:**
+   - the exposure comes down (the moonlight stays the Hall's), and the lamps are brighter with floor pools;
+   - the core is violet;
+   - the piers became lit pillars on the wall line, with banners where they show;
+   - the mains are thicker, with collars;
+   - the oil is a soft gloss, and the cabinet iron, pegboard and chalk are quieter.
+
+### Exact files
+
+- New:
+  - `tools/blender/room_circuit.py`
+  - `tools/blender/capture_circuit_room.gd` (+ `.uid`)
+  - `docs/evidence/2026-10-24-blender-circuit-room/` (`01`–`10` painted vs HD at 1024×768, `11-hd-detective.png`, `12-render.png`)
+- Changed:
+  - `tools/blender/export_room_layout.gd`
+  - `tools/blender/room_prototype.py`
+  - `tools/blender/prototype_room.gd`
+  - `tools/blender/prototype_depth.gd`
+  - `tools/blender/prototype_characters.gd`
+  - `tools/blender/play_prototype.gd` (doc line)
+  - `tools/blender/cc0_textures.json`
+  - `docs/AGENT_HANDOFF.md`
+  - `docs/PROJECT_STATUS.md`
+  - this report
+- Local only (gitignored, regenerable): `prototypes/blender_rooms/circuit_room/` (layout, render, depth, props, captures).
+
+### Verification
+
+- **Blender:** the final render (128 samples, 2896×2172) takes 131 s in all, with 917 objects and 11 glows.
+  - The three HD props stand on their collision rectangles within 4.1 px (the walk-up rule allows 7.5).
+  - The depth map hides reachable floor only where it should: north of the exit pillars (11,771 px) and in the low south wall's band (9,981 px). The one exception is a 20 px sliver at the switchboard's east end, out of 542,423 reachable px.
+- **Room capture:** `capture_circuit_room.gd` passes 109/109 in EN and in ZH. It checks:
+  - props staged on their collision;
+  - focus boxes and feet follow the HD props and go back;
+  - each prop, plate, the Mechanic and the exit offered where the game puts them, in both looks;
+  - plates drawn on their HD housings;
+  - all 9 light-rig nodes on their HD fixtures, through the power restoring and back;
+  - pillar occlusion and open floor;
+  - the HD detective's size, idle and run.
+- **No regression:** `capture_room.gd` (Wake Room) still passes 65/65. Rebuilding the Wake Room through the changed `room_prototype.py` gives the same prop roots, with rects within 1 px (sampling).
+- **Godot:** gdlint is clean on all `tools/blender/*.gd`; pyflakes is clean on `tools/blender/*.py`. The headless editor parse (isolated HOME) has 0 errors. `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **Preview only:** the HD room shows only in the prototype preview.
+- **Mechanic:** still the pixel sprite, which stands out in the HD room until his Tripo model.
+- **Merge:** shared pipeline files (`export_room_layout.gd` `ROOMS`, `prototype_room.gd` `ROOMS`, `room_prototype.py`, `cc0_textures.json`) and these docs will conflict with the Greenhouse session's edits in the main checkout. The changes are additive; keep both rooms' entries.
+- **Next (proposed):** the user's verdict on this style. Then the Mechanic in Tripo (his HD portrait follows from the model), or the next room in the planned order.
+
+### GitHub documentation proposal
+
+- README / project page: none until the user accepts the style. Then add the Circuit Room to the "Blender HD rooms (preview)" mention beside the Wake Room, with `01-overview.png` as the image.
+
+---
 
 ## Stage: UX-20261021-56 (Greenhouse door, bench and floor)
 

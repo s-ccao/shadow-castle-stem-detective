@@ -9,6 +9,13 @@ extends SceneTree
 ## elsewhere lists them in "props"), the room's spawn points, its interaction
 ## items and herb plots where it has them, and a collision mask.
 ##
+## A room run by RoomInteractionRuntime (the Circuit Room) keeps its props
+## elsewhere: its spec lists them by node path ("props"), and with
+## "furniture" each one's FurnitureCollision rectangle is exported as
+## "furniture" and is solid in the mask. Its interaction items (switch plates
+## and their contact bands) and the script constants its spec names
+## ("constants": light fixtures, exit) go into "extras".
+##
 ##   HOME="$PWD/.godot/blender-proto-home" godot --headless --path . \
 ##     --script res://tools/blender/export_room_layout.gd \
 ##     -- --room=wake_room --out=res://prototypes/blender_rooms/wake_room/
@@ -83,6 +90,29 @@ const ROOMS: Dictionary = {
 		"rect_shapes": true,
 		"capsule_shapes": true,
 	},
+	# A RoomInteractionRuntime room: its three props stand in Worldsort/, each
+	# blocked by its own FurnitureCollision ("furniture"); its light rig's spots
+	# and its exit are script constants ("constants").
+	"circuit_room": {
+		"scene": "res://scenes/floor_1/circuit_room.tscn",
+		"size": Vector2i(1448, 1086),
+		"spawns": {
+			"arrival": "PLAYER_SPAWN_POSITION",
+			"exit": "EXIT_POSITION",
+			"mechanic": "MECHANIC_POSITION",
+		},
+		"props": {
+			"Workbench": "Worldsort/Workbench",
+			"Cabinet": "Worldsort/Cabinet",
+			"Generator": "Worldsort/Generator",
+		},
+		"items": "INTERACT_ITEMS",
+		"furniture": true,
+		"constants": [
+			"EXIT_RECT", "WALL_LAMP_POSITIONS", "BENCH_LANTERN_POSITION",
+			"GENERATOR_CHAMBER_POSITION", "BROKEN_BUS_POSITION",
+		],
+	},
 }
 
 var room_id := "wake_room"
@@ -137,6 +167,21 @@ func _run() -> void:
 		walls.append_array(_rect_walls(room))
 	if bool(spec.get("capsule_shapes", false)):
 		walls.append_array(_capsule_walls(room))
+	# Furniture a RoomInteractionRuntime room (the Circuit Room) blocks with a
+	# rectangle on a StaticBody2D (its FurnitureCollision), as solid as the walls.
+	var furniture: Array = []
+	if bool(spec.get("furniture", false)):
+		for node: Node in room.find_children("*", "CollisionShape2D", true, false):
+			var shape_node := node as CollisionShape2D
+			var body := shape_node.get_parent()
+			if not (body is StaticBody2D) or not (shape_node.shape is RectangleShape2D):
+				continue
+			var extent := (shape_node.shape as RectangleShape2D).size * shape_node.global_scale.abs()
+			var holder := body.get_parent()
+			furniture.append({
+				"name": str(holder.name), "path": str(room.get_path_to(holder)),
+				"rect": _rect(Rect2(shape_node.global_position - extent * 0.5, extent)),
+			})
 	var spatial := RoomSpatialRuntime.new()
 	var prop_info: Dictionary = {}
 	for child: Node in _prop_nodes(room, spec):
@@ -180,6 +225,20 @@ func _run() -> void:
 		var rect_value: Variant = constants.get(str(spec["rects"][rect_name]))
 		if rect_value is Rect2:
 			extras[rect_name + "_rect"] = _rect(rect_value)
+	for constant: String in spec.get("constants", []):
+		if not constants.has(constant):
+			continue
+		var value: Variant = constants[constant]
+		if value is Vector2:
+			extras[constant.to_lower()] = _point(value)
+		elif value is Rect2:
+			extras[constant.to_lower()] = _rect(value)
+		elif value is Array:
+			var points: Array = []
+			for point: Variant in value:
+				if point is Vector2:
+					points.append(_point(point))
+			extras[constant.to_lower()] = points
 	var player := room.get_node_or_null("player") as Node2D
 	if player == null:
 		player = room.get_node_or_null("Worldsort/player") as Node2D
@@ -190,6 +249,7 @@ func _run() -> void:
 		"size": [size.x, size.y],
 		"walls": walls,
 		"props": props,
+		"furniture": furniture,
 		"prop_info": prop_info,
 		"spawns": spawns,
 		"extras": extras,
@@ -203,6 +263,15 @@ func _run() -> void:
 	file.close()
 	var mask := Image.create(size.x, size.y, false, Image.FORMAT_L8)
 	var shapes: Array = walls + props
+	for block: Dictionary in furniture:
+		var area: Array = block["rect"]
+		mask.fill_rect(
+			Rect2i(
+				Vector2i(roundi(float(area[0])), roundi(float(area[1]))),
+				Vector2i(roundi(float(area[2])), roundi(float(area[3])))
+			).intersection(Rect2i(Vector2i.ZERO, size)),
+			Color.WHITE
+		)
 	for y: int in size.y:
 		for x: int in size.x:
 			var point := Vector2(x + 0.5, y + 0.5)
@@ -212,8 +281,11 @@ func _run() -> void:
 					break
 	mask.save_png(ProjectSettings.globalize_path(out_dir.path_join("collision.png")))
 	print(
-		"ROOM_LAYOUT %s: %d walls, %d prop shapes, %d props, %d spawns -> %s"
-		% [room_id, walls.size(), props.size(), prop_info.size(), spawns.size(), out_dir]
+		"ROOM_LAYOUT %s: %d walls, %d prop shapes, %d furniture, %d props, %d items, %d spawns -> %s"
+		% [
+			room_id, walls.size(), props.size(), furniture.size(), prop_info.size(),
+			(extras.get("items", []) as Array).size(), spawns.size(), out_dir,
+		]
 	)
 	room.queue_free()
 	await process_frame

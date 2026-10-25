@@ -17,7 +17,8 @@ extends SceneTree
 ##     --script res://tools/blender/audit_interactions.gd -- --room=final_room
 ##
 ## Rooms: wake_room, greenhouse_room, chemistry_room, final_room,
-## library_room, dining_hall_room and hall. Needs a native display: the HD
+## library_room, dining_hall_room, circuit_room and hall. Needs a native
+## display: the HD
 ## props' boxes come from their textures' opaque bounds. Writes
 ## <data>/audit/interactions.json and <data>/audit/{hd,painted}/NN-<id>.png,
 ## <data> being prototypes/blender_rooms/<room>/ (the Hall's
@@ -36,6 +37,7 @@ const ROOM_SCENES: Dictionary = {
 	"final_room": "res://scenes/floor_1/final_room.tscn",
 	"library_room": "res://scenes/floor_1/library_room.tscn",
 	"dining_hall_room": "res://scenes/floor_1/dining_hall_room.tscn",
+	"circuit_room": "res://scenes/floor_1/circuit_room.tscn",
 }
 const RENDER_SCALE := 2.0
 ## The floor is sampled every this many px; the Hall is wider.
@@ -188,7 +190,7 @@ func _interactions() -> Array[Dictionary]:
 			for entry: Dictionary in room.get("INTERACT_ITEMS"):
 				items.append(_room_item(str(entry["name"]), str(entry["label"])))
 			items.append(_room_item("exit", "the way back to the Castle Hall"))
-		"library_room", "dining_hall_room":
+		"library_room", "dining_hall_room", "circuit_room":
 			# Untyped: RoomInteractionRuntime needs the CaseLocale autoload to compile.
 			var runtime: Object = room.get("interaction_runtime")
 			for entry: Dictionary in runtime.get("items"):

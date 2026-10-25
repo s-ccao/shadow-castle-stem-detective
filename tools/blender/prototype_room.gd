@@ -21,11 +21,17 @@ extends RefCounted
 ## HD room changes (a table built at a real table's size), whose polygon is
 ## swapped in while the room is staged, and likewise an interaction box it
 ## changes (a stain the HD room draws smaller than the painting's).
+## A room whose script keeps its own light rig (the Circuit Room's
+## `ambience_layer`) has that rig lifted above the render and each fixture
+## render.json lists ("fixtures": from the painted spot to the HD one) moved
+## onto the lamp, lantern or arc the render draws, so the rig's power states
+## still play on the HD room.
 
 const ROOMS: Dictionary = {
 	"res://scenes/wake_room.tscn": "wake_room",
 	"res://scenes/floor_1/greenhouse_room.tscn": "greenhouse_room",
 	"res://scenes/floor_1/chemistry_room.tscn": "chemistry_room",
+	"res://scenes/floor_1/circuit_room.tscn": "circuit_room",
 	"res://scenes/floor_1/final_room.tscn": "final_room",
 }
 const DATA := "res://prototypes/blender_rooms/"
@@ -57,6 +63,10 @@ var interactions: Array[Dictionary] = []
 ## {"shape", "painted", "disabled"} for each prop hotspot reshaped round its
 ## HD prop while the room is staged.
 var hotspots: Array[Dictionary] = []
+## The room's own light rig and the fixtures moved with it: {node, from, to}.
+var rig: Node2D
+var rig_z := 0
+var rig_moves: Array[Dictionary] = []
 
 
 ## The prototype room a scene shows, or "" for any other scene.
@@ -107,6 +117,7 @@ func attach(room_node: Node, name: String) -> bool:
 			depth.add_fixed(item["sprite"], item["feet"])
 	characters = Characters.new()
 	sheets = characters.attach(room, CHARACTER_DATA)
+	_attach_rig()
 	return true
 
 
@@ -123,12 +134,23 @@ func apply() -> void:
 	if has_depth:
 		depth.apply()
 	characters.apply()
+	if rig != null and is_instance_valid(rig):
+		# Above the render and its halos, still below the props and figures.
+		rig.z_index = overlay.z_index + 2
+		for move: Dictionary in rig_moves:
+			if is_instance_valid(move["node"]):
+				(move["node"] as Node2D).position = move["to"]
 
 
 ## Puts the painted room back, exactly as the scene had it.
 func restore() -> void:
 	if overlay == null or not is_instance_valid(overlay):
 		return
+	if rig != null and is_instance_valid(rig):
+		rig.z_index = rig_z
+		for move: Dictionary in rig_moves:
+			if is_instance_valid(move["node"]):
+				(move["node"] as Node2D).position = move["from"]
 	characters.restore()
 	if has_depth:
 		depth.restore()
@@ -157,9 +179,35 @@ func advance(delta: float) -> void:
 
 func summary() -> String:
 	var cast := characters.cast if characters != null else 0
-	return "%s: %d glows, %d HD props, depth %s, %d HD character sheets, %d of the cast" % [
+	var text := "%s: %d glows, %d HD props, depth %s, %d HD character sheets, %d of the cast" % [
 		meta.get("room", "?"), halos, swapped, has_depth, sheets, cast,
 	]
+	if not rig_moves.is_empty():
+		text += ", %d fixtures moved" % rig_moves.size()
+	return text
+
+
+## Finds the room's light rig and pairs each of its lamps and arc emitters
+## with the HD fixture render.json moves it to, by where the rig stands it.
+func _attach_rig() -> void:
+	var layer: Variant = room.get("ambience_layer")
+	var fixtures: Array = meta.get("fixtures", [])
+	if not (layer is Node2D) or fixtures.is_empty():
+		return
+	rig = layer as Node2D
+	rig_z = rig.z_index
+	for child: Node in rig.get_children():
+		var node := child as Node2D
+		if node == null:
+			continue
+		for fixture: Dictionary in fixtures:
+			var from: Array = fixture["from"]
+			var to: Array = fixture["to"]
+			if node.position.distance_to(Vector2(float(from[0]), float(from[1]))) < 1.0:
+				rig_moves.append({
+					"node": node, "from": node.position, "to": Vector2(float(to[0]), float(to[1])),
+				})
+				break
 
 
 ## The room's highlight boxes, prompt anchors and walk-up points follow the

@@ -34,6 +34,14 @@
     - flagstones laid one by one with brass lines and violet grates, running up to the painting's great door with the four rooms' emblems. There is no invisible wall before it: the player walks up to its base, behind it, and shows through it as a silhouette, as in the Hall (the user's review).
     - The room is as bright and as warm as its painting. Every interaction still works in the preview; Mrs. Lin is still the game's pixel figure. [Comparisons](evidence/2026-10-24-blender-final-room/).
     - Fixed in the game itself: the Final Room's way back to the Castle Hall could not be reached, because its south walls close the gate bay and the exit lay beyond them. The exit is now the great door, so walking up to it offers "Press E to return to the Castle Hall".
+  - **The Circuit Room** (stage 54-circuit, its bench, floor and gate rebuilt in stage 55-circuit; built on its own branch and merged into this preview in stage 65) is the electrical workshop rebuilt the same way:
+    - The painted workshop rebuilt in 3D on the room's real collision, in the Hall's stone, wall tops and moonlight, so movement, prompts, the junction-plate puzzle and the power restoration stay exactly as they are.
+    - **Back wall:** a slate switchboard with feeder switches, a regulator, resistor coils, a fuse bank with one blown fuse, and the burnt bus still arcing. The maintenance door beside it is left ajar, and boot prints in the dust lead from it to the burnt section.
+    - **Props:** the riveted equipment cabinet has its padlock and a loose access panel. The dynamo has its flywheel, field coils, commutator and violet arc chamber.
+      - The workbench (rebuilt in stage 55-circuit, at the user's request) is worn oak planks with a riveted steel edge, a vise and drawers. It has a dark-green shadow board missing one tool, a walnut instrument console with toggles and dials, the journal, a single glove, pliers, and a rag hanging over its edge.
+    - **Floor and gate** (stage 55-circuit): the floor is castle flagstones of mixed sizes. At the bottom, a shut gate in the room's own character: the Hall's stone portal with steel-plate leaves under a brass seal bearing the Circuit bolt, porcelain insulators carrying a copper bus over the arch, and blue lamps.
+    - **Light:** caged wall lamps, moonlit lancet windows, and a lantern on each stone pillar at the exit. The game's own lamp glows and arcs now sit on the HD fixtures and still brighten when the power returns.
+    - **Comparisons:** side-by-side in-game shots are in [the Circuit Room evidence](evidence/2026-10-24-blender-circuit-room/).
   - **Every interaction checked against the rebuilt rooms** (stage 63): a new audit walks each room's floor in both looks and finds where every prompt is offered. Fixed:
     - **Wake Room (the game itself):** clicking the door from across the room now walks to it and opens it; before, the detective always stopped short and said he could not get close enough. The door's click area is the door, and in HD the bed's pillow and the bookshelf's top take a click too.
     - **Greenhouse (the game itself):** the two long herb beds are offered all along the aisle, not just at their north ends. The planter's north herb plot, which no one could reach, can be picked from behind the planter. The gardener now stands on the aisle instead of inside the moonleaf bed.
@@ -41,6 +49,10 @@
     - The Final Room, Dining Hall, Library and Hall were already right.
   - **The cast in Tripo** (stage 63): the butler, the gardener, the mechanic and Dr. Lin are rigged Tripo models now, made like the detective. In the preview the butler and Dr. Lin's memory echo stand in the Chemistry Room and the gardener in the Greenhouse, each as tall as their pixel figure, on the same spot, turning to meet the detective as before. [Interactions and cast](evidence/2026-10-25-interactions-and-cast/).
   - **Dialogue portraits from the new models** (stage 64): the butler, the gardener, the mechanic, Dr. Lin and the Castle Guardian speak with portraits rendered from their Tripo models: head and shoulders in a three-quarter view turned toward the dialogue text, lit like the figures in the rooms. In the preview they replace the pixel portraits in every dialogue box (Mrs. Lin's letter in the Wake Room, the butler in Chemistry, the gardener in the Greenhouse, and the Hall), drawn smoothly at the box's size; the game's own portraits are unchanged. [Portraits](evidence/2026-10-25-npc-portraits/).
+  - **Every room and map in Blender** (stage 65): a new audit stages each area's HD look and lists whatever of the game's own art still shows. Mrs. Lin's body in the Final Room was the last painted thing in a room, and the Map Hub's maps were still the painted ones; all are Blender renders now.
+    - **Mrs. Lin** is the cast's Tripo Dr. Lin, laid face down where she fell, reaching toward her notebook, the torn violet cuff by her hand, lit softly so her dark coat reads; she can be inspected from the room as before. [Comparison](evidence/2026-10-25-blender-coverage/).
+    - **The Map Hub** shows the Blender Hall from straight above, in its map and the Guardian's minimap. The painted map no longer matched the Hall (its walls cross the real corridors); the new one is drawn on them. The Circuit repair map is the HD Circuit Room, its switch markers where they were.
+    - **The Circuit Room**, built on its own branch, is merged into this preview with its mechanic in Tripo.
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.
@@ -92,7 +104,7 @@
 - **Props:** all nine Hall props are crisp 1.25px/texel pixel art with contact shadows and true proportions.
 - **Next step:** the 2D wall redraw is paused in favour of a Blender HD Hall prototype.
 - **Evidence:** see the latest [stage report](AGENT_STAGE_REPORT.md) and [comparisons](evidence/2026-10-21-hall-visual/).
-- **Published:** this build is live at https://play.shadowcastledetective.com (deployed 2026-10-21; the live package matches the local export byte for byte).
+- **Published:** the game is live at https://play.shadowcastledetective.com. Redeployed 2026-10-25 (stage 65) with the game's own fixes through stage 63; the live package matches the local export byte for byte. The HD rooms, figures, portraits and maps are not in it yet: they reach the website when they move into the game.
 
 ## Previous actual-project update (2026-10-18)
 

@@ -30,9 +30,9 @@ against the detective (about 1.4 m, 90 px):
           violet lamps on tall piers; the player walks up to it and behind
           it, showing through it as in the Hall
   floor   flagstones with brass lines let into them and iron grates glowing
-          violet from below; Mrs. Lin lies where the game draws her (her
-          figure stays the game's own until the characters' pass), her
-          notebook (NotebookVisual) by her hand
+          violet from below; Mrs. Lin (MrsLinBody) lies where the game draws
+          her, the cast's Tripo Dr. Lin posed where she fell, her notebook
+          (NotebookVisual) by her hand
 
 The table and the engine are given their real footprints, and the furniture
 the painted room lets the player walk through (the west vitrine and table,
@@ -40,12 +40,15 @@ the crate and the east table) footprints of its own: the preview swaps them
 into the collision while the HD room is staged.
 """
 import math
+import os
 import random
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+import numpy as np
+from mathutils import Matrix, Quaternion, Vector
 
+import character_motion as motion
 import hall_prototype as hall
 import room_chemistry as chem
 import room_greenhouse as gh
@@ -80,6 +83,46 @@ CIRCLE_R = 255.0
 ENGINE = (1085.0, 458.0)
 ENGINE_R = 120.0
 NOTEBOOK = (306.0, 655.0)
+# Mrs. Lin (MrsLinBody): the cast's Tripo Dr. Lin, laid where the game lays
+# her body. Her floor centre is the body's FurnitureCollision's; she stands
+# as tall as the cast against the detective (cm); her long axis turns from due
+# east toward the south as the painted figure's does, and she rolls toward the
+# room so her face and coat show.
+LIN_GLB = os.path.join("prototypes", "blender_chars", "source", "dr_lin_anims.glb")
+LIN_FLOOR = (346.0, 611.0)
+# Her HD footprint (x0, x1, y0, y1): the painted body's north edge, her own
+# width, and at the south the lowest edge she shows (her render's foot, 627.5)
+# so the room offers her to a player who comes up from the south.
+LIN_FOOTPRINT = (272.0, 420.0, 576.0, 630.0)
+LIN_HEIGHT = 140.0
+LIN_TURN = -18.0
+# She has fallen forward onto her front: the model's eyes are painted open,
+# so her face is down on the flagstones and the room sees her hair, her coat's
+# back and her reaching arm. Laid on her right side, then rolled this far.
+LIN_ROLL = 72.0
+# Her limbs as they lie, in the room (x east, y north, z up; south is toward
+# the camera): her lower arm reaching along the floor toward the notebook to
+# the south-west, her upper hand down on the floor before her hip, holding the
+# torn violet cuff, and her knees drawn up toward the room, the upper one
+# further.
+LIN_POSE = (
+    ("RightArm", (-0.55, -0.80, -0.20)),
+    ("RightForeArm", (-0.45, -0.88, -0.15)),
+    ("RightHand", (-0.40, -0.90, -0.15)),
+    ("LeftArm", (0.50, -0.75, -0.40)),
+    ("LeftForeArm", (0.60, -0.70, -0.35)),
+    ("LeftHand", (0.55, -0.75, -0.30)),
+    ("LeftUpLeg", (0.55, -0.80, -0.20)),
+    ("LeftLeg", (0.85, 0.45, -0.10)),
+    ("RightUpLeg", (0.95, -0.25, -0.10)),
+    ("RightLeg", (0.90, 0.35, -0.10)),
+)
+LIN_CURL = {"Right": 25.0, "Left": 65.0}
+# A soft warm light over her that lights only her (light linking), so her dark
+# coat reads on the dark flagstones as the painted figure does; the room's
+# own light is unchanged.
+LIN_KEY_POWER = 13.0
+LIN_KEY_HEIGHT = 150.0
 GRATES = ((203.0, 258.0), (371.0, 259.0), (1238.0, 256.0), (380.0, 628.0), (1070.0, 632.0))
 # The floor's south edge either side of the gate, its corners rounding up to
 # the side walls as the painted room's do. The gate's piers stand over it.
@@ -1552,6 +1595,131 @@ def notebook():
     return kit
 
 
+def fallen_lin():
+    """Mrs. Lin where she fell (MrsLinBody): the Tripo Dr. Lin posed from her
+    rest pose, laid on her right side and rolled onto her front, and set on
+    the flagstones at the body's footprint, the torn violet cuff in her upper
+    hand."""
+    kit = RP.Kit("MrsLin", prop="MrsLinBody")
+    if not os.path.exists(LIN_GLB):
+        print("MODEL MISSING " + LIN_GLB)
+        return kit
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.abspath(LIN_GLB))
+    new = [obj for obj in bpy.data.objects if obj not in before]
+    armature = next(obj for obj in new if obj.type == "ARMATURE")
+    meshes = [obj for obj in new if obj.type == "MESH" and obj.parent == armature]
+    # Tripo's export carries a stray untextured icosphere round the origin.
+    for obj in new:
+        if obj.type == "MESH" and obj not in meshes:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    if armature.animation_data is not None:
+        for track in armature.animation_data.nla_tracks:
+            track.mute = True
+        armature.animation_data.action = None
+    pivot = RP._link(bpy.data.objects.new("MrsLinPivot", None))
+    armature.parent = pivot
+    low, high = _lin_extent(meshes)
+    height = high.z - low.z
+    laid = (Matrix.Rotation(math.radians(LIN_TURN), 4, "Z") @ Matrix.Rotation(math.radians(LIN_ROLL), 4, "X")
+            @ Matrix.Rotation(math.radians(-90.0), 4, "Y"))
+    pivot.matrix_world = laid
+    bpy.context.view_layer.update()
+    # The room's directions in the armature's own frame, where the pose works.
+    to_rig = armature.matrix_world.to_3x3().normalized().inverted()
+    rig = motion.Rig(armature)
+    rig.reset()
+    pose = motion.Pose(rig, rig.capture())
+    for name, degrees in (("Spine", 7.0), ("Spine1", 7.0), ("Spine2", 6.0)):
+        pose.turn(motion.bone(name), motion.rotation(motion.LEFT, degrees))
+    pose.turn(motion.bone("Head"), motion.rotation(motion.FORWARD, 14.0))
+    for name, direction in LIN_POSE:
+        pose.aim(motion.bone(name), to_rig @ Vector(direction))
+    for side, curl in LIN_CURL.items():
+        for finger in motion.FINGERS + ("Thumb",):
+            for joint, share in ((1, 1.0), (2, 1.1), (3, 0.8)):
+                name = motion.bone("%sHand%s%d" % (side, finger, joint))
+                if name in pose.channels:
+                    angle = curl * share * (0.55 if finger == "Thumb" else 1.0)
+                    pose.set_rotation(name, Quaternion((1.0, 0.0, 0.0), math.radians(angle * rig.curl_sign[name])))
+    rig.apply(pose.channels)
+    laid = laid @ Matrix.Scale(LIN_HEIGHT * RP.PX / height, 4)
+    pivot.matrix_world = laid
+    low, high = _lin_extent(meshes)
+    target = RP.world(LIN_FLOOR[0], LIN_FLOOR[1], 0.0)
+    pivot.matrix_world = Matrix.Translation(Vector(((target.x - (low.x + high.x) / 2.0),
+                                                    (target.y - (low.y + high.y) / 2.0), -low.z))) @ laid
+    bpy.context.view_layer.update()
+    low, high = _lin_extent(meshes)
+    print("MRS LIN laid: %.0f x %.0f game px across the plan, %.1f cm high, centre (%.0f, %.0f)" % (
+        (high.x - low.x) / RP.PX, (high.y - low.y) / (RP.PX * RP.STRETCH), (high.z - low.z) / RP.PX,
+        RP.game((low + high) / 2.0).x, RP.game((low + high) / 2.0).y))
+    for obj in meshes:
+        kit.keep(obj)
+    lit = meshes + _lin_cuff(kit, armature)
+    _lin_key(lit)
+    return kit
+
+
+def _lin_extent(meshes):
+    """The lowest and highest corner of every skinned vertex as posed now."""
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    chunks = []
+    for obj in meshes:
+        evaluated = obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        coords = np.empty(len(mesh.vertices) * 3, dtype=np.float64)
+        mesh.vertices.foreach_get("co", coords)
+        matrix = np.array(evaluated.matrix_world)
+        evaluated.to_mesh_clear()
+        chunks.append(coords.reshape(-1, 3) @ matrix[:3, :3].T + matrix[:3, 3])
+    points = np.concatenate(chunks)
+    return Vector(points.min(axis=0).tolist()), Vector(points.max(axis=0).tolist())
+
+
+def _lin_cuff(kit, armature):
+    """The torn violet cuff, rolled in her upper hand: copper thread at its
+    hem. Returns its objects."""
+    hand = armature.pose.bones[motion.bone("LeftHand")]
+    head = armature.matrix_world @ hand.head
+    tail = armature.matrix_world @ hand.tail
+    centre = head + (tail - head) * 0.9
+    along = (tail - head).normalized().cross(Vector((0.0, 0.0, 1.0)))
+    if along.length < 1e-6:
+        along = Vector((1.0, 0.0, 0.0))
+    along.normalize()
+    made = []
+    for part, radius, length, material in (
+            ("Cuff", 2.4, 11.0, hall._cloth("FinalCuff", (0.32, 0.06, 0.42))),
+            ("Thread", 2.6, 0.8, gold())):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=radius * RP.PX, depth=length * RP.PX,
+                                            location=centre + along * (5.0 * RP.PX if part == "Thread" else 0.0))
+        obj = bpy.context.active_object
+        obj.name = "MrsLin" + part
+        obj.rotation_mode = "QUATERNION"
+        obj.rotation_quaternion = Vector((0.0, 0.0, 1.0)).rotation_difference(along)
+        obj.data.materials.append(material)
+        made.append(kit.keep(obj))
+    return made
+
+
+def _lin_key(lit):
+    """A soft warm light over Mrs. Lin that lights only `lit`."""
+    receivers = bpy.data.collections.new("MrsLinLit")
+    for obj in lit:
+        receivers.objects.link(obj)
+    data = bpy.data.lights.new("MrsLinKey", "AREA")
+    data.energy = LIN_KEY_POWER
+    data.color = (1.0, 0.86, 0.72)
+    data.size = 80.0 * RP.PX
+    light = RP._link(bpy.data.objects.new("MrsLinKey", data))
+    x, y = LIN_FLOOR
+    light.location = RP.world(x, y + 40.0, LIN_KEY_HEIGHT * RP.SIN)
+    light.rotation_euler = (light.location - RP.world(x, y, 0.0)).to_track_quat("Z", "Y").to_euler()
+    light.light_linking.receiver_collection = receivers
+
+
 # ---------------------------------------------------------------- the room
 
 
@@ -1587,6 +1755,9 @@ def footprints():
         "KnowledgeEngineVisual/FurnitureCollision/CollisionShape2D": engine_outline,
         "VaultDoorVisual/FurnitureCollision/CollisionShape2D": rect(650.0, 800.0, BACK_Y + 10.0, FRONT_Y + 6.0),
         "NotebookVisual/FurnitureCollision/CollisionShape2D": rect(x - 16.0, x + 16.0, y - 12.0, y + 12.0),
+        # Mrs. Lin's footprint ends at the south where she meets the floor, so
+        # the player can come up to her from the room as the painted one lets.
+        "MrsLinBody/FurnitureCollision/CollisionShape2D": rect(*LIN_FOOTPRINT),
         "RoomCollisions/HDWestVitrine": rect(140.0, 212.0, 386.0, 542.0),
         "RoomCollisions/HDWestTable": rect(250.0, 330.0, 384.0, 542.0),
         "RoomCollisions/HDCrate": crate_outline,
@@ -1669,7 +1840,8 @@ def build(rp, layout):
     wake.moon_sky()
     bpy.data.objects["WakeMoonSky"].data.energy = 0.45
     props = {"VaultDoorVisual": vault_door(), "FinalAnalysisBoardVisual": analysis_table(),
-             "KnowledgeEngineVisual": knowledge_engine(), "NotebookVisual": notebook()}
+             "KnowledgeEngineVisual": knowledge_engine(), "NotebookVisual": notebook(),
+             "MrsLinBody": fallen_lin()}
     finish()
     print("FINAL ROOM built: %d objects, %d glows" % (len(bpy.data.objects), len(rp.GLOWS)))
     return {"props": props, "roots": {name: name for name in props}, "collision": footprints()}

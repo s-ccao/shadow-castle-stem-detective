@@ -155,6 +155,9 @@ def parse_args():
             continue
         elif key == "--prop":
             options.setdefault("only", []).append(argv[index + 1])
+        elif key == "--map":
+            # The Map Hub's image: the whole Hall from straight above (render_map).
+            options["map"] = argv[index + 1]
         else:
             raise SystemExit("Unknown option: " + key)
         index += 2
@@ -4776,6 +4779,33 @@ def render_to(path):
     print("RENDERED %s in %.1fs" % (path, time.time() - started))
 
 
+# The Map Hub's image size (scripts/map_hud.gd MAP_IMAGE_SIZE).
+MAP_IMAGE = (1448, 1086)
+
+
+def render_map(path, meta, stretch):
+    """The Map Hub's image, in assets/backgrounds/hall_map_hub.png's place:
+    the whole Hall from straight above, its HD props on their stands and its
+    doors shut, framed on the map's world rect and drawn at the map's size, so
+    a world point lands where map_hud.gd projects it (x * 1448 / 1920,
+    y * 1086 / 1280). The plan is stretched by `stretch` in y, so each pixel
+    is drawn taller than it is wide."""
+    width, height = meta["map_size"]
+    for obj in bpy.context.scene.objects:
+        if obj.type in ("MESH", "CURVE"):
+            obj.visible_camera = True
+    scene = bpy.context.scene
+    camera = scene.camera
+    camera.rotation_euler = (0.0, 0.0, 0.0)
+    camera.data.ortho_scale = width * PX
+    camera.data.sensor_fit = "HORIZONTAL"
+    camera.location = Vector((width / 2.0 * PX, -height / 2.0 * PX * stretch, 50.0))
+    scene.render.resolution_x, scene.render.resolution_y = MAP_IMAGE
+    scene.render.pixel_aspect_x = 1.0
+    scene.render.pixel_aspect_y = (height * stretch / MAP_IMAGE[1]) / (width / MAP_IMAGE[0])
+    render_to(path)
+
+
 def render_silhouette(path, floor_free_object, meta, scale):
     """Flat white walls on transparent: the outline the camera sees."""
     scene = bpy.context.scene
@@ -4963,6 +4993,14 @@ def main():
     add_cap_candles(layout, meta, stretch)
     add_ivy(layout, meta, stretch)
     props = add_hd_props(meta, stretch, options.get("only"))
+    if options.get("map"):
+        # As for the view below: every glow is decorative, its light a lamp's.
+        for material in bpy.data.materials:
+            material.cycles.emission_sampling = "NONE"
+        add_camera(meta, alpha, stretch, options["scale"])
+        setup_cycles(options["samples"], options["preview"])
+        render_map(options["map"], meta, stretch)
+        return
     glows_path = os.path.splitext(options["out"])[0] + "-glows.json"
     with open(glows_path, "w", encoding="utf-8") as handle:
         json.dump({"generator": "tools/blender/hall_prototype.py", "region": meta["region"], "glows": GLOWS},

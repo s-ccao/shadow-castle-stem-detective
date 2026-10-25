@@ -805,8 +805,9 @@ class Shell:
         A side wall's base along the floor, north end first. It leans out to
         meet the back wall's top corner, and runs on south to plan y `near`
         at the top, so its near end reaches the bottom of the screen.
-    "south": {"y", "height", "x": (x0, x1)}
-        The low wall cut away toward the camera. Optional: a room may end
+    "south": {"y", "height", "depth", "openings": [(x0, x1), ...]}
+        The low wall cut away toward the camera, broken by any openings (a
+        doorway out of the room) between x0 and x1. Optional: a room may end
         its floor its own way (the Final Room's drops into the dark).
     "cap": thickness of the walls' tops in plan px.
     """
@@ -971,27 +972,42 @@ class Shell:
             self._keep(mesh_from("RoomLip" + name, shape, lip, facing=TOWARD_CAMERA))
 
     def _south_wall(self):
-        """The low south wall, its ends cut along the leaning side walls."""
+        """The low south wall, its ends cut along the leaning side walls and
+        broken by its openings."""
         south = self.spec["south"]
         y0, y1 = south["y"], south["y"] + south.get("depth", 70.0)
         kit = Kit("RoomSouth")
-        for part, (front, back), (low, high), material in (
-                ("Wall", (y0, y1), (0.0, south["height"]), self.materials["cap"]),
-                ("Lip", (y0 - 0.5, y0 + 3.0), (south["height"], south["height"] + 0.8), self.materials["lip"])):
-            shape = bmesh.new()
-            corners = {}
-            for y in (front, back):
-                for h in (low, high):
-                    corners[(y, h, "left")] = shape.verts.new((self.side_x("left", y, h), y, h))
-                    corners[(y, h, "right")] = shape.verts.new((self.side_x("right", y, h), y, h))
-            for quad in (((front, low, "left"), (front, low, "right"), (front, high, "right"), (front, high, "left")),
-                         ((back, low, "left"), (back, high, "left"), (back, high, "right"), (back, low, "right")),
-                         ((front, high, "left"), (front, high, "right"), (back, high, "right"), (back, high, "left")),
-                         ((front, low, "left"), (back, low, "left"), (back, low, "right"), (front, low, "right")),
-                         ((front, low, "left"), (front, high, "left"), (back, high, "left"), (back, low, "left")),
-                         ((front, low, "right"), (back, low, "right"), (back, high, "right"), (front, high, "right"))):
-                shape.faces.new([corners[key] for key in quad])
-            kit.shape(part, shape, material, uv="box")
+        edges = ["left"]
+        for gap in sorted(south.get("openings", [])):
+            edges += [float(gap[0]), float(gap[1])]
+        edges.append("right")
+
+        def edge_x(edge, y, h):
+            return self.side_x(edge, y, h) if isinstance(edge, str) else edge
+
+        for segment in range(len(edges) // 2):
+            west, east = edges[2 * segment], edges[2 * segment + 1]
+            suffix = "" if segment == 0 else str(segment)
+            for part, (front, back), (low, high), material in (
+                    ("Wall", (y0, y1), (0.0, south["height"]), self.materials["cap"]),
+                    ("Lip", (y0 - 0.5, y0 + 3.0), (south["height"], south["height"] + 0.8), self.materials["lip"])):
+                shape = bmesh.new()
+                corners = {}
+                for y in (front, back):
+                    for h in (low, high):
+                        corners[(y, h, "left")] = shape.verts.new((edge_x(west, y, h), y, h))
+                        corners[(y, h, "right")] = shape.verts.new((edge_x(east, y, h), y, h))
+                for quad in (((front, low, "left"), (front, low, "right"), (front, high, "right"),
+                              (front, high, "left")),
+                             ((back, low, "left"), (back, high, "left"), (back, high, "right"), (back, low, "right")),
+                             ((front, high, "left"), (front, high, "right"), (back, high, "right"),
+                              (back, high, "left")),
+                             ((front, low, "left"), (back, low, "left"), (back, low, "right"), (front, low, "right")),
+                             ((front, low, "left"), (front, high, "left"), (back, high, "left"), (back, low, "left")),
+                             ((front, low, "right"), (back, low, "right"), (back, high, "right"),
+                              (front, high, "right"))):
+                    shape.faces.new([corners[key] for key in quad])
+                kit.shape(part + suffix, shape, material, uv="box")
         for obj in kit.made:
             self._keep(obj)
 
@@ -1215,13 +1231,19 @@ def main():
     # the room's <id>_interaction_rect while it is staged.
     if built.get("interactions"):
         meta["interactions"] = built["interactions"]
+    # What else the room tells the preview, such as where its light fixtures moved.
+    meta.update(built.get("meta", {}))
     if not options["props_only"]:
         render_to(options["out"])
         meta["depth"] = os.path.basename(render_depth(options["out"], size))
     for kit in kits.values():
         for obj in kit.made:
             obj.visible_camera = True
-    meta["props"] = render_props(kits, options["out"], size, built.get("roots"))
+    # A prop's node where it is not Props/<prop>: the layout's own path for it
+    # (the Circuit Room's Worldsort/), unless the room's build() names one.
+    roots = {name: info["path"] for name, info in layout.get("prop_info", {}).items() if info.get("path")}
+    roots.update(built.get("roots") or {})
+    meta["props"] = render_props(kits, options["out"], size, roots)
     with open(os.path.splitext(options["out"])[0] + ".json", "w", encoding="utf-8") as handle:
         json.dump(meta, handle, indent=1)
     print("ROOM %s rendered in %.1fs" % (options["room"], time.time() - started))

@@ -451,6 +451,110 @@
           "sha256": "ca710d895b01cf323bf00f53194c43504a39d2c964fbfc343c4f45c7d41b10dc"
         }
       }
+    },
+    {
+      "asset": "green_metal_rust",
+      "name": "Green Metal Rust",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/green_metal_rust",
+      "maps": {
+        "diff": {
+          "file": "green_metal_rust_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/green_metal_rust/green_metal_rust_diff_1k.jpg",
+          "sha256": "4509ab0cb1cf6bf9b9f970450a41f83ebd9bff178006deae568ff34b404856fc"
+        },
+        "nor_gl": {
+          "file": "green_metal_rust_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/green_metal_rust/green_metal_rust_nor_gl_1k.jpg",
+          "sha256": "8ecb28b0ea4026b740ce492e3f606f61a76bdce1f78cb2e29287bf9a56c54a80"
+        },
+        "rough": {
+          "file": "green_metal_rust_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/green_metal_rust/green_metal_rust_rough_1k.jpg",
+          "sha256": "f214f22608dd75aa3e7b4da8bffac97c344cbacbc50f49ba0beb0236701a622c"
+        }
+      }
+    },
+    {
+      "asset": "metal_plate_02",
+      "name": "Metal Plate 02",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/metal_plate_02",
+      "maps": {
+        "diff": {
+          "file": "metal_plate_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate_02/metal_plate_02_diff_1k.jpg",
+          "sha256": "6e80877d0e9d5973d96298c6091df7ace906b0a6760afc4f3592e4855f3f1d4c"
+        },
+        "nor_gl": {
+          "file": "metal_plate_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate_02/metal_plate_02_nor_gl_1k.jpg",
+          "sha256": "58736fbb8aa4fc6690cf8152b174db65caf22a766375b625fb0087e1bc955bc7"
+        },
+        "rough": {
+          "file": "metal_plate_02_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate_02/metal_plate_02_rough_1k.jpg",
+          "sha256": "73a6bd6393f6de7be42058584c2d382f2a3e9148ceabc2d02e748e2c860e74d1"
+        }
+      }
+    },
+    {
+      "asset": "slate_floor",
+      "name": "Slate Floor",
+      "authors": [
+        "Dimitrios Savva"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/slate_floor",
+      "maps": {
+        "diff": {
+          "file": "slate_floor_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/slate_floor/slate_floor_diff_1k.jpg",
+          "sha256": "ca47f5ba941cca29af7c7c16f7c6e7a8ba9dbdeb440e26c7a166d2f3bae9ace5"
+        },
+        "nor_gl": {
+          "file": "slate_floor_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/slate_floor/slate_floor_nor_gl_1k.jpg",
+          "sha256": "428be8ac8b4a389624eacfce2072754536949eca4323e7fd6ab0a5b5eb49ed7c"
+        },
+        "rough": {
+          "file": "slate_floor_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/slate_floor/slate_floor_rough_1k.jpg",
+          "sha256": "795037d7945b75410cbfc4a8af9088a53ec0efdff7eacf53701da22c16298b42"
+        }
+      }
+    },
+    {
+      "asset": "rock_tile_floor",
+      "name": "Rock Tile Floor",
+      "authors": [
+        "Charlotte Baglioni"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/rock_tile_floor",
+      "maps": {
+        "diff": {
+          "file": "rock_tile_floor_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_tile_floor/rock_tile_floor_diff_1k.jpg",
+          "sha256": "2401d2b47d180858257c0e58ef1a31173c6f562bc8cfb2aa20c7dad0c6eb7f10"
+        },
+        "nor_gl": {
+          "file": "rock_tile_floor_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_tile_floor/rock_tile_floor_nor_gl_1k.jpg",
+          "sha256": "1404e2745d6cb27f0cf4caada723ce315397ecd59f5ee731881cadcd16baf686"
+        },
+        "rough": {
+          "file": "rock_tile_floor_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_tile_floor/rock_tile_floor_rough_1k.jpg",
+          "sha256": "837458accfbf6f5b32c1908dc35770977bd3bf2332d6710140241d65d4d60372"
+        }
+      }
     }
   ]
 }
