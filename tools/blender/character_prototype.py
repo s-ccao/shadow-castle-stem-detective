@@ -57,6 +57,12 @@ CHARACTERS = {
     "detective": {"glb": "detective_anims.glb", "height": 100.0, "cell": (128, 128), "feet": 114},
     # The Guardian's visor and core glow violet, as in Tripo's own viewer.
     "guardian": {"glb": "guardian_anims.glb", "height": 100.0, "cell": (128, 156), "feet": 134, "glow": 4.0},
+    # The rooms' cast, each drawn as tall as the detective: the pixel NPCs
+    # all stand about 90 px in their rooms, as he does.
+    "butler": {"glb": "butler_anims.glb", "height": 100.0, "cell": (128, 128), "feet": 114},
+    "gardener": {"glb": "gardener_anims.glb", "height": 100.0, "cell": (128, 128), "feet": 114},
+    "mechanic": {"glb": "mechanic_anims.glb", "height": 100.0, "cell": (128, 128), "feet": 114},
+    "dr_lin": {"glb": "dr_lin_anims.glb", "height": 100.0, "cell": (128, 128), "feet": 114},
 }
 FEET = (motion.bone("LeftFoot"), motion.bone("RightFoot"))
 # Fine samples a cycle is measured on; a multiple of the frames drawn.

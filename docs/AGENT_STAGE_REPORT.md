@@ -2,6 +2,124 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-63 (interactions against the HD rooms; the cast in Tripo)
+
+- **Date:** 2026-10-25
+- **Status:** approved by the user ("满意"), then committed and pushed at their request, with this stage's hunks only. Their choice for next: the NPC portraits, rendered from the new models.
+- **Requests:**
+  - "现在复查每个交互地点是否准确的对应了修改的后的物品大小和位置" (now recheck that every interaction spot matches the rebuilt items' size and position);
+  - during the stage: "还有npc的建模，也需要用tripo做出来" (and the NPC models, made in Tripo too).
+- **Parallel work:** the Library (57, 59) and Dining Hall (60) sessions' work is still uncommitted in this checkout, and Circuit is in its worktree. This stage only reads their rooms; their hunks in the shared files are untouched.
+
+### How the audit works
+
+- **New tool:** `tools/blender/audit_interactions.gd` (`-- --room=<room>|hall`), for each look (HD and painted):
+  - walks the floor reachable from the room's arrival (6 px cells, the room's own walkability);
+  - for every interaction, records its box, its contact box, its mouse hotspot (the Wake Room's), and every cell where the room's own "near" test offers it;
+  - stands the player in front of each and shoots it;
+  - writes `prototypes/blender_rooms/<room>/audit/interactions.json` (or `prototypes/blender_hall/audit/`).
+- **Coverage:** all 7 areas (Wake, Chemistry, Greenhouse, Library, Dining, Final and the Hall): 79 interactions, plus the Greenhouse's 10 herb plots and the Hall's corridor fragments.
+
+### What it found, and what changed
+
+- **Already right (no change):**
+  - **Final Room:** every box follows its HD prop; the exit box is the great door.
+  - **Dining Hall:** every box follows its HD prop. The exit is offered from only 7 cells in both looks, which is the room's design.
+  - **Library:** the 20 cases follow their HD props. The fixed boxes (the two scrolls, the research desk, the three lens slots, the chained cabinet, the drawer bank) sit on the HD art as on the painted art, because the Library session built the HD room on them.
+  - **Hall:** the 8 doors' boxes are centred on the HD doorways, and the 9 props follow their HD stands. The corridor fragments and service points are invisible proximity points, the same in both looks.
+- **Chemistry, the red stain (HD only):**
+  - The stain's box was the painted pool's fixed `RED_STAIN_RECT` (900, 500, 265 × 350). The HD stain is a pool about a third of that size, thrown south-west (x 885–1057, y 567–716, its last drops to x 1068 and y 560–726), so the box spilled over the east counter and empty floor down to y 850.
+  - Now `room_chemistry.build()` returns the HD pool's box, `"interactions": {"red_stain": [884, 560, 184, 166]}`. `room_prototype.py` writes it into `render.json`, and the preview sets it as the room's `red_stain_interaction_rect` while staged.
+  - **Game hook:** `scenes/floor_1/chemistry_room.gd` keeps the box in `var red_stain_interaction_rect := RED_STAIN_RECT`, read by `get_interaction_rect`. The painted game is unchanged.
+- **Greenhouse, the long beds (both looks):**
+  - The beds' boxes, (105, 305, 125 × 655) and (794, 305, 125 × 655), stopped 19 px short of the aisle, beyond the 14 px contact band. The beds' minigames were offered from 33 and 32 cells, all at their north ends.
+  - The boxes are now each whole bed inside its stone kerb, which is also its collision outline and where the HD room builds it: (90, 318, 167 × 822) and (762, 318, 150 × 820). They are offered from 666 and 426 cells, all along the aisle, in both looks.
+- **Greenhouse, the planter's north herb plot (both looks):**
+  - `planter_north` at (515, 520) was the planter's middle; the nearest floor was 113 px away, so it could never be picked (reach 78).
+  - It is now (515, 455), in the soil inside the north rim, picked from the floor behind the planter (94 cells, 49 px at the nearest).
+- **Greenhouse, the gardener (both looks):** her mark (780, 1000) was inside the moonleaf bed's collision, which the painting draws 30 px narrower. In HD her feet stood in the soil. `GARDENER_POSITION` is now (740, 1000), on the aisle floor beside the bed.
+- **Wake Room, the door's mouse click (both looks; a game bug):**
+  - The door's hotspot was a fixed 100 × 160 box round `door_position` (832, 450), which barely touched the door.
+  - A click from across the room walked to a point 105 px short of the door (`DOOR_INTERACT_RADIUS` × 0.7, pushed out from `door_position`). On arrival the room said "I couldn't get close enough" every time.
+  - Now `_sync_door_interaction()` makes the door's box (its visible art), its hotspot and its walk-up point (on the box's contact band, the way a prop's is found) agree. A click walks there and arrival uses `CLICK_ARRIVAL_MARGIN`, as for the props. `begin_mouse_interaction`, `calculate_interaction_approach_point` and `DOOR_INTERACT_RADIUS` are removed (nothing else used them).
+  - The preview calls `_sync_door_interaction()` when it stages and restores, instead of setting the door's box itself.
+- **Wake Room, the props' click areas (HD only):** the bed's, desk's and bookshelf's click shapes were drawn round the painted props, so in HD the bed's pillow and the bookshelf's top took no click. While staged, the preview turns those shapes off and gives each prop a box over its HD art. Restoring puts the painted shapes back.
+
+### The cast in Tripo
+
+- **Models:** the butler, the gardener, the mechanic and Dr. Lin, made the detective's way in Tripo Studio, on the user's account:
+  - a 1:1 concept image pair (Nano Banana) from the pixel sprite's front frame, with a T-pose prompt;
+  - HD Model H3.1 (4K PBR, 40k triangles, private);
+  - Auto Rig (Humanoid, Mixamo);
+  - the preset clips walk, run, idle, look_around and standing_relax;
+  - a GLB export, 2k textures, in place.
+  - **Cost:** 380 credits (4 concept pairs at 20, 4 models at 55, 4 rigs at 20; retargets and exports are free). Balance 3885 → 3505.
+  - **Provenance:** `prototypes/blender_chars/source/sources.json` (task ids, prompts, chosen concepts) and `npc_prompts.json`. Concepts in `concepts/`, references in `refs/`.
+- **Sheets:** `character_prototype.py --character butler|gardener|mechanic|dr_lin` renders each into idle, walk and run sheets in 8 facings, 128 px cells and a 100 px figure, as the detective's. Each takes about 4 minutes.
+  - `character_motion.STYLES` gives each their own manner: the butler upright and still, with a calmer walk; the gardener and the mechanic at ease; Dr. Lin with her hands clear of her long coat.
+- **In the preview** (`prototype_characters.gd`):
+  - Every `AnimatedNpc` the game names (Butler, Gardener, Mechanic, Dr. Lin Memory Echo) is drawn by its Tripo figure, a child of its own sprite.
+  - The game keeps the NPC's sprite, frames, turning to meet the player and notice pulse. The figure is drawn as tall as the pixel figure and on the same feet, plays its idle loop, and faces as the game turns the NPC (its 8 or 4 facings map to the sheet's rows).
+  - `prototype_depth.gd` hides the cast behind walls in front of them and gives each a contact shadow, except Dr. Lin's memory echo, which is a vision, not a body.
+  - In HD: the butler and Dr. Lin's echo in Chemistry, and the gardener in the Greenhouse. The mechanic is ready for the Circuit Room's HD room, which is in its own worktree. Mrs. Lin's body in the Final Room is that room's own prop and is unchanged.
+
+### Exact files
+
+- **New:** `tools/blender/audit_interactions.gd` and its `.uid`; `docs/evidence/2026-10-25-interactions-and-cast/`.
+- **The game itself:**
+  - `scripts/wake_room.gd`: `_sync_door_interaction()`, `door_approach_position`, the door's click walk and arrival; the unused radius helpers removed.
+  - `scripts/greenhouse_room.gd`: the beds' boxes, `planter_north`, `GARDENER_POSITION`.
+  - `scenes/floor_1/chemistry_room.gd`: `red_stain_interaction_rect`.
+- **The prototype:**
+  - `tools/blender/prototype_room.gd`: `"interactions"` swap (`_read_interactions`, `_swap_interactions`), the Wake props' HD click boxes (`_swap_hotspots`), `_sync_door_interaction()` in `_resync()`, the cast in `summary()`.
+  - `tools/blender/prototype_characters.gd`: the cast (`NPCS`, `NPC_FIGURE_PX`, `NPC_FACINGS`, `_swap_npc`, `_row`, `cast`).
+  - `tools/blender/prototype_depth.gd`: the cast's depth and shadows.
+  - `tools/blender/room_chemistry.py`, `tools/blender/room_prototype.py`: the `"interactions"` contract.
+  - `tools/blender/character_prototype.py`, `tools/blender/character_motion.py`: the four characters.
+  - `tools/blender/capture_chemistry.gd` (102 checks, was 86): the HD stain's box; the butler and the echo in HD.
+  - `tools/blender/capture_greenhouse.gd` (114 checks, was 97): the beds along the aisle and the north plot, in both looks; the gardener in HD, on the aisle.
+- **Local only (gitignored):** the GLBs and sheets in `prototypes/blender_chars/`; the audits in `prototypes/blender_rooms/*/audit/` and `prototypes/blender_hall/audit/`.
+- **Evidence:** `docs/evidence/2026-10-25-interactions-and-cast/`:
+  - `01-red-stain.png`, `02-herb-beds.png`, `03-planter-north.png`, `04-wake-click-areas.png`: before and after, at 2x on the HD render. The box is gold, the floor it is offered from green, the click area magenta.
+  - `05-gardener-mark.png`: her old and new marks over the bed's collision, and her in game in both looks.
+  - `06-cast-tripo.png`: each of the cast as the game's pixel sprite, the concept and the Tripo model.
+  - `07-cast-gait-sheets.png`: frames of each one's idle, walk and run sheets.
+  - `08-cast-chemistry.png`: the butler and Dr. Lin's echo in the Chemistry Room, painted and HD.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+
+### Verification
+
+- **Audit after the fixes:** the stain is offered from the floor round the HD pool (1254 cells); the beds from 666 and 426 cells; `planter_north` from 94; every Wake click area is its HD prop's box (the door 851, 248, 104 × 267.5).
+- **Wake mouse probe** (real left clicks pushed into the viewport, fresh room each time, `/tmp` script): 22/22 clicks walk to the thing and open it. That covers the door's top, middle and right edge from three starts in HD (all three points lie outside the old hotspot), the bed's head and the bookshelf's top in HD, and each in the painted look.
+- **Captures**, EN and ZH:
+  - `capture_chemistry.gd` 102/102 and `capture_greenhouse.gd` 114/114 (new checks);
+  - unchanged and passing: `capture_room.gd` 65/65 (Wake), `capture_final.gd` 111/111, `capture_prototype.gd` 176/176 (Hall), `capture_library.gd` 141/141 and `capture_dining_hall.gd` 114/114. The Library's and Dining Hall's capture folders were restored afterwards.
+- **Game tests (headless):**
+  - pass: `greenhouse_herb_plots_test`, `potion_economy_test`, `wake_interaction_priority_test`, `tutorial_chain_test`, `chemistry_deduction_test`;
+  - `room_spatial_audit` fails only its six known Hall cases (next priority 4).
+- **The cast:** each figure stands on its NPC's feet (0.00 px off) at the pixel figure's height (butler 92.4, Dr. Lin 92.2, gardener 91.2 px), facing as the game turns it; 0 render warnings.
+- **Godot:**
+  - the headless editor parse has 0 errors;
+  - gdlint is clean on the prototype's scripts and the captures;
+  - the three game scripts keep their earlier gdlint findings and add none;
+  - pyflakes and `git diff --check` are clean.
+- **Blender 5.2.2:** Chemistry re-rendered (116 s, 1843 objects, 28 glows) with its `"interactions"`.
+
+### Risks / follow-up
+
+- **Game changes for players:**
+  - the Wake door now answers a click from anywhere;
+  - the Greenhouse beds' minigames are offered along their whole length;
+  - `planter_north` can now be picked (two blue blossom more per sweep, as designed);
+  - the gardener stands 40 px further west.
+  - Saves, story flags and the other plots are unchanged.
+- **The beds' boxes are larger** in the painted look too: the focus brackets now frame the whole bed rather than its soil.
+- **Library boxes:** they were found right; none of the Library session's work was changed.
+- **The cast stand still in this game,** so only their idle shows. Their walk and run sheets are ready for a scene that moves them.
+- **The mechanic** shows in HD once the Circuit Room's HD room joins the preview. **Mrs. Lin's body** (Final Room) is the room's own prop; a Tripo body would replace that prop.
+- **Committing:** the shared files hold other sessions' uncommitted hunks. Build this stage's commit from `HEAD` plus its own hunks, as for stages 61 and 62.
+- **Next:** the NPC portraits rendered from the new models (the user's choice), then the move into the game.
+
 ## Stage: UX-20261021-62 (Final Room)
 
 - **Date:** 2026-10-24

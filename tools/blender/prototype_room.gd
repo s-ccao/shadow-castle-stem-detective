@@ -4,8 +4,9 @@ extends RefCounted
 ## rebuilds a room in 3D on its own collision and writes, under
 ## prototypes/blender_rooms/<room>/:
 ##   render.png            the room without its interactive props, 2 px per px;
-##   render.json           its region, render scale and figure scale, and
-##                         any footprint it changes ("collision");
+##   render.json           its region, render scale and figure scale, any
+##                         footprint it changes ("collision") and any
+##                         interaction box it changes ("interactions");
 ##   render-glows.json     the candles' and crystals' halos;
 ##   render-depth.png      every wall and fixed piece's own ground y;
 ##   render-props.json     each interactive prop rendered alone, cut where the
@@ -15,9 +16,11 @@ extends RefCounted
 ## in front of them, and draws the characters in HD. The room's script read its
 ## props' highlight boxes and walk-up points off those sprites when it loaded,
 ## so staging reads them again from the HD props, and restoring from the
-## painted ones. Collision, prompts and every story step stay the game's own,
-## but for a footprint the HD room changes (a table built at a real table's
-## size), whose polygon is swapped in while the room is staged.
+## painted ones; a prop's mouse hotspot follows its HD prop too. Collision,
+## prompts and every story step stay the game's own, but for a footprint the
+## HD room changes (a table built at a real table's size), whose polygon is
+## swapped in while the room is staged, and likewise an interaction box it
+## changes (a stain the HD room draws smaller than the painting's).
 
 const ROOMS: Dictionary = {
 	"res://scenes/wake_room.tscn": "wake_room",
@@ -49,6 +52,11 @@ var sheets := 0
 var has_depth := false
 ## {"polygon", "painted", "hd"} for each collision polygon the HD room changes.
 var footprints: Array[Dictionary] = []
+## {"property", "painted", "hd"} for each interaction box the HD room changes.
+var interactions: Array[Dictionary] = []
+## {"shape", "painted", "disabled"} for each prop hotspot reshaped round its
+## HD prop while the room is staged.
+var hotspots: Array[Dictionary] = []
 
 
 ## The prototype room a scene shows, or "" for any other scene.
@@ -71,6 +79,7 @@ func attach(room_node: Node, name: String) -> bool:
 		return false
 	meta = parsed as Dictionary
 	_read_footprints()
+	_read_interactions()
 	var region: Array = meta["region"]
 	var render_scale := float(meta.get("render_scale", 2.0))
 	var origin := Vector2(float(region[0]), float(region[1]))
@@ -108,7 +117,9 @@ func apply() -> void:
 	overlay.visible = true
 	props.apply()
 	_swap_footprints(true)
+	_swap_interactions(true)
 	_resync()
+	_swap_hotspots(true)
 	if has_depth:
 		depth.apply()
 	characters.apply()
@@ -123,6 +134,8 @@ func restore() -> void:
 		depth.restore()
 	props.restore()
 	_swap_footprints(false)
+	_swap_interactions(false)
+	_swap_hotspots(false)
 	_resync()
 	overlay.visible = false
 
@@ -143,15 +156,16 @@ func advance(delta: float) -> void:
 
 
 func summary() -> String:
-	return "%s: %d glows, %d HD props, depth %s, %d HD character sheets" % [
-		meta.get("room", "?"), halos, swapped, has_depth, sheets,
+	var cast := characters.cast if characters != null else 0
+	return "%s: %d glows, %d HD props, depth %s, %d HD character sheets, %d of the cast" % [
+		meta.get("room", "?"), halos, swapped, has_depth, sheets, cast,
 	]
 
 
 ## The room's highlight boxes, prompt anchors and walk-up points follow the
-## props' Visual sprites (wake_room.gd create_prop_interactions/create_door;
-## greenhouse_room.gd _sync_interaction_footprints; final_room.gd
-## _sync_authored_interaction_positions).
+## props' Visual sprites (wake_room.gd create_prop_interactions and
+## _sync_door_interaction; greenhouse_room.gd _sync_interaction_footprints;
+## final_room.gd _sync_authored_interaction_positions).
 func _resync() -> void:
 	if not is_instance_valid(room):
 		return
@@ -177,11 +191,8 @@ func _resync() -> void:
 				prop["position"] = room.call(
 					"_get_visual_interaction_approach", rect, prop.get("position", rect.get_center())
 				)
-	var door := room.get_node_or_null("Props/Door")
-	if door != null and room.get("door_interaction_rect") is Rect2:
-		var rect := spatial.get_visual_rect(door)
-		if rect.size.x > 0.0 and rect.size.y > 0.0:
-			room.set("door_interaction_rect", rect)
+	if room.has_method("_sync_door_interaction"):
+		room.call("_sync_door_interaction")
 
 
 ## The collision render.json changes ({node path: world px points}), with
@@ -265,6 +276,82 @@ func _swap_footprints(hd: bool) -> void:
 				if is_instance_valid(made):
 					(made as Node).get_parent().remove_child(made)
 					(made as Node).free()
+
+
+## The interaction boxes render.json changes ({id: [x, y, w, h]}): a thing the
+## HD room draws at another size or place than the painting does, where the
+## room's script boxes it with a fixed rect read off the painting (the
+## Chemistry Room's red stain). The room keeps that box in a property named
+## <id>_interaction_rect; staging sets the HD box there, restoring the
+## painted one.
+func _read_interactions() -> void:
+	interactions.clear()
+	var listed: Variant = meta.get("interactions", {})
+	if not listed is Dictionary:
+		return
+	for id: Variant in (listed as Dictionary).keys():
+		var box: Array = (listed as Dictionary)[id]
+		var property := str(id) + "_interaction_rect"
+		var painted: Variant = room.get(property)
+		if not painted is Rect2 or box.size() != 4:
+			push_warning("No interaction box %s on the room for the HD one" % property)
+			continue
+		interactions.append({
+			"property": property, "painted": painted,
+			"hd": Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])),
+		})
+
+
+func _swap_interactions(hd: bool) -> void:
+	for entry: Dictionary in interactions:
+		room.set(str(entry["property"]), entry["hd"] if hd else entry["painted"])
+
+
+## A Wake Room prop takes clicks on its Area2D's own shapes (a Hotspot box and
+## a polygon), drawn round the painted prop. While the room is staged those
+## shapes stand down and a box round the HD prop takes the clicks, so the bed's
+## pillow and the bookshelf's top answer a click where the HD room draws them.
+## The room's walk planner copied the polygons when it loaded, so its
+## obstacles do not change.
+func _swap_hotspots(hd: bool) -> void:
+	if not hd:
+		for hotspot: Dictionary in hotspots:
+			var shape: Variant = hotspot["shape"]
+			if is_instance_valid(shape):
+				(shape as Node).get_parent().remove_child(shape)
+				(shape as Node).free()
+			var painted: Array[Node2D] = hotspot["painted"]
+			for index in painted.size():
+				if is_instance_valid(painted[index]):
+					painted[index].set("disabled", hotspot["disabled"][index])
+		hotspots.clear()
+		return
+	var listed: Variant = room.get("props")
+	if not listed is Dictionary or not hotspots.is_empty():
+		return
+	var spatial := RoomSpatialRuntime.new()
+	for id: Variant in (listed as Dictionary).keys():
+		var area := room.get_node_or_null("Props/" + str(id).capitalize()) as Area2D
+		if area == null:
+			continue
+		var rect := spatial.get_visual_rect(area)
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+			continue
+		var painted: Array[Node2D] = []
+		var disabled: Array[bool] = []
+		for child: Node in area.get_children():
+			if child is CollisionShape2D or child is CollisionPolygon2D:
+				painted.append(child as Node2D)
+				disabled.append(bool(child.get("disabled")))
+				child.set("disabled", true)
+		var box := RectangleShape2D.new()
+		box.size = rect.size / area.global_scale.abs()
+		var shape := CollisionShape2D.new()
+		shape.name = "BlenderHotspot"
+		shape.shape = box
+		area.add_child(shape)
+		shape.global_position = rect.get_center()
+		hotspots.append({"shape": shape, "painted": painted, "disabled": disabled})
 
 
 func _to_local(node: Node2D, world: PackedVector2Array) -> PackedVector2Array:

@@ -35,6 +35,13 @@ the Hall's projection, materials and lighting language
   Greenhouse's planter) stay in the room render and its depth map as well,
   and the preview stages their sprite undrawn, for the prompt box alone.
 
+  Changed footprints and boxes. A room built at a real size where the
+  painting is not returns in build()'s "collision" each footprint the
+  preview swaps into the room's collision (the Chemistry Room's table), and
+  in "interactions" the box of each thing it draws at another size than the
+  painting (the Chemistry Room's red stain), which the preview sets as the
+  room's <id>_interaction_rect.
+
 A room's furniture, lights and dressing live in tools/blender/room_<name>.py.
 
     Blender -b --factory-startup -P tools/blender/room_prototype.py -- \\
@@ -1203,6 +1210,11 @@ def main():
     # the preview swaps them into the room's collision while it is staged.
     if built.get("collision"):
         meta["collision"] = built["collision"]
+    # Interaction boxes the HD room changes ({id: [x, y, w, h]}), for a thing
+    # it draws at another size than the painting: the preview sets each into
+    # the room's <id>_interaction_rect while it is staged.
+    if built.get("interactions"):
+        meta["interactions"] = built["interactions"]
     if not options["props_only"]:
         render_to(options["out"])
         meta["depth"] = os.path.basename(render_depth(options["out"], size))

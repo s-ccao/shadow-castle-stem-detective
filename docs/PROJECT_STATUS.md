@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-10-24
+**Last updated:** 2026-10-25
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
@@ -23,9 +23,9 @@
     - the floor is laid stone by stone, and the furniture is worn, waxed oak; since stage 61 the room is as bright and as warm as its painting;
     - apothecary shelves, a counter and a work bench line the walls, and a brick hearth with a bubbling cauldron stands at the south wall;
     - the floor tells what happened: the red stain flung across the flagstones, broken glass and red crystal round it, and a trail of fallen bottles.
-    - Every interaction still works in the preview. The butler and Dr. Lin's echo are still pixel figures.
+    - Every interaction still works in the preview. Since stage 63 the butler and Dr. Lin's echo are Tripo figures.
     - [Comparisons](evidence/2026-10-23-blender-chemistry/).
-  - **The Greenhouse** (stage 54; its gate, bench and floor rebuilt from the painting in stage 56) has the painting's round-arched glazed gate, the six-board potting bench with its clutter, real CC0 plants in the beds and pots, and slate pavers laid one by one. Since stage 61 the bench is a real bench's size, 2.5 × 1.0 m, of weathered oak under its lantern, and the player can walk behind it. Every interaction still works in the preview; the gardener is still a pixel figure. [Comparisons](evidence/2026-10-23-blender-greenhouse/), [the bench](evidence/2026-10-24-greenhouse-bench/).
+  - **The Greenhouse** (stage 54; its gate, bench and floor rebuilt from the painting in stage 56) has the painting's round-arched glazed gate, the six-board potting bench with its clutter, real CC0 plants in the beds and pots, and slate pavers laid one by one. Since stage 61 the bench is a real bench's size, 2.5 × 1.0 m, of weathered oak under its lantern, and the player can walk behind it. Every interaction still works in the preview; since stage 63 the gardener is a Tripo figure. [Comparisons](evidence/2026-10-23-blender-greenhouse/), [the bench](evidence/2026-10-24-greenhouse-bench/).
   - **The Final Room** (stage 62) is rebuilt from its painting to the room standard:
     - the vault door between glazed cabinets and brass lanterns, violet lancets and crystal lanterns, and scroll alcoves and presses along the walls;
     - the Ashford analysis table at a real table's size, 3.2 m across, its eight evidence panels in brass, ringed by a brass circle in the floor; the player can stand behind it, hidden by it;
@@ -34,6 +34,12 @@
     - flagstones laid one by one with brass lines and violet grates, running up to the painting's great door with the four rooms' emblems. There is no invisible wall before it: the player walks up to its base, behind it, and shows through it as a silhouette, as in the Hall (the user's review).
     - The room is as bright and as warm as its painting. Every interaction still works in the preview; Mrs. Lin is still the game's pixel figure. [Comparisons](evidence/2026-10-24-blender-final-room/).
     - Fixed in the game itself: the Final Room's way back to the Castle Hall could not be reached, because its south walls close the gate bay and the exit lay beyond them. The exit is now the great door, so walking up to it offers "Press E to return to the Castle Hall".
+  - **Every interaction checked against the rebuilt rooms** (stage 63): a new audit walks each room's floor in both looks and finds where every prompt is offered. Fixed:
+    - **Wake Room (the game itself):** clicking the door from across the room now walks to it and opens it; before, the detective always stopped short and said he could not get close enough. The door's click area is the door, and in HD the bed's pillow and the bookshelf's top take a click too.
+    - **Greenhouse (the game itself):** the two long herb beds are offered all along the aisle, not just at their north ends. The planter's north herb plot, which no one could reach, can be picked from behind the planter. The gardener now stands on the aisle instead of inside the moonleaf bed.
+    - **Chemistry (preview):** the red stain's prompt box is the HD pool's, a third the size of the painted one.
+    - The Final Room, Dining Hall, Library and Hall were already right.
+  - **The cast in Tripo** (stage 63): the butler, the gardener, the mechanic and Dr. Lin are rigged Tripo models now, made like the detective. In the preview the butler and Dr. Lin's memory echo stand in the Chemistry Room and the gardener in the Greenhouse, each as tall as their pixel figure, on the same spot, turning to meet the detective as before. [Interactions and cast](evidence/2026-10-25-interactions-and-cast/).
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.

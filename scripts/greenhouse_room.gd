@@ -60,7 +60,10 @@ const EXIT_POSITION: Vector2 = Vector2(
 )
 
 const EXIT_RADIUS: float = 90.0
-const GARDENER_POSITION: Vector2 = Vector2(780.0, 1000.0)
+## On the aisle floor beside the moonleaf bed. The bed's collision starts at
+## x≈765 here, so her old mark (780) put her feet inside the raised bed, which
+## the painting hides by drawing the bed 30 px narrower than its collision.
+const GARDENER_POSITION: Vector2 = Vector2(740.0, 1000.0)
 const GARDENER_INTERACT_RADIUS: float = 88.0
 const GARDENER_VISUAL_SCALE: float = 0.43
 const GARDENER_VISUAL_FOOT_ANCHOR: Vector2 = Vector2(0.0, -46.44)
@@ -84,12 +87,15 @@ const ITEM_INTERACT_RADIUS: float = 90.0
 ## roughly a dozen units, which is a few potions' worth — enough to reward the
 ## trip without making the bench minigames pointless.
 const HERB_PLOTS: Array[Dictionary] = [
-	# 中央石花坛：三个方位，围着圆坛分布。
+	# 中央石花坛：三个方位，围着圆坛分布。北侧那一点落在坛北的土里、石沿
+	# 之内：花坛碰撞北缘在 y≈411，坛后能站的地面离这点最近 49 px，在
+	# HERB_PLOT_REACH 之内。原先的 (515, 520) 是坛心那朵花，最近的落脚点
+	# 也有 113 px，哪儿都采不到。
 	{
 		"id": "planter_north",
 		"herb": "blue_blossom",
 		"amount": 2,
-		"position": Vector2(515, 520),
+		"position": Vector2(515, 455),
 		"label_en": "the planter's north arc",
 		"label_zh": "石花坛北侧",
 	},
@@ -225,11 +231,13 @@ var INTERACT_ITEMS: Array[Dictionary] = [
 		"position": Vector2(214, 858),
 		# The beds are painted into the background rather than placed as props,
 		# so _sync_interaction_footprints has no node to measure and the item
-		# would fall back to a fixed 88x68 box centred on "position" — a small
-		# square floating over the lower third of a bed that is 125x655. These
-		# bounds are read off greenhouse_room_bg.png: the planter kerb, mirrored
-		# about the room's centre line at x=512.
-		"interaction_rect": Rect2(105, 305, 125, 655),
+		# would fall back to a fixed 88x68 box centred on "position". The box is
+		# the whole bed inside its stone kerb, which is also the bed's collision
+		# outline (RoomCollisions/LeftTopPlant and LeftBottomWall) and where the
+		# Blender room builds it. A box round the soil alone stopped 19 px short
+		# of the aisle, beyond the 14 px contact band, so the bed's minigame was
+		# only offered from the corner at its north end.
+		"interaction_rect": Rect2(90, 318, 167, 822),
 		"message": (
 			"A long raised bed of blue blossom. The supply valves for light, "
 			+ "water and air all feed into it."
@@ -239,7 +247,7 @@ var INTERACT_ITEMS: Array[Dictionary] = [
 		"name": "herb_bed_right",
 		"label": "the moonleaf bed",
 		"position": Vector2(806, 858),
-		"interaction_rect": Rect2(794, 305, 125, 655),
+		"interaction_rect": Rect2(762, 318, 150, 820),
 		"message": (
 			"A long raised bed of moonleaf. The silver pods open and close, "
 			+ "each on its own slow rhythm."
@@ -257,8 +265,9 @@ var INTERACT_ITEMS: Array[Dictionary] = [
 
 ## 两条长花坛各挂一个采药小游戏。坐标取自 greenhouse_room_bg.png 里植被
 ## 区域的实测中心（左 x114..223、右 x800..902），交互点放在花坛朝走道的
-## 内侧边缘：y=858 处可走区间是 x∈[256,760]，距左点 42 px、距右点 46 px，
-## 都在 ITEM_INTERACT_RADIUS(90) 之内。
+## 内侧边缘：y=858 处可走区间是 x∈[256,760]，距左点 42 px、距右点 46 px。
+## 是否够近按 INTERACT_ITEMS 里花坛的交互框（整条石砌花坛边）判定，走道
+## 沿整条花坛都在它的 14 px 接触带内。
 const HERB_BED_GAMES: Dictionary = {
 	"herb_bed_left": {
 		"herb": "blue_blossom",

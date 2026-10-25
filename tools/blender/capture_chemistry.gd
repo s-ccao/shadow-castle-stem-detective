@@ -11,8 +11,10 @@ extends SceneTree
 ## the butler) still reaches the player standing beside it, that the table
 ## draws in front of a player behind it and behind one in front of it, that
 ## the cauldron hides the legs of a player behind it while nothing hides them
-## in the doorway or on the open floor, and that the HD detective stands at
-## the room's size and walks.
+## in the doorway or on the open floor, that the HD detective stands at the
+## room's size and walks, that the red stain's box is the HD pool's while the
+## room is staged, and that the butler and Dr. Lin's memory echo are drawn by
+## their Tripo figures on their own feet and at their own height.
 ##
 ##   HOME="$PWD/.godot/blender-proto-capture/home" godot --path . \
 ##     --script res://tools/blender/capture_chemistry.gd [-- --zh]
@@ -26,6 +28,7 @@ const ROOM_SCENE := "res://scenes/floor_1/chemistry_room.tscn"
 const DATA := "res://prototypes/blender_rooms/chemistry_room/"
 const Room := preload("res://tools/blender/prototype_room.gd")
 const Characters := preload("res://tools/blender/prototype_characters.gd")
+const Depth := preload("res://tools/blender/prototype_depth.gd")
 ## chemistry_room.gd's interactions by the render's prop ids, and where the
 ## player stands to use each in the HD room and in the painted one (the HD
 ## table is smaller, so its front is nearer the room's middle).
@@ -135,6 +138,7 @@ func _run() -> void:
 	await _depth_checks()
 	await _scene_shots()
 	await _character_checks()
+	await _cast_checks()
 	_show(false)
 	_expect(
 		not look.overlay.visible and _interaction_rects() == painted,
@@ -165,6 +169,27 @@ func _rect_checks(hd_rects: Dictionary, painted: Dictionary) -> void:
 		)
 	_show(false)
 	_expect(_interaction_rects() == painted, "The painted room gets its own highlight boxes back")
+	# The HD stain is a pool a third the size of the painted one: its box is
+	# the room's while it is staged, and the painted pool's comes back after.
+	var stain: Array = _json("render.json").get("interactions", {}).get("red_stain", [])
+	var hd_stain := Rect2(float(stain[0]), float(stain[1]), float(stain[2]), float(stain[3])) \
+		if stain.size() == 4 else Rect2()
+	var painted_stain: Rect2 = room.call("get_interaction_rect", "red_stain")
+	_show(true)
+	var staged_stain: Rect2 = room.call("get_interaction_rect", "red_stain")
+	_expect(
+		hd_stain.has_area() and staged_stain == hd_stain
+		and painted_stain.has_point(hd_stain.get_center())
+		and hd_stain.get_area() < painted_stain.get_area() * 0.5,
+		"The red stain's box is the HD pool's while staged: %s (painted %s)" % [
+			staged_stain, painted_stain,
+		]
+	)
+	_show(false)
+	_expect(
+		room.call("get_interaction_rect", "red_stain") == painted_stain,
+		"The painted pool's box comes back with the painted room (%s)" % painted_stain
+	)
 
 
 ## The HD table's footprint is the room's collision while it is staged; the
@@ -351,6 +376,72 @@ func _character_checks() -> void:
 	)
 	await _wait(0.5)
 	_show(false)
+
+
+## The rooms' cast in HD: the butler and Dr. Lin's memory echo (the Vision
+## Potion's) are drawn by their Tripo figures, each on its own feet and as tall
+## as its pixel figure, facing as the game turns it; the echo, a vision, stands
+## on no shadow; restoring gives the pixel figures back.
+func _cast_checks() -> void:
+	_expect(
+		look.characters.cast == 4, "Every one of the cast has HD sheets (%d of 4)" % look.characters.cast
+	)
+	var butler := room.get("butler_node") as Node2D
+	await _stand(_clear_near(OTHERS["butler"]["stand"] + Vector2(-60, 40)))
+	room.call("_create_vision_echo")
+	_show(true)
+	await _wait(0.8)
+	var echo := room.get("vision_echo") as Node2D
+	for npc: Node2D in [butler, echo]:
+		_npc_checks(npc)
+	_expect(
+		butler.has_node(Depth.SHADOW_NAME) and not echo.has_node(Depth.SHADOW_NAME),
+		"The butler stands on a contact shadow; the memory echo, a vision, on none"
+	)
+	await _shot("blender", "12-cast")
+	_show(false)
+	await _wait(0.3)
+	await _shot("current", "12-cast")
+	for npc: Node2D in [butler, echo]:
+		var sprite := npc.get("actor_sprite") as AnimatedSprite2D
+		_expect(
+			is_equal_approx(sprite.self_modulate.a, 1.0) and not sprite.has_node(Characters.HD_FIGURE)
+			and not npc.has_node(Depth.SHADOW_NAME),
+			"Restoring draws the pixel %s again" % npc.name
+		)
+	room.call("_clear_vision_demo_markers")
+
+
+## `npc` is drawn by its HD figure: the game's sprite undrawn, the figure on
+## the NPC's feet, as tall as the pixel figure, and facing as the NPC faces.
+func _npc_checks(npc: Node2D) -> void:
+	var sprite := npc.get("actor_sprite") as AnimatedSprite2D
+	var figure := look.characters.figure_of(sprite)
+	var character := str(Characters.NPCS.get(str(npc.get("character_name")), ""))
+	var sheet: Dictionary = look.characters.sheets.get(character, {})
+	_expect(
+		figure != null and not sheet.is_empty() and is_zero_approx(sprite.self_modulate.a)
+		and figure.use_parent_material and sprite.material is ShaderMaterial,
+		"%s is drawn by its HD figure, on the room's depth pass" % npc.name
+	)
+	if figure == null or sheet.is_empty():
+		return
+	var centre_to_feet := (sheet["feet"] as Vector2) - (sheet["cell"] as Vector2) * 0.5
+	var feet := figure.global_transform * centre_to_feet
+	var tall := float(sheet["height"]) * absf(figure.global_scale.y)
+	var pixel_tall := float(Characters.NPC_FIGURE_PX[character]) * absf(sprite.global_scale.y)
+	_expect(
+		feet.distance_to(npc.global_position) < 0.5 and absf(tall - pixel_tall) < 1.0 and tall > 80.0,
+		"%s stands on its own feet %s, as tall as the pixel figure (%.1f vs %.1f px)" % [
+			npc.name, feet.round(), tall, pixel_tall,
+		]
+	)
+	var facing := String(sprite.animation).trim_prefix("idle_").trim_prefix("walk_")
+	var row := int((sheet["rows"] as Dictionary).get(str(Characters.NPC_FACINGS.get(facing, "")), -1))
+	_expect(
+		row >= 0 and figure.frame / figure.hframes == row,
+		"%s faces as the game turns it (%s, row %d)" % [npc.name, sprite.animation, row]
+	)
 
 
 ## The nearest spot to `target` where the player's body is clear of the room.

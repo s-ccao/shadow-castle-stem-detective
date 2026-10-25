@@ -54,6 +54,10 @@ const FOOTPRINT_GHOST := {"tint": Color(0.0, 0.0, 0.0, 0.0), "alpha": 0.35}
 const HIDDEN := {"tint": Color(0.0, 0.0, 0.0, 0.0), "alpha": 0.0}
 const FIGURE_SCALE := 1.1 / 1.45
 const GUARDIAN_SCENE := "res://scenes/enemy.tscn"
+## The rooms' cast (AnimatedNpc): a wall in front hides them outright, and all
+## but a memory echo, which is a vision and not a body, stand on a shadow.
+const NPC_SCRIPT := "res://scripts/animated_npc.gd"
+const ECHO_MARK := "Echo"
 const FOOTPRINT_SCRIPT := "hall_footprint_marker.gd"
 const SHADOW_NAME := "PrototypeContactShadow"
 
@@ -185,6 +189,9 @@ func _rescan() -> void:
 			for child: Node in node.get_children():
 				if child is Sprite2D:
 					_track(child as CanvasItem, null, FOOTPRINT_GHOST)
+		elif script != null and script.resource_path == NPC_SCRIPT:
+			var echo := str(node.get("character_name")).contains(ECHO_MARK)
+			_track(node.get("actor_sprite") as CanvasItem, node as Node2D, HIDDEN, not echo)
 	for item: Dictionary in fixed:
 		var sprite: Variant = item["sprite"]
 		if not is_instance_valid(sprite):
@@ -214,7 +221,7 @@ func _shrink(node: Node2D) -> void:
 	node.position *= figure_scale
 
 
-func _track(sprite: CanvasItem, body: Node2D, look: Dictionary) -> void:
+func _track(sprite: CanvasItem, body: Node2D, look: Dictionary, shadow := true) -> void:
 	if sprite == null or entries.has(sprite):
 		return
 	var original := sprite.material
@@ -232,7 +239,8 @@ func _track(sprite: CanvasItem, body: Node2D, look: Dictionary) -> void:
 	material.set_shader_parameter("feet_from_origin", body == null)
 	if body != null:
 		material.set_shader_parameter("feet_y", body.global_position.y)
-		_add_shadow(body)
+		if shadow:
+			_add_shadow(body)
 	sprite.material = material
 	entries[sprite] = {"material": material, "original": original, "body": body}
 

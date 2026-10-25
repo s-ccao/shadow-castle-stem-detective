@@ -106,6 +106,9 @@ const OCCLUSION_PROP_PATHS: Array[NodePath] = [
 
 ## 调试开关：默认关闭。需要校准时可在 Inspector 勾选 Debug Print Click Position。
 @export var debug_print_click_position := false
+## The red stain's box: the painted pool's (RED_STAIN_RECT). The Blender
+## preview sets the HD stain's own while it stages the HD room.
+var red_stain_interaction_rect: Rect2 = RED_STAIN_RECT
 var _last_debug_mouse_position := Vector2(-100000, -100000)
 # ============================================================
 # Nodes and state
@@ -372,7 +375,7 @@ func get_interaction_rect(interaction_id: String) -> Rect2:
 			var table := get_node_or_null("Worldsort/ChemistryLabTable") as Node2D
 			return spatial.get_visual_rect(table) if table != null else ALCHEMY_TABLE_RECT
 		"red_stain":
-			return RED_STAIN_RECT
+			return red_stain_interaction_rect
 		"butler":
 			if butler_node != null:
 				var butler_rect := spatial.get_visual_rect(butler_node)

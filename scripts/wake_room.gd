@@ -78,7 +78,6 @@ var desk_position := Vector2(778, 212)
 var bookshelf_position := Vector2(283, 177)
 var window_position := Vector2(460, 127)
 
-const DOOR_INTERACT_RADIUS := 150.0
 const CLUE_INTERACT_RADIUS := 165.0
 ## 点击走位到达后判定用的带宽，比站着不动时的 14px 宽。
 ##
@@ -176,6 +175,9 @@ var debug_walkable_overlay: Sprite2D
 var desk_briefing_read := false
 var spatial := RoomSpatialRuntime.new()
 var door_interaction_rect := Rect2()
+## Where a click on the door walks the player: on the contact band of
+## door_interaction_rect (_sync_door_interaction).
+var door_approach_position := Vector2.ZERO
 var wake_arrival_layer: CanvasLayer
 func _ready():
 	# 单独调试（未从主菜单开始）时解锁所有 Hub。
@@ -636,9 +638,6 @@ func create_door():
 			var world_poly := _get_world_polygon(door_poly)
 			door_position = _get_reachable_point(world_poly)
 			door_interaction_rect = _polygon_bounds(world_poly)
-		var visual_rect := spatial.get_visual_rect(door_node)
-		if visual_rect.size.x > 0.0 and visual_rect.size.y > 0.0:
-			door_interaction_rect = visual_rect
 
 	if SHOW_DEBUG_OBJECTS:
 		var door = ColorRect.new()
@@ -664,7 +663,8 @@ func create_door():
 		door_marker_node.z_index = 20
 		add_child(door_marker_node)
 
-	# 鼠标热点始终存在；静态调试标记可以独立关闭。
+	# 鼠标热点始终存在；静态调试标记可以独立关闭。热点的位置和大小由
+	# _sync_door_interaction() 设为门本身的画面范围。
 	door_click_area = create_mouse_hotspot(
 		"ExitDoorClickArea",
 		door_position,
@@ -679,6 +679,29 @@ func create_door():
 	door_click_area.input_event.connect(
 		on_door_input_event
 	)
+	_sync_door_interaction()
+
+
+## The door's highlight, contact test and mouse hotspot are all the door the
+## player sees, and a click from across the room walks to a standing point on
+## that rect's contact band, as a prop's does. The Blender preview calls this
+## again when it stages its HD door.
+func _sync_door_interaction() -> void:
+	var door_node := get_node_or_null("Props/Door")
+	if door_node != null:
+		var visual_rect := spatial.get_visual_rect(door_node)
+		if visual_rect.size.x > 0.0 and visual_rect.size.y > 0.0:
+			door_interaction_rect = visual_rect
+	var rect := get_interaction_rect("door")
+	door_approach_position = _get_visual_interaction_approach(rect, door_position)
+	if door_click_area == null:
+		return
+	door_click_area.global_position = rect.get_center()
+	for child: Node in door_click_area.get_children():
+		var holder := child as CollisionShape2D
+		if holder != null and holder.shape is RectangleShape2D:
+			(holder.shape as RectangleShape2D).size = rect.size
+			holder.position = Vector2.ZERO
 
 func create_prop_interactions():
 	# 房间里的可交互物品（用户提供的道具插图）：
@@ -2780,10 +2803,14 @@ func on_door_input_event(
 				show_click_marker(door_position)
 				handle_exit_door()
 			else:
-				begin_mouse_interaction(
+				# Walk to the standing point on the door's own contact band.
+				# Pushing out a radius from door_position stopped the player
+				# 105px short of the door, so every click from afar ended in
+				# "I couldn't get close enough".
+				begin_mouse_interaction_at_point(
 					"door",
-					door_position,
-					DOOR_INTERACT_RADIUS
+					get_interaction_rect("door").get_center(),
+					door_approach_position
 				)
 func update_world_cursor():
 	var ui_is_blocking = (
@@ -2807,39 +2834,6 @@ func update_world_cursor():
 		Input.set_default_cursor_shape(
 			Input.CURSOR_ARROW
 		)
-func begin_mouse_interaction(
-	interaction_name: String,
-	object_position: Vector2,
-	interaction_radius: float
-):
-	player.cancel_click_movement()
-
-	pending_mouse_interaction = interaction_name
-
-	show_click_marker(object_position)
-
-	var approach_point = calculate_interaction_approach_point(
-		object_position,
-		interaction_radius
-	)
-
-	var path := calculate_room_path(
-		player.global_position,
-		approach_point
-	)
-
-	show_debug_room_path(path)
-
-	if path.is_empty():
-		pending_mouse_interaction = ""
-
-		show_temporary_prompt(
-			"I couldn't find a safe route to that object."
-		)
-		return
-
-	player.move_along_path(path)
-
 func begin_mouse_interaction_at_point(
 	interaction_name: String,
 	object_position: Vector2,
@@ -2875,44 +2869,6 @@ func hide_debug_room_path():
 
 	debug_path_line.clear_points()
 	debug_path_line.visible = false
-func calculate_interaction_approach_point(
-	object_position: Vector2,
-	interaction_radius: float
-) -> Vector2:
-	# Find the direction from the object toward the player.
-	var direction_away_from_object = object_position.direction_to(
-		player.global_position
-	)
-
-	if direction_away_from_object == Vector2.ZERO:
-		direction_away_from_object = Vector2.LEFT
-
-	# Stop inside the object's interaction radius,
-	# rather than walking directly on top of it.
-	var approach_distance = max(
-		24.0,
-		interaction_radius * 0.70
-	)
-
-	var approach_point = (
-		object_position
-		+ direction_away_from_object * approach_distance
-	)
-
-	# Keep the destination inside the room walls.
-	approach_point.x = clamp(
-		approach_point.x,
-		WALL_THICKNESS + 24.0,
-		ROOM_WIDTH - WALL_THICKNESS - 24.0
-	)
-
-	approach_point.y = clamp(
-		approach_point.y,
-		WALL_THICKNESS + 24.0,
-		ROOM_HEIGHT - WALL_THICKNESS - 24.0
-	)
-
-	return approach_point
 func on_player_click_target_reached():
 	hide_debug_room_path()
 	if pending_mouse_interaction.is_empty():
@@ -2934,7 +2890,7 @@ func on_player_click_target_reached():
 				show_failed_approach_message()
 
 		"door":
-			if _is_near_interaction("door"):
+			if _is_near_interaction("door", CLICK_ARRIVAL_MARGIN):
 				handle_exit_door()
 			else:
 				show_failed_approach_message()

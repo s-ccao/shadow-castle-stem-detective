@@ -1719,5 +1719,10 @@ def build(rp, layout):
     # the preview swaps its footprint into the room's collision.
     x0, x1, y0, y1 = TABLE
     collision = {"RoomCollisions/AlchemyTableCollision": [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]}
+    # The red stain is a pool 96 px across thrown south-west, not the painted
+    # one that runs from the carpet to the east counter: its box is its pool
+    # and streaks, measured off the render (x 885-1057, y 567-716, the last
+    # drops to x 1068 and y 560-726).
+    interactions = {"red_stain": [884.0, 560.0, 184.0, 166.0]}
     print("CHEMISTRY ROOM built: %d objects, %d glows" % (len(bpy.data.objects), len(rp.GLOWS)))
-    return {"props": props, "roots": roots, "collision": collision}
+    return {"props": props, "roots": roots, "collision": collision, "interactions": interactions}

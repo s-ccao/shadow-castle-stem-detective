@@ -64,6 +64,54 @@ STYLES = {
                 "elbow": 80.0, "reach": 12.0, "cross": 0.0, "curl": 80.0, "twist": 8.0, "lean": 13.0,
                 "nod": 1.5, "gaze": 0.0},
     },
+    # The rooms' cast stand at their posts and only turn to the detective, so
+    # their idle is what shows: the butler upright and still, the gardener
+    # and the mechanic at ease, Dr. Lin's hands clear of her long coat. Their
+    # walks and runs keep the detective's, a little calmer for the butler.
+    "butler": {
+        "hand": 1.0,
+        "idle": {"clip": "idle", "frames": 36, "seconds": 6.0, "out": 11.0, "swing": 2.0, "elbow": 14.0,
+                 "curl": 20.0, "look": 16.0, "breath": 1.0, "sway": 0.7},
+        "walk": {"clip": "walk", "frames": 8, "stride": 1.2, "knee": 1.05, "out": 13.0, "swing": 22.0,
+                 "elbow": 18.0, "reach": 14.0, "cross": 3.0, "curl": 24.0, "twist": 4.0, "lean": 1.5,
+                 "nod": 1.2, "gaze": -2.0},
+        "run": {"clip": "run", "frames": 8, "stride": 1.3, "knee": 1.15, "air": 0.5, "out": 22.0, "swing": 44.0,
+                "elbow": 80.0, "reach": 12.0, "cross": 0.0, "curl": 70.0, "twist": 8.0, "lean": 11.0,
+                "nod": 1.5, "gaze": 1.0},
+    },
+    "gardener": {
+        "hand": 1.0,
+        "idle": {"clip": "idle", "frames": 36, "seconds": 6.0, "out": 15.0, "swing": 4.0, "elbow": 18.0,
+                 "curl": 22.0, "look": 24.0, "breath": 1.3, "sway": 1.5},
+        "walk": {"clip": "walk", "frames": 8, "stride": 1.25, "knee": 1.1, "out": 15.0, "swing": 30.0,
+                 "elbow": 22.0, "reach": 18.0, "cross": 4.0, "curl": 28.0, "twist": 6.0, "lean": 3.0,
+                 "nod": 2.5, "gaze": -4.0},
+        "run": {"clip": "run", "frames": 8, "stride": 1.4, "knee": 1.25, "air": 0.5, "out": 26.0, "swing": 50.0,
+                "elbow": 84.0, "reach": 14.0, "cross": 0.0, "curl": 75.0, "twist": 10.0, "lean": 13.0,
+                "nod": 2.0, "gaze": 2.0},
+    },
+    "mechanic": {
+        "hand": 1.0,
+        "idle": {"clip": "idle", "frames": 36, "seconds": 6.0, "out": 16.0, "swing": 4.0, "elbow": 18.0,
+                 "curl": 30.0, "look": 28.0, "breath": 1.4, "sway": 1.6},
+        "walk": {"clip": "walk", "frames": 8, "stride": 1.25, "knee": 1.1, "out": 15.0, "swing": 32.0,
+                 "elbow": 22.0, "reach": 20.0, "cross": 4.0, "curl": 30.0, "twist": 7.0, "lean": 3.0,
+                 "nod": 2.5, "gaze": -4.0},
+        "run": {"clip": "run", "frames": 8, "stride": 1.45, "knee": 1.25, "air": 0.5, "out": 26.0, "swing": 52.0,
+                "elbow": 84.0, "reach": 14.0, "cross": 0.0, "curl": 80.0, "twist": 11.0, "lean": 14.0,
+                "nod": 2.0, "gaze": 2.0},
+    },
+    "dr_lin": {
+        "hand": 1.0,
+        "idle": {"clip": "idle", "frames": 36, "seconds": 6.0, "out": 18.0, "swing": 3.0, "elbow": 20.0,
+                 "curl": 16.0, "look": 18.0, "breath": 1.2, "sway": 1.0},
+        "walk": {"clip": "walk", "frames": 8, "stride": 1.2, "knee": 1.05, "out": 18.0, "swing": 26.0,
+                 "elbow": 22.0, "reach": 16.0, "cross": 3.0, "curl": 20.0, "twist": 5.0, "lean": 2.0,
+                 "nod": 1.8, "gaze": -3.0},
+        "run": {"clip": "run", "frames": 8, "stride": 1.35, "knee": 1.2, "air": 0.5, "out": 26.0, "swing": 46.0,
+                "elbow": 80.0, "reach": 12.0, "cross": 0.0, "curl": 70.0, "twist": 9.0, "lean": 12.0,
+                "nod": 1.8, "gaze": 1.0},
+    },
 }
 
 

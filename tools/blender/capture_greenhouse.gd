@@ -10,8 +10,11 @@ extends SceneTree
 ## prompt still reaches the player standing beside it, that the planter's rim
 ## and the gate's portal show the player behind them as a ghost but nothing
 ## hides them in front of the planter or in the aisle, that the HD bench's
-## real-size footprint is the room's collision while it is staged, and that
-## the HD detective stands at the room's size and walks.
+## real-size footprint is the room's collision while it is staged, that the
+## long beds are offered from the aisle all along them and the planter's north
+## arc from behind it, that the HD detective stands at the room's size and
+## walks, and that the gardener is drawn by her Tripo figure on her own feet,
+## on the aisle floor beside her bed.
 ##
 ##   HOME="$PWD/.godot/blender-proto-capture/home" godot --path . \
 ##     --script res://tools/blender/capture_greenhouse.gd [-- --zh]
@@ -25,6 +28,7 @@ const ROOM_SCENE := "res://scenes/floor_1/greenhouse_room.tscn"
 const DATA := "res://prototypes/blender_rooms/greenhouse_room/"
 const Room := preload("res://tools/blender/prototype_room.gd")
 const Characters := preload("res://tools/blender/prototype_characters.gd")
+const Depth := preload("res://tools/blender/prototype_depth.gd")
 ## greenhouse_room.gd's interaction items by the render's prop ids, and where
 ## the player stands to use each: in reach of its box, out of reach of every
 ## herb plot (which the room offers first) and of the items listed before it.
@@ -41,7 +45,7 @@ const BEHIND_PLANTER := Vector2(512, 400)
 const BESIDE_PLANTER := Vector2(395, 740)
 const OPEN_AISLE := Vector2(512, 1160)
 const WEST_BED := Vector2(275, 600)
-const GARDENER := Vector2(752, 1000)
+const GARDENER := Vector2(712, 1000)
 ## Inside the painted bench's footprint but behind the HD bench (a real one,
 ## 1 m deep), the HD bench's own middle, and behind it, under the game's glow
 ## for the seedling trays.
@@ -119,9 +123,11 @@ func _run() -> void:
 	_rect_checks(hd_rects, painted)
 	await _footprint_checks()
 	await _prop_checks()
+	await _reach_checks()
 	await _depth_checks()
 	await _scene_shots()
 	await _character_checks()
+	await _cast_checks()
 	_show(false)
 	_expect(
 		not look.overlay.visible and _interaction_rects() == painted,
@@ -227,6 +233,32 @@ func _prop_checks() -> void:
 				"Standing at %s offers the %s (%s look; offered %s)" % [spot, id, _look_name(shown), offered]
 			)
 		await _pair(PROPS[id]["shot"])
+
+
+## In both looks the long beds are offered from the aisle all along them (their
+## boxes are the whole bed inside its kerb), and the planter's north arc from
+## the floor behind the planter.
+func _reach_checks() -> void:
+	var spots := {
+		"herb_bed_left": [Vector2(266, 800), Vector2(266, 1100)],
+		"herb_bed_right": [Vector2(752, 800), Vector2(752, 1100)],
+		"herb_plot:planter_north": [BEHIND_PLANTER],
+	}
+	for shown: bool in [true, false]:
+		_show(shown)
+		for item: String in spots:
+			for target: Vector2 in spots[item]:
+				var spot := _clear_near(target)
+				if spot == Vector2.INF:
+					_expect(false, "There is open floor at %s (%s look)" % [target, _look_name(shown)])
+					continue
+				await _stand(spot)
+				var offered := str(room.get("current_interaction"))
+				_expect(
+					offered == item,
+					"Standing at %s offers %s (%s look; offered %s)" % [spot, item, _look_name(shown), offered]
+				)
+	_show(false)
 
 
 ## The planter's rim hides the player behind it, never in front of it.
@@ -343,6 +375,70 @@ func _character_checks() -> void:
 	)
 	await _wait(0.5)
 	_show(false)
+
+
+## The gardener in HD: drawn by her Tripo figure on her own feet, as tall as
+## the pixel gardener and facing as the game turns her; standing on the aisle
+## floor beside her bed, where the room hides no part of her; on a contact
+## shadow; and the pixel gardener again once the painted room is back.
+func _cast_checks() -> void:
+	_expect(
+		look.characters.cast == 4, "Every one of the cast has HD sheets (%d of 4)" % look.characters.cast
+	)
+	var gardener := room.get("gardener_npc") as Node2D
+	await _stand(_clear_near(GARDENER))
+	_show(true)
+	await _wait(0.8)
+	_npc_checks(gardener)
+	var feet := gardener.global_position
+	var hidden := _hidden_rows(look.depth.depth_texture.get_image(), feet)
+	_expect(
+		spatial.is_position_clear(player, feet, 0.0) and hidden == 0,
+		"She stands on the aisle floor beside her bed, which hides none of her (%d rows at %s)" % [
+			hidden, feet,
+		]
+	)
+	_expect(gardener.has_node(Depth.SHADOW_NAME), "The gardener stands on a contact shadow")
+	_show(false)
+	await _wait(0.3)
+	var sprite := gardener.get("actor_sprite") as AnimatedSprite2D
+	_expect(
+		is_equal_approx(sprite.self_modulate.a, 1.0) and not sprite.has_node(Characters.HD_FIGURE)
+		and not gardener.has_node(Depth.SHADOW_NAME),
+		"Restoring draws the pixel gardener again"
+	)
+
+
+## `npc` is drawn by its HD figure: the game's sprite undrawn, the figure on
+## the NPC's feet, as tall as the pixel figure, and facing as the NPC faces.
+func _npc_checks(npc: Node2D) -> void:
+	var sprite := npc.get("actor_sprite") as AnimatedSprite2D
+	var figure := look.characters.figure_of(sprite)
+	var character := str(Characters.NPCS.get(str(npc.get("character_name")), ""))
+	var sheet: Dictionary = look.characters.sheets.get(character, {})
+	_expect(
+		figure != null and not sheet.is_empty() and is_zero_approx(sprite.self_modulate.a)
+		and figure.use_parent_material and sprite.material is ShaderMaterial,
+		"%s is drawn by its HD figure, on the room's depth pass" % npc.name
+	)
+	if figure == null or sheet.is_empty():
+		return
+	var centre_to_feet := (sheet["feet"] as Vector2) - (sheet["cell"] as Vector2) * 0.5
+	var feet := figure.global_transform * centre_to_feet
+	var tall := float(sheet["height"]) * absf(figure.global_scale.y)
+	var pixel_tall := float(Characters.NPC_FIGURE_PX[character]) * absf(sprite.global_scale.y)
+	_expect(
+		feet.distance_to(npc.global_position) < 0.5 and absf(tall - pixel_tall) < 1.0 and tall > 80.0,
+		"%s stands on its own feet %s, as tall as the pixel figure (%.1f vs %.1f px)" % [
+			npc.name, feet.round(), tall, pixel_tall,
+		]
+	)
+	var facing := String(sprite.animation).trim_prefix("idle_").trim_prefix("walk_")
+	var row := int((sheet["rows"] as Dictionary).get(str(Characters.NPC_FACINGS.get(facing, "")), -1))
+	_expect(
+		row >= 0 and figure.frame / figure.hframes == row,
+		"%s faces as the game turns it (%s, row %d)" % [npc.name, sprite.animation, row]
+	)
 
 
 ## The nearest spot to `target` where the player's body is clear of the room.

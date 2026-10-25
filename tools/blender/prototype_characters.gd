@@ -1,6 +1,7 @@
 extends RefCounted
 
-## HD characters for the Blender Hall prototype. character_prototype.py renders
+## HD characters for the Blender Hall prototype and its rooms.
+## character_prototype.py renders
 ## each character's Tripo model in three gaits, each a sheet of the game's 8
 ## facings: an idle loop, a walk cycle and a run cycle. <character>.json gives
 ## each sheet, the facing rows, where the feet stand in a cell, the idle's
@@ -21,12 +22,36 @@ extends RefCounted
 ## The detective's sprite is scaled so the HD figure stands as tall as the pixel
 ## one, on the same point; the Guardian's sheets are laid out like its pixel
 ## sheet, so its sprite keeps the game's scale and foot anchor (which the
-## preview's depth pass also adjusts). restore() removes the figures and puts
-## every sprite back.
+## preview's depth pass also adjusts). The rooms' cast (the butler, the
+## gardener, the mechanic and Dr. Lin's memory echo) keep their own sprites,
+## frames and turning; each figure is drawn inside its NPC's sprite as tall
+## as the pixel figure and on its feet, facing as the NPC faces, and plays its
+## idle loop. restore() removes the figures and puts every sprite back.
 
 const PLAYER_SPRITE := "player/VisualRoot/CharacterSprite"
 const GUARDIAN_SCENE := "res://scenes/enemy.tscn"
 const GUARDIAN_SPRITE := "GuardianCore"
+## The rooms' cast are AnimatedNpc nodes, known by the name the game gives each.
+const NPC_SCRIPT := "res://scripts/animated_npc.gd"
+const NPCS: Dictionary = {
+	"Butler": "butler",
+	"Gardener": "gardener",
+	"Mechanic": "mechanic",
+	"Dr. Lin Memory Echo": "dr_lin",
+}
+## Each pixel NPC's standing figure, in its own sheet's px: the HD figure is
+## drawn as tall, on the same feet.
+const NPC_FIGURE_PX: Dictionary = {
+	"butler": 44.0, "gardener": 212.0, "mechanic": 216.0, "dr_lin": 205.0,
+}
+## An NPC's idle or walk faces one of the game's 8 (or 4) ways; the HD sheets
+## keep a row for each under the detective's walk names.
+const NPC_FACINGS: Dictionary = {
+	"south": "walk_down", "down": "walk_down", "south_east": "walk_down_right",
+	"east": "walk_right", "right": "walk_right", "north_east": "walk_up_right",
+	"north": "walk_up", "up": "walk_up", "north_west": "walk_up_left",
+	"west": "walk_left", "left": "walk_left", "south_west": "walk_down_left",
+}
 const HD_FIGURE := "PrototypeHDFigure"
 ## The pixel detective's figure: 238 px of its 256 px cell at scale 0.19, its
 ## toes on the body's origin.
@@ -54,19 +79,24 @@ var hall: Node
 ## "height": float, "rows": {animation: row}, "gaits": {gait: {"texture",
 ## "frames", "fps", "stride"}}}
 var sheets: Dictionary = {}
+## How many of the rooms' cast have their sheets (sheets holds them too).
+var cast := 0
 ## game sprite -> what it had ("frames", "moved", "position", "scale",
-## "filter", "self_modulate") and its figure ("figure", "body", "sheet",
-## "gait", "phase", "cycles", "clock", "speed", "dwell", "last")
+## "filter", "self_modulate", "npc") and its figure ("figure", "body",
+## "sheet", "gait", "phase", "cycles", "clock", "speed", "dwell", "last")
 var swaps: Dictionary = {}
 var active := false
 var rescan_in := 0.0
 
 
-## Loads each character's sheets under `data_dir`. Returns how many characters
-## have all three gaits.
+## Loads each character's sheets under `data_dir`. Returns how many of the
+## detective and the Guardian have all three gaits; `cast` counts the NPCs.
 func attach(hall_node: Node, data_dir: String) -> int:
 	hall = hall_node
-	for character: String in ["detective", "guardian"]:
+	var characters: Array[String] = ["detective", "guardian"]
+	for npc: Variant in NPCS.values():
+		characters.append(str(npc))
+	for character: String in characters:
 		var meta_path := data_dir + character + ".json"
 		if not FileAccess.file_exists(meta_path):
 			push_warning("No prototype character at " + meta_path)
@@ -79,7 +109,8 @@ func attach(hall_node: Node, data_dir: String) -> int:
 			push_warning("Prototype character sheets missing for " + character)
 			continue
 		sheets[character] = sheet
-	return sheets.size()
+	cast = sheets.size() - int(sheets.has("detective")) - int(sheets.has("guardian"))
+	return sheets.size() - cast
 
 
 ## Starts drawing the figures in the Hall in HD.
@@ -102,7 +133,8 @@ func restore() -> void:
 		if not is_instance_valid(sprite):
 			continue
 		var game_sprite := sprite as AnimatedSprite2D
-		_set_frames(game_sprite, before["frames"])
+		if not before["npc"]:
+			_set_frames(game_sprite, before["frames"])
 		game_sprite.texture_filter = before["filter"]
 		game_sprite.self_modulate = before["self_modulate"]
 		if before["moved"]:
@@ -223,8 +255,14 @@ func _rescan() -> void:
 	for node: Node in hall.find_children("*", "CharacterBody2D", true, false):
 		if node.scene_file_path == GUARDIAN_SCENE:
 			_swap(node.get_node_or_null(GUARDIAN_SPRITE) as AnimatedSprite2D, node as Node2D, "guardian")
+	for node: Node in hall.find_children("*", "Node2D", true, false):
+		var script := node.get_script() as Script
+		if script != null and script.resource_path == NPC_SCRIPT:
+			_swap_npc(node as Node2D, str(NPCS.get(str(node.get("character_name")), "")))
 
 
+## The detective and the Guardian: the game sprite takes the HD walk frames
+## and the figure is drawn in their place.
 func _swap(sprite: AnimatedSprite2D, body: Node2D, character: String) -> void:
 	if sprite == null or body == null or swaps.has(sprite) or not sheets.has(character):
 		return
@@ -253,6 +291,7 @@ func _swap(sprite: AnimatedSprite2D, body: Node2D, character: String) -> void:
 	swaps[sprite] = {
 		"frames": original,
 		"moved": moved,
+		"npc": false,
 		"position": sprite.position,
 		"scale": sprite.scale,
 		"filter": sprite.texture_filter,
@@ -279,6 +318,65 @@ func _swap(sprite: AnimatedSprite2D, body: Node2D, character: String) -> void:
 	sprite.self_modulate = undrawn
 	sprite.add_child(figure)
 	_drive(sprite, 0.0)
+
+
+## One of the rooms' cast: the game keeps its own NPC sprite, its frames and
+## its turning to meet the player, but no longer draws it; the HD figure,
+## its child, is drawn as tall and on the same feet. It stands in its own
+## place inside the sprite, so the NPC's notice (a pulse of the sprite's scale
+## about its feet) carries it too.
+func _swap_npc(npc: Node2D, character: String) -> void:
+	var sprite := npc.get("actor_sprite") as AnimatedSprite2D
+	if sprite == null or swaps.has(sprite) or not sheets.has(character):
+		return
+	var sheet: Dictionary = sheets[character]
+	var pixel_scale := float(npc.get("visual_scale"))
+	if is_zero_approx(pixel_scale):
+		return
+	var factor := float(NPC_FIGURE_PX[character]) / float(sheet["height"])
+	var feet := -(npc.get("visual_foot_anchor") as Vector2) / pixel_scale
+	var figure := Sprite2D.new()
+	figure.name = HD_FIGURE
+	figure.centered = true
+	figure.use_parent_material = true
+	figure.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	figure.vframes = (sheet["rows"] as Dictionary).size()
+	figure.scale = Vector2(factor, factor)
+	figure.position = feet - ((sheet["feet"] as Vector2) - (sheet["cell"] as Vector2) * 0.5) * factor
+	swaps[sprite] = {
+		"frames": sprite.sprite_frames,
+		"moved": false,
+		"npc": true,
+		"position": sprite.position,
+		"scale": sprite.scale,
+		"filter": sprite.texture_filter,
+		"self_modulate": sprite.self_modulate,
+		"figure": figure,
+		"body": npc,
+		"sheet": sheet,
+		"gait": "",
+		"phase": 0.0,
+		"cycles": 0.0,
+		"clock": 0.0,
+		"speed": 0.0,
+		"dwell": 0.0,
+		"last": npc.global_position,
+	}
+	var undrawn := sprite.self_modulate
+	undrawn.a = 0.0
+	sprite.self_modulate = undrawn
+	sprite.add_child(figure)
+	_drive(sprite, 0.0)
+
+
+## The sheet row a game sprite's animation shows: its own for the detective
+## and the Guardian, the facing of an NPC's idle or walk for the cast.
+func _row(entry: Dictionary, sprite: AnimatedSprite2D) -> int:
+	var rows: Dictionary = (entry["sheet"] as Dictionary)["rows"]
+	var animation := String(sprite.animation)
+	if bool(entry["npc"]):
+		animation = str(NPC_FACINGS.get(animation.trim_prefix("idle_").trim_prefix("walk_"), "walk_down"))
+	return int(rows.get(animation, 0))
 
 
 ## Picks the figure's gait and frame from the game's facing and walk, and from
@@ -341,7 +439,7 @@ func _drive(sprite: AnimatedSprite2D, delta: float) -> void:
 		column = int(floor(float(entry["clock"]) * float(info["fps"]))) % count
 	else:
 		column = int(floor(float(entry["phase"]) * count)) % count
-	var row := int((sheet["rows"] as Dictionary).get(String(sprite.animation), 0))
+	var row := _row(entry, sprite)
 	var texture := info["texture"] as Texture2D
 	if figure.texture != texture:
 		figure.texture = texture
