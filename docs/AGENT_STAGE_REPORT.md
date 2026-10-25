@@ -2,6 +2,64 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-64 (dialogue portraits from the Tripo models)
+
+- **Date:** 2026-10-25
+- **Status:** approved by the user ("满意"), then committed and pushed at their request, with this stage's hunks only. Preview only: the game's own portraits, scenes and saves are unchanged. Their choice for next: moving the HD rooms, characters and portraits into the game.
+- **Request:** the user's choice at stage 63's review, "用新模型渲染 NPC 头像" (render the NPC portraits from the new models), then "可以，继续" (go on).
+- **Parallel work:** the Library (57, 59) and Dining Hall (60) sessions' work is still uncommitted in this checkout; this stage does not touch it.
+
+### What the game shows now
+
+- Each speaker's portrait sits at the left of the dialogue box: a 112 px square over the frame's own colour, with the speaker's name across its foot.
+  - Four scenes do this, each with its own copy of `NPC_DIALOGUE_PORTRAITS` and `_set_avatar`: the Wake Room, the Chemistry Room, the Greenhouse and the Hall.
+  - The pixel portraits are head-and-shoulders busts on a transparent ground (`assets/characters/portraits_pixel_v2/`, 1254 px), loaded by path whenever the speaker changes, and drawn with nearest filtering.
+- **Speakers the player meets:** Mrs. Lin's letter (Wake, the `dr_lin` portrait), the butler (Chemistry) and the gardener (Greenhouse). The Hall's butler, gardener and mechanic dialogues exist, but the Hall spawns no NPCs. No dialogue names the Castle Guardian. The detective keeps his coloured square, by design ("玩家保留色块").
+
+### What changed
+
+- **Five HD portraits** (`tools/blender/portrait_prototype.py`): the butler, the gardener, the mechanic, Dr. Lin and the Castle Guardian, rendered from their Tripo models into `prototypes/blender_chars/portraits/<portrait>.png` (1024 px, RGBA, transparent ground). `portraits.json` maps each game portrait to its HD file and records the framing.
+  - **Pose:** the gait sheets' standing idle, the body turned 14–18° toward the viewer's right (toward the dialogue text) and the head turned most of the way back to the camera, with a slight tilt for each one's manner.
+  - **Light:** the gait sheets' rig (warm key from the upper left, cool fill, violet rim), a little stronger for a close bust, plus a violet kicker so a dark coat stands off the frame's dark ground. The Guardian's visor and core glow as in his sheets.
+  - **Lens and framing:** 85 mm, 5° above eye level. Each bust is framed on its own head (crown 5 % below the top, chin 57 % down), so the name label covers only the chest. Dr. Lin's wide hair is framed a little looser (53 %); the Guardian's helm sits high on his armour, so his framing takes in his shoulders and the glowing core (36 %), as his pixel portrait does.
+  - **Time:** 49 s for all five at 128 samples.
+- **In the preview** (`tools/blender/prototype_portraits.gd`, staged with the characters by `prototype_characters.gd`):
+  - While the HD look is staged, each HD portrait (scaled to 224 px, twice the box, with mipmaps) takes over its game portrait's resource path (`Resource.take_over_path`). Each scene's own `load()` then returns the HD portrait the next time the speaker changes, and the box draws it with `LINEAR_WITH_MIPMAPS`.
+  - A box already showing a pixel portrait swaps at once. Restoring gives each path back to the game's own portrait, and the box its own filter.
+  - The registry is static, since the resource cache is global and the Hall and each room stage their looks separately.
+- **New capture** (`tools/blender/capture_portraits.gd`, 80 checks): opens each speaker's dialogue the game's own way in both looks, in the Wake Room, Chemistry, the Greenhouse and the Hall (butler, gardener, mechanic, and the Guardian by name). It checks the pixel portrait, the swap to HD, the screen change inside the box, a fresh `load()` in HD, and the restore.
+
+### Exact files
+
+- **New:**
+  - `tools/blender/portrait_prototype.py`: the renderer;
+  - `tools/blender/prototype_portraits.gd` and its `.uid`: the preview's portrait layer;
+  - `tools/blender/capture_portraits.gd` and its `.uid`: 80 checks;
+  - `docs/evidence/2026-10-25-npc-portraits/`.
+- **Changed:** `tools/blender/prototype_characters.gd`: attaches the portraits and stages them in `apply()`/`restore()`.
+- **Local only (gitignored):** `prototypes/blender_chars/portraits/` (the five PNGs, `portraits.json`, the captures); a provenance note in `prototypes/blender_chars/source/sources.json`.
+- **Evidence:** `docs/evidence/2026-10-25-npc-portraits/`:
+  - `01-portraits.png`: the five pixel portraits above their HD ones;
+  - `02-dialogue-boxes.png`: the dialogue box in game at 1024×768, at 2x, pixel and HD, for Mrs. Lin's letter, the butler, the gardener, the mechanic and the Guardian;
+  - `03-chemistry-butler.png`, `04-greenhouse-gardener.png`, `05-wake-dr_lin.png`: the whole moment, painted and HD;
+  - `06-chinese.png`: HD with the Chinese interface.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+
+### Verification
+
+- **Asset QA** (`create-game-assets` `asset_report.py`): all five are 1024×1024 RGBA with a transparent ground. Their crowns sit 44–50 px below the top edge with nothing clipped, and each bust is cut by the frame's foot as intended.
+- **Capture** `capture_portraits.gd`: 80/80 in EN and in ZH. The screen inside the box changes by 24–33 (of 255) between the pixel and HD portraits.
+- **No regressions,** EN and ZH: `capture_room.gd` 65, `capture_chemistry.gd` 102, `capture_greenhouse.gd` 114, `capture_final.gd` 111, `capture_prototype.gd` 176 (Hall), `capture_library.gd` 141 and `capture_dining_hall.gd` 114. The Library's and Dining Hall's capture folders were restored afterwards.
+- **Godot:** the headless editor parse has 0 errors; gdlint is clean on the new and changed scripts; pyflakes and `git diff --check` are clean.
+
+### Risks / follow-up
+
+- **Preview only.** Moving the portraits into the game means copying the five PNGs into `assets/characters/`, pointing the four `NPC_DIALOGUE_PORTRAITS` maps at them, and drawing the boxes with linear filtering and mipmaps.
+- **Likenesses follow the Tripo models,** which the user approved at stage 63, rather than the pixel portraits. The gardener's skin reads lighter than her pixel portrait's, and every model has chibi proportions, so the busts show less shoulder.
+- **The Guardian's and the mechanic's portraits** show only in the Hall's dialogues, which the game does not reach yet (no Hall NPCs, no Guardian dialogue). The Circuit Room's mechanic dialogue has no portrait box.
+- **Found, not fixed (pre-existing):** in Chinese the Greenhouse still names the gardener "Gardener" in its dialogue header and portrait label, while Chemistry names the butler 管家.
+- **Next:** the move of the HD rooms, characters and portraits into the game (the user's choice).
+
 ## Stage: UX-20261021-63 (interactions against the HD rooms; the cast in Tripo)
 
 - **Date:** 2026-10-25

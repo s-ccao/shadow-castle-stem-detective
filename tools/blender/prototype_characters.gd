@@ -26,7 +26,9 @@ extends RefCounted
 ## gardener, the mechanic and Dr. Lin's memory echo) keep their own sprites,
 ## frames and turning; each figure is drawn inside its NPC's sprite as tall
 ## as the pixel figure and on its feet, facing as the NPC faces, and plays its
-## idle loop. restore() removes the figures and puts every sprite back.
+## idle loop. While the look is staged the dialogue boxes show the speakers'
+## HD portraits too (prototype_portraits.gd). restore() removes the figures
+## and puts every sprite and portrait back.
 
 const PLAYER_SPRITE := "player/VisualRoot/CharacterSprite"
 const GUARDIAN_SCENE := "res://scenes/enemy.tscn"
@@ -53,6 +55,7 @@ const NPC_FACINGS: Dictionary = {
 	"west": "walk_left", "left": "walk_left", "south_west": "walk_down_left",
 }
 const HD_FIGURE := "PrototypeHDFigure"
+const Portraits := preload("res://tools/blender/prototype_portraits.gd")
 ## The pixel detective's figure: 238 px of its 256 px cell at scale 0.19, its
 ## toes on the body's origin.
 const PLAYER_FIGURE_PX := 238.0 * 0.19
@@ -81,6 +84,8 @@ var hall: Node
 var sheets: Dictionary = {}
 ## How many of the rooms' cast have their sheets (sheets holds them too).
 var cast := 0
+## How many speakers have HD dialogue portraits (prototype_portraits.gd).
+var portraits := 0
 ## game sprite -> what it had ("frames", "moved", "position", "scale",
 ## "filter", "self_modulate", "npc") and its figure ("figure", "body",
 ## "sheet", "gait", "phase", "cycles", "clock", "speed", "dwell", "last")
@@ -89,8 +94,9 @@ var active := false
 var rescan_in := 0.0
 
 
-## Loads each character's sheets under `data_dir`. Returns how many of the
-## detective and the Guardian have all three gaits; `cast` counts the NPCs.
+## Loads each character's sheets under `data_dir`, and the speakers' HD
+## portraits under its portraits/. Returns how many of the detective and the
+## Guardian have all three gaits; `cast` counts the NPCs.
 func attach(hall_node: Node, data_dir: String) -> int:
 	hall = hall_node
 	var characters: Array[String] = ["detective", "guardian"]
@@ -110,18 +116,24 @@ func attach(hall_node: Node, data_dir: String) -> int:
 			continue
 		sheets[character] = sheet
 	cast = sheets.size() - int(sheets.has("detective")) - int(sheets.has("guardian"))
+	portraits = Portraits.attach(data_dir + "portraits/")
 	return sheets.size() - cast
 
 
-## Starts drawing the figures in the Hall in HD.
+## Starts drawing the figures in the Hall in HD, and the speakers' portraits.
 func apply() -> void:
 	active = true
+	if portraits > 0:
+		Portraits.stage(true, hall)
 	_rescan()
 
 
-## Removes the figures and gives every sprite back its pixel frames.
+## Removes the figures and gives every sprite back its pixel frames, and the
+## game its own portraits.
 func restore() -> void:
 	active = false
+	if portraits > 0:
+		Portraits.stage(false, hall)
 	for sprite: Variant in swaps:
 		var before: Dictionary = swaps[sprite]
 		var figure: Variant = before["figure"]
