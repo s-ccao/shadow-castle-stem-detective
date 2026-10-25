@@ -10,16 +10,18 @@ extends SceneTree
 ## prototypes/blender_chars/. Collision, fog, the route, the Guardian's
 ## behaviour and saves are the game's own. Rooms rebuilt in Blender
 ## (tools/blender/room_prototype.py) show in HD whenever they load, through
-## tools/blender/prototype_room.gd: so far the Wake Room, the Greenhouse and
-## the Chemistry Room.
+## tools/blender/prototype_room.gd: so far the Wake Room, the Greenhouse, the
+## Chemistry Room and the Final Room.
 ##
 ##   HOME="$PWD/.godot/blender-proto-play/home" godot --path . \
-##     --script res://tools/blender/play_prototype.gd [-- --hall | --greenhouse | --chemistry]
+##     --script res://tools/blender/play_prototype.gd \
+##     [-- --hall | --greenhouse | --chemistry | --final]
 ##
 ## --hall skips straight to the Hall arrival, the moment the player first steps
 ## out of the Wake Room into the rendered region. --greenhouse opens the
 ## Greenhouse at its gate, as the room does when it is played on its own;
-## --chemistry opens the Chemistry Room in its doorway the same way.
+## --chemistry opens the Chemistry Room in its doorway the same way, and
+## --final the Final Room.
 
 const DATA := "res://prototypes/blender_hall/"
 const CHARACTER_DATA := "res://prototypes/blender_chars/"
@@ -27,6 +29,7 @@ const RENDER_SCALE := 2.0
 const HALL_SCENE := "res://scenes/game_world.tscn"
 const GREENHOUSE_SCENE := "res://scenes/floor_1/greenhouse_room.tscn"
 const CHEMISTRY_SCENE := "res://scenes/floor_1/chemistry_room.tscn"
+const FINAL_SCENE := "res://scenes/floor_1/final_room.tscn"
 const OVERLAY_NAME := "BlenderPrototypeOverlay"
 const Glows := preload("res://tools/blender/prototype_glows.gd")
 const Props := preload("res://tools/blender/prototype_props.gd")
@@ -51,6 +54,8 @@ func _initialize() -> void:
 		change_scene_to_file.call_deferred(GREENHOUSE_SCENE)
 	elif "--chemistry" in OS.get_cmdline_user_args():
 		change_scene_to_file.call_deferred(CHEMISTRY_SCENE)
+	elif "--final" in OS.get_cmdline_user_args():
+		change_scene_to_file.call_deferred(FINAL_SCENE)
 	else:
 		change_scene_to_file(str(ProjectSettings.get_setting("application/run/main_scene")))
 

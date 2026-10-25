@@ -18,7 +18,9 @@ const FINAL_CASE_BOARD_SCENE: PackedScene = preload("res://scenes/ui/final_case_
 const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 930.0)
 const EXIT_POSITION: Vector2 = Vector2(724.0, 1030.0)
 const EXIT_RADIUS: float = 80.0
-const EXIT_RECT: Rect2 = Rect2(624.0, 958.0, 200.0, 128.0)
+# The great door itself: the room's south walls stop the player at its top
+# edge (y 776-797 along it), so the way back is offered there.
+const EXIT_RECT: Rect2 = Rect2(622.0, 788.0, 206.0, 204.0)
 const INTERACT_RADIUS: float = 90.0
 
 const GAMEPLAY_CAMERA_ZOOM: Vector2 = Vector2(1.35, 1.35)

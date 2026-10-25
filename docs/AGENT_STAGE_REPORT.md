@@ -2,6 +2,129 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-62 (Final Room)
+
+- **Date:** 2026-10-24
+- **Status:** approved by the user ("满意") after two revisions at their review, then committed and pushed with the game's exit fix and the Dining Hall session's generic exporter code (`rect_shapes`, `_rect_walls`, `rects`), at the user's request. The prototype ships nothing. The one change to the game itself is the Final Room's exit (`scripts/final_room.gd`, see "Review and revision"); its art, collision and saves are unchanged.
+- **Request:** at stage 61's review the user approved both rooms and chose the Final Room next, continuing "可以继续修改其他的房间" (go on with the other rooms) to the room standard.
+- **Parallel work:** the Library (stages 57 and 59) and the Dining Hall (stage 60) sessions have uncommitted work in this checkout; Circuit is being built in the worktree `circuit-room-blender`.
+
+### Review and revision
+
+- **First review:** "需要修改" (needs changes), with "为什么我的人物可以走到大门的上面？？" (why can my character walk onto the top of the great door?). They chose to commit stage 62 with the Dining Hall's generic exporter code, and Tripo characters next.
+  - **Why it happened:** the game's south walls stop the player's feet along the painted door's top edge, y 797 at its west end to 776 at its east, and 726–751 by the piers and bays. The great door stands south of that line, between the camera and the player. The HD gate rose above the line (its crest top at screen y 710) and was out of the depth map, so the player was drawn over it, standing on its arch.
+  - **The first fix (superseded):** a lower gate set further back, below the line the feet reach. The user rejected it.
+- **Second review:** "不能有空气墙，玩家应该可以走到门的后面，然后可以从门看到玩家的身影，就和hall一样" (there must be no invisible walls; the player should be able to walk behind the door, and you should see the player's silhouette through the door, as in the Hall).
+  - **The cause was an invisible wall.** In HD the floor runs on past that line to the gate, so the painted walls that stop the player there are a wall across open floor.
+- **The HD room, revised:**
+  - **The gate is the first build's again** (`room_final.south_gate`): 2.0 m leaves under the round arch and its sunburst crest, columns and tall piers. It is now in the depth map.
+  - **The floor runs up to the gate's base** (`GATE_BACK`, the north faces of its piers, bays, columns, jambs and leaves). The flagstones are laid up to it (856 stones instead of 822), and the dark under them runs on to it.
+  - **The south walls end where the floor really does.** `footprints()` swaps the painted `RoomCollisions/BottomLeftWall` and `BottomRightWall` for walls that follow the floor's edge and the gate's base, while the HD room is staged. The painted ones come back on restore.
+  - **What the player sees:** walking south from the arrival, he reaches the gate. All along it he walks up to its base, behind it, where it stands between him and the camera, and shows through it as the Hall's violet silhouette (the depth pass's `PLAYER_GHOST`). The leaves themselves still block him.
+- **The game's exit, fixed** (`scripts/final_room.gd`, the bug stage 62 found):
+  - `EXIT_RECT` is now the great door itself, `Rect2(622, 788, 206, 204)`, instead of the landing beyond the walls (624, 958, 200, 128).
+  - Walking up to the door offers "Press E to return to the Castle Hall": in the painted look at the door's top edge, and in HD behind it, at its base. The probe's nearest reachable gap fell from 166 px to 0.
+  - The walls, the spawn, the transition and the saves are unchanged.
+
+### What changed
+
+- **The Final Room, rebuilt in Blender from its painting** (`assets/backgrounds/final_room_arcane.png` and `assets/props/FinalRoom/`), on the room's real collision, in the Chemistry Room's dark slate, laid flagstones, old oak and brass:
+  - **North:** the vault door between two tall glazed cabinets and two brass wall lanterns. Either side are a violet lancet between colonnettes and a violet crystal lantern under a brass rosette; in each corner, an arched alcove of scroll racks over a chest of drawers.
+  - **West:** scroll presses and drawers along the wall, a glass vitrine and a long table of papers before them, a cabinet lit violet from inside, and a great packing crate turned askew in the south-west corner.
+  - **Middle:** the Ashford analysis table, a round table 3.2 m across and 81 cm high. Its eight slate evidence panels are linked by brass to an inner hoop, and a circle of brass inlay rings it on the floor.
+  - **East:** the Knowledge Engine, a brass armillary with its glass orb and planets on a drum, on an octagonal stepped dais, with its console glowing. Beside it stand scroll presses, two vitrines, a writing table and a chest of drawers.
+  - **South:** the floor ends at a coping over the dark, as the painting's does. The way back to the Hall is the painting's great door, with a violet core in a brass ring between its leaves and the four rooms' emblems round it, between columns and violet lamps on tall piers. The floor runs up to its base, so the player walks behind it and shows through it, as in the Hall.
+  - **Floor:** 822 flagstones laid one by one, with brass lines let into them and five iron grates glowing violet from below. Mrs. Lin lies where the game draws her (her figure stays the game's own until the characters' pass), with her notebook by her hand.
+- **Four HD props stand in for the room's own nodes:** the vault door, the analysis table, the Knowledge Engine and the notebook. Their highlight boxes, prompts and walk-up points follow them, through the room's own `_sync_authored_interaction_positions()`.
+- **Real footprints:**
+  - The table's and the engine's capsules become the HD props' outlines.
+  - The west vitrine and table of papers, the crate and the east writing table, which the painting lets the player walk through, get footprints of their own while the HD room is staged.
+  - Behind the HD table, where the painted table stood, the floor is open. A player there is hidden behind the table and is still offered it.
+  - The south walls end at the floor's edge and the gate's base (the revision), so the floor before the great door is open up to it.
+- **Light:**
+  - The room is lit by its own lamps: two amber wall lanterns, the violet crystal lanterns, the lancets and the grates, the engine's orb and console, and a warm fill.
+  - Mean luminance is 25.7 and warmth (R − B) +7.4, against the painting's 25.9 and +6.6.
+  - The open floor is a little brighter than the painting's (centre 40 against 34), and the table a little darker (26 against 33).
+
+### Pipeline (backward compatible)
+
+- **`export_room_layout.gd`:**
+  - a `final_room` entry;
+  - `"capsule_shapes": true` exports `CapsuleShape2D` furniture collisions as 32-point wall polygons, through the shape's whole transform (the Final Room's hang under scaled sprites).
+  - The entry also uses the Dining Hall session's `"rect_shapes"` and `"rects"` exporter code.
+- **`room_prototype.py`:** a room's `Shell` `"south"` wall is optional. The Final Room ends its floor its own way.
+- **`prototype_room.gd`:** the footprint swap is generalised and takes world px points from `build()`'s `"collision"`:
+  - a `CollisionPolygon2D` is re-projected when the room is staged;
+  - a `RectangleShape2D` stays a rectangle;
+  - any other shape (a capsule) becomes the HD prop's outline, as a `ConvexPolygonShape2D`;
+  - a path the scene lacks adds a `CollisionPolygon2D` under the body it names, which is freed on restore;
+  - the body's transform is forced after the swap. The Final Room's collision hangs under the props' sprites, which the HD props rescale, so for a frame the physics server saw the shapes at the other look's scale and the player could be pushed to NaN.
+  - `_resync()` also calls a room's `_sync_authored_interaction_positions()`, and `final_room` is added to `ROOMS`.
+- **`play_prototype.gd`:** `-- --final` opens the Final Room.
+
+### Exact files
+
+- **New:**
+  - `tools/blender/room_final.py`: the room, its four props and its footprints;
+  - `tools/blender/capture_final.gd` and its `.uid`: 111 checks.
+- **Changed:**
+  - `tools/blender/export_room_layout.gd`: the `final_room` entry and `_capsule_walls()`;
+  - `tools/blender/prototype_room.gd`: the footprint swap, `_resync()` and `ROOMS`;
+  - `tools/blender/room_prototype.py`: the optional `"south"`;
+  - `tools/blender/play_prototype.gd`: `--final`.
+- **Evidence:** new `docs/evidence/2026-10-24-blender-final-room/`:
+  - `01`–`09`: the painted room and the HD room in game, at the same spots. They cover the arrival, the vault door, in front of the table, the engine's console, the notebook, beside Mrs. Lin (Chinese UI), behind the table, the west tables and crate, and the east side.
+  - `10-room-overview.png`: the whole room, painted and HD, each with its light.
+  - `11-render-on-collision.png`: the render over its collision, with the HD footprints.
+  - `12-hd-props.png`: the four props, painted and HD, at 2x.
+  - `13-at-the-door.png` (revision): at the great door, the way back offered in both looks; in HD the player is behind the door, seen through it.
+  - `14-no-invisible-wall.png` (revision): the floor before the door at 2x, over the painted south walls (ending at the door's top, across open floor) and over the HD room's own (ending at the gate's base).
+- **The game itself (revision):** `scripts/final_room.gd`: `EXIT_RECT`.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+
+### Verification
+
+- **Blender 5.2.2, 128 samples:** the room renders in 95 s, with 1739 objects, 856 flagstones, 18 glows and 4 props.
+- **Captures:** `capture_final.gd` passes 111/111 in EN and in ZH (91 before the revisions). It checks:
+  - every prop staged in HD, every glow's halo, and the depth map;
+  - each prop offered from its walk-up spot, in both looks, with its box following the HD art;
+  - the 10 footprints swapped in, the south walls among them;
+  - the HD table, west vitrine and great door block; the floor behind the table and before the door is open; the painted walls close that floor again on restore;
+  - the table and the engine draw in front of a player behind them and behind one in front;
+  - no invisible wall: walking south from the arrival, the player reaches the great door;
+  - at nine spots along the door, walked as far south as the walls allow, the player stands at its base, behind it (45 rows of his figure behind it);
+  - behind the door he shows through it as the Hall's silhouette (ghost 0.45; about 3800 px of his figure seen, measured against a shot without him);
+  - at the door the way back to the Castle Hall is offered, in both looks;
+  - the HD detective at the room's size, walking and running at the game's speed;
+  - everything, footprints included, put back on restore.
+- **The game's exit:**
+  - The reachability probe on the game's own collision now finds the exit's 14 px band reached, at a 0 px gap; it was 166 px.
+  - `tests/room_transition_flow_test.gd` and `tests/interaction_stops_walk_test.gd` pass.
+  - `tests/room_spatial_audit.gd` passes the Final Room's exit contact band (`final/exit`) and fails only its six known Hall cases (next priority 4).
+- **No regressions:**
+  - `capture_chemistry.gd` passes 86/86 and `capture_greenhouse.gd` 97/97 on the generalised swap;
+  - the stage 61 rectangle swap test on the Dining Hall's table still passes headless.
+- **Godot:**
+  - the headless editor parse has 0 errors;
+  - gdlint is clean on the prototype's scripts; `scripts/final_room.gd` keeps its 57 earlier findings and adds none;
+  - pyflakes and `git diff --check` are clean.
+- **Playable preview:** `play_prototype.gd -- --final` stages the room with 18 glows, 4 HD props, depth and 2 HD character sheets, and no script errors.
+
+### Risks / follow-up
+
+- **Preview only, but for the exit:** the game's own Final Room keeps its painted art and collision. Moving the HD room into the game means moving its footprints with it, its south walls included.
+- **The game's exit (found in stage 62, fixed in the revision):** the Final Room's way back to the Hall could not be reached.
+  - `RoomCollisions/BottomLeftWall` and `BottomRightWall` overlap at x 604–614 and close the whole gate bay. The deepest the player can walk is y 876, and the nearest they came to the old `EXIT_RECT` (624, 958, 200, 128) was 166 px, against a 14 px band, so "Press E to return to the Castle Hall" was never offered.
+  - The walls are unchanged since the release build `505f008`, whose 80 px radius round `EXIT_POSITION` was out of reach too.
+  - `room_spatial_audit` did not catch it, because it places the actor directly.
+  - The safe spawn still moves the arrival from (724, 930) to (724, 770); `PLAYER_SPAWN_POSITION` is unchanged.
+- **The painted look keeps its walls:** in the painted room the player still stops at the door's top as painted and is drawn over its hood. The HD room fixes this with its own walls, and replaces the painting when it moves into the game. Moving the painted walls now would change the shipping collision and the arrival.
+- **Behind the door:** in HD the player can stand behind the gate's piers and columns too, all along its base. He is drawn as the violet silhouette there, as behind the Hall's walls, so he is never lost.
+- **New blocking furniture:** in HD the west vitrine and table, the crate and the east table block the player, where the painting let them walk through.
+- **Mrs. Lin** is still the game's pixel figure, until the Tripo characters' pass.
+- **Committing:** the shared pipeline files hold the Library's and the Dining Hall's uncommitted hunks. Committing this stage alone means building its blobs from `HEAD` plus its own hunks, together with the Dining Hall's generic `rect_shapes`, `_rect_walls` and `rects` exporter code, which the `final_room` entry relies on. The user chose that.
+- **Next:** the Tripo characters (the user's choice), the remaining rooms (Circuit is in its own worktree), the NPCs' portraits, and the move into the game.
+
 ## Stage: UX-20261021-61 (room audit, Chemistry brightening, Greenhouse bench)
 
 - **Date:** 2026-10-24

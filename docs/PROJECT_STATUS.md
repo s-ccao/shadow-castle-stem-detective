@@ -26,6 +26,14 @@
     - Every interaction still works in the preview. The butler and Dr. Lin's echo are still pixel figures.
     - [Comparisons](evidence/2026-10-23-blender-chemistry/).
   - **The Greenhouse** (stage 54; its gate, bench and floor rebuilt from the painting in stage 56) has the painting's round-arched glazed gate, the six-board potting bench with its clutter, real CC0 plants in the beds and pots, and slate pavers laid one by one. Since stage 61 the bench is a real bench's size, 2.5 × 1.0 m, of weathered oak under its lantern, and the player can walk behind it. Every interaction still works in the preview; the gardener is still a pixel figure. [Comparisons](evidence/2026-10-23-blender-greenhouse/), [the bench](evidence/2026-10-24-greenhouse-bench/).
+  - **The Final Room** (stage 62) is rebuilt from its painting to the room standard:
+    - the vault door between glazed cabinets and brass lanterns, violet lancets and crystal lanterns, and scroll alcoves and presses along the walls;
+    - the Ashford analysis table at a real table's size, 3.2 m across, its eight evidence panels in brass, ringed by a brass circle in the floor; the player can stand behind it, hidden by it;
+    - the Knowledge Engine's brass armillary and glowing orb on its octagonal dais;
+    - a west vitrine, a table of papers and a packing crate, which now block the player as real furniture;
+    - flagstones laid one by one with brass lines and violet grates, running up to the painting's great door with the four rooms' emblems. There is no invisible wall before it: the player walks up to its base, behind it, and shows through it as a silhouette, as in the Hall (the user's review).
+    - The room is as bright and as warm as its painting. Every interaction still works in the preview; Mrs. Lin is still the game's pixel figure. [Comparisons](evidence/2026-10-24-blender-final-room/).
+    - Fixed in the game itself: the Final Room's way back to the Castle Hall could not be reached, because its south walls close the gate bay and the exit lay beyond them. The exit is now the great door, so walking up to it offers "Press E to return to the Castle Hall".
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.

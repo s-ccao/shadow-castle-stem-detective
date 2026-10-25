@@ -799,7 +799,8 @@ class Shell:
         meet the back wall's top corner, and runs on south to plan y `near`
         at the top, so its near end reaches the bottom of the screen.
     "south": {"y", "height", "x": (x0, x1)}
-        The low wall cut away toward the camera.
+        The low wall cut away toward the camera. Optional: a room may end
+        its floor its own way (the Final Room's drops into the dark).
     "cap": thickness of the walls' tops in plan px.
     """
 
@@ -848,7 +849,8 @@ class Shell:
         for side in ("left", "right"):
             self._side_wall(side)
         self._caps()
-        self._south_wall()
+        if "south" in self.spec:
+            self._south_wall()
         return self.made
 
     def _keep(self, obj, depth=True):

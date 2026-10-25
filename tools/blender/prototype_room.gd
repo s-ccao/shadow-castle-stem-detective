@@ -23,6 +23,7 @@ const ROOMS: Dictionary = {
 	"res://scenes/wake_room.tscn": "wake_room",
 	"res://scenes/floor_1/greenhouse_room.tscn": "greenhouse_room",
 	"res://scenes/floor_1/chemistry_room.tscn": "chemistry_room",
+	"res://scenes/floor_1/final_room.tscn": "final_room",
 }
 const DATA := "res://prototypes/blender_rooms/"
 const CHARACTER_DATA := "res://prototypes/blender_chars/"
@@ -149,12 +150,15 @@ func summary() -> String:
 
 ## The room's highlight boxes, prompt anchors and walk-up points follow the
 ## props' Visual sprites (wake_room.gd create_prop_interactions/create_door;
-## greenhouse_room.gd _sync_interaction_footprints).
+## greenhouse_room.gd _sync_interaction_footprints; final_room.gd
+## _sync_authored_interaction_positions).
 func _resync() -> void:
 	if not is_instance_valid(room):
 		return
 	if room.has_method("_sync_interaction_footprints"):
 		room.call("_sync_interaction_footprints")
+	if room.has_method("_sync_authored_interaction_positions"):
+		room.call("_sync_authored_interaction_positions")
 	var spatial := RoomSpatialRuntime.new()
 	var listed: Variant = room.get("props")
 	if listed is Dictionary:
@@ -180,48 +184,92 @@ func _resync() -> void:
 			room.set("door_interaction_rect", rect)
 
 
-## The collision render.json changes, with the scene's own: a polygon's
-## points, or a rectangle's shape and place (a CollisionShape2D, given as its
-## four world px corners; its own copy of the shape is swapped in, so a shape
-## the scene shares between nodes is never changed).
+## The collision render.json changes ({node path: world px points}), with
+## the scene's own: a polygon's points, or a CollisionShape2D's shape and
+## place. A path the scene lacks is a footprint the HD room adds, as a
+## CollisionPolygon2D under the body the path names (furniture the painting
+## lets the player walk through). The HD shapes are made as the room is
+## staged, from world px, so a prop render that moves or scales a shape's
+## parent (the Final Room's sprites carry their own collision) is allowed for.
 func _read_footprints() -> void:
 	footprints.clear()
 	var listed: Variant = meta.get("collision", {})
 	if not listed is Dictionary:
 		return
 	for path: Variant in (listed as Dictionary).keys():
+		var world := PackedVector2Array()
+		for point: Variant in (listed as Dictionary)[path]:
+			world.append(Vector2(float(point[0]), float(point[1])))
 		var node := room.get_node_or_null(NodePath(str(path)))
-		var corners: Array = (listed as Dictionary)[path]
+		var body := room.get_node_or_null(NodePath(str(path).get_base_dir()))
 		if node is CollisionPolygon2D:
 			var polygon := node as CollisionPolygon2D
-			var to_local := polygon.global_transform.affine_inverse()
-			var points := PackedVector2Array()
-			for point: Variant in corners:
-				points.append(to_local * Vector2(float(point[0]), float(point[1])))
-			footprints.append({"polygon": polygon, "painted": polygon.polygon, "hd": points})
-		elif node is CollisionShape2D and (node as CollisionShape2D).shape is RectangleShape2D:
+			footprints.append({"polygon": polygon, "painted": polygon.polygon, "world": world})
+		elif node is CollisionShape2D:
 			var holder := node as CollisionShape2D
-			var bounds := Rect2(Vector2(float(corners[0][0]), float(corners[0][1])), Vector2.ZERO)
-			for point: Variant in corners:
-				bounds = bounds.expand(Vector2(float(point[0]), float(point[1])))
-			var shape := (holder.shape as RectangleShape2D).duplicate() as RectangleShape2D
-			shape.size = bounds.size / holder.global_scale.abs()
 			footprints.append({
-				"rectangle": holder, "painted": holder.shape, "painted_at": holder.global_position,
-				"hd": shape, "hd_at": bounds.get_center(),
+				"holder": holder, "painted": holder.shape, "painted_at": holder.position, "world": world,
 			})
+		elif node == null and body is CollisionObject2D:
+			footprints.append({"body": body, "name": str(path).get_file(), "world": world})
 		else:
-			push_warning("No collision polygon or rectangle to swap at " + str(path))
+			push_warning("No collision polygon, shape or body for the footprint at " + str(path))
 
 
 func _swap_footprints(hd: bool) -> void:
 	for footprint: Dictionary in footprints:
+		var world: PackedVector2Array = footprint["world"]
 		if footprint.has("polygon"):
 			var polygon := footprint["polygon"] as CollisionPolygon2D
 			if is_instance_valid(polygon):
-				polygon.polygon = footprint["hd"] if hd else footprint["painted"]
-			continue
-		var holder := footprint["rectangle"] as CollisionShape2D
-		if is_instance_valid(holder):
-			holder.shape = footprint["hd"] if hd else footprint["painted"]
-			holder.global_position = footprint["hd_at"] if hd else footprint["painted_at"]
+				polygon.polygon = _to_local(polygon, world) if hd else footprint["painted"]
+		elif footprint.has("holder"):
+			var holder := footprint["holder"] as CollisionShape2D
+			if not is_instance_valid(holder):
+				continue
+			if not hd:
+				holder.shape = footprint["painted"]
+				holder.position = footprint["painted_at"]
+			elif footprint["painted"] is RectangleShape2D:
+				# A rectangle stays one, round the corners: its own copy, so a
+				# shape the scene shares between nodes is never changed.
+				var bounds := Rect2(world[0], Vector2.ZERO)
+				for point: Vector2 in world:
+					bounds = bounds.expand(point)
+				var rectangle := (footprint["painted"] as RectangleShape2D).duplicate() as RectangleShape2D
+				rectangle.size = bounds.size / holder.global_scale.abs()
+				holder.shape = rectangle
+				holder.global_position = bounds.get_center()
+			else:
+				# A capsule or circle becomes the HD prop's own outline.
+				var outline := ConvexPolygonShape2D.new()
+				outline.set_point_cloud(_to_local(holder, world))
+				holder.shape = outline
+			# The prop render moved or scaled the body the shape hangs from
+			# (the Final Room's collision hangs under its sprites): its place
+			# reaches the physics server now, not at the next transform flush,
+			# or for a frame the swapped shape stands at the other look's scale.
+			var body := holder.get_parent() as CollisionObject2D
+			if body != null:
+				body.force_update_transform()
+		else:
+			if hd and not footprint.has("added"):
+				var added := CollisionPolygon2D.new()
+				added.name = str(footprint["name"])
+				(footprint["body"] as Node).add_child(added)
+				added.polygon = _to_local(added, world)
+				footprint["added"] = added
+			elif not hd and footprint.has("added"):
+				var made: Variant = footprint["added"]
+				footprint.erase("added")
+				if is_instance_valid(made):
+					(made as Node).get_parent().remove_child(made)
+					(made as Node).free()
+
+
+func _to_local(node: Node2D, world: PackedVector2Array) -> PackedVector2Array:
+	var to_local := node.global_transform.affine_inverse()
+	var points := PackedVector2Array()
+	for point: Vector2 in world:
+		points.append(to_local * point)
+	return points

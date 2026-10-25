@@ -63,6 +63,26 @@ const ROOMS: Dictionary = {
 			"ChemistryPotionCabinet": "Worldsort/ChemistryPotionCabinet",
 		},
 	},
+	# A camera follows the player through it. Its five props stand at the
+	# room's root, each blocked by its own FurnitureCollision: rectangles, and
+	# capsules for the analysis table and the Knowledge Engine (so
+	# "capsule_shapes" exports those as walls too). The exit is EXIT_RECT.
+	"final_room": {
+		"scene": "res://scenes/floor_1/final_room.tscn",
+		"size": Vector2i(1448, 1086),
+		"spawns": {"arrival": "PLAYER_SPAWN_POSITION", "exit": "EXIT_POSITION"},
+		"rects": {"exit": "EXIT_RECT"},
+		"props": {
+			"MrsLinBody": "MrsLinBody",
+			"NotebookVisual": "NotebookVisual",
+			"FinalAnalysisBoardVisual": "FinalAnalysisBoardVisual",
+			"KnowledgeEngineVisual": "KnowledgeEngineVisual",
+			"VaultDoorVisual": "VaultDoorVisual",
+		},
+		"items": "INTERACT_ITEMS",
+		"rect_shapes": true,
+		"capsule_shapes": true,
+	},
 }
 
 var room_id := "wake_room"
@@ -113,6 +133,10 @@ func _run() -> void:
 			walls.append(entry)
 		elif owner_body is Area2D:
 			props.append(entry)
+	if bool(spec.get("rect_shapes", false)):
+		walls.append_array(_rect_walls(room))
+	if bool(spec.get("capsule_shapes", false)):
+		walls.append_array(_capsule_walls(room))
 	var spatial := RoomSpatialRuntime.new()
 	var prop_info: Dictionary = {}
 	for child: Node in _prop_nodes(room, spec):
@@ -152,6 +176,10 @@ func _run() -> void:
 		extras["items"] = _items(room.get(str(spec["items"])))
 	if spec.has("plots"):
 		extras["plots"] = _items(constants.get(str(spec["plots"]), []))
+	for rect_name: String in spec.get("rects", {}):
+		var rect_value: Variant = constants.get(str(spec["rects"][rect_name]))
+		if rect_value is Rect2:
+			extras[rect_name + "_rect"] = _rect(rect_value)
 	var player := room.get_node_or_null("player") as Node2D
 	if player == null:
 		player = room.get_node_or_null("Worldsort/player") as Node2D
@@ -190,6 +218,56 @@ func _run() -> void:
 	room.queue_free()
 	await process_frame
 	quit(0)
+
+
+## Every rectangle a StaticBody2D blocks with (a prop's FurnitureCollision), as
+## a wall polygon named for the body's parent, the prop it blocks for.
+func _rect_walls(room: Node) -> Array:
+	var walls: Array = []
+	for node: Node in room.find_children("*", "CollisionShape2D", true, false):
+		var shape := node as CollisionShape2D
+		var body := shape.get_parent()
+		if not body is StaticBody2D or not shape.shape is RectangleShape2D:
+			continue
+		var half := (shape.shape as RectangleShape2D).size / 2.0
+		var points: Array = []
+		var corners: Array[Vector2] = [
+			Vector2(-half.x, -half.y), Vector2(half.x, -half.y), half, Vector2(-half.x, half.y),
+		]
+		for corner: Vector2 in corners:
+			var world := shape.global_transform * corner
+			points.append([snappedf(world.x, 0.01), snappedf(world.y, 0.01)])
+		walls.append({
+			"name": str(body.get_parent().name), "shape": str(shape.name),
+			"path": str(room.get_path_to(body)), "points": points,
+		})
+	return walls
+
+
+## Every capsule a StaticBody2D blocks with (the Final Room's analysis table and
+## Knowledge Engine), as a 32-point wall polygon named for the body's parent,
+## in world px through its whole transform (a scaled sprite stretches it).
+func _capsule_walls(room: Node) -> Array:
+	var walls: Array = []
+	for node: Node in room.find_children("*", "CollisionShape2D", true, false):
+		var shape := node as CollisionShape2D
+		var body := shape.get_parent()
+		if not body is StaticBody2D or not shape.shape is CapsuleShape2D:
+			continue
+		var capsule := shape.shape as CapsuleShape2D
+		var reach := maxf(capsule.height / 2.0 - capsule.radius, 0.0)
+		var points: Array = []
+		for step: int in range(32):
+			var angle := TAU * (float(step) + 0.5) / 32.0
+			var local := Vector2(cos(angle), sin(angle)) * capsule.radius
+			local.y += reach if local.y > 0.0 else -reach
+			var world := shape.global_transform * local
+			points.append([snappedf(world.x, 0.01), snappedf(world.y, 0.01)])
+		walls.append({
+			"name": str(body.get_parent().name), "shape": str(shape.name),
+			"path": str(room.get_path_to(body)), "points": points,
+		})
+	return walls
 
 
 ## The room's interactive props: the nodes its spec lists, or else Props/'s children.
