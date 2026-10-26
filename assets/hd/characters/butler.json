@@ -1,0 +1,43 @@
+{
+ "generator": "tools/blender/character_prototype.py",
+ "cell": [
+  128,
+  128
+ ],
+ "feet": [
+  64.0,
+  114
+ ],
+ "angle": 72.0,
+ "height": 100.0,
+ "rows": {
+  "walk_down": 0,
+  "walk_down_right": 1,
+  "walk_right": 2,
+  "walk_up_right": 3,
+  "walk_up": 4,
+  "walk_up_left": 5,
+  "walk_left": 6,
+  "walk_down_left": 7
+ },
+ "gaits": {
+  "idle": {
+   "image": "butler_idle_8dir.webp",
+   "frames": 36,
+   "fps": 6.0,
+   "columns": 18
+  },
+  "walk": {
+   "image": "butler_walk_8dir.webp",
+   "frames": 8,
+   "stride": 64.55,
+   "seconds": 1.1562
+  },
+  "run": {
+   "image": "butler_run_8dir.webp",
+   "frames": 8,
+   "stride": 118.02,
+   "seconds": 0.6354
+  }
+ }
+}

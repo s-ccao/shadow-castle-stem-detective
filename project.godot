@@ -38,6 +38,7 @@ ParchmentHud="*res://scripts/parchment_hud.gd"
 PotionHud="*res://autoload/potion_effects_hud.gd"
 TouchControls="*res://autoload/touch_controls.gd"
 PauseMenu="*res://autoload/pause_menu.gd"
+HDLook="*res://scripts/hd/hd_look.gd"
 
 [display]
 

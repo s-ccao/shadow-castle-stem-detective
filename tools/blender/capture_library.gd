@@ -25,9 +25,12 @@ extends SceneTree
 const HOME_MARKER := "res://.godot/blender-proto-library"
 const ROOM_NAME := "library_room"
 const ROOM_SCENE := "res://scenes/floor_1/library_room.tscn"
-const DATA := "res://prototypes/blender_rooms/library_room/"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
+## The HD room as the game reads it (tools/blender/publish_hd.py); the shots go
+## under the work folder.
+const DATA := "res://assets/hd/rooms/library_room/"
+const OUT := "res://prototypes/blender_rooms/library_room/"
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
 const SHELVES: Array[String] = ["topleft_tall_case", "lower_storage", "storage_cabinet"]
 const STATIONS: Array[String] = ["research_desk", "writing_desk", "lower_globe_desk"]
 const FILTERS: Array[String] = ["rgb_red_filter", "rgb_green_filter", "rgb_blue_filter"]
@@ -95,7 +98,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	await _enter_library()
 	_expect(room != null, "The Library loads as a returning player finds it")
 	if room == null:

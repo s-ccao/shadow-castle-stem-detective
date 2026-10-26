@@ -1,0 +1,27 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "props": [
+  {
+   "id": "ChemistryLabTable",
+   "root": "Worldsort/ChemistryLabTable",
+   "image": "render-prop-ChemistryLabTable.webp",
+   "rect": [
+    424.5,
+    363.5,
+    391.0,
+    248.0
+   ]
+  },
+  {
+   "id": "ChemistryPotionCabinet",
+   "root": "Worldsort/ChemistryPotionCabinet",
+   "image": "render-prop-ChemistryPotionCabinet.webp",
+   "rect": [
+    259.5,
+    41.0,
+    324.5,
+    191.5
+   ]
+  }
+ ]
+}

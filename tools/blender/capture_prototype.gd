@@ -16,14 +16,18 @@ extends SceneTree
 ## Writes prototypes/blender_hall/captures/{current,blender}/*.png.
 
 const HOME_MARKER := "res://.godot/blender-proto-capture"
-const DATA := "res://prototypes/blender_hall/"
-const CHARACTER_DATA := "res://prototypes/blender_chars/"
+## The HD Hall and figures as the game reads them; the shots go under the work
+## folder.
+const DATA := "res://assets/hd/hall/"
+const CHARACTER_DATA := "res://assets/hd/characters/"
+const OUT := "res://prototypes/blender_hall/"
+const HDData := preload("res://scripts/hd/hd_data.gd")
 const RENDER_SCALE := 2.0
-const Glows := preload("res://tools/blender/prototype_glows.gd")
-const Props := preload("res://tools/blender/prototype_props.gd")
-const Depth := preload("res://tools/blender/prototype_depth.gd")
-const Doors := preload("res://tools/blender/prototype_doors.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
+const Glows := preload("res://scripts/hd/hd_glows.gd")
+const Props := preload("res://scripts/hd/hd_props.gd")
+const Depth := preload("res://scripts/hd/hd_depth.gd")
+const Doors := preload("res://scripts/hd/hd_doors.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
 const WALKS: Array[StringName] = [
 	&"walk_down", &"walk_down_right", &"walk_right", &"walk_up_right",
 	&"walk_up", &"walk_up_left", &"walk_left", &"walk_down_left",
@@ -116,7 +120,7 @@ func _run() -> void:
 	var locale := root.get_node("CaseLocale")
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	locale.call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DATA + "region.json"))
 	var region: Array = meta["region"]
 	await _enter_hall_from_wake_room()
@@ -195,12 +199,12 @@ func _run() -> void:
 
 
 func _make_overlay(origin: Vector2) -> Sprite2D:
-	var image := Image.load_from_file(ProjectSettings.globalize_path(DATA + "render.png"))
-	if image == null:
+	var texture := HDData.texture(DATA + "render.webp")
+	if texture == null:
 		return null
 	var sprite := Sprite2D.new()
 	sprite.name = "BlenderPrototypeOverlay"
-	sprite.texture = ImageTexture.create_from_image(image)
+	sprite.texture = texture
 	sprite.centered = false
 	sprite.position = origin
 	sprite.scale = Vector2.ONE / RENDER_SCALE
@@ -481,7 +485,11 @@ func _character_checks(player: CharacterBody2D) -> void:
 			moving_gaits.append(characters.gait_of(sprite))
 		var figure := characters.figure_of(sprite)
 		if figure != null:
-			columns.append(figure.frame % figure.hframes)
+			# The frame within its facing's cycle (a banded idle runs across bands).
+			var gait: Dictionary = (characters.sheets["detective"]["gaits"] as Dictionary).get(
+				characters.gait_of(sprite), {}
+			)
+			columns.append(figure.frame % int(gait.get("frames", figure.hframes)))
 		# Mid-stride, still on the open floor the Guardian stood on.
 		if step == 7:
 			await _shot("blender", "35-detective-running")

@@ -1,0 +1,66 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "room": "chemistry_room",
+ "region": [
+  0,
+  0,
+  1305,
+  1206
+ ],
+ "render_scale": 2.0,
+ "image": "render.webp",
+ "figure_scale": 1.0,
+ "collision": {
+  "RoomCollisions/AlchemyTableCollision": [
+   [
+    425.0,
+    445.0
+   ],
+   [
+    815.0,
+    445.0
+   ],
+   [
+    815.0,
+    610.0
+   ],
+   [
+    425.0,
+    610.0
+   ]
+  ]
+ },
+ "interactions": {
+  "red_stain": [
+   884.0,
+   560.0,
+   184.0,
+   166.0
+  ]
+ },
+ "depth": "render-depth.png",
+ "props": [
+  {
+   "id": "ChemistryLabTable",
+   "root": "Worldsort/ChemistryLabTable",
+   "image": "render-prop-ChemistryLabTable.webp",
+   "rect": [
+    424.5,
+    363.5,
+    391.0,
+    248.0
+   ]
+  },
+  {
+   "id": "ChemistryPotionCabinet",
+   "root": "Worldsort/ChemistryPotionCabinet",
+   "image": "render-prop-ChemistryPotionCabinet.webp",
+   "rect": [
+    259.5,
+    41.0,
+    324.5,
+    191.5
+   ]
+  }
+ ]
+}

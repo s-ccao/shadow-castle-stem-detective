@@ -22,8 +22,8 @@ const OUT := "res://prototypes/blender_hall/captures/maps/"
 const ROOM_SCENE := "res://scenes/floor_1/circuit_room.tscn"
 const HALL_TEXTURE := "res://assets/backgrounds/hall_map_hub.png"
 const CIRCUIT_TEXTURE := "res://assets/backgrounds/circuit_room_workshop.png"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Maps := preload("res://tools/blender/prototype_map.gd")
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Maps := preload("res://scripts/hd/hd_maps.gd")
 const KEYS: Array[String] = [
 	"wake_room_key", "chemistry_room_key", "greenhouse_room_key", "circuit_room_key",
 ]

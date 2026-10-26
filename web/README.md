@@ -127,6 +127,13 @@ The CLI falls back to `.gitignore` when a directory has no `.vercelignore`, and
 succeeds while uploading nothing but `vercel.json` — a working URL serving a
 404. That file existing is the only thing preventing it, so do not delete it.
 
+Vercel refuses any single file over 100MB, and `index.pck` is the one that
+grows. The HD look took it to 115MB, so the Web preset's `exclude_filter` in
+`export_presets.cfg` now also lists old images that nothing in the game names.
+It came back to 92MB. Check the pack's size after each export. Before excluding
+another file, search for its path, its file name and its uid, because scenes
+refer to resources by uid as well as by path.
+
 Or run the **Web export** workflow from the Actions tab with *Deploy to Vercel*
 ticked, which needs three repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`
 and `VERCEL_GAME_PROJECT_ID`. Without them the workflow still builds, verifies

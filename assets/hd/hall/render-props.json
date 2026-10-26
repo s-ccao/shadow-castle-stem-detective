@@ -1,0 +1,140 @@
+{
+ "generator": "tools/blender/hall_prototype.py",
+ "props": [
+  {
+   "id": "ChemistryRoomKnowledge",
+   "root": "WallCollisions/KnowledgeExhibits/ChemistryRoomKnowledge",
+   "image": "render-prop-ChemistryRoomKnowledge.webp",
+   "rect": [
+    622.0,
+    471.0,
+    25.5,
+    76.0
+   ],
+   "move": [
+    7.88,
+    12.0
+   ]
+  },
+  {
+   "id": "CircuitRoomKnowledge",
+   "root": "WallCollisions/KnowledgeExhibits/CircuitRoomKnowledge",
+   "image": "render-prop-CircuitRoomKnowledge.webp",
+   "rect": [
+    188.5,
+    665.5,
+    29.0,
+    68.5
+   ],
+   "move": [
+    121.75,
+    -271.0
+   ]
+  },
+  {
+   "id": "LibraryRoomKnowledge",
+   "root": "WallCollisions/KnowledgeExhibits/LibraryRoomKnowledge",
+   "image": "render-prop-LibraryRoomKnowledge.webp",
+   "rect": [
+    1547.0,
+    139.5,
+    23.0,
+    65.0
+   ],
+   "move": [
+    7.25,
+    -43.0
+   ]
+  },
+  {
+   "id": "GreenhouseRoomKnowledge",
+   "root": "WallCollisions/KnowledgeExhibits/GreenhouseRoomKnowledge",
+   "image": "render-prop-GreenhouseRoomKnowledge.webp",
+   "rect": [
+    247.5,
+    225.5,
+    27.5,
+    66.5
+   ],
+   "move": [
+    -38.75,
+    -33.0
+   ]
+  },
+  {
+   "id": "DiningHallKnowledge",
+   "root": "WallCollisions/KnowledgeExhibits/DiningHallKnowledge",
+   "image": "render-prop-DiningHallKnowledge.webp",
+   "rect": [
+    1703.0,
+    638.0,
+    30.5,
+    82.0
+   ],
+   "move": [
+    -139.25,
+    -160.0
+   ]
+  },
+  {
+   "id": "StorageRack",
+   "root": "WallCollisions/StorageRack",
+   "image": "render-prop-StorageRack.webp",
+   "rect": [
+    1598.5,
+    947.0,
+    53.0,
+    49.0
+   ],
+   "move": [
+    0.62,
+    11.0
+   ]
+  },
+  {
+   "id": "FinalKeyMachine1",
+   "root": "WallCollisions/FinalKeyMachine1",
+   "image": "render-prop-FinalKeyMachine1.webp",
+   "rect": [
+    326.5,
+    406.0,
+    31.5,
+    82.0
+   ],
+   "move": [
+    116.0,
+    -102.0
+   ]
+  },
+  {
+   "id": "FinalKeyMachine2",
+   "root": "WallCollisions/FinalKeyMachine2",
+   "image": "render-prop-FinalKeyMachine2.webp",
+   "rect": [
+    1343.0,
+    84.5,
+    105.5,
+    49.5
+   ],
+   "move": [
+    0.12,
+    7.75
+   ]
+  },
+  {
+   "id": "FinalKeyMachine3",
+   "root": "WallCollisions/FinalKeyMachine3",
+   "image": "render-prop-FinalKeyMachine3.webp",
+   "rect": [
+    1241.0,
+    1082.5,
+    68.5,
+    75.0
+   ],
+   "move": [
+    101.5,
+    37.5
+   ]
+  }
+ ]
+}

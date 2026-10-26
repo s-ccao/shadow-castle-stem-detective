@@ -19,9 +19,12 @@ extends SceneTree
 const HOME_MARKER := "res://.godot/blender-proto-capture"
 const ROOM_NAME := "wake_room"
 const ROOM_SCENE := "res://scenes/wake_room.tscn"
-const DATA := "res://prototypes/blender_rooms/wake_room/"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
+## The HD room as the game reads it (tools/blender/publish_hd.py); the shots go
+## under the work folder.
+const DATA := "res://assets/hd/rooms/wake_room/"
+const OUT := "res://prototypes/blender_rooms/wake_room/"
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
 ## The props wake_room.gd lists, by its id and the scene node it reads.
 const PROPS: Dictionary = {"bed": "Bed", "bookshelf": "Bookshelf", "desk": "Desk"}
 const PROP_SHOTS: Dictionary = {"bed": "02-bed", "bookshelf": "03-bookshelf", "desk": "04-desk"}
@@ -63,7 +66,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	await _enter_wake_room()
 	_expect(room != null, "The Wake Room loads as a returning player finds it")
 	if room == null:

@@ -12,7 +12,10 @@ const DEFAULT_SPAWN_STEP := 16.0
 const DEFAULT_SPAWN_SEARCH_RADIUS := 224.0
 const DEFAULT_OPEN_DIRECTION_DISTANCE := 32.0
 
-var _opaque_rect_cache: Dictionary = {}
+## Each texture's opaque rect, read once a session: reading a texture back can
+## be a round trip to the GPU (on the web), and the rooms ask again each time
+## they sync their boxes.
+static var _opaque_rects: Dictionary = {}
 
 
 func find_visual_node(root: Node) -> Node2D:
@@ -253,26 +256,58 @@ func _transformed_rect(node: Node2D, local_rect: Rect2) -> Rect2:
 
 
 func _get_texture_opaque_rect(texture: Texture2D) -> Rect2i:
+	return opaque_rect_of_texture(texture)
+
+
+## The rect of `texture`'s pixels whose alpha is over VISIBLE_ALPHA_THRESHOLD
+## (all of it if none is, or if it cannot be read back).
+static func opaque_rect_of_texture(texture: Texture2D) -> Rect2i:
 	var texture_id := texture.get_instance_id()
-	if _opaque_rect_cache.has(texture_id):
-		return _opaque_rect_cache[texture_id] as Rect2i
+	if _opaque_rects.has(texture_id):
+		return _opaque_rects[texture_id] as Rect2i
 	var image := texture.get_image()
 	if image == null or image.is_empty():
 		return Rect2i(0, 0, int(texture.get_width()), int(texture.get_height()))
-	var minimum := image.get_size()
-	var maximum := Vector2i(-1, -1)
-	for y: int in range(image.get_height()):
-		for x: int in range(image.get_width()):
-			if image.get_pixel(x, y).a <= VISIBLE_ALPHA_THRESHOLD:
-				continue
-			minimum.x = mini(minimum.x, x)
-			minimum.y = mini(minimum.y, y)
-			maximum.x = maxi(maximum.x, x)
-			maximum.y = maxi(maximum.y, y)
-	var rect := (
-		Rect2i(0, 0, image.get_width(), image.get_height())
-		if maximum.x < minimum.x or maximum.y < minimum.y
-		else Rect2i(minimum, maximum - minimum + Vector2i.ONE)
-	)
-	_opaque_rect_cache[texture_id] = rect
+	var rect := opaque_rect_of(image, VISIBLE_ALPHA_THRESHOLD)
+	_opaque_rects[texture_id] = rect
 	return rect
+
+
+## The bounds of `image`'s pixels whose alpha is over `threshold`, or the whole
+## image if none is. Those pixels lie inside the native bounds of every pixel
+## with any alpha (get_used_rect), so that is trimmed to the threshold one
+## edge row or column at a time: only the faint edges are read pixel by pixel.
+static func opaque_rect_of(image: Image, threshold: float) -> Rect2i:
+	var whole := Rect2i(Vector2i.ZERO, image.get_size())
+	var used := image.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return whole
+	var left := used.position.x
+	var right := used.end.x - 1
+	var top := used.position.y
+	var bottom := used.end.y - 1
+	while top <= bottom and not _row_shows(image, top, left, right, threshold):
+		top += 1
+	if top > bottom:
+		return whole
+	while not _row_shows(image, bottom, left, right, threshold):
+		bottom -= 1
+	while not _column_shows(image, left, top, bottom, threshold):
+		left += 1
+	while not _column_shows(image, right, top, bottom, threshold):
+		right -= 1
+	return Rect2i(left, top, right - left + 1, bottom - top + 1)
+
+
+static func _row_shows(image: Image, y: int, left: int, right: int, threshold: float) -> bool:
+	for x: int in range(left, right + 1):
+		if image.get_pixel(x, y).a > threshold:
+			return true
+	return false
+
+
+static func _column_shows(image: Image, x: int, top: int, bottom: int, threshold: float) -> bool:
+	for y: int in range(top, bottom + 1):
+		if image.get_pixel(x, y).a > threshold:
+			return true
+	return false

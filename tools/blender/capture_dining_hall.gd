@@ -21,9 +21,12 @@ extends SceneTree
 const HOME_MARKER := "res://.godot/blender-proto-dining"
 const ROOM_NAME := "dining_hall_room"
 const ROOM_SCENE := "res://scenes/floor_1/dining_hall_room.tscn"
-const DATA := "res://prototypes/blender_rooms/dining_hall_room/"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
+## The HD room as the game reads it (tools/blender/publish_hd.py); the shots go
+## under the work folder.
+const DATA := "res://assets/hd/rooms/dining_hall_room/"
+const OUT := "res://prototypes/blender_rooms/dining_hall_room/"
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
 ## dining_hall_room.gd's interaction items by the render's prop ids, and where
 ## the player stands to use each: in reach of its box in both looks, or, where
 ## the HD furniture is a real size and the painted stand is out of its reach,
@@ -106,7 +109,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	await _enter_dining_hall()
 	_expect(room != null, "The Dining Hall loads as a returning player finds it")
 	if room == null:

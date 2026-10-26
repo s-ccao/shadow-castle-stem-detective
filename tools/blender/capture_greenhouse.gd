@@ -25,10 +25,13 @@ extends SceneTree
 const HOME_MARKER := "res://.godot/blender-proto-capture"
 const ROOM_NAME := "greenhouse_room"
 const ROOM_SCENE := "res://scenes/floor_1/greenhouse_room.tscn"
-const DATA := "res://prototypes/blender_rooms/greenhouse_room/"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
-const Depth := preload("res://tools/blender/prototype_depth.gd")
+## The HD room as the game reads it (tools/blender/publish_hd.py); the shots go
+## under the work folder.
+const DATA := "res://assets/hd/rooms/greenhouse_room/"
+const OUT := "res://prototypes/blender_rooms/greenhouse_room/"
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
+const Depth := preload("res://scripts/hd/hd_depth.gd")
 ## greenhouse_room.gd's interaction items by the render's prop ids, and where
 ## the player stands to use each: in reach of its box, out of reach of every
 ## herb plot (which the room offers first) and of the items listed before it.
@@ -89,7 +92,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	await _enter_greenhouse()
 	_expect(room != null, "The Greenhouse loads as a returning player finds it")
 	if room == null:
@@ -435,8 +438,11 @@ func _npc_checks(npc: Node2D) -> void:
 	)
 	var facing := String(sprite.animation).trim_prefix("idle_").trim_prefix("walk_")
 	var row := int((sheet["rows"] as Dictionary).get(str(Characters.NPC_FACINGS.get(facing, "")), -1))
+	# A banded sheet (the idles) runs each facing's frames across its bands.
+	var shown: Dictionary = (sheet["gaits"] as Dictionary).get(look.characters.gait_of(sprite), {})
+	var per_facing := int(shown.get("frames", figure.hframes))
 	_expect(
-		row >= 0 and figure.frame / figure.hframes == row,
+		row >= 0 and figure.frame / per_facing == row,
 		"%s faces as the game turns it (%s, row %d)" % [npc.name, sprite.animation, row]
 	)
 

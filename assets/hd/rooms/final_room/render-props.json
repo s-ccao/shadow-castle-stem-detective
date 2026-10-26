@@ -1,0 +1,60 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "props": [
+  {
+   "id": "VaultDoorVisual",
+   "root": "VaultDoorVisual",
+   "image": "render-prop-VaultDoorVisual.webp",
+   "rect": [
+    652.0,
+    35.0,
+    146.0,
+    177.0
+   ]
+  },
+  {
+   "id": "FinalAnalysisBoardVisual",
+   "root": "FinalAnalysisBoardVisual",
+   "image": "render-prop-FinalAnalysisBoardVisual.webp",
+   "rect": [
+    562.5,
+    370.0,
+    325.0,
+    296.5
+   ]
+  },
+  {
+   "id": "KnowledgeEngineVisual",
+   "root": "KnowledgeEngineVisual",
+   "image": "render-prop-KnowledgeEngineVisual.webp",
+   "rect": [
+    963.0,
+    236.0,
+    250.0,
+    314.0
+   ]
+  },
+  {
+   "id": "NotebookVisual",
+   "root": "NotebookVisual",
+   "image": "render-prop-NotebookVisual.webp",
+   "rect": [
+    290.0,
+    638.0,
+    41.0,
+    36.0
+   ]
+  },
+  {
+   "id": "MrsLinBody",
+   "root": "MrsLinBody",
+   "image": "render-prop-MrsLinBody.webp",
+   "rect": [
+    268.5,
+    539.0,
+    155.0,
+    88.5
+   ]
+  }
+ ]
+}

@@ -4,9 +4,25 @@
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
-## Latest actual-project update (2026-10-23)
+## Latest actual-project update (2026-10-25)
 
-- **Blender HD rooms (not shipped):** every room is being rebuilt in Blender the Hall's way, one per stage, before the HD art moves into the game. The Wake Room is the first (stage 52):
+- **The HD look is in the game and on the website** (stage 68). The game now draws, itself:
+  - every Blender room;
+  - the Tripo detective, Guardian and cast;
+  - the HD portraits and maps.
+
+  play.shadowcastledetective.com runs this build.
+  - **Unchanged:** movement, collisions, prompts, saves and the story are the painted game's; only what is drawn changed.
+  - **Painted art:** it stays in the repository. 42 old images nothing uses are left out of the web download, to keep it under the host's 100 MB file limit.
+  - **Old caches:** a browser holding the old version shows "A new game update is ready" and a Restart now button.
+  - **Known issues:**
+    - an intermittent hang in one developer-mode route-recording test with HD on;
+    - two overlapping item boxes in the HD Library.
+  - Not yet committed. See the [stage report](AGENT_STAGE_REPORT.md).
+
+## Earlier actual-project update (2026-10-23)
+
+- **Blender HD rooms (in the game since stage 68):** every room is being rebuilt in Blender the Hall's way, one per stage, before the HD art moves into the game. The Wake Room is the first (stage 52):
   - **What it is:** the painted guest chamber rebuilt in 3D on the room's real collision and lit by its own candles, so movement, prompts and the story stay exactly as they are.
   - **Window:** moonlight falls through the arched leaded window in a pool across the floor.
   - **Furniture:**
@@ -121,7 +137,7 @@
 - **Props:** all nine Hall props are crisp 1.25px/texel pixel art with contact shadows and true proportions.
 - **Next step:** the 2D wall redraw is paused in favour of a Blender HD Hall prototype.
 - **Evidence:** see the latest [stage report](AGENT_STAGE_REPORT.md) and [comparisons](evidence/2026-10-21-hall-visual/).
-- **Published:** the game is live at https://play.shadowcastledetective.com. Redeployed 2026-10-25 (stage 65) with the game's own fixes through stage 63; the live package matches the local export byte for byte. The HD rooms, figures, portraits and maps are not in it yet: they reach the website when they move into the game.
+- **Published:** the game is live at https://play.shadowcastledetective.com. Redeployed 2026-10-25 (stage 68) with the HD rooms, figures, portraits and maps; the live package matches the local export byte for byte. Stage 65's painted build remains the rollback target.
 
 ## Previous actual-project update (2026-10-18)
 

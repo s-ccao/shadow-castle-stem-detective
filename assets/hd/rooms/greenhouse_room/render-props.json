@@ -1,0 +1,62 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "props": [
+  {
+   "id": "MagicPlanter",
+   "root": "Worldsort/MagicPlanter",
+   "image": "render-prop-MagicPlanter.webp",
+   "rect": [
+    323.0,
+    335.0,
+    380.0,
+    441.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "Workbench",
+   "root": "Worldsort/Workbench",
+   "image": "render-prop-Workbench.webp",
+   "rect": [
+    379.5,
+    886.0,
+    267.0,
+    183.5
+   ]
+  },
+  {
+   "id": "PlantPotsA",
+   "root": "Worldsort/PlantPotsA",
+   "image": "render-prop-PlantPotsA.webp",
+   "rect": [
+    86.5,
+    1126.5,
+    202.5,
+    222.0
+   ]
+  },
+  {
+   "id": "PlantPotsB",
+   "root": "Worldsort/PlantPotsB",
+   "image": "render-prop-PlantPotsB.webp",
+   "rect": [
+    709.0,
+    1130.5,
+    210.5,
+    220.5
+   ]
+  },
+  {
+   "id": "ArchDoor",
+   "root": "Worldsort/ArchDoor",
+   "image": "render-prop-ArchDoor.webp",
+   "rect": [
+    405.5,
+    1320.0,
+    213.0,
+    198.0
+   ],
+   "in_room": true
+  }
+ ]
+}

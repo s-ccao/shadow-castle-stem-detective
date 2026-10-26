@@ -20,12 +20,15 @@ extends SceneTree
 ## Writes prototypes/blender_chars/portraits/captures/{current,blender}/.
 
 const HOME_MARKER := "res://.godot/blender-proto-capture"
-const DATA := "res://prototypes/blender_chars/portraits/"
-const CHARACTER_DATA := "res://prototypes/blender_chars/"
+## The HD portraits and figures as the game reads them; the shots go under the
+## work folder.
+const DATA := "res://assets/hd/portraits/"
+const CHARACTER_DATA := "res://assets/hd/characters/"
+const OUT := "res://prototypes/blender_chars/portraits/"
 const GAME := "res://assets/characters/portraits_pixel_v2/"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
-const Portraits := preload("res://tools/blender/prototype_portraits.gd")
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
+const Portraits := preload("res://scripts/hd/hd_portraits.gd")
 const KEYS: Array[String] = [
 	"wake_room_key", "chemistry_room_key", "greenhouse_room_key", "dining_hall_key",
 ]
@@ -107,7 +110,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	_index_checks()
 	for entry: Dictionary in SCENES:
 		await _scene_checks(entry)
@@ -176,7 +179,7 @@ func _speaker_checks(label: String, box: TextureRect, speaker: Dictionary) -> vo
 	await _wait(0.4)
 	_expect(
 		box.is_visible_in_tree() and box.texture != null and box.texture.resource_path == path
-		and not (box.texture is ImageTexture) and box.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
+		and box.texture != hd and box.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
 		"%s: %s speaks with the game's own pixel portrait, nearest-filtered" % [label, who]
 	)
 	var painted := await _shot("current", file)
@@ -202,7 +205,7 @@ func _speaker_checks(label: String, box: TextureRect, speaker: Dictionary) -> vo
 	look.call("restore")
 	await _wait(0.3)
 	_expect(
-		box.texture != null and box.texture.resource_path == path and not (box.texture is ImageTexture)
+		box.texture != null and box.texture.resource_path == path and box.texture != hd
 		and box.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST and load(path) != hd,
 		"%s: restoring gives %s's pixel portrait and its filter back" % [label, who]
 	)

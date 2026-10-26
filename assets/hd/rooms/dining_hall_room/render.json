@@ -1,0 +1,380 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "room": "dining_hall_room",
+ "region": [
+  0,
+  0,
+  1448,
+  1086
+ ],
+ "render_scale": 2.0,
+ "image": "render.webp",
+ "figure_scale": 1.0,
+ "collision": {
+  "RoomCollisions/HDFireside": [
+   [
+    62.0,
+    400.0
+   ],
+   [
+    286.0,
+    400.0
+   ],
+   [
+    286.0,
+    497.0
+   ],
+   [
+    62.0,
+    497.0
+   ]
+  ],
+  "RoomCollisions/HDTrophy": [
+   [
+    1286.0,
+    414.0
+   ],
+   [
+    1374.0,
+    414.0
+   ],
+   [
+    1374.0,
+    458.0
+   ],
+   [
+    1286.0,
+    458.0
+   ]
+  ],
+  "RoomCollisions/HDChest": [
+   [
+    107.0,
+    928.0
+   ],
+   [
+    209.0,
+    928.0
+   ],
+   [
+    209.0,
+    972.0
+   ],
+   [
+    107.0,
+    972.0
+   ]
+  ],
+  "RoomCollisions/HDCasks": [
+   [
+    1071.0,
+    915.0
+   ],
+   [
+    1227.0,
+    915.0
+   ],
+   [
+    1227.0,
+    977.0
+   ],
+   [
+    1071.0,
+    977.0
+   ]
+  ],
+  "RoomCollisions/HDWindowBench0": [
+   [
+    451.0,
+    259.0
+   ],
+   [
+    553.0,
+    259.0
+   ],
+   [
+    553.0,
+    292.0
+   ],
+   [
+    451.0,
+    292.0
+   ]
+  ],
+  "RoomCollisions/HDWindowBench1": [
+   [
+    894.0,
+    259.0
+   ],
+   [
+    996.0,
+    259.0
+   ],
+   [
+    996.0,
+    292.0
+   ],
+   [
+    894.0,
+    292.0
+   ]
+  ],
+  "RoomCollisions/HDCandelabrum0": [
+   [
+    589.0,
+    887.0
+   ],
+   [
+    623.0,
+    887.0
+   ],
+   [
+    623.0,
+    913.0
+   ],
+   [
+    589.0,
+    913.0
+   ]
+  ],
+  "RoomCollisions/HDCandelabrum1": [
+   [
+    825.0,
+    887.0
+   ],
+   [
+    859.0,
+    887.0
+   ],
+   [
+    859.0,
+    913.0
+   ],
+   [
+    825.0,
+    913.0
+   ]
+  ],
+  "Worldsort/DiningTable/FurnitureCollision/FurnitureShape": [
+   [
+    433.70000000000005,
+    495.29999999999995
+   ],
+   [
+    948.7,
+    495.29999999999995
+   ],
+   [
+    948.7,
+    678.3
+   ],
+   [
+    433.70000000000005,
+    678.3
+   ]
+  ],
+  "Worldsort/GrandfatherClock/FurnitureCollision/FurnitureShape": [
+   [
+    918.2,
+    567.2
+   ],
+   [
+    971.8,
+    567.2
+   ],
+   [
+    971.8,
+    590.0
+   ],
+   [
+    918.2,
+    590.0
+   ]
+  ],
+  "Worldsort/Sideboard/FurnitureCollision/FurnitureShape": [
+   [
+    1338.0,
+    725.0
+   ],
+   [
+    1405.0,
+    725.0
+   ],
+   [
+    1405.0,
+    902.0
+   ],
+   [
+    1338.0,
+    902.0
+   ]
+  ],
+  "Worldsort/Sideboard/FurnitureCollision/HDOpenDrawer": [
+   [
+    1306.0,
+    788.0
+   ],
+   [
+    1342.0,
+    788.0
+   ],
+   [
+    1342.0,
+    839.0
+   ],
+   [
+    1306.0,
+    839.0
+   ]
+  ],
+  "RoomCollisions/RightWall": [
+   [
+    1398.0,
+    20.0
+   ],
+   [
+    1389.0,
+    206.0
+   ],
+   [
+    1300.0,
+    205.0
+   ],
+   [
+    1300.0,
+    298.0
+   ],
+   [
+    1394.0,
+    300.0
+   ],
+   [
+    1394.0,
+    356.0
+   ],
+   [
+    1418.0,
+    640.0
+   ],
+   [
+    1417.0,
+    980.0
+   ],
+   [
+    1417.0,
+    1000.0
+   ],
+   [
+    1436.0,
+    997.0
+   ],
+   [
+    1434.0,
+    225.0
+   ],
+   [
+    1418.0,
+    10.0
+   ]
+  ]
+ },
+ "depth": "render-depth.png",
+ "props": [
+  {
+   "id": "Fireplace",
+   "root": "Worldsort/Fireplace",
+   "image": "render-prop-Fireplace.webp",
+   "rect": [
+    66.0,
+    0.0,
+    216.0,
+    357.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "WallDoor",
+   "root": "Worldsort/WallDoor",
+   "image": "render-prop-WallDoor.webp",
+   "rect": [
+    1162.5,
+    118.0,
+    126.0,
+    158.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "DiningTable",
+   "root": "Worldsort/DiningTable",
+   "image": "render-prop-DiningTable.webp",
+   "rect": [
+    435.5,
+    468.5,
+    511.0,
+    205.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "ChandelierSprite",
+   "root": "ChandelierSprite",
+   "image": "render-prop-ChandelierSprite.webp",
+   "rect": [
+    649.5,
+    0.0,
+    151.0,
+    303.0
+   ],
+   "overhead": true
+  },
+  {
+   "id": "GrandfatherClock",
+   "root": "Worldsort/GrandfatherClock",
+   "image": "render-prop-GrandfatherClock.webp",
+   "rect": [
+    1344.5,
+    443.5,
+    51.0,
+    145.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "Sideboard",
+   "root": "Worldsort/Sideboard",
+   "image": "render-prop-Sideboard.webp",
+   "rect": [
+    1305.5,
+    655.0,
+    99.5,
+    242.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "Cabinet",
+   "root": "Worldsort/Cabinet",
+   "image": "render-prop-Cabinet.webp",
+   "rect": [
+    55.5,
+    564.5,
+    160.5,
+    331.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "MainDoor",
+   "root": "Worldsort/MainDoor",
+   "image": "render-prop-MainDoor.webp",
+   "rect": [
+    654.0,
+    943.0,
+    140.0,
+    143.0
+   ],
+   "in_room": true
+  }
+ ]
+}

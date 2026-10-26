@@ -1,0 +1,60 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "room": "wake_room",
+ "region": [
+  0,
+  0,
+  1024,
+  768
+ ],
+ "render_scale": 2.0,
+ "image": "render.webp",
+ "figure_scale": 1.0,
+ "depth": "render-depth.png",
+ "props": [
+  {
+   "id": "Bed",
+   "root": "Props/Bed",
+   "image": "render-prop-Bed.webp",
+   "rect": [
+    129.5,
+    232.0,
+    120.5,
+    334.5
+   ]
+  },
+  {
+   "id": "Bookshelf",
+   "root": "Props/Bookshelf",
+   "image": "render-prop-Bookshelf.webp",
+   "rect": [
+    236.0,
+    56.5,
+    173.5,
+    214.5
+   ]
+  },
+  {
+   "id": "Desk",
+   "root": "Props/Desk",
+   "image": "render-prop-Desk.webp",
+   "rect": [
+    594.0,
+    162.5,
+    222.0,
+    147.0
+   ]
+  },
+  {
+   "id": "Door",
+   "root": "Props/Door",
+   "image": "render-prop-Door.webp",
+   "rect": [
+    851.0,
+    248.0,
+    104.0,
+    267.5
+   ]
+  }
+ ]
+}

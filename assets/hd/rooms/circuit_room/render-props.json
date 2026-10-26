@@ -1,0 +1,38 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "props": [
+  {
+   "id": "Cabinet",
+   "root": "Worldsort/Cabinet",
+   "image": "render-prop-Cabinet.webp",
+   "rect": [
+    98.0,
+    393.0,
+    197.5,
+    257.5
+   ]
+  },
+  {
+   "id": "Workbench",
+   "root": "Worldsort/Workbench",
+   "image": "render-prop-Workbench.webp",
+   "rect": [
+    446.0,
+    439.5,
+    382.0,
+    301.0
+   ]
+  },
+  {
+   "id": "Generator",
+   "root": "Worldsort/Generator",
+   "image": "render-prop-Generator.webp",
+   "rect": [
+    935.5,
+    375.5,
+    397.0,
+    436.5
+   ]
+  }
+ ]
+}

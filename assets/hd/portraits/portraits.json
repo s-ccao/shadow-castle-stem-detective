@@ -1,0 +1,73 @@
+{
+ "generator": "tools/blender/portrait_prototype.py",
+ "size": 224,
+ "lens": 85.0,
+ "pitch": 5.0,
+ "portraits": {
+  "res://assets/characters/portraits_pixel_v2/butler.png": {
+   "image": "butler.webp",
+   "character": "butler",
+   "turn": 16.0,
+   "head": 11.0,
+   "tilt": 0.0,
+   "framing": {
+    "crown": 0.05,
+    "chin": 0.57,
+    "head_width": 0.4622,
+    "distance": 1.3258
+   }
+  },
+  "res://assets/characters/portraits_pixel_v2/gardener.png": {
+   "image": "gardener.webp",
+   "character": "gardener",
+   "turn": 18.0,
+   "head": 12.0,
+   "tilt": -4.0,
+   "framing": {
+    "crown": 0.05,
+    "chin": 0.57,
+    "head_width": 0.6013,
+    "distance": 1.6088
+   }
+  },
+  "res://assets/characters/portraits_pixel_v2/mechanic.png": {
+   "image": "mechanic.webp",
+   "character": "mechanic",
+   "turn": 14.0,
+   "head": 8.0,
+   "tilt": 3.0,
+   "framing": {
+    "crown": 0.05,
+    "chin": 0.57,
+    "head_width": 0.5962,
+    "distance": 1.685
+   }
+  },
+  "res://assets/characters/portraits_pixel_v2/dr_lin.png": {
+   "image": "dr_lin.webp",
+   "character": "dr_lin",
+   "turn": 18.0,
+   "head": 12.0,
+   "tilt": -3.0,
+   "framing": {
+    "crown": 0.05,
+    "chin": 0.53,
+    "head_width": 0.6605,
+    "distance": 1.5525
+   }
+  },
+  "res://assets/characters/portraits_pixel_v2/castle_guardian.png": {
+   "image": "castle_guardian.webp",
+   "character": "guardian",
+   "turn": 14.0,
+   "head": 6.0,
+   "tilt": 0.0,
+   "framing": {
+    "crown": 0.05,
+    "chin": 0.36,
+    "head_width": 0.4115,
+    "distance": 0.8947
+   }
+  }
+ }
+}

@@ -32,6 +32,23 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
 
 ## Recent completed work
 
+### The HD look in the game (2026-10-25, stage 68)
+
+- **The game now draws the Blender rooms and Tripo figures itself**, and the website runs them. The `HDLook` autoload (`scripts/hd/hd_look.gd`, last in `project.godot`) stages the Hall and every room as its scene loads, and makes the dialogue portraits and the Map Hub's maps HD.
+  - A `--script` run (tests, captures, audits) keeps the painted game unless it passes `-- --hd` or calls `HDLook.enable()`. `tools/blender/play_prototype.gd` now only does that and jumps to a room.
+  - The painted scenes, collisions, prop boxes and story are unchanged underneath. The HD look only replaces what is drawn.
+- **Where things moved:** `tools/blender/prototype_<x>.gd` is now `scripts/hd/hd_<x>.gd` for room, props, depth, glows, doors, characters and library; `prototype_map.gd` is `hd_maps.gd` and `prototype_portraits.gd` is `hd_portraits.gd`. The rest of this file still uses the old names in its stage history.
+  - New: `scripts/hd/hd_data.gd` holds the paths and loads every image as an imported texture, which works on the web; `scripts/hd/hd_hall.gd` holds the Hall's staging, taken out of `play_prototype.gd`.
+- **Data:** the game reads `assets/hd/` (hall, rooms, characters, portraits, maps). `prototypes/` is still where Blender and Tripo write and stays gitignored.
+  - After any render, run `python3 tools/blender/publish_hd.py`, then the headless editor import, so `assets/hd/` and its `.import` files catch up.
+  - It writes colour images as WebP (imported lossy 0.85), depth maps as lossless PNG, 18-column bands for the idle sheets, 224 px portraits and the composited Circuit repair map. It also rewrites the JSON's image names and prunes what it no longer publishes.
+- **Captures and audits** read `assets/hd/` and still write their shots under `prototypes/`.
+- **Test:** `tests/hd_look_test.gd` (35 checks) covers the dormant mode, every look's staging and its release.
+- **Open:**
+  - with `--hd`, `hall_route_authoring_test` hangs in 2 of 6 runs (bisected to the depth pass);
+  - the HD Library's `recipe_vision_scroll` box covers part of `lower_storage`'s approach area (`library_knowledge_access_test`, `interaction_stops_walk_test`).
+  - See UX-20261021-68 in `docs/AGENT_STAGE_REPORT.md`.
+
 ### Hall route, footprints and props (2026-10-21)
 
 - **Route planning:** `scripts/hall_route_planner.gd` (`HallRoutePlanner`) plans the tutorial trail on the Guardian's own 16px collision lattice (`build_navigation_lattice()`), so it needs no collision queries of its own.
@@ -263,6 +280,12 @@ Manual acceptance flow:
 
 ## Next priorities
 
+0. **After stage 68 (HD in the game, live, not yet committed):**
+   - fix the depth-pass hang;
+   - fix the HD Library's overlapping boxes;
+   - measure the web frame rate on a visible tab;
+   - commit, so `main` matches the website.
+
 1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -51 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their gaits (idle, walk, run) and `36-tripo-characters.png` where each came from.
    - **Characters** (stages 48–50): the detective and the Castle Guardian are Tripo models (stage 49; stage 48's primitive models looked like wooden puppets to the user). Each is a rigged GLB in `prototypes/blender_chars/source/` holding Tripo's preset clips (`<character>_anims.glb`).
      - `sources.json` there records the pipeline, the prompts, the Tripo task ids and the clips: Studio Generate Image from the pixel sprite → Generate Model (HD, H3.1) → Auto Rig (Mixamo) → preset clips (free to retarget) → GLB export in place.
@@ -488,8 +511,14 @@ Manual acceptance flow:
 
 ## Version publication
 
-- **The website** (stage 65): play.shadowcastledetective.com is the Vercel project `shadow-castle-detective-play`, uploaded from `web/game` by `npx vercel --prod` after a local export (`web/README.md`). Pushing to `main` deploys nothing. Live since 2026-10-25: the game through stage 63's fixes (`shadow-castle-detective-play-znzqamw4e-cyc4.vercel.app`, `index.pck` SHA-256 `71a2a45b…`, service-worker cache `1792958880|6394217`); rollback target `shadow-castle-detective-play-ick3tv2wl-cyc4.vercel.app`. Every HD room, figure, portrait and map is still preview only.
+- **The website** (stage 65; redeployed in stage 68): play.shadowcastledetective.com is the Vercel project `shadow-castle-detective-play`, uploaded from `web/game` by `npx vercel --prod` after a local export (`web/README.md`). Pushing to `main` deploys nothing.
+  - **Live since 2026-10-25 (stage 68):** the game with the HD look, `shadow-castle-detective-play-j3y5kdxda-cyc4.vercel.app`. Its `index.pck` is 92,336,552 B, SHA-256 `39b6a826…`, service-worker cache `1792996368|4961264`.
+  - **Rollback target:** `shadow-castle-detective-play-znzqamw4e-cyc4.vercel.app`, stage 65's painted build (`71a2a45b…`).
   - The Web preset excludes `prototypes/*` (stage 65): Godot imports the preview's rooms and characters (about 755 MB), and an export without the exclusion packs them.
+  - **Vercel refuses any file over 100 MB** (stage 68). The HD look adds about 17 MB, so the preset's `exclude_filter` also lists 42 old images that no shipped script, scene or data names. They stay in the repository.
+    - Check `index.pck`'s size after every export.
+    - If it nears 100 MB, look for more unnamed files before lowering `publish_hd.py`'s WebP quality.
+    - Before excluding a file, search for its path, its file name and its uid.
   - Before deploying: compare the new pack's directory with the live one (only the changed scripts should differ), run the headless suites under isolated HOMEs (most suites have no HOME guard and would write the player's real saves), and play the changed flows in a browser on a local server. After: every live ETag equals the local MD5, the live pack's SHA-256 matches, and the service worker's cache version changed.
 - `docs/DEVELOPMENT_HISTORY.md` preserves the committed milestones plus thirteen unpublished local stages, `UX-20260814-03` through `UX-20260814-15`.
 - The latest stage is the shared archive atmosphere, room light rigs and the postgame Case Archive; evidence is under `docs/evidence/2026-08-14-ui-redesign/release-visual-overhaul/`, `docs/evidence/2026-08-14-hub-room-polish/`, `docs/evidence/2026-08-14-library-light-challenges/`, `docs/evidence/2026-08-15-room-spatial/` and `docs/evidence/2026-08-14-power-blackout/`.

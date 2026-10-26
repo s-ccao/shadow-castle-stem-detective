@@ -23,9 +23,12 @@ extends SceneTree
 const HOME_MARKER := "res://.godot/blender-proto-capture"
 const ROOM_NAME := "circuit_room"
 const ROOM_SCENE := "res://scenes/floor_1/circuit_room.tscn"
-const DATA := "res://prototypes/blender_rooms/circuit_room/"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
+## The HD room as the game reads it (tools/blender/publish_hd.py); the shots go
+## under the work folder.
+const DATA := "res://assets/hd/rooms/circuit_room/"
+const OUT := "res://prototypes/blender_rooms/circuit_room/"
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
 ## The props circuit_room.gd lists, by its item name and the node it reads.
 const PROPS: Dictionary = {"workbench": "Workbench", "generator": "Generator", "cabinet": "Cabinet"}
 const PROP_SHOTS: Dictionary = {
@@ -77,7 +80,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	out_dir = ProjectSettings.globalize_path(DATA + "captures/")
+	out_dir = ProjectSettings.globalize_path(OUT + "captures/")
 	await _enter_circuit_room()
 	_expect(room != null, "The Circuit Room loads with its junction plates surveyed")
 	if room == null:

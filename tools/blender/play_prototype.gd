@@ -1,18 +1,11 @@
 extends SceneTree
 
-## Playable preview of the Blender Hall prototype. Runs the real game (title
-## screen, saves, every room) and lays the prototype render over the Hall
-## region it covers whenever the Hall loads. Visual only, but for the HD props
-## and doors: each prop is staged on its stand in the HD Hall, its node moved
-## with it so its prompt and focus box follow; each door opens ajar for a
-## player at it, swings open on E, or rattles if locked, before the game's own
-## handler runs. The detective and the Guardian walk in their HD sheets from
-## prototypes/blender_chars/. Collision, fog, the route, the Guardian's
-## behaviour and saves are the game's own. Rooms rebuilt in Blender
-## (tools/blender/room_prototype.py) show in HD whenever they load, through
-## tools/blender/prototype_room.gd: so far the Wake Room, the Greenhouse, the
-## Chemistry Room, the Library, the Dining Hall, the Circuit Room and the
-## Final Room.
+## Plays the game with its HD look, starting where a flag says. The HD look is
+## the game's own (scripts/hd/hd_look.gd, the HDLook autoload: the Hall and
+## every room rebuilt in Blender, published under assets/hd/ by
+## tools/blender/publish_hd.py); a --script run such as this one keeps the
+## painted game unless it turns the look on, which this does. Use it to play a
+## room straight away after publishing a render.
 ##
 ##   HOME="$PWD/.godot/blender-proto-play/home" godot --path . \
 ##     --script res://tools/blender/play_prototype.gd \
@@ -26,36 +19,18 @@ extends SceneTree
 ## --library the Library. --library-ready opens it with its three light tests
 ## passed, so seating the three filters at the optical array awakens it.
 ## --dining opens the Dining Hall at its door, --circuit the Circuit Room, and
-## --final the Final Room.
+## --final the Final Room. Without a flag it starts at the title screen.
 
-const DATA := "res://prototypes/blender_hall/"
-const CHARACTER_DATA := "res://prototypes/blender_chars/"
-const RENDER_SCALE := 2.0
-const HALL_SCENE := "res://scenes/game_world.tscn"
 const GREENHOUSE_SCENE := "res://scenes/floor_1/greenhouse_room.tscn"
 const CHEMISTRY_SCENE := "res://scenes/floor_1/chemistry_room.tscn"
 const LIBRARY_SCENE := "res://scenes/floor_1/library_room.tscn"
 const DINING_SCENE := "res://scenes/floor_1/dining_hall_room.tscn"
 const CIRCUIT_SCENE := "res://scenes/floor_1/circuit_room.tscn"
 const FINAL_SCENE := "res://scenes/floor_1/final_room.tscn"
-const OVERLAY_NAME := "BlenderPrototypeOverlay"
-const Glows := preload("res://tools/blender/prototype_glows.gd")
-const Props := preload("res://tools/blender/prototype_props.gd")
-const Depth := preload("res://tools/blender/prototype_depth.gd")
-const Doors := preload("res://tools/blender/prototype_doors.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
-const Room := preload("res://tools/blender/prototype_room.gd")
-
-var glows: Glows
-var props: Props
-var depth: Depth
-var doors: Doors
-var characters: Characters
-var room_look: Room
 
 
 func _initialize() -> void:
-	node_added.connect(_on_node_added)
+	root.get_node("HDLook").call("enable")
 	if "--hall" in OS.get_cmdline_user_args():
 		call_deferred("_enter_hall_from_wake_room")
 	elif "--greenhouse" in OS.get_cmdline_user_args():
@@ -74,97 +49,6 @@ func _initialize() -> void:
 		change_scene_to_file.call_deferred(FINAL_SCENE)
 	else:
 		change_scene_to_file(str(ProjectSettings.get_setting("application/run/main_scene")))
-
-
-func _on_node_added(node: Node) -> void:
-	if node.scene_file_path == HALL_SCENE:
-		_add_overlay.call_deferred(node)
-	elif not Room.room_for(node.scene_file_path).is_empty():
-		_add_room.call_deferred(node, Room.room_for(node.scene_file_path))
-
-
-## Stages a room's HD look once its script has read its props.
-func _add_room(room: Node, room_name: String) -> void:
-	if not is_instance_valid(room) or room.has_node(Room.OVERLAY_NAME):
-		return
-	var look := Room.new()
-	if not look.attach(room, room_name):
-		return
-	look.apply()
-	room_look = look
-	print("BLENDER_PROTOTYPE_ROOM " + look.summary())
-
-
-func _add_overlay(hall: Node) -> void:
-	if not is_instance_valid(hall) or hall.has_node(OVERLAY_NAME):
-		return
-	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(DATA + "region.json"))
-	var image := Image.load_from_file(ProjectSettings.globalize_path(DATA + "render.png"))
-	if not (meta is Dictionary) or image == null:
-		push_warning("Blender prototype render or region.json is missing under " + DATA)
-		return
-	var region: Array = (meta as Dictionary)["region"]
-	var sprite := Sprite2D.new()
-	sprite.name = OVERLAY_NAME
-	sprite.texture = ImageTexture.create_from_image(image)
-	sprite.centered = false
-	sprite.position = Vector2(float(region[0]), float(region[1]))
-	sprite.scale = Vector2.ONE / RENDER_SCALE
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	# Above the old floor (-100) and walls (-50); below exhibits, props, the
-	# player, the footprint trail and the fog.
-	sprite.z_index = -40
-	hall.add_child(sprite)
-	glows = Glows.new()
-	var halos := glows.attach(sprite, DATA + "render-glows.json", sprite.position, RENDER_SCALE)
-	props = Props.new()
-	var swapped := props.attach(hall, DATA + "render-props.json", DATA, RENDER_SCALE)
-	props.apply()
-	doors = Doors.new()
-	var door_count := doors.attach(hall, DATA + "render-doors.json", DATA, RENDER_SCALE)
-	hall.add_child(doors)
-	doors.apply()
-	depth = Depth.new()
-	var has_depth := depth.attach(hall, DATA + "render-depth.png", region)
-	var depth_props := 0
-	if has_depth:
-		for item: Dictionary in props.standing():
-			depth.add_fixed(item["sprite"], item["feet"])
-		depth_props = depth.add_props((meta as Dictionary).get("props", {}))
-		depth.apply()
-	characters = Characters.new()
-	var character_sheets := characters.attach(hall, CHARACTER_DATA)
-	characters.apply()
-	print(
-		(
-			"BLENDER_PROTOTYPE_OVERLAY region %s, %d glows, %d HD props, %d doors, depth %s (%d props), "
-			+ "%d HD character sheets (%d figures)"
-		)
-		% [
-			region, halos, swapped, door_count, has_depth, depth_props,
-			character_sheets, characters.staged(),
-		]
-	)
-
-
-func _physics_process(delta: float) -> bool:
-	if characters != null:
-		characters.track(delta)
-	if room_look != null:
-		room_look.track(delta)
-	return false
-
-
-func _process(delta: float) -> bool:
-	if glows != null:
-		glows.advance(delta)
-	if depth != null:
-		depth.advance(delta)
-	if characters != null:
-		characters.advance(delta)
-	if room_look != null:
-		room_look.advance(delta)
-	return false
 
 
 func _enter_hall_from_wake_room() -> void:

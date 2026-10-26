@@ -37,7 +37,6 @@ var interaction_focus: WorldInteractionFocus
 var interaction_hint_panel: Panel
 var interact_label: Label
 var prop_collision_bodies: Dictionary = {}
-var _texture_opaque_rect_cache: Dictionary = {}
 var spatial := RoomSpatialRuntime.new()
 var _feedback_text := ""
 var _prompt_position := Vector2.ZERO
@@ -350,30 +349,7 @@ func _get_prop_visual_anchor(prop: Node2D) -> Vector2:
 
 
 func _get_texture_opaque_rect(texture: Texture2D) -> Rect2i:
-	var texture_id := texture.get_instance_id()
-	if _texture_opaque_rect_cache.has(texture_id):
-		return _texture_opaque_rect_cache[texture_id] as Rect2i
-	var image := texture.get_image()
-	if image == null:
-		return Rect2i(0, 0, int(texture.get_width()), int(texture.get_height()))
-	var min_x := image.get_width()
-	var min_y := image.get_height()
-	var max_x := -1
-	var max_y := -1
-	for y: int in range(image.get_height()):
-		for x: int in range(image.get_width()):
-			if image.get_pixel(x, y).a > 0.05:
-				min_x = mini(min_x, x)
-				min_y = mini(min_y, y)
-				max_x = maxi(max_x, x)
-				max_y = maxi(max_y, y)
-	var opaque_rect: Rect2i
-	if max_x < min_x or max_y < min_y:
-		opaque_rect = Rect2i(0, 0, image.get_width(), image.get_height())
-	else:
-		opaque_rect = Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
-	_texture_opaque_rect_cache[texture_id] = opaque_rect
-	return opaque_rect
+	return RoomSpatialRuntime.opaque_rect_of_texture(texture)
 
 
 func _get_item_focus_position(item: Dictionary) -> Vector2:

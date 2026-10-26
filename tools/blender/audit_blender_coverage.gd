@@ -24,15 +24,19 @@ extends SceneTree
 ## drawn).
 
 const HOME_MARKER := "res://.godot/blender-proto-capture"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Glows := preload("res://tools/blender/prototype_glows.gd")
-const Props := preload("res://tools/blender/prototype_props.gd")
-const Depth := preload("res://tools/blender/prototype_depth.gd")
-const Doors := preload("res://tools/blender/prototype_doors.gd")
-const Characters := preload("res://tools/blender/prototype_characters.gd")
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Glows := preload("res://scripts/hd/hd_glows.gd")
+const Props := preload("res://scripts/hd/hd_props.gd")
+const Depth := preload("res://scripts/hd/hd_depth.gd")
+const Doors := preload("res://scripts/hd/hd_doors.gd")
+const Characters := preload("res://scripts/hd/hd_characters.gd")
+## Each area's work folder (its audit goes there), and the HD Hall and figures as
+## the game reads them.
 const ROOM_DATA := "res://prototypes/blender_rooms/"
-const HALL_DATA := "res://prototypes/blender_hall/"
-const CHARACTER_DATA := "res://prototypes/blender_chars/"
+const HALL_WORK := "res://prototypes/blender_hall/"
+const HALL_DATA := "res://assets/hd/hall/"
+const CHARACTER_DATA := "res://assets/hd/characters/"
+const HDData := preload("res://scripts/hd/hd_data.gd")
 const RENDER_SCALE := 2.0
 ## The HD render's z; the painted room lies below it.
 const OVERLAY_Z := -40
@@ -113,7 +117,7 @@ func _run() -> void:
 		printerr("audit_blender_coverage: unknown --room=" + room_name)
 		quit(2)
 		return
-	data_dir = HALL_DATA if room_name == "hall" else ROOM_DATA + room_name + "/"
+	data_dir = HALL_WORK if room_name == "hall" else ROOM_DATA + room_name + "/"
 	if room_name == "hall":
 		await _enter_hall()
 	else:
@@ -242,14 +246,14 @@ func _stage() -> bool:
 		look.apply()
 		render_rect = _global_rect(look.overlay, look.overlay.get_rect())
 		return true
-	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(HALL_DATA + "region.json"))
-	var image := Image.load_from_file(ProjectSettings.globalize_path(HALL_DATA + "render.png"))
-	if not (meta is Dictionary) or image == null:
+	var meta: Variant = HDData.json(HALL_DATA + "region.json")
+	var texture := HDData.texture(HALL_DATA + "render.webp")
+	if not (meta is Dictionary) or texture == null:
 		return false
 	var region: Array = (meta as Dictionary)["region"]
 	var sprite := Sprite2D.new()
 	sprite.name = "BlenderPrototypeOverlay"
-	sprite.texture = ImageTexture.create_from_image(image)
+	sprite.texture = texture
 	sprite.centered = false
 	sprite.position = Vector2(float(region[0]), float(region[1]))
 	sprite.scale = Vector2.ONE / RENDER_SCALE

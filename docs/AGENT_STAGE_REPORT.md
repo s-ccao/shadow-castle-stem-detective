@@ -2,6 +2,94 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-68 (the HD look in the game, on the website)
+
+- **Date:** 2026-10-25
+- **Status:** deployed to play.shadowcastledetective.com at the user's request. Not yet committed.
+- **Requests:**
+  - "开始" (start): move every HD room, figure, portrait and map into the game, then sync the website (the user's plan from stage 66's review);
+  - "现在只需要你同步到网站上并且把原来的贴图的哪一套给删掉" (only sync it to the website, and delete the old set of art);
+  - "不一定要remove old 版本，我现在需要游玩网页版的是最新的版本" (the old version need not be removed: the website must play the latest version).
+
+### What changed
+
+- **Publishing** (`tools/blender/publish_hd.py`, new): copies what the game draws from the gitignored `prototypes/` into `assets/hd/` (hall, rooms, characters, portraits, maps; 139 files, 18.9 MB on disk, about 17 MB in the pack).
+  - Colour images go out as WebP and are imported lossy (0.85), as the painted backgrounds are, about a fifteenth of the PNG size. Depth maps stay lossless PNG, without alpha-border fixing, since they carry numbers.
+  - Sheets, portraits and maps are imported with mipmaps.
+  - The 36-frame idle sheets are laid out in bands of 18 columns, so no texture is wider than 4096 px.
+  - Portraits go out at 224 px. The Circuit repair map is composited offline.
+  - JSON image names are rewritten to the published files, and files no longer published are pruned.
+  - Checked: every prop's and door's alpha is identical to the render's, and every frame of every sheet lands where the game asks for it.
+- **The HD look is the game's own** (`scripts/hd/`): the preview's modules, moved with `git mv` from `tools/blender/prototype_*.gd`:
+  - `hd_room`, `hd_props`, `hd_depth`, `hd_glows`, `hd_doors`, `hd_characters`, `hd_maps`, `hd_portraits`, `hd_library`;
+  - new: `hd_data.gd` (paths, and textures through Godot's importer, so it works on the web), `hd_hall.gd` (the Hall's staging, taken out of `play_prototype.gd`) and `hd_look.gd`.
+  - `hd_look.gd` is the `HDLook` autoload. It stages the Hall and every room as they load, makes the portraits and the Map Hub's maps HD from the start, and lets go of a look once its scene leaves the tree.
+  - A `--script` run (tests, captures, audits) keeps the painted game unless it passes `--hd` or calls `enable()`.
+  - The cast's sheets load when an NPC first shows. The detective's and the Guardian's stay loaded for the session.
+- **Faster prop boxes:** `RoomSpatialRuntime.opaque_rect_of` trims the native used rect to the 0.05 alpha threshold, with one cache for the session, and `RoomInteractionRuntime` uses it.
+  - On 111 textures (88.6 Mpx) its result is identical to the old pixel-by-pixel scan, and it takes 0.3 s instead of 6.4 s.
+  - Staging an area now takes 55–310 ms; the Library took 0.2 s more before.
+- **Tools:**
+  - `play_prototype.gd` now only turns `HDLook` on and jumps to a room.
+  - The captures and audits read `assets/hd/` and still write their shots under `prototypes/`.
+  - The NPC facing checks and the Hall capture's stride check count frames per facing, for the banded idles.
+- **New test** `tests/hd_look_test.gd` (35 checks): dormant under `--script`; enabled, the portraits, maps, Hall and all seven rooms stage, and each look lets go of its scene.
+- **The old art in the web pack:** the pack grew to 115.5 MB, and Vercel refuses a file over 100 MB.
+  - `export_presets.cfg` now excludes 42 old images that no shipped script, scene or data names: the UUID-named and duplicate player sheets, old Hall wall and map versions, and old UI frames and buttons. That is 23.1 MB.
+  - The files stay in the repository.
+  - The painted art the game still loads under the HD look (scenes, prop boxes, the fallback) still ships.
+- `project.godot`: the `HDLook` autoload.
+
+### The website
+
+- **Deployment:** `shadow-castle-detective-play-j3y5kdxda-cyc4.vercel.app` → https://play.shadowcastledetective.com.
+  - `index.pck` is 92,336,552 B (was 98,455,556), SHA-256 `39b6a826…`, identical live and local.
+  - The ETags of `index.html`, `index.js`, `index.wasm` and `index.pck` equal the local MD5s.
+  - The service-worker cache is `1792996368|4961264` (was `1792958880|6394217`), so a browser holding the old build shows "A new game update is ready".
+- **Rollback target:** `shadow-castle-detective-play-znzqamw4e-cyc4.vercel.app` (stage 65's build).
+- **In a browser:**
+  - the local build boots to the title, and a new case opens the HD Wake Room with no console errors;
+  - the live site loads the new build (125.7 MB first load) and shows the HD Hall.
+
+### Verification
+
+- **Captures, EN and ZH**, on the published `assets/hd/` data: all ten pass with no script errors, 1,056 checks per language and 2,112 in all.
+
+  | Capture | Checks |
+  | --- | --- |
+  | Wake | 65 |
+  | Chemistry | 102 |
+  | Greenhouse | 114 |
+  | Circuit | 111 |
+  | Final | 114 |
+  | Maps | 24 |
+  | Portraits | 80 |
+  | Hall | 176 |
+  | Library | 141 |
+  | Dining | 129 |
+- `tests/hd_look_test.gd`: 35 of 35.
+- **Headless suites:**
+  - painted: 55 of 56 pass; `room_spatial_audit` fails only its six known Hall cases;
+  - with the HD look on (`-- --hd`): 52 pass. The rest are listed under Risks.
+- **The exported pack**, loaded on its own (`--main-pack`):
+  - all 28 scenes load;
+  - every literal `res://` path the shipped code names is present, but for `scripts/wall_collision_data.gd`, a fallback removed in `4bb4254` that `game_world.gd` only warns about;
+  - all 147 HD images its JSON names are present.
+- **Godot and lint:**
+  - the headless editor parse exits 0 with 0 script errors;
+  - gdlint is clean on `scripts/hd/`, the captures and audits, `play_prototype.gd` and `tests/hd_look_test.gd`. `room_interaction_runtime.gd` keeps one over-long line from before, and this stage removes its other lint error;
+  - pyflakes is clean on `publish_hd.py`;
+  - `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **An intermittent hang with the HD look on:** `hall_route_authoring_test` stops in 2 of 6 runs, in a developer-mode route-recording step after a cancelled recording. It never stops in painted runs. Bisected to the depth pass; not yet fixed. Normal play has not shown it.
+- **The HD Library's boxes:** with HD on, `library_knowledge_access_test` finds that `recipe_vision_scroll`'s box covers part of `lower_storage`'s approach area, and `interaction_stops_walk_test` fails in the Library. Both items are still offered (stage 66's audit), but the boxes need adjusting.
+- **Tests that assert the painted look** fail with HD on, as expected: `character_scale_profiles_test` (the Hall's figures are drawn smaller in HD) and `hd_look_test`'s own dormant checks.
+- **Web frame rate not measured:** the integrated browser's tab was hidden, so it throttled.
+- **Uncommitted:** what is live is not on `main` yet. A deploy from `main` would bring the painted game back.
+- **Next:** fix the depth-pass hang and the Library's boxes; measure the web frame rate on a visible tab; commit.
+
 ## Stage: UX-20261021-67 (the Dining Hall furnished)
 
 - **Date:** 2026-10-25

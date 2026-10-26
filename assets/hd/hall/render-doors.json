@@ -1,0 +1,236 @@
+{
+ "generator": "tools/blender/hall_prototype.py",
+ "doors": [
+  {
+   "name": "Chemistry",
+   "image": "render-door-Chemistry.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    290.0,
+    96.0,
+    24.0,
+    29.0
+   ],
+   "x": 302.0,
+   "line": 126.0,
+   "opens": "in",
+   "glow": [
+    0.35,
+    1.0,
+    0.5
+   ]
+  },
+  {
+   "name": "Circuit",
+   "image": "render-door-Circuit.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    121.0,
+    694.0,
+    24.0,
+    29.0
+   ],
+   "x": 133.0,
+   "line": 724.0,
+   "opens": "in",
+   "glow": [
+    0.5,
+    0.78,
+    1.0
+   ]
+  },
+  {
+   "name": "Dining",
+   "image": "render-door-Dining.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    1775.0,
+    670.0,
+    24.0,
+    29.0
+   ],
+   "x": 1787.0,
+   "line": 700.0,
+   "opens": "in",
+   "glow": [
+    1.0,
+    0.6,
+    0.3
+   ]
+  },
+  {
+   "name": "Final",
+   "image": "render-door-Final.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    921.0,
+    86.0,
+    24.0,
+    29.0
+   ],
+   "x": 933.0,
+   "line": 116.0,
+   "opens": "in",
+   "glow": [
+    0.66,
+    0.4,
+    1.0
+   ]
+  },
+  {
+   "name": "Greenhouse",
+   "image": "render-door-Greenhouse.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    173.0,
+    350.0,
+    24.0,
+    29.0
+   ],
+   "x": 185.0,
+   "line": 380.0,
+   "opens": "in",
+   "glow": [
+    0.45,
+    1.0,
+    0.3
+   ]
+  },
+  {
+   "name": "Library",
+   "image": "render-door-Library.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    1655.0,
+    246.0,
+    24.0,
+    29.0
+   ],
+   "x": 1667.0,
+   "line": 276.0,
+   "opens": "in",
+   "glow": [
+    1.0,
+    0.76,
+    0.42
+   ]
+  },
+  {
+   "name": "Wake",
+   "image": "render-door-Wake.webp",
+   "frames": 10,
+   "angles": [
+    0.0,
+    3.0,
+    8.0,
+    15.0,
+    23.0,
+    32.0,
+    42.0,
+    52.0,
+    62.0,
+    72.0
+   ],
+   "rattle": 1,
+   "ajar": 4,
+   "rect": [
+    236.0,
+    1081.5,
+    22.0,
+    40.0
+   ],
+   "x": 247.0,
+   "line": 1111.0,
+   "opens": "out",
+   "glow": [
+    0.62,
+    0.38,
+    1.0
+   ]
+  }
+ ]
+}

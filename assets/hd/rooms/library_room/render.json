@@ -1,0 +1,256 @@
+{
+ "generator": "tools/blender/room_prototype.py",
+ "room": "library_room",
+ "region": [
+  0,
+  0,
+  1448,
+  1086
+ ],
+ "render_scale": 2.0,
+ "image": "render.webp",
+ "figure_scale": 1.0,
+ "depth": "render-depth.png",
+ "props": [
+  {
+   "id": "TopLeftCabinetB",
+   "root": "Worldsort/TopLeftCabinetB",
+   "image": "render-prop-TopLeftCabinetB.webp",
+   "rect": [
+    370.0,
+    109.0,
+    174.0,
+    99.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "UpperShelfCabinet",
+   "root": "Worldsort/UpperShelfCabinet",
+   "image": "render-prop-UpperShelfCabinet.webp",
+   "rect": [
+    903.5,
+    58.0,
+    161.5,
+    144.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "TopLeftCabinetC",
+   "root": "Worldsort/TopLeftCabinetC",
+   "image": "render-prop-TopLeftCabinetC.webp",
+   "rect": [
+    46.5,
+    160.5,
+    177.5,
+    167.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "TopLeftCabinetD",
+   "root": "Worldsort/TopLeftCabinetD",
+   "image": "render-prop-TopLeftCabinetD.webp",
+   "rect": [
+    298.5,
+    157.5,
+    199.0,
+    167.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "TopLeftChestA",
+   "root": "Worldsort/TopLeftChestA",
+   "image": "render-prop-TopLeftChestA.webp",
+   "rect": [
+    287.0,
+    345.5,
+    173.0,
+    161.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "LowerStorage",
+   "root": "Worldsort/LowerStorage",
+   "image": "render-prop-LowerStorage.webp",
+   "rect": [
+    314.5,
+    517.0,
+    147.0,
+    184.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "StorageCabinet",
+   "root": "Worldsort/StorageCabinet",
+   "image": "render-prop-StorageCabinet.webp",
+   "rect": [
+    919.5,
+    479.5,
+    282.0,
+    220.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "TopLeftTallCase",
+   "root": "Worldsort/TopLeftTallCase",
+   "image": "render-prop-TopLeftTallCase.webp",
+   "rect": [
+    510.0,
+    288.5,
+    87.5,
+    219.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "UpperPanelCabinet",
+   "root": "Worldsort/UpperPanelCabinet",
+   "image": "render-prop-UpperPanelCabinet.webp",
+   "rect": [
+    814.0,
+    280.0,
+    73.0,
+    223.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "TallCabinetA",
+   "root": "Worldsort/TallCabinetA",
+   "image": "render-prop-TallCabinetA.webp",
+   "rect": [
+    1127.5,
+    662.0,
+    74.5,
+    249.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "TallCabinetB",
+   "root": "Worldsort/TallCabinetB",
+   "image": "render-prop-TallCabinetB.webp",
+   "rect": [
+    844.0,
+    684.5,
+    85.0,
+    239.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "LowerPanelA",
+   "root": "Worldsort/LowerPanelA",
+   "image": "render-prop-LowerPanelA.webp",
+   "rect": [
+    467.5,
+    685.5,
+    88.5,
+    236.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "LowerPanelB",
+   "root": "Worldsort/LowerPanelB",
+   "image": "render-prop-LowerPanelB.webp",
+   "rect": [
+    193.5,
+    645.5,
+    92.5,
+    247.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "ChestCabinet",
+   "root": "Worldsort/ChestCabinet",
+   "image": "render-prop-ChestCabinet.webp",
+   "rect": [
+    1247.0,
+    774.0,
+    155.5,
+    185.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "UpperChestCabinet",
+   "root": "Worldsort/UpperChestCabinet",
+   "image": "render-prop-UpperChestCabinet.webp",
+   "rect": [
+    1184.5,
+    162.5,
+    144.0,
+    153.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "UpperDrawerCabinet",
+   "root": "Worldsort/UpperDrawerCabinet",
+   "image": "render-prop-UpperDrawerCabinet.webp",
+   "rect": [
+    966.5,
+    158.0,
+    182.0,
+    170.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "UpperApothecaryCabinet",
+   "root": "Worldsort/UpperApothecaryCabinet",
+   "image": "render-prop-UpperApothecaryCabinet.webp",
+   "rect": [
+    962.0,
+    343.0,
+    267.0,
+    161.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "WritingDesk",
+   "root": "Worldsort/WritingDesk",
+   "image": "render-prop-WritingDesk.webp",
+   "rect": [
+    1229.5,
+    526.5,
+    141.0,
+    158.0
+   ],
+   "in_room": true
+  },
+  {
+   "id": "LowerGlobeDesk",
+   "root": "Worldsort/LowerGlobeDesk",
+   "image": "render-prop-LowerGlobeDesk.webp",
+   "rect": [
+    44.5,
+    339.5,
+    111.0,
+    130.5
+   ],
+   "in_room": true
+  },
+  {
+   "id": "LowerStudyTable",
+   "root": "Worldsort/LowerStudyTable",
+   "image": "render-prop-LowerStudyTable.webp",
+   "rect": [
+    627.5,
+    432.0,
+    162.0,
+    216.0
+   ],
+   "in_room": true
+  }
+ ]
+}

@@ -25,11 +25,15 @@ extends SceneTree
 ## prototypes/blender_hall/).
 
 const HOME_MARKER := "res://.godot/blender-proto-capture"
-const Room := preload("res://tools/blender/prototype_room.gd")
-const Props := preload("res://tools/blender/prototype_props.gd")
-const Doors := preload("res://tools/blender/prototype_doors.gd")
+const Room := preload("res://scripts/hd/hd_room.gd")
+const Props := preload("res://scripts/hd/hd_props.gd")
+const Doors := preload("res://scripts/hd/hd_doors.gd")
+## Each area's work folder (its layout and its audit), and the HD Hall as the
+## game reads it.
 const ROOM_DATA := "res://prototypes/blender_rooms/"
-const HALL_DATA := "res://prototypes/blender_hall/"
+const HALL_WORK := "res://prototypes/blender_hall/"
+const HALL_DATA := "res://assets/hd/hall/"
+const HDData := preload("res://scripts/hd/hd_data.gd")
 const ROOM_SCENES: Dictionary = {
 	"wake_room": "res://scenes/wake_room.tscn",
 	"greenhouse_room": "res://scenes/floor_1/greenhouse_room.tscn",
@@ -109,7 +113,7 @@ func _run() -> void:
 		return
 	var chinese := "--zh" in OS.get_cmdline_user_args()
 	root.get_node("CaseLocale").call("set_language", "zh" if chinese else "en")
-	data_dir = HALL_DATA if room_name == "hall" else ROOM_DATA + room_name + "/"
+	data_dir = HALL_WORK if room_name == "hall" else ROOM_DATA + room_name + "/"
 	if room_name != "hall":
 		var layout: Variant = JSON.parse_string(FileAccess.get_file_as_string(data_dir + "layout.json"))
 		if layout is Dictionary and (layout as Dictionary).has("size"):
@@ -423,15 +427,15 @@ func _stage(shown: bool) -> bool:
 
 
 func _hall_overlay() -> Sprite2D:
-	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(HALL_DATA + "region.json"))
-	var image := Image.load_from_file(ProjectSettings.globalize_path(HALL_DATA + "render.png"))
-	if not (meta is Dictionary) or image == null:
+	var meta: Variant = HDData.json(HALL_DATA + "region.json")
+	var texture := HDData.texture(HALL_DATA + "render.webp")
+	if not (meta is Dictionary) or texture == null:
 		return null
 	var region: Array = (meta as Dictionary)["region"]
 	var size: Array = (meta as Dictionary)["map_size"]
 	bounds = Rect2(0.0, 0.0, float(size[0]), float(size[1]))
 	var sprite := Sprite2D.new()
-	sprite.texture = ImageTexture.create_from_image(image)
+	sprite.texture = texture
 	sprite.centered = false
 	sprite.position = Vector2(float(region[0]), float(region[1]))
 	sprite.scale = Vector2.ONE / RENDER_SCALE
