@@ -70,6 +70,59 @@ const ROOMS: Dictionary = {
 			"ChemistryPotionCabinet": "Worldsort/ChemistryPotionCabinet",
 		},
 	},
+	# A camera follows the player through it. Its twenty cases and desks stand
+	# in Worldsort/, their old names kept; its shelves and light tests are
+	# listed in INTERACT_ITEMS.
+	"library_room": {
+		"scene": "res://scenes/floor_1/library_room.tscn",
+		"size": Vector2i(1448, 1086),
+		"spawns": {"arrival": "PLAYER_SPAWN_POSITION", "exit": "EXIT_POSITION"},
+		"props": {
+			"StorageCabinet": "Worldsort/StorageCabinet",
+			"TallCabinetA": "Worldsort/TallCabinetA",
+			"TallCabinetB": "Worldsort/TallCabinetB",
+			"ChestCabinet": "Worldsort/ChestCabinet",
+			"WritingDesk": "Worldsort/WritingDesk",
+			"UpperPanelCabinet": "Worldsort/UpperPanelCabinet",
+			"UpperShelfCabinet": "Worldsort/UpperShelfCabinet",
+			"UpperChestCabinet": "Worldsort/UpperChestCabinet",
+			"UpperDrawerCabinet": "Worldsort/UpperDrawerCabinet",
+			"UpperApothecaryCabinet": "Worldsort/UpperApothecaryCabinet",
+			"LowerPanelA": "Worldsort/LowerPanelA",
+			"LowerPanelB": "Worldsort/LowerPanelB",
+			"LowerStorage": "Worldsort/LowerStorage",
+			"LowerGlobeDesk": "Worldsort/LowerGlobeDesk",
+			"LowerStudyTable": "Worldsort/LowerStudyTable",
+			"TopLeftChestA": "Worldsort/TopLeftChestA",
+			"TopLeftCabinetB": "Worldsort/TopLeftCabinetB",
+			"TopLeftCabinetC": "Worldsort/TopLeftCabinetC",
+			"TopLeftCabinetD": "Worldsort/TopLeftCabinetD",
+			"TopLeftTallCase": "Worldsort/TopLeftTallCase",
+		},
+		"items": "INTERACT_ITEMS",
+	},
+	# A camera follows the player through it. Its seven props stand in
+	# Worldsort/, each blocked by its own rectangular FurnitureCollision (so
+	# "rect_shapes" exports those as walls); its chandelier hangs above
+	# everything (z 150). The exit is a fixed rect, EXIT_RECT.
+	"dining_hall_room": {
+		"scene": "res://scenes/floor_1/dining_hall_room.tscn",
+		"size": Vector2i(1448, 1086),
+		"spawns": {"arrival": "PLAYER_SPAWN_POSITION", "exit": "EXIT_POSITION"},
+		"rects": {"exit": "EXIT_RECT"},
+		"props": {
+			"DiningTable": "Worldsort/DiningTable",
+			"Fireplace": "Worldsort/Fireplace",
+			"WallDoor": "Worldsort/WallDoor",
+			"GrandfatherClock": "Worldsort/GrandfatherClock",
+			"Sideboard": "Worldsort/Sideboard",
+			"Cabinet": "Worldsort/Cabinet",
+			"MainDoor": "Worldsort/MainDoor",
+			"ChandelierSprite": "ChandelierSprite",
+		},
+		"items": "INTERACT_ITEMS",
+		"rect_shapes": true,
+	},
 	# A camera follows the player through it. Its five props stand at the
 	# room's root, each blocked by its own FurnitureCollision: rectangles, and
 	# capsules for the analysis table and the Knowledge Engine (so

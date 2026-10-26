@@ -1,5 +1,5 @@
 {
-  "purpose": "CC0 models used by tools/blender/room_greenhouse.py (plants and the gardener's tools) and tools/blender/room_chemistry.py (the laboratory's storage, vessels and brassware). Fetch them with tools/blender/fetch_models.py; the binaries are not committed.",
+  "purpose": "CC0 models used by tools/blender/room_greenhouse.py (plants and the gardener's tools), tools/blender/room_chemistry.py (the laboratory's storage, vessels and brassware) and tools/blender/room_dining_hall.py (the banquet's brassware, wine and fruit). Fetch them with tools/blender/fetch_models.py; the binaries are not committed.",
   "license": "CC0 1.0 Universal (public domain dedication), Poly Haven",
   "destination": "prototypes/blender_rooms/models",
   "assets": [
@@ -409,7 +409,7 @@
       "asset": "ceramic_pot",
       "name": "Ceramic Pot",
       "authors": [
-        "Aron \u0141yczek"
+        "Aron Łyczek"
       ],
       "license": "CC0 1.0 Universal (public domain), Poly Haven",
       "page": "https://polyhaven.com/a/ceramic_pot",
@@ -1162,6 +1162,167 @@
         "textures/ceramic_vase_04_nor_gl_1k.jpg": {
           "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/ceramic_vase_04/ceramic_vase_04_nor_gl_1k.jpg",
           "sha256": "a1c1cc5eda4157a17ba104387d9898362f2731632b840af62f76c2d00c751bd3"
+        }
+      }
+    },
+    {
+      "asset": "brass_pot_02",
+      "name": "Brass Pot 02",
+      "authors": [
+        "Rico Cilliers"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/brass_pot_02",
+      "files": {
+        "brass_pot_02_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/brass_pot_02/brass_pot_02_1k.gltf",
+          "sha256": "cde8f5999217e71fa6153a7ace0f2c17fb485b9b2b6787993b003b1cc722c06d"
+        },
+        "brass_pot_02.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/brass_pot_02/brass_pot_02.bin",
+          "sha256": "11f32d175485d541850f96e7a84fedd057ba564bfbf7c25d471b67db0a7b85d9"
+        },
+        "textures/brass_pot_02_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/brass_pot_02/brass_pot_02_arm_1k.jpg",
+          "sha256": "6ff681c075ce8b5c597f987e214939c2da0b4b1b8321a60dc60bcff45ff78c27"
+        },
+        "textures/brass_pot_02_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/brass_pot_02/brass_pot_02_diff_1k.jpg",
+          "sha256": "723ec51238cc800cf18bb85a91c406600ea5e9a91ec4a2af2bc1d7ba73bd2634"
+        },
+        "textures/brass_pot_02_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/brass_pot_02/brass_pot_02_nor_gl_1k.jpg",
+          "sha256": "8eb46dc1588ffbe0a2d535aa15a33f8dc366a1006a7401120af1f510eb14e5b1"
+        }
+      }
+    },
+    {
+      "asset": "wine_bottles_01",
+      "name": "Wine Bottles 01",
+      "authors": [
+        "Jurita Burger",
+        "Rico Cilliers"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/wine_bottles_01",
+      "files": {
+        "wine_bottles_01_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wine_bottles_01/wine_bottles_01_1k.gltf",
+          "sha256": "70a8a5eabeac24cf298774aca78bbcf39145ca6bf5ebdf2f296edab73fbce039"
+        },
+        "textures/wine_bottles_01_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_arm_1k.jpg",
+          "sha256": "c3deadf0db4c9c98ad39f389e95fe2b09d8df0e3abb95a47f01478f31fd261a9"
+        },
+        "textures/wine_bottles_01_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_diff_1k.jpg",
+          "sha256": "f440b6364c87eb440c9ca201759cfdaf2735e3147488eadc24be334f1e457a09"
+        },
+        "textures/wine_bottles_01_label_clearwater_crystals_01_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_clearwater_crystals_01_arm_1k.jpg",
+          "sha256": "67041443fc09702bc93c9481d1492aeaad659cdb9a5a5dab478a86f41017e83c"
+        },
+        "textures/wine_bottles_01_label_clearwater_crystals_01_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_clearwater_crystals_01_diff_1k.jpg",
+          "sha256": "fca5e598c73d877c636e3c28345254fb9f6320e765fdd0b923fdb4ead5769ccf"
+        },
+        "textures/wine_bottles_01_label_ftero_vinea_01_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_ftero_vinea_01_arm_1k.jpg",
+          "sha256": "5808aed6b27b1812bbead8c6d733d412c1ed56adf587770dedf5f5e9d2e5310f"
+        },
+        "textures/wine_bottles_01_label_ftero_vinea_01_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_ftero_vinea_01_diff_1k.jpg",
+          "sha256": "3d1f02a201c8d573b155b2ea2265b31bf1d532e4c9a7baf2dfe54e2633e5e9c0"
+        },
+        "textures/wine_bottles_01_label_ftero_vinea_02_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_ftero_vinea_02_arm_1k.jpg",
+          "sha256": "c07bcbd4cde7bf713b0512d52345b949c4684ec0735c5798ac79a0fb4719b92c"
+        },
+        "textures/wine_bottles_01_label_ftero_vinea_02_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_ftero_vinea_02_diff_1k.jpg",
+          "sha256": "5a35e83b08e3be62ae42773727d94d5c41da3df55b79fd7e53fca3fadc382a17"
+        },
+        "textures/wine_bottles_01_label_intertwine_01_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_intertwine_01_arm_1k.jpg",
+          "sha256": "712d20fa4caabdf830e454ddc240643319700843e3bda349ae0c3c98dccbd582"
+        },
+        "textures/wine_bottles_01_label_intertwine_01_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_label_intertwine_01_diff_1k.jpg",
+          "sha256": "e5571a24e0f025361dfeecd7a09f4c3ee9be36dadf817177ee75919078002513"
+        },
+        "textures/wine_bottles_01_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_nor_gl_1k.jpg",
+          "sha256": "ed92387b827b7aebf4602e655c8e9cbaf53bbed24b7228106b04b3456e2d779c"
+        },
+        "textures/wine_bottles_01_paper_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wine_bottles_01/wine_bottles_01_paper_nor_gl_1k.jpg",
+          "sha256": "b05b6f021b942032d45f23e46066da715c4f9624acea7d8db77928a90076a049"
+        },
+        "wine_bottles_01.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/wine_bottles_01/wine_bottles_01.bin",
+          "sha256": "a520b717c7f9d15b7f114d1be5f454f18b2cfd056757fb4d4c5f5054de5db6d6"
+        }
+      }
+    },
+    {
+      "asset": "food_apple_01",
+      "name": "Food Apple 01",
+      "authors": [
+        "Oliver Harries"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/food_apple_01",
+      "files": {
+        "food_apple_01_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/food_apple_01/food_apple_01_1k.gltf",
+          "sha256": "6a7dc1cda1271c8b08e36e2b9fd44371b7149cca6262c71bc36d971cdac4325f"
+        },
+        "food_apple_01.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/food_apple_01/food_apple_01.bin",
+          "sha256": "f14ff9647fdd9f5a59ef325f94154e91f1f14cc2563cd3fb572c4fe9ce5756ca"
+        },
+        "textures/food_apple_01_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_apple_01/food_apple_01_diff_1k.jpg",
+          "sha256": "b7fc17cfb5013958167bbc089ea4d1c193fb1c61ea4f3c974a9894ed9ba82e8a"
+        },
+        "textures/food_apple_01_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_apple_01/food_apple_01_nor_gl_1k.jpg",
+          "sha256": "c81b1e51ce7e789b65bfde2f046dcb5ba5773b5c6be3e572313be0600c51721b"
+        },
+        "textures/food_apple_01_rough_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_apple_01/food_apple_01_rough_1k.jpg",
+          "sha256": "2e5a503af38df7b570b0e81cc9563125f0913b466e01140d4e24ea5ebdbec587"
+        }
+      }
+    },
+    {
+      "asset": "food_pears_asian_01",
+      "name": "Pears Asian 01",
+      "authors": [
+        "Amal Kumar"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/food_pears_asian_01",
+      "files": {
+        "food_pears_asian_01_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/food_pears_asian_01/food_pears_asian_01_1k.gltf",
+          "sha256": "ff3373b91eef143a3921198f61a3b10aa87bcb870f905b2271ce3917b34ff300"
+        },
+        "food_pears_asian_01.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/food_pears_asian_01/food_pears_asian_01.bin",
+          "sha256": "a647edc202dbdeec6e4eb3c4d721f0acb91ddf5a82f26a3a751ec709cebdd77e"
+        },
+        "textures/food_pears_asian_01_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_pears_asian_01/food_pears_asian_01_arm_1k.jpg",
+          "sha256": "e62f7cb1045a7b82906940c3c9e1f7ae1b733cb39e9532c4ec79988f1ba1aa51"
+        },
+        "textures/food_pears_asian_01_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_pears_asian_01/food_pears_asian_01_diff_1k.jpg",
+          "sha256": "c07a55c97b966d49a0a3e6a628fcd38ce9d2abdddc57e24a742110245f4085c5"
+        },
+        "textures/food_pears_asian_01_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_pears_asian_01/food_pears_asian_01_nor_gl_1k.jpg",
+          "sha256": "5e31717c809fd7237e3be31b191dcbe52e317b8d4cc7af27abcb404658dceb05"
         }
       }
     }

@@ -25,7 +25,22 @@
     - the floor tells what happened: the red stain flung across the flagstones, broken glass and red crystal round it, and a trail of fallen bottles.
     - Every interaction still works in the preview. Since stage 63 the butler and Dr. Lin's echo are Tripo figures.
     - [Comparisons](evidence/2026-10-23-blender-chemistry/).
+  - **The Library** (stage 57, floor and gate rebuilt in stage 59) is rebuilt the same way, as a two-storey archive of light:
+    - a reading bay on a dais under a spectrum window, which throws a rainbow down the steps, with stained-glass lancets either side and gallery bookcases above;
+    - twenty cases and desks on their own collision, the three light-test desks each with its lamp, and the optical array and the RGB medallion set in the floor;
+    - moonlight falls from every window with dust drifting in it, and each light test's lamp brightens as its knowledge and filter are won;
+    - the first visit opens on the whole archive under its title; seating the third filter awakens it, the light spreading from the optical array while the camera draws back;
+    - the floor is laid flag by flag as the painting lays it, with worn cobbles at the stair foot and the painted rugs' gold rosettes. The room ends on a pale coping over a wall dropping into the dark, and the way back to the Hall is the painting's gatehouse: banners, candles and oak doors under a gabled hood, with steps down.
+    - Every interaction still works in the preview. [Comparisons](evidence/2026-10-23-blender-library/).
+    - Since stage 66 its furniture is the worn, waxed oak of the other rooms, and it is as dark and as warm as its painting. [Room standard](evidence/2026-10-25-room-standard/).
   - **The Greenhouse** (stage 54; its gate, bench and floor rebuilt from the painting in stage 56) has the painting's round-arched glazed gate, the six-board potting bench with its clutter, real CC0 plants in the beds and pots, and slate pavers laid one by one. Since stage 61 the bench is a real bench's size, 2.5 × 1.0 m, of weathered oak under its lantern, and the player can walk behind it. Every interaction still works in the preview; since stage 63 the gardener is a Tripo figure. [Comparisons](evidence/2026-10-23-blender-greenhouse/), [the bench](evidence/2026-10-24-greenhouse-bench/).
+  - **The Dining Hall** (stage 60) is rebuilt from its painting the same way:
+    - the banquet table laid for eight, its candles burning, a glass fallen and the wine spilt;
+    - the wheel chandelier hung above everyone;
+    - the hearth under its stone hood, the barred wall door, the longcase clock stopped at midnight, the laden sideboard with its drawer of silver and torn red cloth, and the dresser of plates;
+    - the south wall's torches either side of the arched double door, and flagstones laid one by one with muddy boot prints across them.
+    - Every interaction still works in the preview. [Comparisons](evidence/2026-10-24-blender-dining-hall/).
+    - Since stage 66 its furniture is a real size against the detective: the table 3.2 × 1.15 m and 76 cm high with its chairs round it, the clock 2.1 m tall by the east wall, the sideboard 2.2 m long against it, the serving table 55 cm deep. The hearth burns as a bed of embers lighting its firebox, the floor's joints are fine, and the room is as bright and as warm as its painting. [Room standard](evidence/2026-10-25-room-standard/).
   - **The Final Room** (stage 62) is rebuilt from its painting to the room standard:
     - the vault door between glazed cabinets and brass lanterns, violet lancets and crystal lanterns, and scroll alcoves and presses along the walls;
     - the Ashford analysis table at a real table's size, 3.2 m across, its eight evidence panels in brass, ringed by a brass circle in the floor; the player can stand behind it, hidden by it;
@@ -53,6 +68,7 @@
     - **Mrs. Lin** is the cast's Tripo Dr. Lin, laid face down where she fell, reaching toward her notebook, the torn violet cuff by her hand, lit softly so her dark coat reads; she can be inspected from the room as before. [Comparison](evidence/2026-10-25-blender-coverage/).
     - **The Map Hub** shows the Blender Hall from straight above, in its map and the Guardian's minimap. The painted map no longer matched the Hall (its walls cross the real corridors); the new one is drawn on them. The Circuit repair map is the HD Circuit Room, its switch markers where they were.
     - **The Circuit Room**, built on its own branch, is merged into this preview with its mechanic in Tripo.
+  - **The Library and the Dining Hall to the room standard** (stage 66): the last two rooms built before the standard now meet it: furniture at a real size, worn waxed wood, and light within 15 % of their paintings (measured with the new `tools/blender/measure_room.py`). Every interaction is still offered in both rooms.
 - **Blender HD Hall prototype (not shipped):** the whole Hall is now rebuilt in Blender from the real collision and rendered as one HD 2D image (stage 45; the first passes covered one region around the Wake spawn).
   - Walls have true height, lit faces, shadows and a readable arched Wake gate, and the rendered outline matches the collision, so gameplay would be unchanged.
   - All seven doors are drawn on the side the player uses them from: six arched doors with lanterns, and the Wake stair. Every Hall prop is hidden correctly behind nearer walls.

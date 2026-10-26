@@ -34,6 +34,8 @@ the Hall's projection, materials and lighting language
   props it lists in "in_room" (one the player walks round, such as the
   Greenhouse's planter) stay in the room render and its depth map as well,
   and the preview stages their sprite undrawn, for the prompt box alone.
+  Props it lists in "overhead" (the Dining Hall's chandelier, which the game
+  draws over every figure) are left out of the preview's depth test.
 
   Changed footprints and boxes. A room built at a real size where the
   painting is not returns in build()'s "collision" each footprint the
@@ -1055,6 +1057,8 @@ def render_props(kits, out, size, roots=None):
             entry["root"] = roots[prop]
         if any(obj.get("room_in_room") for obj in kit.made):
             entry["in_room"] = True
+        if any(obj.get("room_overhead") for obj in kit.made):
+            entry["overhead"] = True
         entries.append(entry)
         print("PROP %s shows %.1f x %.1f at (%.1f, %.1f)" % (prop, rect[2], rect[3], rect[0], rect[1]))
     render.use_border = False
@@ -1203,6 +1207,11 @@ def main():
     for name in in_room:
         for obj in kits[name].made:
             obj["room_in_room"] = True
+    # Props hung above everyone (the Dining Hall's chandelier, which the game
+    # draws over every figure): the preview leaves them out of its depth test.
+    for name in built.get("overhead", ()):
+        for obj in kits[name].made:
+            obj["room_overhead"] = True
     for material in bpy.data.materials:
         material.cycles.emission_sampling = "NONE"
     add_camera(size)

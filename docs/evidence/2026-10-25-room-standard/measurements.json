@@ -1,0 +1,27 @@
+{
+  "stage": "66",
+  "standard": "Room standard (docs/AGENT_HANDOFF.md): the render's mean luminance and warmth (mean R - B) within about 15 % of its painting's at the painting's size; open-floor luminance spread near the painting's or lower.",
+  "tool": "python tools/blender/measure_room.py <room> <painting>",
+  "rooms": {
+    "library_room": {
+      "painting": "assets/backgrounds/library_archive.png",
+      "painting_values": {"mean_luminance": 27.9, "warmth": 12.1, "floor_spread": 15.0},
+      "before_stage_66": {"luminance_ratio": 1.42, "warmth_ratio": 1.33, "floor_spread_ratio": 1.33},
+      "after_stage_66": {"mean_luminance": 29.4, "warmth": 11.9, "floor_spread": 16.1,
+                         "luminance_ratio": 1.06, "warmth_ratio": 0.98, "floor_spread_ratio": 1.07}
+    },
+    "dining_hall_room": {
+      "painting": "assets/backgrounds/dining_hall_banquet.png",
+      "painting_values": {"mean_luminance": 28.7, "warmth": 13.1, "floor_spread": 15.5},
+      "before_stage_66": {"luminance_ratio": 1.09, "warmth_ratio": 0.84, "floor_spread_ratio": 1.22},
+      "after_stage_66": {"mean_luminance": 30.8, "warmth": 13.1, "floor_spread": 11.1,
+                         "luminance_ratio": 1.08, "warmth_ratio": 1.0, "floor_spread_ratio": 0.72}
+    }
+  },
+  "sizes": {
+    "dining_table": {"before": "5.1 x 2.8 m, 53 cm high", "after": "3.2 x 1.15 m, 76 cm high"},
+    "grandfather_clock": {"before": "86 cm wide, 3.6 m tall", "after": "52 cm wide, 2.1 m tall"},
+    "sideboard": {"before": "4.1 x 1.56 m", "after": "2.2 m x 60 cm, 87 cm high, against the east wall"},
+    "serving_table": {"before": "1.25 m deep, 72 cm high", "after": "55 cm deep, 81 cm high"}
+  }
+}

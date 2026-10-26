@@ -31,9 +31,14 @@ const ROOMS: Dictionary = {
 	"res://scenes/wake_room.tscn": "wake_room",
 	"res://scenes/floor_1/greenhouse_room.tscn": "greenhouse_room",
 	"res://scenes/floor_1/chemistry_room.tscn": "chemistry_room",
+	"res://scenes/floor_1/library_room.tscn": "library_room",
+	"res://scenes/floor_1/dining_hall_room.tscn": "dining_hall_room",
 	"res://scenes/floor_1/circuit_room.tscn": "circuit_room",
 	"res://scenes/floor_1/final_room.tscn": "final_room",
 }
+## A room's own living layer over its look, loaded with the room so one room's
+## layer cannot keep another from staging: the Library's light and shots.
+const EXTRAS: Dictionary = {"library_room": "res://tools/blender/prototype_library.gd"}
 const DATA := "res://prototypes/blender_rooms/"
 const CHARACTER_DATA := "res://prototypes/blender_chars/"
 const OVERLAY_NAME := "BlenderRoomOverlay"
@@ -51,6 +56,8 @@ var glows: Glows
 var props: Props
 var depth: Depth
 var characters: Characters
+## The room's EXTRAS layer (attach/apply/restore/advance/summary), or null.
+var extras: RefCounted
 var meta: Dictionary = {}
 var halos := 0
 var swapped := 0
@@ -117,6 +124,11 @@ func attach(room_node: Node, name: String) -> bool:
 			depth.add_fixed(item["sprite"], item["feet"])
 	characters = Characters.new()
 	sheets = characters.attach(room, CHARACTER_DATA)
+	if EXTRAS.has(name):
+		var layer := load(str(EXTRAS[name])) as GDScript
+		extras = layer.new() if layer != null else null
+		if extras != null and not bool(extras.call("attach", room, self)):
+			extras = null
 	_attach_rig()
 	return true
 
@@ -134,6 +146,8 @@ func apply() -> void:
 	if has_depth:
 		depth.apply()
 	characters.apply()
+	if extras != null:
+		extras.call("apply")
 	if rig != null and is_instance_valid(rig):
 		# Above the render and its halos, still below the props and figures.
 		rig.z_index = overlay.z_index + 2
@@ -146,6 +160,8 @@ func apply() -> void:
 func restore() -> void:
 	if overlay == null or not is_instance_valid(overlay):
 		return
+	if extras != null:
+		extras.call("restore")
 	if rig != null and is_instance_valid(rig):
 		rig.z_index = rig_z
 		for move: Dictionary in rig_moves:
@@ -175,6 +191,8 @@ func advance(delta: float) -> void:
 		depth.advance(delta)
 	if characters != null:
 		characters.advance(delta)
+	if extras != null:
+		extras.call("advance", delta)
 
 
 func summary() -> String:
@@ -184,6 +202,8 @@ func summary() -> String:
 	]
 	if not rig_moves.is_empty():
 		text += ", %d fixtures moved" % rig_moves.size()
+	if extras != null:
+		text += "; " + str(extras.call("summary"))
 	return text
 
 

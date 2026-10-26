@@ -48,6 +48,8 @@ func attach(hall_node: Node, path: String, data_dir: String, render_scale: float
 			"hd_scale": Vector2.ONE / render_scale,
 			# Drawn by the room render: the sprite gives the prompt box alone.
 			"in_room": bool(prop.get("in_room", false)),
+			# Hung above every figure, as the game draws it: no depth test.
+			"overhead": bool(prop.get("overhead", false)),
 			"pixel": _sprite_state(sprite),
 			"shadows": shadows,
 			"shadows_shown": shadows.map(func(item: CanvasItem) -> bool: return item.visible),
@@ -56,11 +58,11 @@ func attach(hall_node: Node, path: String, data_dir: String, render_scale: float
 
 
 ## Each staged sprite with the ground y its prop stands on (not those the room
-## render draws).
+## render draws, nor those hung above every figure).
 func standing() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for swap: Dictionary in swaps:
-		if not swap["in_room"]:
+		if not swap["in_room"] and not swap["overhead"]:
 			result.append({"sprite": swap["sprite"], "feet": (swap["rect"] as Rect2).end.y})
 	return result
 

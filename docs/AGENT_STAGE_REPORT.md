@@ -2,6 +2,101 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-66 (the Library and the Dining Hall to the room standard)
+
+- **Date:** 2026-10-25
+- **Status:** approved by the user ("满意"), then committed and pushed at their request, with the Library's and the Dining Hall's own work (stages 57, 59 and 60). Preview only: the game and the website are unchanged.
+- **Their choices for next:** fill the Dining Hall with some furniture (benches, armour, side tables), since at a real size it is emptier than the painting; then move every HD room, figure, portrait and map into the game and sync the website.
+- **Request:** "现在开始" (start now), on the plan the user chose at stage 65's review: bring the Library and the Dining Hall to the room standard first, then move every HD room, figure, portrait and map into the game and sync the website.
+- **Taken over with the user's leave (stage 65's review):** the Library session's stages 57 and 59 and the Dining Hall session's stage 60, never committed. Their files stay as they left them apart from the fixes below, and go into this stage's commit with it.
+
+### What changed
+
+- **The Library** (`tools/blender/room_library.py`):
+  - **Wood:** the approved worn, waxed oak (`oak()` returns `room_chemistry.aged_oak()`), and its dark cases and gate each a part and shade of `wood_table` / `wood_table_worn` with worn rims (`room_chemistry.laid`), in place of `wake.oak()`, flat and grainless at 2x.
+  - **Light:** `grade()` sets the exposure (−0.2, and +0.08 awakened) and a 6350 K white balance (`LIBRARY_EXPOSURE`, `LIBRARY_WHITE_BALANCE`, each overridable from the environment).
+  - Both states re-rendered (203 s normal, 121 s awakened).
+- **The Dining Hall** (`tools/blender/room_dining_hall.py`), its furniture at a real size against the 1.4 m detective:
+  - **The banquet table** is 3.2 × 1.15 m and 76 cm high, on the painted table's middle (was 5.1 × 2.8 m and 53 cm).
+    - `on_table()` lays the places, candles, wine, platter and spills out on the painted table and draws them in onto the real one, each plate clear of the table's frame. A plan check of every piece found none touching after three were nudged (a glass, the platter, the sauceboat).
+    - Plates are 28 cm and glasses a real size; the two side plates are dropped, with no room left between the places.
+    - Its eight chairs stand round it as the painting sets them, and the rug is sized to them as the painting's is (5.3 × 3.1 m, was 6.9 × 4.7 m).
+  - **The clock** is 52 cm × 2.1 m, modelled at the painting's 86 cm × 3.6 m and scaled about its foot, its east side by the east wall.
+  - **The sideboard** is 2.2 m × 60 cm and 87 cm high, back to the east wall (was 4.1 × 1.56 m, standing off it).
+    - It has one cupboard door in its south end, and three drawers along its west side, the middle one pulled out with the silver.
+    - `on_sideboard()` draws its load in, and the shelf's stands down the shelf's middle.
+    - The pan is dropped for lack of room, and its entry removed from `cc0_models.json`.
+    - The torn cloth lies 48 px on the top: laid 80 px on, it overhung the narrower top's west edge.
+  - **The serving table** is 55 cm deep and 81 cm high (was 1.25 m deep), its load rearranged to fit.
+  - **Footprints** (`footprints()`, in `"collision"`):
+    - the table with its chairs, inside the painted footprint but for its north edge;
+    - the clock;
+    - the sideboard, plus `HDOpenDrawer` for its pulled-out drawer;
+    - `RoomCollisions/RightWall`, its north-east notch drawn back to the serving table's depth.
+
+    The table's end chairs are now in its prop, as its south ones were, so its prompt box (x 435–946) reaches the floor beyond them. Every HD front is within the walk-up rule's 7.5 px of its footprint.
+  - **Floor:** the flagstones are a shade darker (value 1.7, was 2.45), with lighter joints (0.03–0.06, was 0.008–0.028) and narrower gaps (0.9, was 1.2).
+  - **Hearth:**
+    - the ember bed fills the firebox: coals 2–3 cm, each at its own heat between dark seams, deep red to orange, dying to ash at the bed's edge;
+    - the logs are charred, glowing underneath and in a few thin cracks;
+    - the flames are low orange licks, emission only, never white;
+    - a warm light inside the firebox lights its back and sides, now smoked stone;
+    - the fire's spill on the hearth rug is softened (36 W, was 48).
+
+    Shader Object space is metres, so stage 60's coal and crack cells (7 mm and 1 cm) were below a pixel and averaged to a flat tan glow.
+  - **Grade:** a 7400 K white balance (`DINING_EXPOSURE`, `DINING_WHITE_BALANCE`, `DINING_FLOOR_VALUE`, each overridable from the environment).
+  - **Boot prints:** the trail from the table starts at the rug's edge, and the wall door's trail reaches toward the clock where it now stands.
+- **Capture** (`tools/blender/capture_dining_hall.gd`, still 114 checks):
+  - the table's stand is the floor behind its south chairs, (628, 690);
+  - the sideboard takes an `hd_stand` beside its open drawer, (1296, 812), in the HD look, since no one spot reaches both the painted sideboard and the real one; a prop with its own HD stand is shot in each look from where it is used there;
+  - the check north of the table names the chairs' backs that hide the player there.
+- **New tool** `tools/blender/measure_room.py <room> <painting> [render]`: the room standard's three measures (Pillow and numpy).
+
+### Measured (ratio to the painting; the standard asks about 1 ± 0.15 for light, a floor spread near the painting's or lower)
+
+| Room | Luminance | Warmth | Floor spread |
+|---|---|---|---|
+| Library, before → after | 1.42 → **1.06** | 1.33 → **0.98** | 1.33 → **1.07** |
+| Dining Hall, before → after | 1.09 → **1.08** | 0.84 → **1.00** | 1.22 → **0.72** |
+
+### Exact files
+
+- **Changed by this stage:**
+  - `tools/blender/room_library.py`, `tools/blender/room_dining_hall.py`, `tools/blender/capture_dining_hall.gd`;
+  - `tools/blender/cc0_models.json` (the pan removed);
+  - `docs/AGENT_STAGE_REPORT.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- **New:**
+  - `tools/blender/measure_room.py`;
+  - `docs/evidence/2026-10-25-room-standard/`: painting, before and after for both rooms, the Library's wood, the Dining Hall's table, hearth and east side, two in-game HD shots, and `measurements.json`.
+- **Committed with it, from the Library and Dining Hall sessions:**
+  - new scripts: `tools/blender/prototype_library.gd`, `capture_library.gd` and `capture_dining_hall.gd` (each with its `.uid`), and `room_library.py` and `room_dining_hall.py`;
+  - their hunks in `prototype_room.gd` (the `EXTRAS` living layer), `prototype_props.gd` and `room_prototype.py` (`"overhead"`), `export_room_layout.gd` (both rooms), `play_prototype.gd` (`--library`, `--library-ready`, `--dining`) and `cc0_models.json`;
+  - their reports (stages 57, 59 and 60) and handoff notes;
+  - `docs/evidence/2026-10-23-blender-library/` and `docs/evidence/2026-10-24-blender-dining-hall/`.
+- **Local only (gitignored):** the two rooms' renders, captures and audits under `prototypes/blender_rooms/`.
+
+### Verification
+
+- **Captures, EN and ZH**, all passing:
+  - Library 141 and Dining Hall 114;
+  - every other area's: Wake 65, Chemistry 102, Greenhouse 114, Circuit 111, Final 114, maps 24, portraits 80 and Hall 176.
+- **Audits:**
+  - interactions: every Dining Hall item is offered from reachable floor (table 862 cells, clock 336, sideboard 522, fireplace 157, wall door 83, dresser 1188, exit 7 in the doorway's jamb as before), and every Library item is offered (the fewest, 72 cells);
+  - coverage: no painted art is left in either room.
+- **Measures:** as above (`measure_room.py`).
+- **Godot and lint:**
+  - the headless editor parse has 0 script errors;
+  - gdlint is clean on `capture_dining_hall.gd`, `capture_library.gd` and `prototype_library.gd`;
+  - pyflakes is clean on `room_library.py`, `room_dining_hall.py` and `measure_room.py`;
+  - `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **The Dining Hall is emptier:** at a real size its furniture leaves far more open floor in the 14 m hall than the painting's oversized pieces did. Everything the painting has is there and nothing was added; filling the hall (benches, a second table, armour) would be a new design choice.
+- **The hearth** is an ember bed with low flames, nearer the painting than stage 60's tongues, but a still image of fire.
+- **The user has not reviewed** the Library's stage 59, the Dining Hall's stage 60 or the Circuit Room's stage 55-circuit on their own.
+- **Next:** furniture to fill the Dining Hall (the user's choice at this review), then the move of every HD room, figure, portrait and map into the game, and the deploy.
+
 ## Stage: UX-20261021-65 (web deploy; every room and map built in Blender)
 
 - **Date:** 2026-10-25
@@ -464,6 +559,208 @@
 - **The other rooms:** the Library and Dining Hall sessions may not act on the audit; their notes are in the handoff.
 - **Next:** the Final Room (the user's choice), then the Tripo NPCs.
 
+## Stage: UX-20261021-60 (Dining Hall)
+
+- **Date:** 2026-10-24
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes, its saves and the Web build are unchanged.
+- **Request:** the user approved stage 56: "很好，按照你目前的优化方向的这个效果优化下一个房间" (very good; optimise the next room the same way, to the same effect).
+- **Which room:** in the handoff's order the next room is Circuit, but a parallel session is already building it in its own worktree (`circuit-room-blender`). This stage therefore took the next unclaimed room, the **Dining Hall**.
+- **Approach:** stage 56's direction throughout:
+  - every piece follows the painted room's own design (`assets/backgrounds/dining_hall_banquet.png` and `assets/props/DiningHall/`);
+  - the Hall supplies the moonlight, the wall tops and the materials;
+  - stone and boards are laid piece by piece from CC0 photos;
+  - real tableware is CC0 Poly Haven models.
+
+### What it is
+
+- **North wall:**
+  - two gothic windows (a mullion, two lights and an oculus under a hood moulding) on the night sky, with moonlight falling through them;
+  - four red velvet curtains on brass rods with gold tiebacks;
+  - a portrait each side in a gilt frame (the Hall's portraits' glowing eyes are switched off here);
+  - three-candle brass sconces.
+- **Fireplace (`Worldsort/Fireplace`):**
+  - a hearth slab; dressed piers; a segmental arch of nine voussoirs with a proud keystone;
+  - a mantel carrying three candlesticks and the CC0 mantel clock;
+  - a hood tapering in dressed courses to a cornice, with a red shield bearing a sword;
+  - in the firebox, a low fire as the painting has it: charred logs whose cracks glow, on an iron grate over embers, with dim orange tongues. Fire irons and a log stack stand beside it.
+- **North-east corner:**
+  - the barred wall door (`Worldsort/WallDoor`): big dressed blocks round a deep-set five-board door with strap hinges, a lock plate and a latch ring, on a step, with a small rug before it;
+  - the serving cabinet: a drawer and turned feet, carrying a candle, a glass carafe, plates and a bowl.
+- **Banquet table (`Worldsort/DiningTable`):**
+  - six boards inside a moulded frame with cut corners, on an apron and six legs;
+  - laid for eight with pewter plates and silver cutlery, and gilt candlesticks burning down its middle;
+  - wine glasses with silver rims, one fallen; the decanter on its side and its wine spilt; the eighth place's napkin dropped and its spoon lost; a platter of CC0 fruit; a sauceboat.
+  - The three south chairs belong to the table's prop, so its prompt box reaches the floor in front of them, as the painted table's does.
+- **Chairs:** eight at the painting's scale: velvet seats, a moulded back frame round a velvet panel, a carved crest and turned finials. The end chairs are pushed back and turned.
+- **Rugs:**
+  - the banquet rug: a dark madder field, border bands, gold lines, a quarter-ring scroll in each corner and a medallion;
+  - small rugs before the hearth, the wall door and the dresser;
+  - a runner out of the main door.
+- **Chandelier (`ChandelierSprite`):** a bronze wheel on eight iron spokes with collars round a hub, eight candles in drip pans, four chains to a crown ring and the long chain up. It hangs above everyone, as the game draws it.
+- **Grandfather clock (`Worldsort/GrandfatherClock`):**
+  - a plinth and a panelled base;
+  - a trunk whose open door shows the gilt pendulum and two weights hanging still;
+  - a hood on brass columns round the dial, stopped at midnight with its minute hand bent;
+  - a broken pediment with swan necks and scrolls, and an urn finial.
+- **Sideboard (`Worldsort/Sideboard`):**
+  - the long sideboard down the east wall, with a raised back shelf;
+  - brass bowls, the CC0 brass goblets, pot, pan and vase, a wine bottle and a candle;
+  - cupboard doors at its south end;
+  - its middle drawer pulled out, with silver cutlery and coins in it;
+  - a torn red woollen strip, dropped askew with Blender's cloth solver, hanging over its south end.
+- **Dresser (`Worldsort/Cabinet`):**
+  - turned 31° toward the room by the west wall;
+  - a cupboard base with two panelled doors, under a counter with a pewter basin and a folded cloth;
+  - three shelves of plates stood on edge and stacked, cups and a brass goblet, under a carved crest;
+  - its jug table with two pewter jugs beside it.
+- **South wall and main door (`Worldsort/MainDoor`):**
+  - the painting's south wall seen over its top: a low wall under the Hall's cap; a parapet of dark coursed stone round the door, with a dark recess each side; two torch blocks proud of it, a torch burning in an iron bracket on each; pilasters at the door's sides, all under pale caps; steps either side of the threshold.
+  - The door has two leaves of boards under a studded rim rising to a shallow Tudor point, strap hinges with scrolled ends, ring pulls and a studded meeting stile. A stone threshold and the red runner lead out, with the Hall's lamplight on the boards beyond.
+- **Floor:**
+  - 916 flagstones in rough east-west courses, 28–66 px wide and 22–34 px deep, about a quarter split into two smaller stones;
+  - each stone a slab with a worn chamfered rim, showing its own part of the CC0 `seaside_rock` photo in its own warm grey (`room_greenhouse.laid_photo` and `_paver`), with dark grout and dust in the joints;
+  - muddy boot prints in the painting's two trails (from the wall door toward the clock, and from the table to the main door), and grit kicked to the walls.
+- **Light and tone:** the Hall's moonlight and exposure, as the other rooms have them.
+  - Measured region by region against the painting (mean luminance, painting / render): whole room 28.9 / 31.3, open floor 47.5 / 45.8, back wall 18.2 / 19.0, rug 20.2 / 18.9, curtains 15.8 / 16.8, table top 38.9 / 40.2, hearth stone 27.7 / 26.4, fire 22.7 / 18.3, windows 16.8 / 17.6, sideboard 24.2 / 24.0.
+  - Further off: the dresser is darker (26.0 / 20.3), and the main door brighter under the Hall's lamp (18.5 / 24.4).
+
+### Pipeline additions (shared files, surgical)
+
+- **`tools/blender/export_room_layout.gd`:** the Dining Hall entry, plus two options.
+  - `"rect_shapes": true` exports a room's `RectangleShape2D` furniture collisions as wall polygons named after their prop.
+  - `"rects"` exports Rect2 constants (the exit's) as `extras["<name>_rect"]`.
+  - The Greenhouse export is byte-identical.
+- **`tools/blender/room_prototype.py` and `tools/blender/prototype_props.gd`:** `build()` may return `"overhead"`, props hung above every figure (the chandelier). They are rendered alone like any prop and marked `"overhead": true`. The preview never gives them to the depth pass, so they draw above every figure, as the game draws them.
+- **`tools/blender/prototype_room.gd`:** the Dining Hall is in `ROOMS`.
+- **`tools/blender/play_prototype.gd`:** `-- --dining` opens the Dining Hall at its door.
+- **`tools/blender/cc0_models.json`:** five CC0 Poly Haven models:
+  - `brass_pot_02` and `brass_pan_01` (Rico Cilliers);
+  - `wine_bottles_01` (Jurita Burger and Rico Cilliers);
+  - `food_apple_01` (Oliver Harries);
+  - `food_pears_asian_01` (Amal Kumar).
+  - The room also places the existing `brass_goblets`, `brass_vase_03` and `mantel_clock_01`.
+
+### Exact files
+
+- **New:**
+  - `tools/blender/room_dining_hall.py`: the room build, reusing `room_greenhouse` and `room_wake` as libraries.
+  - `tools/blender/capture_dining_hall.gd`: the native capture and its checks.
+- **Changed:** `tools/blender/export_room_layout.gd`, `tools/blender/room_prototype.py`, `tools/blender/prototype_props.gd`, `tools/blender/prototype_room.gd`, `tools/blender/play_prototype.gd`, `tools/blender/cc0_models.json`.
+- **Evidence:** `docs/evidence/2026-10-24-blender-dining-hall/`:
+  - `01`–`09`: painted and HD at the native 1024×768, at the door (ZH), the table, the hearth, the wall door (ZH), the clock, the sideboard, the dresser, behind the table and on the open floor;
+  - `10-room-overview.png`: the whole room, painted and HD;
+  - `11-hd-props.png`: each prop rendered alone;
+  - `12-render-on-collision.png`: the HD room with the game's walls and footprints outlined.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`. The status page also gains the Greenhouse line that stages 54 and 56 left out.
+- **Generated, not committed:** `prototypes/blender_rooms/dining_hall_room/` (layout, renders, depth, props and captures).
+
+### Verification
+
+- **Blender 5.2.2, 128 samples, 2896×2172:** 95 s (room pass 65 s), 942 objects, 31 glows, 8 props.
+- **Capture:** `capture_dining_hall.gd` passes 114/114 in EN and in ZH:
+  - all 8 props are staged; the 7 the room render draws are undrawn as sprites, and the chandelier hangs in HD above every figure with no depth pass;
+  - the 6 highlight boxes follow their HD props, and the painted ones come back on restore;
+  - every prompt is offered beside its prop in both looks, and the way back to the Hall in the doorway in both looks;
+  - north of the table its top hides the player's legs (13 rows); nothing hides the player in front of its south chairs or on open floor;
+  - at the main door its arch ghosts only the feet (7 of 45 rows);
+  - the HD detective stands at the room's size and walks.
+- **Playable preview:** `play_prototype.gd -- --dining` stages `dining_hall_room: 31 glows, 8 HD props, depth true, 2 HD character sheets`.
+- **Other checks:**
+  - gdlint is clean on every changed `.gd` file, and pyflakes on the Python;
+  - the headless editor parse has 0 errors;
+  - `git diff --check` is clean, including the new files;
+  - `fetch_models.py --verify` verifies 229 files.
+
+### Risks / follow-up
+
+- **Preview only**, as before. The Dining Hall has no NPC.
+- **Pre-existing exit reach (both looks, not changed here):** the main door's own footprint (from y 955.85) stops a player 14.2 px from `EXIT_RECT` (top y 970) in the middle of the doorway, just past the 14 px contact band. The way back to the Hall is therefore offered only near the doorway's jambs.
+  - The capture stands at the west jamb.
+  - A one-line game fix would be `EXIT_RECT` from y 968, or the footprint a few px shorter; it needs the user's approval because it changes gameplay.
+- **The door rule:** each Hall door must look like its room's door seen from inside. The Hall's Dining door is still the stage-47 design, so when the HD art moves into the game, one follows the other.
+- **Real size (open):** stage 58 recorded a rule to build furniture at real size against the 1.4 m detective, after the user found the Chemistry table too big (4.8 × 4.4 m). That rule postdates stage 56's direction and is not yet reviewed.
+  - This stage keeps the painting's proportions, as stage 56 did: the banquet table is 5.1 × 2.8 m for eight places, the clock 3.8 m tall.
+  - If the user finds them too big, shrink them and the chairs as stage 58 did. The preview's footprint swap would then need to handle the Dining Hall's `RectangleShape2D` collisions (it only swaps `CollisionPolygon2D` today).
+- **Shared files:** the six changed pipeline files and the model manifest are shared with the parallel sessions; only the Dining Hall entries and the `overhead`, `rect_shapes` and `rects` options are this stage's.
+  - The Circuit session's worktree will need a small merge in `ROOMS` and `play_prototype.gd`.
+  - Stage 60 follows 58 and 59 from the other sessions. Renumber by commit order if needed.
+- **Next (proposed):** the user's review of the Dining Hall; then the Final Room, after Circuit.
+
+### GitHub documentation proposal
+
+- Note stage 60 in `docs/PROJECT_STATUS.md` (done locally): the Dining Hall rebuilt from its painting, with its chandelier hung above everyone.
+- Also add the Greenhouse line (stages 54 and 56), done locally.
+
+---
+
+## Stage: UX-20261021-59 (Library floor and gate)
+
+- **Date:** 2026-10-24
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes, its saves and the Web build are unchanged.
+- **Request:** the user's review of stage 57: "很好，就是地板和大门还需要优化" (very good, only the floor and the gate still need work).
+- **What was wrong in stage 57:**
+  - **Floor:** one large-tile photo printed across the whole room, so it read as a grey sheet with no flags. The rugs were plain fields with a faint lozenge, the stair foot was bare, and the floor ran under a flat slab band 26 px high across the whole south of the screen.
+  - **Gate:** the Hall's Library portal shrunk into a narrow gap in that slab, its leaves standing open on a lit fanlight, between two crystal pillars.
+- **What changed:** both are now built from the painted room's own design (`assets/backgrounds/library_archive.png`), as stage 56 did for the Greenhouse.
+- **Parallel work:** stage 58 (the Chemistry restyle) was written by another session in the meantime. Renumber by commit order if needed.
+
+### What changed
+
+- **Floor (`flagstones()`):**
+  - 846 dark flags laid in courses as the painting lays them. Rows run 18–32 px deep, stones are 24–62 px wide with their joints staggered, and about a fifth of the large flags run two courses deep.
+  - Each flag is a slab with a narrow chamfer and an occasional chipped corner, tipped a hair so no two catch the light alike. Each shows its own part of the CC0 `seaside_rock` photo in its own shade, between a slate grey and a warm grey, and is mottled; 54 carry a crack.
+  - Thin dark grit shows in the joints (`floor_bed()`). The flags go round the optical array's plate, the medallion and the cobbles, and stop short of the cases, the dais and the stair.
+  - Its tone in the open aisles is within a few levels of the painting's, with similar contrast (for example 48/36/36 against the painting's 49/41/36 in the west aisle).
+- **Cobbles (`cobbles()`):** the painting's patch of worn cobbles at the foot of the dais stair. 75 irregular stones are packed in a Voronoi pattern, each a low dome in brown and grey from the CC0 `rock_surface` photo; the spectrum window's rainbow now falls on them.
+- **Rugs (`rug_material`):** the painting's ornament on every rug.
+  - Each has a dark border band strung with gold dots between gold lines, and a guard of small dots.
+  - Runners carry gold rosettes down the middle, with sprigs and small flowers between them.
+  - Carpets carry a centre rosette in a double lozenge, corner rosettes and a lattice of small flowers.
+  - The gold is quieter than stage 57's.
+- **South front (`south_front()`):** the floor now ends where the room ends. A coping of pale dressed stone runs along the collision's south edge, and below it the dark ashlar wall drops two courses and fades into the dark (`laid_stone(..., fade=...)`). The flat slab band and its lit lip are gone.
+- **Gatehouse (`gate()`):** the painting's gate at the corridor's end, standing forward of the south front, replacing the Hall portal and the crystal pillars.
+  - Two stout piers with pale caps, and lower outer piers. A Library banner (deep blue edged in gold, a gold cross in a ring, a pointed foot) hangs on a brass rod between each pair.
+  - A sconce of two candles either side of the door, lighting the stone warmly.
+  - Slim pilasters carry a gabled hood of dark stone with a pale lip, with the Library's open book in brass under its peak.
+  - Under it, a pair of oak doors in a Tudor-pointed arch. They are framed and panelled, each with a brass ring above and a brass star below, studded rails and two pulls at the meeting stiles.
+  - A threshold and three widening steps go down toward the camera into the dark.
+  - It stays out of the depth pass, so a player at the door shows in front of it, as the painted one does.
+- **Awakened state:** the gate's banners glint gold with the archive's other brass; the glyph lines and the medallion lie on the new floor.
+- **Code:** `room_library.py` alone.
+  - New: `laid_stone`, `flagstone_material`, `joint_material`, `void_material`, `pale_stone`, `dressed_stone`, `ashlar_stone`, `gate_oak`, `banner_material`, `floor_bed`, `south_front`, `free_spans`, `lay_courses`, `flagstone`, `flagstones`, `clip_half`, `cobbles`, `tudor_arch`, `ashlar`, `gate`.
+  - Removed: `south_wall`, `south_pillars` and `portal`.
+  - Its lines are folded to 120 characters like its sibling modules, a layout-only change checked by comparing ASTs.
+
+### Exact files
+
+- **Changed:** `tools/blender/room_library.py`.
+- **Evidence:** `docs/evidence/2026-10-23-blender-library/`.
+  - `01`–`14` are re-shot.
+  - The new `15-restyle-floor-and-gate.png` shows the painted room, stage 57 and this pass side by side at the gate, along the floor's south edge and on the cobbles under the rainbow.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- **No new third-party assets:** `seaside_rock` and `rock_surface` are CC0 Poly Haven textures already in `cc0_textures.json` (added by the Greenhouse and Chemistry sessions).
+
+### Verification
+
+- **Blender 5.2.2, 128 samples, 2896×2172:**
+  - dormant: 357 s (room pass 247 s, under load from other sessions), 4546 objects, 49 glows, 20 props;
+  - awakened: 143 s, 4552 objects, 57 glows.
+- **Capture:** `capture_library.gd` passes 141/141 in EN and in ZH, re-run on the new render: props, highlight boxes, reach, markers, plate, depth, light, establishing shot and awakening.
+- **Depth:** the doorway column hides nothing from y 920 to 1030, and three towers still hide a player behind them (45, 12 and 26 rows).
+- **Other checks:** `tests/library_knowledge_access_test.gd` passes. pyflakes is clean; the headless editor parse has 0 errors; `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **Preview only**, as before.
+- **The gate is not a Hall door:** the handoff's door rule asks that each Hall door look like its room's door seen from inside. The Hall's Library portal is still the stage-47 design, so when the HD art moves into the game, either the Hall's Library door follows this gatehouse or the reverse.
+- **Next (proposed):** the user's review of the floor and the gate.
+
+### GitHub documentation proposal
+
+- Note stage 59 in `docs/PROJECT_STATUS.md` (done locally): the Library's floor laid flag by flag and its painted gatehouse.
+
+---
+
 ## Stage: UX-20261021-58 (Chemistry restyle)
 
 - **Date:** 2026-10-24
@@ -746,6 +1043,132 @@
 ### GitHub documentation proposal
 
 - README / project page: none until the user accepts the style. Then add the Circuit Room to the "Blender HD rooms (preview)" mention beside the Wake Room, with `01-overview.png` as the image.
+
+---
+
+## Stage: UX-20261021-57 (Library)
+
+- **Date:** 2026-10-24
+- **Status:** built and verified, awaiting the user's review. Nothing ships: the game, its scenes, its saves and the Web build are unchanged.
+- **Request:** "你现在负责libary 优化，用blender重新搭建，风格向大厅看齐，保持风格，让玩家游玩起来感觉惊讶" (rebuild the Library in Blender in the Hall's style, keep that style, and make playing it surprising).
+  - The user chose this checkout, a preview-only room like the Wake Room, and all five surprises offered: the archive awakening when the RGB puzzle is solved, moonlight shafts with dust and a prism rainbow, a two-storey gallery, light-test lamps that follow progress, and an establishing shot on first entry.
+- **Parallel work:** the Greenhouse (54, 56) and Chemistry (55) sessions edit the same shared files; this stage only adds to them. Renumber by commit order if needed.
+
+### What the room is now
+
+- **Built like the Hall:** the Hall's moonlight and wall tops, flagstones and slate from the same CC0 photo sets, worn warm oak and leather books. The gate is the Hall's own Library portal (`hall.build_portal`: book emblem, warm fanlight), seen from inside.
+- **On the game's own collision** (1448×1086; the camera still follows the player). All 28 interactions are the game's own, and the 20 cases and desks stand on their own collision rects. Their `Worldsort/` nodes keep legacy names; `room_library.py` maps each to what it now is.
+- **North, the reading bay:** a dais up a stair with balustrades, two violet reading chairs, a long-case clock, candle stands, and a spiral stair to the gallery.
+  - Behind it, the **spectrum window**: seven bands of coloured glass under a rose. Its light falls as a rainbow down the steps and across the floor.
+  - Either side stand **two pairs of great lancet windows** in stained glass, blue-violet in the west and green in the east. Their moonlight lands on the cases before them.
+- **Two storeys:** gallery wings 112 px up on either side of the bay. Their bookcases (the reading case and the jar case) stand on the deck.
+- **The archive:**
+  - bookcases dressed with books, scrolls, boxes, candles and lanterns;
+  - five archive towers with brass emblems (ring, compass, hourglass, wheel, crossed ring, clasp);
+  - the apothecary cabinet, the archive drawers and the chained case;
+  - the violet reflection cabinet and the additive archive.
+- **The three light tests,** each a desk with its own lamp:
+  - red at the research desk, with its spectroscope;
+  - green at the Reflection Matrix in the east;
+  - blue at the Additive Relay in the west, by the globe.
+- **The floor:**
+  - a violet carpet under the research desk, navy runners down the aisles and wine rugs under the desks;
+  - the optical array, a flush brass plate whose lens beds lie under the game's three filters;
+  - before the gate, the RGB medallion of three overlapping circles.
+- **South:** the low wall, with the gate between two violet crystal lamps.
+- **Awakened** (`LIBRARY_STATE=awakened` writes `render-awakened.png`):
+  - pale light from the optical array;
+  - the medallion's circles adding red, green and blue up to white;
+  - the cases' brass emblems burning gold, and glyph lines running from the array to the three light tests;
+  - the hidden archive text glowing on the floor and round the spectrum window.
+
+### The living light (preview layer, `prototype_library.gd`)
+
+- **Moonlight shafts:** 12 additive shafts (4 lancets, 7 spectrum bands and the rose) run from each window to where Blender cast its light through the built room. They breathe slowly, and 123 motes of dust drift down them.
+- **Light-test lamps:** each desk's lamp is dim while its test is dormant, brighter once its knowledge is filed, and steady once its filter is earned. It flares as it rises.
+- **The awakening:** seating the third filter sets `library_rgb_puzzle_solved` through the game's own flow.
+  - The game's ignition and reward card play first.
+  - Then the awakened archive spreads from the optical array across the room behind a bright rim (2.8 s). Meanwhile the camera draws back to the whole archive, holds, and returns to the detective (5.7 s in all).
+  - The awakened render's 56 glows light as the rim reaches them.
+  - A save already solved shows the archive awake at once, without the shot.
+- **The establishing shot:** the first time the Library loads in a run, the camera opens on the whole archive (zoom 0.71).
+  - The title reads "THE ARCHIVE OF LIGHT" / "光之档案馆", with "ASHFORD CASTLE · LIBRARY" / "阿什福德城堡 · 图书馆" beneath. It is set in the archive UI's pixel face, gold and parchment over a brass and violet rule, on the dark south wall.
+  - After 1.1 s the camera glides down to the detective (2.2 s).
+- **Shots and input:** while a shot plays, the detective stands still and the room's prompts wait. Any key or click skips it. The prompts return only once every key is up, so the key that skipped the shot does not also act in the room.
+- **Markers and plate:**
+  - The knowledge-shelf and light-test markers are seated on the HD cases.
+  - Over the HD plate, the game's flat optical plinth, inlays, frames and scanner housing are hidden. Its filters, beams, rings, glyphs, caption and light stay the game's own.
+  - Restoring puts all of it back.
+
+### Pipeline additions (shared, backward compatible)
+
+- `prototype_room.gd`:
+  - The Library joins `ROOMS`.
+  - A new `EXTRAS` table gives a room its own living layer (`attach(room, look)`, `apply`, `restore`, `advance`, `summary`). It is loaded at runtime with `load()`, so one room's layer cannot stop another from staging. Its summary joins the room's.
+- `play_prototype.gd`:
+  - `-- --library` opens the Library at its door.
+  - `-- --library-ready` opens it with its three light tests passed, so seating the filters at the optical array awakens it.
+- `export_room_layout.gd`: the `library_room` entry (its 20 `Worldsort/` props and `INTERACT_ITEMS`).
+
+### Exact files
+
+- **New:**
+  - `tools/blender/room_library.py`: the room in both states, and `render-library.json`.
+  - `tools/blender/prototype_library.gd` (+ `.uid`): the living light and the shots.
+  - `tools/blender/capture_library.gd` (+ `.uid`): 141 checks and the captures.
+  - Evidence: `docs/evidence/2026-10-23-blender-library/`:
+    - `01`–`07`: painted vs HD pairs at native 1024×768 (arrival, optical array, spectrum window, west aisle in ZH, east aisle, behind a tower, the gate in ZH);
+    - `08-establishing-shot.png` (EN and ZH), `09-glide-and-lamp.png`, `10-awakening.png` (four frames);
+    - `11-awakened-array.png` and `12-awakened-window.png`: painted vs awakened HD;
+    - `13-dormant-and-awakened.png` and `14-render-on-collision.png`.
+- **Changed (additions only):** `tools/blender/prototype_room.gd`, `tools/blender/play_prototype.gd` and `tools/blender/export_room_layout.gd`.
+- **Depends on the Greenhouse and Chemistry sessions' uncommitted work:**
+  - `roots` and `in_room` in `room_prototype.py`;
+  - the `"props"` and `"items"` export in `export_room_layout.gd`;
+  - the `Worldsort/player` lookups in `prototype_depth.gd` and `prototype_characters.gd`;
+  - their `ROOMS` entries and flags in `prototype_room.gd` and `play_prototype.gd`, beside which this stage's lines sit.
+  - Commit this stage with or after stages 54–56.
+- **Docs:** this report, `docs/AGENT_HANDOFF.md` and `docs/PROJECT_STATUS.md`.
+- **Generated, gitignored:** `prototypes/blender_rooms/library_room/` (layout, collision, both renders, depth, props, glows, `render-library.json`, captures).
+- **No new third-party assets:** the textures are the Hall's and the Wake Room's CC0 Poly Haven set, already in `cc0_textures.json`. The title uses the project's own Fusion Pixel font (OFL).
+
+### Verification
+
+- **Blender 5.2.2 (Cycles Metal), 128 samples, 2896×2172:**
+  - dormant: 155 s (room pass 86 s), 4448 objects, 48 glows, 20 props;
+  - awakened: 94 s, 4454 objects, 56 glows.
+- **Capture:** `capture_library.gd` passes 141/141 in EN and in ZH.
+  - **Props:** all 20 cases and desks are staged on their own nodes. Every highlight box follows its HD art and returns to the painted one.
+  - **Reach:** each knowledge shelf is chosen from at least 100 open spots (119–372). Each shelf and light test is chosen from at least 80% as many spots in HD as in the painted room: the writing desk from 116 against 132, every other from as many or more. The six markers sit on the HD cases and go back.
+  - **Plate:** the HD plate shows under the game's filters, and the game's plate comes back.
+  - **Depth:** three towers hide a player behind them (12–45 rows). The arrival, the gate and the open floor hide no one, and the gate still offers the way out.
+  - **Light:** 12 shafts and 123 motes show in HD only, and the dust drifts. The three lamps read dormant, primed (each flaring) and solved.
+  - **Establishing shot:**
+    - it opens on the whole archive, holds the detective and the prompts, and ends on the room's camera;
+    - a key skips it without also taking the gate;
+    - it plays once by itself.
+  - **Awakening:**
+    - two filters leave the archive dormant, and the third solves the puzzle in the game's own flow;
+    - the archive waits for the reward card, then spreads as the camera draws back;
+    - the camera returns with the detective free to walk;
+    - staged again, the solved archive shows awake at once.
+- **No regressions:**
+  - `capture_room.gd` 65/65, `capture_chemistry.gd` 80/80 and `capture_greenhouse.gd` 89/89 (EN). They re-shot those rooms' gitignored capture folders.
+  - `tests/library_knowledge_access_test.gd` passes.
+- **Godot:** gdlint and pyflakes are clean; the headless editor parse has 0 errors; `git diff --check` is clean, and the new files have no trailing whitespace.
+- **Playable preview:** `play_prototype.gd -- --library-ready` stages "48 glows, 20 HD props, depth true, 2 HD character sheets; 12 shafts, 123 motes, 3 lamps, awakened render true". It shows no script errors, and its exit-time leak count equals the Chemistry preview's.
+
+### Risks / follow-up
+
+- **Preview only:** the game's own Library is unchanged. The establishing shot plays once per run (a static flag); in the game it needs a saved story flag.
+- **The reward card:** the awakening waits for the card by reading `ItemRewardHud`'s `_panel` and `_queue`. If those change, it falls back to a 5 s cap.
+- **Legacy node names:** the 20 `Worldsort/` names no longer match what the pieces are (`TopLeftCabinetB` is a gallery bookcase); `room_library.py` maps them.
+- **Side walls are edge-on at 40°:** decoration on them hardly shows, so they carry lamps and low cabinets only.
+- **Next (proposed):** the user's review of the Library (the look, the shots' timing, the title's wording). Then the next room in order: the Circuit Room (mechanic), the Dining Hall, the Final Room.
+
+### GitHub documentation proposal
+
+- Add stage 57 to `docs/PROJECT_STATUS.md` (done locally): the HD Library, preview only, with its living light, awakening and establishing shot, linking `docs/evidence/2026-10-23-blender-library/`.
 
 ---
 
