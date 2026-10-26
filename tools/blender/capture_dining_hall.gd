@@ -44,6 +44,20 @@ const IN_ROOM: Array[String] = [
 	"DiningTable", "Fireplace", "WallDoor", "GrandfatherClock", "Sideboard", "Cabinet", "MainDoor",
 ]
 const CHANDELIER := "ChandelierSprite"
+## The furnishings the HD hall adds (stage 67), each at a spot inside its own
+## footprint: in the HD look the player cannot stand there; in the painted
+## room the floor is open again (but the trophy's, which the painted clock's
+## collision already covers).
+const FURNISHINGS: Dictionary = {
+	"west window bench": {"spot": Vector2(502, 276), "painted_open": true},
+	"east window bench": {"spot": Vector2(945, 276), "painted_open": true},
+	"fireside chairs": {"spot": Vector2(112, 470), "painted_open": true},
+	"heraldic trophy": {"spot": Vector2(1330, 440), "painted_open": false},
+	"chest": {"spot": Vector2(158, 950), "painted_open": true},
+	"casks": {"spot": Vector2(1150, 946), "painted_open": true},
+	"west candelabrum": {"spot": Vector2(606, 900), "painted_open": true},
+	"east candelabrum": {"spot": Vector2(842, 900), "painted_open": true},
+}
 ## North of the table its chairs' backs stand in front of the player; in front
 ## of its south chairs and on the open floor nothing does.
 const BEHIND_TABLE := Vector2(620, 458)
@@ -136,6 +150,7 @@ func _run() -> void:
 	_rect_checks(hd_rects, painted)
 	await _exit_checks()
 	await _prop_checks()
+	await _furnishing_checks()
 	await _depth_checks()
 	await _character_checks()
 	_show(false)
@@ -247,6 +262,22 @@ func _prop_checks() -> void:
 				await _shot("blender" if shown else "current", PROPS[id]["shot"])
 		if not own_stand:
 			await _pair(PROPS[id]["shot"])
+
+
+## The furnishings stand on their own footprints in the HD look, and the
+## painted room's floor comes back open where it is.
+func _furnishing_checks() -> void:
+	for shown: bool in [true, false]:
+		_show(shown)
+		await _wait(0.1)
+		for id: String in FURNISHINGS:
+			var spot: Vector2 = FURNISHINGS[id]["spot"]
+			var clear := spatial.is_position_clear(player, spot, 0.0)
+			if shown:
+				_expect(not clear, "The player cannot stand inside the %s (HD look, %s)" % [id, spot])
+			elif bool(FURNISHINGS[id]["painted_open"]):
+				_expect(clear, "The floor under the %s is open in the painted room (%s)" % [id, spot])
+	_show(false)
 
 
 ## The table hides the player behind it, never in front of it; the door's

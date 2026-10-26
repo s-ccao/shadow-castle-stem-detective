@@ -2,6 +2,48 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-67 (the Dining Hall furnished)
+
+- **Date:** 2026-10-25
+- **Status:** approved by the user ("满意"; the heraldic trophy kept rather than a Tripo suit of armour), then committed and pushed at their request. Preview only: the game and the website are unchanged. Their choice for next: move every HD room, figure, portrait and map into the game and sync the website.
+- **Request:** at stage 66's review the user chose to fill the Dining Hall, which at a real size is emptier than its painting, with some furniture ("加一些家具填满大厅（长凳、盔甲、边桌等）"), before the move into the game.
+
+### What changed (`tools/blender/room_dining_hall.py`)
+
+Every new piece is real-size against the 1.4 m detective, stands on floor the furniture left open, and keeps clear of every prompt's floor, the arrival, the way out and the boot prints:
+
+- **A window seat under each window:** an oak bench 1 m long with turned legs, a stretcher and a velvet cushion, its seat 46 cm up, in front of the stone sill.
+- **The hearth:** two of the hall's own chairs drawn up to the fire and turned in toward it, a low Gothic table between them (CC0 `gothic_coffee_table`, at 60 × 60 cm) with a pewter jug and a brass goblet on its tray.
+- **A heraldic trophy** between the wall door and the clock: the worn kite shield (CC0 `kite_shield`) on an oak post on a stone plinth, two swords (CC0 `antique_estoc`) crossed behind it. This is the user's "盔甲" (armour): no CC0 suit of armour exists on Poly Haven.
+- **An iron-bound chest** (CC0 `treasure_chest`, already in the manifest) in the south-west corner, its lock toward the room.
+- **Two wine casks** (CC0 `wine_barrel_01`, already in the manifest) against the south wall in the east.
+- **Two iron floor candelabra**, 1.6 m to the flames, either side of the way in from the main door, three candles each, with a pool of candlelight on the flagstones round each.
+- **Footprints** for all of them in `"collision"`, as `RoomCollisions/HD*` polygons the preview adds while staged and frees on restore: `HDWindowBench0`/`1`, `HDFireside`, `HDTrophy`, `HDChest`, `HDCasks`, `HDCandelabrum0`/`1`.
+- **`cc0_models.json`:** three models added with their authors, pages and SHA-256 (`gothic_coffee_table`, `kite_shield`, `antique_estoc`); `fetch_models.py` verifies every file.
+
+### Capture (`tools/blender/capture_dining_hall.gd`, 129 checks, was 114)
+
+- New `_furnishing_checks()`: in the HD look the player cannot stand inside any of the eight furnishings; in the painted room each spot is open floor again (but the trophy's, which the painted clock's collision covers).
+
+### Exact files
+
+- **Changed:** `tools/blender/room_dining_hall.py`, `tools/blender/capture_dining_hall.gd`, `tools/blender/cc0_models.json`; `docs/AGENT_STAGE_REPORT.md`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`.
+- **New:** `docs/evidence/2026-10-25-dining-furnishings/` (the painting beside the furnished hall, the hearth and trophy, the window seats, the south side, an in-game shot at the hearth).
+- **Local only (gitignored):** the Dining Hall's render, captures and audits; the three new models under `prototypes/blender_rooms/models/`.
+
+### Verification
+
+- **Light** (`measure_room.py`, against the painting): luminance 1.09, warmth 1.11, floor spread 0.85, within the standard (stage 66: 1.08, 1.00, 0.72; the candelabra add warm light).
+- **Captures, EN and ZH:** Dining Hall 129, Hall 176 and maps 24, all passing.
+- **Audits:** every Dining Hall interaction is offered from reachable floor (table 852 cells, clock 333, sideboard 522, fireplace 157, wall door 83, dresser 1188, exit 7 as before); coverage: no painted art left (41 staged).
+- **Godot and lint:** headless editor parse with 0 script errors; `capture_dining_hall.gd` parses alone and gdlint is clean; pyflakes is clean on `room_dining_hall.py`; `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **The painting has none of these pieces.** They are the hall's own kind of furniture (its chairs, its oak, its candles) and CC0 period pieces, chosen to fill the open floor without crowding the routes.
+- **Not a full suit of armour:** a heraldic trophy stands in for it; a suit would need a Tripo model.
+- **Next:** the move of every HD room, figure, portrait and map into the game, and the deploy (the user's plan).
+
 ## Stage: UX-20261021-66 (the Library and the Dining Hall to the room standard)
 
 - **Date:** 2026-10-25

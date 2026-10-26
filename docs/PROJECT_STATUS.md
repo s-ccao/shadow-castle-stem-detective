@@ -41,6 +41,7 @@
     - the south wall's torches either side of the arched double door, and flagstones laid one by one with muddy boot prints across them.
     - Every interaction still works in the preview. [Comparisons](evidence/2026-10-24-blender-dining-hall/).
     - Since stage 66 its furniture is a real size against the detective: the table 3.2 × 1.15 m and 76 cm high with its chairs round it, the clock 2.1 m tall by the east wall, the sideboard 2.2 m long against it, the serving table 55 cm deep. The hearth burns as a bed of embers lighting its firebox, the floor's joints are fine, and the room is as bright and as warm as its painting. [Room standard](evidence/2026-10-25-room-standard/).
+    - Since stage 67 the open floor that left is furnished: window seats under both windows, two chairs and a low table drawn up to the fire, a heraldic trophy of a shield and crossed swords, an iron-bound chest, two wine casks, and two iron candelabra lighting the way in. Every interaction still works. [Furnishings](evidence/2026-10-25-dining-furnishings/).
   - **The Final Room** (stage 62) is rebuilt from its painting to the room standard:
     - the vault door between glazed cabinets and brass lanterns, violet lancets and crystal lanterns, and scroll alcoves and presses along the walls;
     - the Ashford analysis table at a real table's size, 3.2 m across, its eight evidence panels in brass, ringed by a brass circle in the floor; the player can stand behind it, hidden by it;

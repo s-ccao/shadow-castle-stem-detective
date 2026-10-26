@@ -128,6 +128,21 @@ SERVING = (1302.0, 1386.0, 254.0, 296.0)
 # is turned from facing south toward the east (in the room, not on screen).
 DRESSER = (150.0, 784.0)
 DRESSER_TURN = math.radians(31.0)
+# The hall's furnishings (stage 67), on the floor the real-size furniture
+# leaves open, each clear of every prompt's floor, the arrival and the boot
+# prints: a bench under each window (in front of its sill), two chairs and a
+# low table at the hearth, a heraldic trophy between the wall door and the
+# clock, a chest in the south-west corner, two casks against the south wall
+# in the east, and two floor candelabra either side of the way in.
+WINDOW_BENCH_X = (502.0, 945.0)
+BENCH_HALF = 50.0
+BENCH_Y = (BACK_Y + 8.0, BACK_Y + 39.0)
+FIRESIDE_CHAIRS = ((112.0, 448.0), (236.0, 448.0))
+FIRESIDE_TABLE = (174.0, 425.0)
+TROPHY = (1330.0, 430.0)
+CHEST = (158.0, 950.0)
+CASKS = ((1110.0, 946.0), (1188.0, 946.0))
+CANDELABRA = ((606.0, 900.0), (842.0, 900.0))
 ROUND = math.cos(math.radians(hall.ALPHA_DEGREES))
 CANDLE = (1.0, 0.6, 0.28)
 FIRE = (1.0, 0.42, 0.14)
@@ -1963,6 +1978,132 @@ def debris():
     return kit
 
 
+# ---------------------------------------------------------------- the furnishings
+
+
+def top_h(obj):
+    """The height (screen px up) of an object's highest point."""
+    corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+    return max(corner.z for corner in corners) * RP.SIN / RP.PX
+
+
+def window_benches():
+    """A bench under each window as a window seat: four turned legs and a
+    stretcher, a moulded apron, a velvet cushion, its seat just under the
+    stone sill and clear of it."""
+    kit = RP.Kit("WindowBenches")
+    wood, cloth = oak(), velvet()
+    y0, y1 = BENCH_Y
+    for index, cx in enumerate(WINDOW_BENCH_X):
+        x0, x1 = cx - BENCH_HALF, cx + BENCH_HALF
+        part = "Bench%d" % index
+        for x in (x0 + 5.0, x1 - 5.0):
+            for y in (y0 + 4.0, y1 - 4.0):
+                kit.lathe(part + "Leg", x, y, [(0.0, 0.0), (2.6, 0.0), (2.6, 2.0), (1.6, 4.0), (2.2, 9.0), (1.4, 14.0),
+                                               (2.0, 19.0), (2.4, 21.0), (2.4, 26.0), (0.0, 26.0)], wood, plan=ROUND,
+                          segments=14)
+        gh.wood_boxes(kit, part + "Apron", [(x0 + 2.0, x1 - 2.0, y1 - 3.0, y1 - 1.0, 21.0, 26.0),
+                                            (x0 + 2.0, x1 - 2.0, y0 + 1.0, y0 + 3.0, 21.0, 26.0)], wood, grain="x",
+                      bevel=0.4)
+        gh.wood_boxes(kit, part + "Ends", [(x0 + 2.0, x0 + 4.0, y0 + 3.0, y1 - 3.0, 21.0, 26.0),
+                                           (x1 - 4.0, x1 - 2.0, y0 + 3.0, y1 - 3.0, 21.0, 26.0)], wood, grain="y",
+                      bevel=0.4)
+        middle = (y0 + y1) / 2.0
+        gh.wood_boxes(kit, part + "Stretcher", [(x0 + 5.0, x1 - 5.0, middle - 1.2, middle + 1.2, 5.0, 7.5)], wood,
+                      grain="x", bevel=0.3)
+        gh.wood_boxes(kit, part + "Seat", [(x0, x1, y0, y1, 26.0, 28.5)], wood, grain="x", bevel=0.8)
+        kit.box(part + "Cushion", x0 + 3.0, x1 - 3.0, y0 + 2.0, y1 - 2.0, 28.5, 32.0, cloth, bevel=1.6, uv="box")
+    return kit
+
+
+def fireside():
+    """Two of the hall's chairs drawn up to the hearth and turned in toward
+    the fire, a low Gothic table between them with a jug and a goblet."""
+    kit = RP.Kit("Fireside")
+    wood, cloth = oak(), velvet()
+    turn = math.radians(25.0)
+    for index, ((x, y), side) in enumerate(zip(FIRESIDE_CHAIRS, (1.0, -1.0))):
+        before = set(bpy.data.objects)
+        chair(kit, "FiresideChair%d" % index, wood, cloth)
+        face_on(made_since(before), x, y, (side * math.sin(turn), -math.cos(turn)), "FiresideChair%d" % index)
+    tx, ty = FIRESIDE_TABLE
+    table = MODEL.place(kit, "gothic_coffee_table", "gothic_coffee_table", tx, ty, 0.0, scale=0.42, depth=True)
+    if table is not None:
+        # Its top is a tray inside a raised rim: stand things on the tray.
+        top = top_h(table) - 0.8
+        jug(kit, "FiresideJug", tx - 8.0, ty - 3.0, top, pewter(), size=0.9)
+        MODEL.place(kit, "brass_goblets", "brass_goblet_01", tx + 9.0, ty + 3.0, top, scale=1.0, turn=1.2)
+    return kit
+
+
+def trophy():
+    """A heraldic trophy by the east wall, between the wall door and the
+    clock: a kite shield hung on an oak post over two swords crossed behind
+    it, the post on a stone plinth."""
+    kit = RP.Kit("Trophy")
+    wood = oak()
+    cx, cy = TROPHY
+    kit.box("Plinth", cx - 20.0, cx + 20.0, cy - 15.0, cy + 15.0, 0.0, 8.0, ashlar(), bevel=1.0, uv="box")
+    gh.wood_boxes(kit, "Post", [(cx - 3.5, cx + 3.5, cy - 3.0, cy + 3.0, 8.0, 108.0)], wood, grain="h", bevel=0.5)
+    kit.lathe("PostCap", cx, cy, [(0.0, 108.0), (4.2, 108.0), (4.2, 109.5), (2.6, 111.0), (3.0, 113.5), (0.0, 116.0)],
+              wood, plan=ROUND, segments=16)
+    # Each sword stands on its pommel; leaned in the shield's plane about its
+    # pommel, its middle lands behind the shield's middle.
+    middle, half = 62.0, 74.5
+    for index, side in enumerate((-1.0, 1.0)):
+        lean = math.radians(32.0) * side
+        MODEL.place(kit, "antique_estoc", "antique_estoc", cx - half * math.sin(lean),
+                    cy + 10.0, middle - half * math.cos(lean) * RP.SIN, tilt=(0.0, lean), depth=True)
+    MODEL.group(kit, "kite_shield", cx, cy + 22.0, 16.0, depth=True)
+    return kit
+
+
+def chest():
+    """An iron-bound chest in the south-west corner, against the room's
+    south edge, its lid shut and its lock toward the room."""
+    kit = RP.Kit("Chest")
+    MODEL.group(kit, "treasure_chest", *CHEST, 0.0, turn=math.pi, depth=True)
+    return kit
+
+
+def casks():
+    """Two wine casks stood against the south wall in the east."""
+    kit = RP.Kit("Casks")
+    for index, (x, y) in enumerate(CASKS):
+        MODEL.group(kit, "wine_barrel_01", x, y, 0.0, turn=0.7 + 1.9 * index, depth=True)
+    return kit
+
+
+def candelabra():
+    """Two iron floor candelabra either side of the way in from the main
+    door, taller than the detective, three candles each, throwing pools of
+    candlelight on the flagstones."""
+    kit = RP.Kit("Candelabra")
+    iron = hall._cast_iron()
+    for index, (x, y) in enumerate(CANDELABRA):
+        part = "Candelabrum%d" % index
+        for k in range(3):
+            angle = math.radians(90.0 + 120.0 * k)
+            fx, fy = x + 15.0 * math.cos(angle), y + 15.0 * math.sin(angle) / RP.STRETCH
+            kit.rod(part + "Foot%d" % k, (x, y, 9.0), (fx, fy, 0.8), 1.5, iron)
+            kit.ball(part + "Toe%d" % k, fx, fy, 1.0, 2.2, iron, plan=0.8)
+        kit.lathe(part + "Shaft", x, y, [(0.0, 7.0), (3.6, 7.0), (4.0, 9.5), (2.0, 13.0), (1.8, 30.0), (2.8, 32.0),
+                                         (1.8, 34.0), (1.7, 57.0), (3.4, 60.5), (1.8, 64.0), (1.6, 97.0),
+                                         (0.0, 97.0)], iron, plan=ROUND, segments=16)
+        kit.lathe(part + "Pan", x, y, [(0.0, 94.0), (9.0, 95.5), (10.0, 97.0), (9.2, 97.3), (0.0, 96.2)], iron,
+                  plan=ROUND, segments=24)
+        for k, (dx, lift) in enumerate(((-11.0, 0.0), (0.0, 6.0), (11.0, 0.0))):
+            if dx:
+                kit.rod(part + "Arm%d" % k, (x, y, 97.0), (x + dx, y, 100.0 + lift), 0.8, iron)
+            kit.lathe(part + "Cup%d" % k, x + dx, y, [(0.0, 100.0 + lift), (2.8, 100.0 + lift), (3.2, 103.0 + lift),
+                                                      (0.0, 102.4 + lift)], iron, plan=ROUND, segments=14)
+            kit.candle(part + "Candle%d" % k, x + dx, y, 102.4 + lift, height=12.0, radius=2.0, power=2.6)
+        # The three flames' light on the floor round the stand, as the
+        # room's other lamps throw theirs.
+        kit.light(part + "Pool", x, y + 2.0, 112.0, CANDLE, 16.0, radius=0.12)
+    return kit
+
+
 # ---------------------------------------------------------------- the room
 
 
@@ -2015,6 +2156,12 @@ def build(rp, layout):
     paving()
     boot_prints()
     debris()
+    window_benches()
+    fireside()
+    trophy()
+    chest()
+    casks()
+    candelabra()
     door_surround()
     moon_sky()
     props = {
@@ -2041,8 +2188,10 @@ def build(rp, layout):
 def footprints():
     """The collision the real-size furniture needs in place of the painted
     footprints: the table with its chairs round it, the clock, and the
-    sideboard with its drawer pulled out; and the north-east corner's wall
-    notch drawn back to the serving table's real depth."""
+    sideboard with its drawer pulled out; the north-east corner's wall notch
+    drawn back to the serving table's real depth; and footprints for the
+    furnishings the painting does not have (under RoomCollisions, freed when
+    the painted room comes back)."""
     def rect(x0, x1, y0, y1):
         return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
 
@@ -2053,7 +2202,20 @@ def footprints():
     span = (t1 - t0 - 28.0) / 3.0
     drawer = (t0 + 8.0 + span + 6.0, t0 + 8.0 + 2.0 * span + 6.0)
     serving = SERVING[3]
-    return {
+    tx, ty = TROPHY
+    furnishings = {
+        "RoomCollisions/HDFireside": rect(62.0, 286.0, 400.0, 497.0),
+        "RoomCollisions/HDTrophy": rect(tx - 44.0, tx + 44.0, ty - 16.0, ty + 28.0),
+        "RoomCollisions/HDChest": rect(CHEST[0] - 51.0, CHEST[0] + 51.0, CHEST[1] - 22.0, CHEST[1] + 22.0),
+        "RoomCollisions/HDCasks": rect(CASKS[0][0] - 39.0, CASKS[1][0] + 39.0, CASKS[0][1] - 31.0,
+                                       CASKS[0][1] + 31.0),
+    }
+    for index, cx in enumerate(WINDOW_BENCH_X):
+        furnishings["RoomCollisions/HDWindowBench%d" % index] = rect(cx - BENCH_HALF - 1.0, cx + BENCH_HALF + 1.0,
+                                                                     BENCH_Y[0] - 1.0, BENCH_Y[1] + 1.0)
+    for index, (x, y) in enumerate(CANDELABRA):
+        furnishings["RoomCollisions/HDCandelabrum%d" % index] = rect(x - 17.0, x + 17.0, y - 13.0, y + 13.0)
+    return furnishings | {
         # The end chairs' backs reach 95 px past the table's ends, the side
         # chairs' 41 plan px past their seats' fronts.
         "Worldsort/DiningTable/FurnitureCollision/FurnitureShape": rect(x0 - 97.0, x1 + 98.0, y0 - 35.0, y1 + 60.0),

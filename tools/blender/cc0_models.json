@@ -1,5 +1,5 @@
 {
-  "purpose": "CC0 models used by tools/blender/room_greenhouse.py (plants and the gardener's tools), tools/blender/room_chemistry.py (the laboratory's storage, vessels and brassware) and tools/blender/room_dining_hall.py (the banquet's brassware, wine and fruit). Fetch them with tools/blender/fetch_models.py; the binaries are not committed.",
+  "purpose": "CC0 models used by tools/blender/room_greenhouse.py (plants and the gardener's tools), tools/blender/room_chemistry.py (the laboratory's storage, vessels and brassware) and tools/blender/room_dining_hall.py (the banquet's brassware, wine and fruit, and the hall's chest, low table and heraldic trophy). Fetch them with tools/blender/fetch_models.py; the binaries are not committed.",
   "license": "CC0 1.0 Universal (public domain dedication), Poly Haven",
   "destination": "prototypes/blender_rooms/models",
   "assets": [
@@ -1323,6 +1323,112 @@
         "textures/food_pears_asian_01_nor_gl_1k.jpg": {
           "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/food_pears_asian_01/food_pears_asian_01_nor_gl_1k.jpg",
           "sha256": "5e31717c809fd7237e3be31b191dcbe52e317b8d4cc7af27abcb404658dceb05"
+        }
+      }
+    },
+    {
+      "asset": "gothic_coffee_table",
+      "name": "Gothic Coffee Table",
+      "authors": [
+        "Ulan Cabanilla"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/gothic_coffee_table",
+      "files": {
+        "gothic_coffee_table_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/gothic_coffee_table/gothic_coffee_table_1k.gltf",
+          "sha256": "4368fa0a0d81cd8651bfcc8a6b48bf43576e1549770c1057eea71eea3d99d54b"
+        },
+        "textures/gothic_coffee_table_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/gothic_coffee_table/gothic_coffee_table_nor_gl_1k.jpg",
+          "sha256": "9c066c887be6cb5ccf78979a631e48a5b6f58adbde5b1395481055f20b98d2a0"
+        },
+        "textures/gothic_coffee_table_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/gothic_coffee_table/gothic_coffee_table_diff_1k.jpg",
+          "sha256": "d3e2f091c0010da1f5e5e974ee09c2639674a78231a8b920b2f95098be8a588d"
+        },
+        "textures/gothic_coffee_table_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/gothic_coffee_table/gothic_coffee_table_arm_1k.jpg",
+          "sha256": "da1f1a69554aa5b5fd571f32ac54a9fe2e9cafc235a00a901e887537ce0174dc"
+        },
+        "gothic_coffee_table.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/gothic_coffee_table/gothic_coffee_table.bin",
+          "sha256": "6f138d3da02e5d70b2cd0932b015d72a306b9f91acbbc8e6abdb2f4982eddb40"
+        }
+      }
+    },
+    {
+      "asset": "kite_shield",
+      "name": "Kite Shield",
+      "authors": [
+        "Ulan Cabanilla"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/kite_shield",
+      "files": {
+        "kite_shield_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/kite_shield/kite_shield_1k.gltf",
+          "sha256": "269a2467ca0c52df75bc5272a5246e2bcaf6cfe128eecf801542696a7bfef61d"
+        },
+        "textures/kite_shield_body_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/kite_shield/kite_shield_body_diff_1k.jpg",
+          "sha256": "7ed490545ccf4df0902d9b9cd71910cdbacb2f4cfef9aac72ca04134436d471b"
+        },
+        "textures/kite_shield_body_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/kite_shield/kite_shield_body_nor_gl_1k.jpg",
+          "sha256": "562b943c11ff3ba16cc0e10b49976faba38f7602c83d501cb36dee5b3ea027db"
+        },
+        "textures/kite_shield_clamps_trim_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/kite_shield/kite_shield_clamps_trim_diff_1k.jpg",
+          "sha256": "fd786e98045804fc772b1a3005b38a936fe30852919644a30d9241c7beb67f98"
+        },
+        "textures/kite_shield_clamps_trim_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/kite_shield/kite_shield_clamps_trim_arm_1k.jpg",
+          "sha256": "2e1fe58aab65306124a63b8878fece977382b4662e23a2957c434e71272dc190"
+        },
+        "kite_shield.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/kite_shield/kite_shield.bin",
+          "sha256": "5f936bc82f628fe243b062f2a240ea11549995fbf24d1c1055bdc29292cf96a9"
+        },
+        "textures/kite_shield_clamps_trim_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/kite_shield/kite_shield_clamps_trim_nor_gl_1k.jpg",
+          "sha256": "e430f8032662bccd15ef42037e6971c94277da6eb3549d00965d61b7e3f604d2"
+        },
+        "textures/kite_shield_body_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/kite_shield/kite_shield_body_arm_1k.jpg",
+          "sha256": "a4b6e349a5f33cae71c00f9ab98ee41b2b06817d87d0ef07e8e815f0dc628e38"
+        }
+      }
+    },
+    {
+      "asset": "antique_estoc",
+      "name": "Antique Estoc",
+      "authors": [
+        "James Ray Cock",
+        "Ulan Cabanilla"
+      ],
+      "license": "CC0 1.0 Universal (public domain), Poly Haven",
+      "page": "https://polyhaven.com/a/antique_estoc",
+      "files": {
+        "antique_estoc_1k.gltf": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/antique_estoc/antique_estoc_1k.gltf",
+          "sha256": "8b89790cb865aade4992cafc6310292318528a6bad6b2445b194733a1ba924e8"
+        },
+        "textures/antique_estoc_arm_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/antique_estoc/antique_estoc_arm_1k.jpg",
+          "sha256": "f8b8b340672af212d019c49e51dcd7a0f1ebac1db361f0a64b363352038e7dc9"
+        },
+        "textures/antique_estoc_nor_gl_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/antique_estoc/antique_estoc_nor_gl_1k.jpg",
+          "sha256": "0f8bbbcc2ab273d87d66711c65bd61cb44de654543db8576c5fcb2139ae51df2"
+        },
+        "textures/antique_estoc_diff_1k.jpg": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/antique_estoc/antique_estoc_diff_1k.jpg",
+          "sha256": "a67b7f734e8eaaed7584fb35f55166209e2df4d62e349c379309b44def844dd4"
+        },
+        "antique_estoc.bin": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/antique_estoc/antique_estoc.bin",
+          "sha256": "ef986112b317dd667f0bc8ca80647621572e82b04dacddbe4eed078121af89d7"
         }
       }
     }
