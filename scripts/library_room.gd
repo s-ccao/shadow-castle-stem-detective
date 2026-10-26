@@ -191,7 +191,9 @@ var INTERACT_ITEMS: Array[Dictionary] = [
 		"name": "recipe_vision_scroll",
 		"label": "the lens-scroll",
 		"position": Vector2(300.0, 480.0),
-		"interaction_rect": Rect2(260.0, 442.0, 80.0, 76.0),
+		# Ends at the atlas case's front: any lower and it reaches over the floor
+		# in front of lower_storage and, listed first, takes its prompt.
+		"interaction_rect": Rect2(260.0, 442.0, 80.0, 66.0),
 		"interaction_radius": RECIPE_INTERACT_RADIUS,
 		"message": (
 			"A scroll hidden inside an old atlas. "

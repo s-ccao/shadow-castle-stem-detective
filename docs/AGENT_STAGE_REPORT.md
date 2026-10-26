@@ -2,10 +2,80 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-69 (stage 68's two known HD issues fixed)
+
+- **Date:** 2026-10-26
+- **Status:** deployed to play.shadowcastledetective.com at the user's request ("重新部署网站，并提交推送"). Committed and pushed with this report.
+- **Request:** "修复这两个已知问题" (fix the two known issues), after stage 68's commit and push.
+
+### What changed
+
+- **The Hall could freeze with the HD look** (`scripts/hd/hd_depth.gd`):
+  - **Cause:** the depth pass kept every sprite it had ever tracked as a key of `entries`. That included the footprints, which are freed and laid again with every new trail. GDScript walks a Dictionary by looking up the key it is on, so when a new sprite took a freed one's memory, the lookup could land on the old key and the loop went round for ever. The game stopped drawing, at full CPU.
+  - **Found with temporary tracing:** the frame stuck in `HDLook._process`, then in `hd_hall.advance`, then in `depth.advance`'s loop over `entries`. One pass over 288 entries made more than 20,000 visits.
+  - **Seen in:** `hall_route_authoring_test` with HD on, in about half of the runs. Normal play lays the trail again too: after leaving it, and at each step of the arrival.
+  - **Fix:** `entries` is keyed by the sprite's instance id, which is never reused, and each entry holds its sprite. `advance` walks a copy of the keys and drops entries whose sprite was freed; `restore` walks the values.
+- **The same hazard in the figures** (`scripts/hd/hd_characters.gd`): `swaps` was keyed by the game's sprites and walked every physics tick, and a Guardian can be freed and another staged. It is keyed by instance id now, with the sprite in each entry. `figure_of`, `gait_of`, `cycles_of` and `staged` are unchanged for their callers.
+- **The lens-scroll's box** (`scripts/library_room.gd`): `recipe_vision_scroll`'s `interaction_rect` is 66 px tall instead of 76, so it ends at the atlas case's front (y 508) rather than on the floor in front of the violet reflection cabinet.
+  - Before, it ran to y 518. In HD the cabinet's box starts at y 517, lifted 1 px by the flame of the candle on its top, so the two boxes shared a 25.5 × 1 px strip. Painted, they were 0.33 px apart.
+  - The scroll is listed first, so on the floor north of the cabinet it took the cabinet's prompt.
+  - Now the gap is 9 px in HD and 10.3 px painted. The scroll is still offered from the rug and the atlas case's front.
+- **`tests/interaction_stops_walk_test.gd`:** before its walk it waits, up to 8 s, for the room to let the detective walk.
+  - The HD Library holds the detective during its establishing shot on its first load, so the walk never started ("was walking: false"). The rule under test was not broken.
+- **`tests/hd_look_test.gd`:** two new checks, 37 in all. 64 footprint sprites are tracked and freed, and a stand-in Guardian is staged and freed. Neither the depth pass nor the figures may keep an entry for a freed sprite.
+
+### The website
+
+- **Deployment:** `shadow-castle-detective-play-ixcl1bnrm-cyc4.vercel.app` → https://play.shadowcastledetective.com.
+  - `index.pck` is 92,337,272 B, SHA-256 `9dd06d0c…`, identical live and local.
+  - The ETags of `index.html`, `index.js`, `index.wasm`, `index.pck` and the service worker equal the local MD5s.
+  - The service-worker cache is `1793002165|5145394` (was `1792996368|4961264`), so a browser holding stage 68's build shows "A new game update is ready".
+- **Rollback target:** `shadow-castle-detective-play-j3y5kdxda-cyc4.vercel.app` (stage 68).
+- **Before deploying:**
+  - The new pack's directory differs from the live one only in `scripts/hd/hd_characters.gdc`, `scripts/hd/hd_depth.gdc` and `scripts/library_room.gdc`: same 1,030 files, none from `prototypes/`.
+  - The pack check matches stage 68's: 28 scenes load, all 147 HD images are present, and the only missing literal path is the known `scripts/wall_collision_data.gd` fallback.
+  - The build was booted in headless Chrome on the Apple M3 GPU (ANGLE Metal) from a local server: no console errors and 5.9 s to the title. In the HD Wake Room it ran at 60 fps, both standing and walking (median and 95th percentile 16.7 ms, worst 16.8 ms), with a 123 MB JS heap. That is the web frame rate stage 68 could not measure, for the Wake Room.
+
+### Verification
+
+- **The hang:** `hall_route_authoring_test -- --hd` passed 20 of 20 runs, each in 8–10 s with 60 checks. Before the fix, today's runs hung in the first or second run of each batch and were killed at 90 s.
+- **Red and green:** with stage 68's `hd_depth.gd` and `hd_characters.gd`, the new `hd_look_test` check hangs (killed at 120 s after 13 checks). With the fix, `hd_look_test` passes 37 of 37.
+- **The Library:**
+
+  | Test | Painted | HD |
+  | --- | --- | --- |
+  | `library_knowledge_access_test` | 65 of 65 (`lower_storage` 122 spots, was 115) | 65 of 65 (106 spots, was 99 and failed) |
+  | `interaction_stops_walk_test` | 16 of 16 | 16 of 16 |
+- **In game,** with HD at 1024 × 768 (shots not committed):
+  - beside the atlas case, the lens-scroll is offered;
+  - at (334.5, 537), north of the cabinet, the violet reflection cabinet is offered; the scroll was, before.
+- **Full headless suites** (each under its own HOME):
+  - painted: 57 of 58 pass. `room_spatial_audit` fails only its 6 known Hall cases.
+  - with HD on: 55 of 58 pass, up from 52. `hall_route_authoring_test`, `library_knowledge_access_test` and `interaction_stops_walk_test` now pass. The three that still fail assert the painted game or are known:
+    - `character_scale_profiles_test`: its 5 checks of the painted figure sizes, as in stage 68;
+    - `hd_look_test`'s two dormant-mode checks, which only hold without `--hd`;
+    - `room_spatial_audit`'s 6 Hall cases.
+- **Captures, EN and ZH:** all ten pass, 1,056 checks per language and 2,112 in all, as in stage 68.
+  - Four runs were cut short with no failure: their windows were closed from outside, so they ended with code 0 and no summary line. They were Chemistry EN, Library EN and both Dining Hall runs, and their re-runs passed in full (102, 141, 129 and 129).
+- **Godot and lint:**
+  - the headless editor parse reports 0 script errors;
+  - gdlint is clean on `hd_depth.gd`, `hd_characters.gd` and both tests. `library_room.gd` has its 24 earlier problems and no new one;
+  - `git diff --check` is clean.
+
+### Risks / follow-up
+
+- **Bugs the user reported next, not fixed in this stage:**
+  - the player can walk out past the Library's main door;
+  - Dr. Lin is far too big in the Final Room, beside the detective and the cast.
+- **The approach-area test is sensitive to small shifts:** it samples a 10 px grid anchored to the shelf's box, so a 1 px shift in a box moves a whole row (14 spots). HD now has 106 spots against a threshold of 100.
+- **The Library's other object-keyed records:** `hd_library.gd`'s `stand_parts` and `marker_positions` still use objects as keys. Neither is ever iterated, and their nodes live as long as the room.
+- **Web frame rate:** measured only in the Wake Room. The Hall and the larger rooms are not measured yet.
+- **Next:** the two reported bugs.
+
 ## Stage: UX-20261021-68 (the HD look in the game, on the website)
 
 - **Date:** 2026-10-25
-- **Status:** deployed to play.shadowcastledetective.com at the user's request. Not yet committed.
+- **Status:** deployed to play.shadowcastledetective.com at the user's request. The user approved commit and push: committed as `726a934` and pushed to `origin/main`.
 - **Requests:**
   - "开始" (start): move every HD room, figure, portrait and map into the game, then sync the website (the user's plan from stage 66's review);
   - "现在只需要你同步到网站上并且把原来的贴图的哪一套给删掉" (only sync it to the website, and delete the old set of art);
@@ -83,11 +153,11 @@
 
 ### Risks / follow-up
 
-- **An intermittent hang with the HD look on:** `hall_route_authoring_test` stops in 2 of 6 runs, in a developer-mode route-recording step after a cancelled recording. It never stops in painted runs. Bisected to the depth pass; not yet fixed. Normal play has not shown it.
-- **The HD Library's boxes:** with HD on, `library_knowledge_access_test` finds that `recipe_vision_scroll`'s box covers part of `lower_storage`'s approach area, and `interaction_stops_walk_test` fails in the Library. Both items are still offered (stage 66's audit), but the boxes need adjusting.
+- **An intermittent hang with the HD look on:** `hall_route_authoring_test` stops in 2 of 6 runs, in a developer-mode route-recording step after a cancelled recording. It never stops in painted runs. Bisected to the depth pass; not yet fixed. Normal play has not shown it. *Fixed in stage 69: it was the depth pass's Dictionary of freed footprint sprites, and normal play could hit it too.*
+- **The HD Library's boxes:** with HD on, `library_knowledge_access_test` finds that `recipe_vision_scroll`'s box covers part of `lower_storage`'s approach area, and `interaction_stops_walk_test` fails in the Library. Both items are still offered (stage 66's audit), but the boxes need adjusting. *Fixed in stage 69; the walk test's Library failure was the establishing shot holding the detective.*
 - **Tests that assert the painted look** fail with HD on, as expected: `character_scale_profiles_test` (the Hall's figures are drawn smaller in HD) and `hd_look_test`'s own dormant checks.
 - **Web frame rate not measured:** the integrated browser's tab was hidden, so it throttled.
-- **Uncommitted:** what is live is not on `main` yet. A deploy from `main` would bring the painted game back.
+- **Committed:** `726a934` holds what is live, so `main` and the website match.
 - **Next:** fix the depth-pass hang and the Library's boxes; measure the web frame rate on a visible tab; commit.
 
 ## Stage: UX-20261021-67 (the Dining Hall furnished)

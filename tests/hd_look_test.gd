@@ -85,6 +85,8 @@ func _run() -> void:
 			hall_look.call("summary") if hall_look != null else "none"
 		)
 	)
+	if hall_look != null:
+		_check_freed_sprites_are_let_go(hall_look)
 	for scene_path: String in ROOM_SCENES:
 		await _load(scene_path)
 		var room_name := Room.room_for(scene_path)
@@ -114,6 +116,47 @@ func _run() -> void:
 func _owns(property: String, root_property: String) -> bool:
 	var staged: RefCounted = look.get(property)
 	return staged != null and staged.get(root_property) == current_scene
+
+
+## Footprints come and go with every route the Hall lays, and a Guardian can be
+## freed and another staged. The depth pass and the figures must let go of what
+## was freed: iterating a Dictionary still keyed by freed objects could loop for
+## ever, which froze the Hall now and then (stage 69).
+func _check_freed_sprites_are_let_go(hall_look: RefCounted) -> void:
+	var depth: RefCounted = hall_look.get("depth")
+	for _route: int in range(64):
+		var print_sprite := Sprite2D.new()
+		current_scene.add_child(print_sprite)
+		depth.call("_track", print_sprite, null, {"tint": Color(0, 0, 0, 0), "alpha": 0.35})
+		print_sprite.free()
+	depth.call("advance", 0.0)
+	_expect(
+		_stale(depth.get("entries") as Dictionary) == 0,
+		"The depth pass lets go of footprints once they are freed"
+	)
+	var characters: RefCounted = hall_look.get("characters")
+	var body := Node2D.new()
+	var stand_in := AnimatedSprite2D.new()
+	body.add_child(stand_in)
+	current_scene.add_child(body)
+	characters.call("_swap", stand_in, body, "guardian")
+	var swapped: bool = characters.call("figure_of", stand_in) != null
+	body.free()
+	characters.call("track", 0.0)
+	characters.call("_rescan")
+	_expect(
+		swapped and _stale(characters.get("swaps") as Dictionary) == 0,
+		"The HD figures let go of a Guardian once it is freed"
+	)
+
+
+## How many of a look's entries hold a sprite that has been freed.
+func _stale(entries: Dictionary) -> int:
+	var stale := 0
+	for entry: Dictionary in entries.values():
+		if not is_instance_valid(entry["sprite"]):
+			stale += 1
+	return stale
 
 
 func _load(scene_path: String) -> void:

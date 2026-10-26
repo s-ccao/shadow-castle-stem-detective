@@ -73,7 +73,9 @@ var origin := Vector2.ZERO
 var size := Vector2.ONE
 var mix_shader := Shader.new()
 var add_shader := Shader.new()
-## sprite -> {"material", "original", "body", "feet"}
+## sprite's instance id -> {"sprite", "material", "original", "body"}. Keyed by
+## id: footprints come and go with every route, and a Dictionary keyed by
+## objects since freed can loop for ever when iterated.
 var entries: Dictionary = {}
 var fixed: Array[Dictionary] = []
 var shadows: Array[Sprite2D] = []
@@ -132,9 +134,10 @@ func apply() -> void:
 ## Puts every material back and removes the shadows, as the scene had them.
 func restore() -> void:
 	active = false
-	for sprite: Variant in entries:
+	for entry: Dictionary in entries.values():
+		var sprite: Variant = entry["sprite"]
 		if is_instance_valid(sprite):
-			(sprite as CanvasItem).material = entries[sprite]["original"]
+			(sprite as CanvasItem).material = entry["original"]
 	entries.clear()
 	for shadow in shadows:
 		if is_instance_valid(shadow):
@@ -161,10 +164,13 @@ func advance(delta: float) -> void:
 		var target: Vector2 = (item["scale"] as Vector2) * figure_scale
 		if is_instance_valid(node) and not (node as Node2D).scale.is_equal_approx(target):
 			(node as Node2D).scale = target
-	for sprite: Variant in entries:
-		var entry: Dictionary = entries[sprite]
+	for id: int in entries.keys():
+		var entry: Dictionary = entries[id]
+		if not is_instance_valid(entry["sprite"]):
+			entries.erase(id)
+			continue
 		var body: Variant = entry["body"]
-		if body != null and is_instance_valid(body) and is_instance_valid(sprite):
+		if body != null and is_instance_valid(body):
 			(entry["material"] as ShaderMaterial).set_shader_parameter(
 				"feet_y", (body as Node2D).global_position.y
 			)
@@ -204,10 +210,10 @@ func _rescan() -> void:
 			if child is Sprite2D:
 				parts.append(child as CanvasItem)
 		for part in parts:
-			if entries.has(part):
+			if entries.has(part.get_instance_id()):
 				continue
 			_track(part, null, HIDDEN)
-			var material := entries[part]["material"] as ShaderMaterial
+			var material := entries[part.get_instance_id()]["material"] as ShaderMaterial
 			material.set_shader_parameter("feet_from_origin", false)
 			material.set_shader_parameter("feet_y", float(item["feet"]))
 
@@ -224,7 +230,7 @@ func _shrink(node: Node2D) -> void:
 
 
 func _track(sprite: CanvasItem, body: Node2D, look: Dictionary, shadow := true) -> void:
-	if sprite == null or entries.has(sprite):
+	if sprite == null or entries.has(sprite.get_instance_id()):
 		return
 	var original := sprite.material
 	var additive := (
@@ -244,7 +250,9 @@ func _track(sprite: CanvasItem, body: Node2D, look: Dictionary, shadow := true) 
 		if shadow:
 			_add_shadow(body)
 	sprite.material = material
-	entries[sprite] = {"material": material, "original": original, "body": body}
+	entries[sprite.get_instance_id()] = {
+		"sprite": sprite, "material": material, "original": original, "body": body,
+	}
 
 
 ## A soft dark ellipse under the feet: a figure without one floats over the

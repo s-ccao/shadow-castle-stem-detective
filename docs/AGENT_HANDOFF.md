@@ -44,10 +44,10 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
   - It writes colour images as WebP (imported lossy 0.85), depth maps as lossless PNG, 18-column bands for the idle sheets, 224 px portraits and the composited Circuit repair map. It also rewrites the JSON's image names and prunes what it no longer publishes.
 - **Captures and audits** read `assets/hd/` and still write their shots under `prototypes/`.
 - **Test:** `tests/hd_look_test.gd` (35 checks) covers the dormant mode, every look's staging and its release.
-- **Open:**
-  - with `--hd`, `hall_route_authoring_test` hangs in 2 of 6 runs (bisected to the depth pass);
-  - the HD Library's `recipe_vision_scroll` box covers part of `lower_storage`'s approach area (`library_knowledge_access_test`, `interaction_stops_walk_test`).
-  - See UX-20261021-68 in `docs/AGENT_STAGE_REPORT.md`.
+- **Fixed in stage 69** (UX-20261021-68 and -69 in `docs/AGENT_STAGE_REPORT.md`):
+  - **The Hall's intermittent freeze with HD.** The depth pass kept freed footprint sprites as Dictionary keys, and iterating such a Dictionary can loop for ever.
+  - **The rule:** an HD module keeps per-node records keyed by `get_instance_id()`, with the node inside the entry, and drops the entries of freed nodes (`hd_depth.gd`'s `entries`, `hd_characters.gd`'s `swaps`).
+  - **The lens-scroll's box** ended on the floor in front of the violet reflection cabinet; it now ends at the atlas case (`library_room.gd`).
 
 ### Hall route, footprints and props (2026-10-21)
 
@@ -280,11 +280,11 @@ Manual acceptance flow:
 
 ## Next priorities
 
-0. **After stage 68 (HD in the game, live, not yet committed):**
-   - fix the depth-pass hang;
-   - fix the HD Library's overlapping boxes;
-   - measure the web frame rate on a visible tab;
-   - commit, so `main` matches the website.
+0. **After stage 69 (stage 68's two known HD issues fixed, live, committed):**
+   - **Bugs the user reported:**
+     - the player can walk out past the Library's main door;
+     - Dr. Lin is far too big in the Final Room, beside the detective and the cast.
+   - **Web frame rate:** 60 fps in the HD Wake Room, in headless Chrome on the Apple M3. Measure the Hall and the larger rooms too, with `node profile.js <url> <name>` (stage 69's playwright script) or by hand on a visible tab.
 
 1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -51 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their gaits (idle, walk, run) and `36-tripo-characters.png` where each came from.
    - **Characters** (stages 48–50): the detective and the Castle Guardian are Tripo models (stage 49; stage 48's primitive models looked like wooden puppets to the user). Each is a rigged GLB in `prototypes/blender_chars/source/` holding Tripo's preset clips (`<character>_anims.glb`).
@@ -511,9 +511,9 @@ Manual acceptance flow:
 
 ## Version publication
 
-- **The website** (stage 65; redeployed in stage 68): play.shadowcastledetective.com is the Vercel project `shadow-castle-detective-play`, uploaded from `web/game` by `npx vercel --prod` after a local export (`web/README.md`). Pushing to `main` deploys nothing.
-  - **Live since 2026-10-25 (stage 68):** the game with the HD look, `shadow-castle-detective-play-j3y5kdxda-cyc4.vercel.app`. Its `index.pck` is 92,336,552 B, SHA-256 `39b6a826…`, service-worker cache `1792996368|4961264`.
-  - **Rollback target:** `shadow-castle-detective-play-znzqamw4e-cyc4.vercel.app`, stage 65's painted build (`71a2a45b…`).
+- **The website** (stage 65; redeployed in stages 68 and 69): play.shadowcastledetective.com is the Vercel project `shadow-castle-detective-play`, uploaded from `web/game` by `npx vercel --prod` after a local export (`web/README.md`). Pushing to `main` deploys nothing.
+  - **Live since 2026-10-26 (stage 69):** the game with the HD look and stage 69's fixes, `shadow-castle-detective-play-ixcl1bnrm-cyc4.vercel.app`. Its `index.pck` is 92,337,272 B, SHA-256 `9dd06d0c…`, service-worker cache `1793002165|5145394`.
+  - **Rollback targets:** `shadow-castle-detective-play-j3y5kdxda-cyc4.vercel.app` (stage 68, the first HD build, which can freeze in the Hall); `shadow-castle-detective-play-znzqamw4e-cyc4.vercel.app` (stage 65, painted, `71a2a45b…`).
   - The Web preset excludes `prototypes/*` (stage 65): Godot imports the preview's rooms and characters (about 755 MB), and an export without the exclusion packs them.
   - **Vercel refuses any file over 100 MB** (stage 68). The HD look adds about 17 MB, so the preset's `exclude_filter` also lists 42 old images that no shipped script, scene or data names. They stay in the repository.
     - Check `index.pck`'s size after every export.

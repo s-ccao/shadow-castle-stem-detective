@@ -133,6 +133,7 @@ func _test_every_room_entry_point_stops_the_walk(game_state: Node) -> void:
 		if player == null:
 			_expect(false, "%s exposes a player body" % room_id)
 		else:
+			await _until_free_to_walk(player)
 			player.call("move_to_point", player.global_position + Vector2(160.0, 0.0))
 			if not bool(player.get("click_movement_active")):
 				# Some rooms clamp movement to walkable floor; nudge the other way.
@@ -200,6 +201,14 @@ func _find_player(room: Node) -> CharacterBody2D:
 	if direct != null:
 		return direct
 	return room.get_node_or_null("Worldsort/player") as CharacterBody2D
+
+
+## A room may hold the detective while it introduces itself, as the HD
+## Library's establishing shot does on its first load: walk once it lets go.
+func _until_free_to_walk(player: CharacterBody2D) -> void:
+	var deadline := Time.get_ticks_msec() + 8000
+	while bool(player.get("movement_locked")) and Time.get_ticks_msec() < deadline:
+		await process_frame
 
 
 func _expect(condition: bool, description: String) -> void:

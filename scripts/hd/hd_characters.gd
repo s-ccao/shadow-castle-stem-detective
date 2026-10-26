@@ -99,9 +99,12 @@ var data_dir := ""
 var portraits := 0
 ## How many of the Map Hub's maps are in HD (hd_maps.gd).
 var maps := 0
-## game sprite -> what it had ("frames", "moved", "position", "scale",
-## "filter", "self_modulate", "npc") and its figure ("figure", "body",
-## "sheet", "gait", "phase", "cycles", "clock", "speed", "dwell", "last")
+## game sprite's instance id -> the sprite ("sprite"), what it had ("frames",
+## "moved", "position", "scale", "filter", "self_modulate", "npc") and its
+## figure ("figure", "body", "sheet", "gait", "phase", "cycles", "clock",
+## "speed", "dwell", "last"). Keyed by id: a Guardian can be freed and another
+## staged, and a Dictionary keyed by objects since freed can loop for ever when
+## iterated.
 var swaps: Dictionary = {}
 var active := false
 var rescan_in := 0.0
@@ -153,14 +156,14 @@ func restore() -> void:
 		Portraits.stage(false, hall)
 	if maps > 0:
 		Maps.stage(false, hall.get_tree())
-	for sprite: Variant in swaps:
-		var before: Dictionary = swaps[sprite]
+	for before: Dictionary in swaps.values():
 		var figure: Variant = before["figure"]
 		if is_instance_valid(figure):
 			var node := figure as Node
 			if node.get_parent() != null:
 				node.get_parent().remove_child(node)
 			node.queue_free()
+		var sprite: Variant = before["sprite"]
 		if not is_instance_valid(sprite):
 			continue
 		var game_sprite := sprite as AnimatedSprite2D
@@ -179,7 +182,8 @@ func restore() -> void:
 func track(delta: float) -> void:
 	if not active:
 		return
-	for sprite: Variant in swaps:
+	for entry: Dictionary in swaps.values():
+		var sprite: Variant = entry["sprite"]
 		# A paused game holds its figures too.
 		if is_instance_valid(sprite) and (sprite as Node).can_process():
 			_drive(sprite as AnimatedSprite2D, delta)
@@ -199,28 +203,35 @@ func advance(delta: float) -> void:
 ## How many sprites show HD figures now.
 func staged() -> int:
 	var count := 0
-	for sprite: Variant in swaps:
-		if is_instance_valid(sprite):
+	for entry: Dictionary in swaps.values():
+		if is_instance_valid(entry["sprite"]):
 			count += 1
 	return count
 
 
 ## The HD figure drawn for a game sprite, or null.
 func figure_of(sprite: Node) -> Sprite2D:
-	if not swaps.has(sprite):
+	var entry := _entry_of(sprite)
+	if entry.is_empty():
 		return null
-	var figure: Variant = swaps[sprite]["figure"]
+	var figure: Variant = entry["figure"]
 	return figure as Sprite2D if is_instance_valid(figure) else null
 
 
 ## Which gait a game sprite's figure shows: "idle", "walk" or "run".
 func gait_of(sprite: Node) -> String:
-	return str(swaps[sprite]["gait"]) if swaps.has(sprite) else ""
+	return str(_entry_of(sprite).get("gait", ""))
 
 
 ## Walk and run cycles a figure has played since it was staged.
 func cycles_of(sprite: Node) -> float:
-	return float(swaps[sprite]["cycles"]) if swaps.has(sprite) else 0.0
+	return float(_entry_of(sprite).get("cycles", 0.0))
+
+
+func _entry_of(sprite: Node) -> Dictionary:
+	if sprite == null:
+		return {}
+	return swaps.get(sprite.get_instance_id(), {})
 
 
 ## One of the cast's sheets, loaded the first time it is asked for.
@@ -291,9 +302,9 @@ func _sheet(meta: Dictionary, keep: bool) -> Dictionary:
 
 func _rescan() -> void:
 	rescan_in = 0.5
-	for sprite: Variant in swaps.keys():
-		if not is_instance_valid(sprite):
-			swaps.erase(sprite)
+	for id: int in swaps.keys():
+		if not is_instance_valid(swaps[id]["sprite"]):
+			swaps.erase(id)
 	if not is_instance_valid(hall):
 		return
 	var player := hall.get_node_or_null("player") as Node2D
@@ -315,7 +326,10 @@ func _rescan() -> void:
 ## The detective and the Guardian: the game sprite takes the HD walk frames
 ## and the figure is drawn in their place.
 func _swap(sprite: AnimatedSprite2D, body: Node2D, character: String) -> void:
-	if sprite == null or body == null or swaps.has(sprite) or not sheets.has(character):
+	if (
+		sprite == null or body == null or swaps.has(sprite.get_instance_id())
+		or not sheets.has(character)
+	):
 		return
 	var sheet: Dictionary = sheets[character]
 	var moved := character == "detective"
@@ -339,7 +353,8 @@ func _swap(sprite: AnimatedSprite2D, body: Node2D, character: String) -> void:
 	figure.use_parent_material = true
 	figure.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	figure.vframes = (sheet["rows"] as Dictionary).size()
-	swaps[sprite] = {
+	swaps[sprite.get_instance_id()] = {
+		"sprite": sprite,
 		"frames": original,
 		"moved": moved,
 		"npc": false,
@@ -378,7 +393,7 @@ func _swap(sprite: AnimatedSprite2D, body: Node2D, character: String) -> void:
 ## about its feet) carries it too.
 func _swap_npc(npc: Node2D, character: String) -> void:
 	var sprite := npc.get("actor_sprite") as AnimatedSprite2D
-	if sprite == null or swaps.has(sprite) or _cast_sheet(character).is_empty():
+	if sprite == null or swaps.has(sprite.get_instance_id()) or _cast_sheet(character).is_empty():
 		return
 	var sheet: Dictionary = sheets[character]
 	var pixel_scale := float(npc.get("visual_scale"))
@@ -394,7 +409,8 @@ func _swap_npc(npc: Node2D, character: String) -> void:
 	figure.vframes = (sheet["rows"] as Dictionary).size()
 	figure.scale = Vector2(factor, factor)
 	figure.position = feet - ((sheet["feet"] as Vector2) - (sheet["cell"] as Vector2) * 0.5) * factor
-	swaps[sprite] = {
+	swaps[sprite.get_instance_id()] = {
+		"sprite": sprite,
 		"frames": sprite.sprite_frames,
 		"moved": false,
 		"npc": true,
@@ -433,7 +449,7 @@ func _row(entry: Dictionary, sprite: AnimatedSprite2D) -> int:
 ## Picks the figure's gait and frame from the game's facing and walk, and from
 ## how far its body moved in the last tick.
 func _drive(sprite: AnimatedSprite2D, delta: float) -> void:
-	var entry: Dictionary = swaps[sprite]
+	var entry: Dictionary = swaps[sprite.get_instance_id()]
 	if not is_instance_valid(entry["figure"]) or not is_instance_valid(entry["body"]):
 		return
 	var figure := entry["figure"] as Sprite2D

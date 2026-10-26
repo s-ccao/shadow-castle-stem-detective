@@ -15,10 +15,13 @@
   - **Unchanged:** movement, collisions, prompts, saves and the story are the painted game's; only what is drawn changed.
   - **Painted art:** it stays in the repository. 42 old images nothing uses are left out of the web download, to keep it under the host's 100 MB file limit.
   - **Old caches:** a browser holding the old version shows "A new game update is ready" and a Restart now button.
-  - **Known issues:**
-    - an intermittent hang in one developer-mode route-recording test with HD on;
-    - two overlapping item boxes in the HD Library.
-  - Not yet committed. See the [stage report](AGENT_STAGE_REPORT.md).
+  - **Known issues, fixed in stage 69 and live:**
+    - the Hall could freeze now and then with HD on;
+    - two item boxes in the HD Library overlapped.
+  - **Reported by the user next:**
+    - the player can walk out past the Library's main door;
+    - Dr. Lin is too big in the Final Room.
+  - Committed as `726a934`, so GitHub's `main` matches the website. See the [stage report](AGENT_STAGE_REPORT.md).
 
 ## Earlier actual-project update (2026-10-23)
 
@@ -137,7 +140,7 @@
 - **Props:** all nine Hall props are crisp 1.25px/texel pixel art with contact shadows and true proportions.
 - **Next step:** the 2D wall redraw is paused in favour of a Blender HD Hall prototype.
 - **Evidence:** see the latest [stage report](AGENT_STAGE_REPORT.md) and [comparisons](evidence/2026-10-21-hall-visual/).
-- **Published:** the game is live at https://play.shadowcastledetective.com. Redeployed 2026-10-25 (stage 68) with the HD rooms, figures, portraits and maps; the live package matches the local export byte for byte. Stage 65's painted build remains the rollback target.
+- **Published:** the game is live at https://play.shadowcastledetective.com. Redeployed 2026-10-26 (stage 69) with the HD rooms, figures, portraits and maps, and the fix for the Hall's freeze; the live package matches the local export byte for byte. It runs at 60 fps in the HD Wake Room (Chrome on an Apple M3).
 
 ## Previous actual-project update (2026-10-18)
 
