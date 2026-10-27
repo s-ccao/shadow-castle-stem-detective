@@ -22,6 +22,7 @@ let pushed = false;
 let slideTimer = 0;
 let pointerType = "mouse";
 let selectedAtPress = -1;
+const vignettes = new Map();
 
 function escape(text) {
   return String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -192,9 +193,28 @@ function layerFor(game, index) {
         <span class="library__case-halo"></span>
         <svg class="emblem library__case-emblem" viewBox="0 0 64 64" focusable="false"><use href="#emblem-${escape(game.emblem)}"></use></svg>
       </div>`;
+    if (game.media?.vignette) {
+      const mounting = import("./vignettes/stage.js").then((m) =>
+        m.mountVignette(layer, game.media.vignette, { accent: game.accent, layout: stageLayout }),
+      );
+      mounting.catch((error) => console.error(error));
+      vignettes.set(index, mounting);
+    }
   }
   ui.media.append(layer);
   return layer;
+}
+
+// The mechanic sits up and to the right, clear of the case copy.
+function stageLayout(w, h) {
+  return w / h > 1.2 ? { fx: 0.62, fy: 0.4, fit: 0.84 } : { fx: 0.6, fy: 0.3, fit: 0.72 };
+}
+
+// Only the selected case's vignette runs, and nothing runs while closed.
+function syncStage() {
+  vignettes.forEach((mounting, index) => {
+    mounting.then((scene) => (dialog.open && index === current ? scene.play({ restart: true }) : scene.pause()), () => {});
+  });
 }
 
 function playStills(layer) {
@@ -274,6 +294,7 @@ function select(index, { focus = false } = {}) {
     ui.media.querySelectorAll(".library__layer").forEach((other) => other.classList.toggle("is-on", other === layer));
     clearInterval(slideTimer);
     if (layer.classList.contains("library__layer--stills")) playStills(layer);
+    syncStage();
     renderInfo(game);
   }
   if (focus) rows[index].focus();
@@ -301,7 +322,9 @@ export async function openLibrary(slug, from) {
       pushed = true;
     }
   }
+  const before = current;
   select(wanted >= 0 ? wanted : Math.max(current, 0), { focus: true });
+  if (current === before) syncStage();
   requestAnimationFrame(placeGlider);
 }
 
@@ -313,6 +336,7 @@ export function closeLibrary({ fromHistory = false } = {}) {
   const finish = () => {
     dialog.classList.remove("is-closing");
     dialog.close();
+    syncStage();
     root.classList.remove("library-open");
     if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus({ preventScroll: true });
   };

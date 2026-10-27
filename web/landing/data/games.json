@@ -179,7 +179,9 @@
     }
    ],
    "links": {},
-   "media": {},
+   "media": {
+    "vignette": "evidence-rush"
+   },
    "embed": {
     "enabled": false
    },
@@ -238,7 +240,9 @@
     }
    ],
    "links": {},
-   "media": {},
+   "media": {
+    "vignette": "prism-lab"
+   },
    "embed": {
     "enabled": false
    },
@@ -297,7 +301,9 @@
     }
    ],
    "links": {},
-   "media": {},
+   "media": {
+    "vignette": "echo-corridor"
+   },
    "embed": {
     "enabled": false
    },
@@ -356,7 +362,9 @@
     }
    ],
    "links": {},
-   "media": {},
+   "media": {
+    "vignette": "time-echo"
+   },
    "embed": {
     "enabled": false
    },
@@ -419,7 +427,9 @@
     }
    ],
    "links": {},
-   "media": {},
+   "media": {
+    "vignette": "alchemy-shift"
+   },
    "embed": {
     "enabled": false
    },
@@ -482,7 +492,9 @@
     }
    ],
    "links": {},
-   "media": {},
+   "media": {
+    "vignette": "rune-defense"
+   },
    "embed": {
     "enabled": false
    },

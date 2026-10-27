@@ -977,6 +977,22 @@ html[data-motion="reduce"] :is(.sc-cursor, .sc-sparks, .tilt-glare) {
   display: none;
 }
 
+/* ---------- Mechanic vignettes (js/vignettes/): canvases that fade in once drawn ---------- */
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 600ms var(--ease-out);
+}
+
+.vignette.is-drawn {
+  opacity: 1;
+}
+
 /* ---------- Reduced motion: the site switch and the system setting both land here ---------- */
 
 html[data-motion="reduce"] {

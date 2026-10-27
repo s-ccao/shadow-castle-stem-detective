@@ -63,7 +63,8 @@ start("i18n", initI18n);
 start("nav", initNav);
 start("reveal", initReveal);
 start("library", initLibraryLauncher);
-lazy("cards", ".case-card[data-preview]", () => import("./cards.js").then((m) => m.initCards));
+lazy("cards", ".case-card[data-preview], .case-card[data-vignette]", () => import("./cards.js").then((m) => m.initCards));
+lazy("vignettes", ".case-hero__art[data-vignette]", () => import("./vignettes/stage.js").then((m) => m.initHeroVignettes));
 lazy("pointer", null, () => import("./pointer.js").then((m) => m.initPointer));
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
 

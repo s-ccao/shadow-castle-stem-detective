@@ -282,8 +282,11 @@ class Site:
         )
 
     def preview_attr(self, game: dict) -> str:
-        stills = [still["src"] for still in (game.get("media") or {}).get("stills") or []]
-        return f' data-preview="{esc(json.dumps(stills))}"' if stills else ""
+        media = game.get("media") or {}
+        stills = [still["src"] for still in media.get("stills") or []]
+        if stills:
+            return f' data-preview="{esc(json.dumps(stills))}"'
+        return f' data-vignette="{esc(media["vignette"])}"' if media.get("vignette") else ""
 
     def grid(self, games: list[dict], heading: str = "h3", cls: str = "case-grid") -> str:
         cards = "\n".join(self.card(game, heading) for game in games)
@@ -353,10 +356,12 @@ class Site:
                     "</section>",
                 ]
             )
+        vignette = (game.get("media") or {}).get("vignette")
+        lens = f' data-vignette="{esc(vignette)}"' if vignette else ""
         return "\n".join(
             [
                 '<section class="case-hero" aria-labelledby="case-title">',
-                '  <div class="case-hero__art" aria-hidden="true">',
+                f'  <div class="case-hero__art" aria-hidden="true"{lens}>',
                 '    <span class="case-hero__halo"></span>',
                 f"    {emblem(game['emblem'], 'emblem case-hero__emblem')}",
                 "  </div>",

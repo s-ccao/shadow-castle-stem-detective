@@ -60,6 +60,30 @@
   color: var(--case-accent);
   stroke-width: 1.6;
   filter: drop-shadow(0 0 1.25rem color-mix(in oklch, var(--case-accent) 55%, transparent));
+  transition: opacity 600ms var(--ease-out);
+}
+
+/* The seal becomes a lens onto the case's mechanic (js/vignettes/stage.js). */
+.case-hero__lens {
+  position: relative;
+  width: 86%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.case-hero__lens::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, transparent 58%, color-mix(in oklch, var(--color-night) 72%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--case-accent) 38%, transparent);
+  pointer-events: none;
+}
+
+.case-hero__art.has-vignette .case-hero__emblem {
+  opacity: 0;
 }
 
 .case-hero__copy {

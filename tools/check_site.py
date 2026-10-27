@@ -240,6 +240,9 @@ def check_catalogue(errors: list[str]) -> None:
                     errors.append(f"data/games.json: {where} media file {image[key]} does not exist")
             if image.get("kind") == "concept" and image.get("label") != "concept":
                 errors.append(f"data/games.json: {where} concept art must be labelled as concept art")
+        vignette = media.get("vignette")
+        if vignette and not (re.fullmatch(r"[a-z0-9-]+", vignette) and (SITE / "js" / "vignettes" / f"{vignette}.js").exists()):
+            errors.append(f"data/games.json: {where} vignette {vignette!r} has no js/vignettes/{vignette}.js")
 
 
 def main() -> int:

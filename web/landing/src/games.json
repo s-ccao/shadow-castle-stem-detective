@@ -109,7 +109,7 @@
         { "en": "A daily challenge with its own leaderboard", "zh": "每日挑战与排行榜" }
       ],
       "links": {},
-      "media": {},
+      "media": { "vignette": "evidence-rush" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -138,7 +138,7 @@
         { "en": "An energy ripple when a mechanism wakes", "zh": "激活机关时的能量扩散" }
       ],
       "links": {},
-      "media": {},
+      "media": { "vignette": "prism-lab" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -167,7 +167,7 @@
         { "en": "Guards whose awareness shifts as they hunt", "zh": "敌人的动态感知范围" }
       ],
       "links": {},
-      "media": {},
+      "media": { "vignette": "echo-corridor" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -196,7 +196,7 @@
         { "en": "Past and present moving at once", "zh": "过去与现在同时运动" }
       ],
       "links": {},
-      "media": {},
+      "media": { "vignette": "time-echo" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -226,7 +226,7 @@
         { "en": "Brewing combos and lab upgrades", "zh": "合成连击和实验室升级" }
       ],
       "links": {},
-      "media": {},
+      "media": { "vignette": "alchemy-shift" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -256,7 +256,7 @@
         { "en": "Roguelite progression", "zh": "Roguelite 成长" }
       ],
       "links": {},
-      "media": {},
+      "media": { "vignette": "rune-defense" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },

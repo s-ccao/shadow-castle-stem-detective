@@ -737,6 +737,11 @@ html.footer-in-view .case-dock {
     translate: 34% -24%;
   }
 
+  /* On a phone the copy sits over the mechanic, so the mechanic steps back. */
+  .library__layer--case .vignette.is-drawn {
+    opacity: 0.6;
+  }
+
   .library__hint {
     display: none;
   }

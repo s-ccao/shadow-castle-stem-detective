@@ -3,14 +3,16 @@ import { motionOn } from "./prefs.js";
 import { t } from "./i18n.js";
 
 // Card previews. A fine pointer that rests on a card for a moment plays its
-// preview (Shadow Castle's stills now; each upcoming case's mechanic later);
+// preview (Shadow Castle's stills, or an upcoming case's mechanic vignette);
 // touch gets an explicit Preview button instead of autoplay.
+const PREVIEWABLE = ".case-card[data-preview], .case-card[data-vignette]";
 const INTENT_MS = 250;
 const STEP_MS = 1600;
 let timer = 0;
 let cycle = 0;
 let active = null;
 let pending = null;
+const vignettes = new WeakMap();
 
 function stack(card) {
   let preview = card.querySelector(".case-card__preview");
@@ -24,12 +26,31 @@ function stack(card) {
   return preview;
 }
 
+function vignette(card) {
+  if (!vignettes.has(card)) {
+    const mounting = import("./vignettes/stage.js").then((m) => m.mountVignette(stack(card), card.dataset.vignette));
+    mounting.catch(() => vignettes.delete(card));
+    vignettes.set(card, mounting);
+  }
+  return vignettes.get(card);
+}
+
 function play(card) {
   const pinned = card.classList.contains("is-pinned");
   stop();
   if (!motionOn() && !pinned) return;
   card.classList.toggle("is-pinned", pinned);
   active = card;
+  if (card.dataset.vignette) {
+    card.classList.add("is-previewing");
+    vignette(card)
+      .then((scene) => active === card && scene.play({ restart: true }))
+      .catch((error) => {
+        console.error(error);
+        card.classList.remove("is-previewing");
+      });
+    return;
+  }
   const images = [...stack(card).querySelectorAll("img")];
   if (!images.length) return;
   images.forEach((img) => {
@@ -50,13 +71,16 @@ function stop() {
   clearTimeout(timer);
   clearInterval(cycle);
   pending = null;
-  if (active) active.classList.remove("is-previewing", "is-pinned");
+  if (active) {
+    active.classList.remove("is-previewing", "is-pinned");
+    vignettes.get(active)?.then((scene) => scene.pause(), () => {});
+  }
   active = null;
 }
 
 function addTouchToggles() {
   if (finePointer.matches) return;
-  document.querySelectorAll(".case-card[data-preview]").forEach((card) => {
+  document.querySelectorAll(PREVIEWABLE).forEach((card) => {
     if (card.querySelector(".case-card__preview-toggle")) return;
     const button = document.createElement("button");
     button.type = "button";
@@ -83,8 +107,8 @@ export function initCards() {
     "pointerover",
     (event) => {
       if (event.pointerType !== "mouse") return;
-      const card = event.target.closest?.(".case-card[data-preview]") || null;
-      if (card === active || card === pending) return;
+      const card = event.target.closest?.(PREVIEWABLE) || null;
+      if (card === active || (card && card === pending)) return;
       stop();
       if (!card || !motionOn()) return;
       pending = card;
