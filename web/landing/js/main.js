@@ -27,6 +27,7 @@ start("prefs", initPrefs);
 start("i18n", initI18n);
 start("nav", initNav);
 start("reveal", initReveal);
+lazy("pointer", null, () => import("./pointer.js").then((m) => m.initPointer));
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
 
 export { lazy, start };

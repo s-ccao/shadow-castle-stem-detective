@@ -1,20 +1,10 @@
-import { addTicker, clamp, damp, finePointer, onScroll } from "./loop.js";
+import { addTicker, clamp, damp, finePointer, onScroll, tokenRgb } from "./loop.js";
 import { motionOn } from "./prefs.js";
 import { lang, t } from "./i18n.js";
 
 // Weather and depth for [data-atmosphere] heroes: the hub's castle scene ("hub")
 // and the Shadow Castle case page's painting ("painting").
-const root = document.documentElement;
 const STATUS = { playable: "Playable", "in-development": "In development", "coming-soon": "Coming soon" };
-
-function tokenRgb(name) {
-  const probe = document.createElement("canvas").getContext("2d");
-  if (!probe) return [210, 214, 240];
-  probe.fillStyle = getComputedStyle(root).getPropertyValue(name).trim() || "#d2d6f0";
-  probe.fillRect(0, 0, 1, 1);
-  const [r, g, b] = probe.getImageData(0, 0, 1, 1).data;
-  return [r, g, b];
-}
 
 // ---------- Fog: one tileable value-noise texture per page ----------
 let fogUrl = null;

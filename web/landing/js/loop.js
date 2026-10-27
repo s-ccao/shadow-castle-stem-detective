@@ -80,3 +80,18 @@ export function lerp(from, to, amount) {
 export function damp(from, to, rate, dt) {
   return lerp(from, to, 1 - Math.exp((-rate * dt) / 1000));
 }
+
+// Resolve a colour token (any CSS colour syntax) to 0-255 RGB for canvas drawing.
+const rgbCache = new Map();
+export function tokenRgb(name) {
+  if (rgbCache.has(name)) return rgbCache.get(name);
+  const probe = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+  let rgb = [214, 214, 236];
+  if (probe) {
+    probe.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#d6d6ec";
+    probe.fillRect(0, 0, 1, 1);
+    rgb = [...probe.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+  }
+  rgbCache.set(name, rgb);
+  return rgb;
+}
