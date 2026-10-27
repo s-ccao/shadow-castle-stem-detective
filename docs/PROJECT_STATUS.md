@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-10-25
+**Last updated:** 2026-10-26
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
@@ -18,9 +18,13 @@
   - **Known issues, fixed in stage 69 and live:**
     - the Hall could freeze now and then with HD on;
     - two item boxes in the HD Library overlapped.
-  - **Reported by the user next:**
-    - the player can walk out past the Library's main door;
-    - Dr. Lin is too big in the Final Room.
+  - **Reported by the user next, fixed in stage 70:**
+    - the player could walk out past the Library's main door, and the Circuit Room's;
+    - Mrs. Lin was too big in the Final Room. She is now as long, lying, as the cast are tall.
+  - **Reported again on the website, fixed in stage 71:**
+    - the detective could still stand on the Library's door (and walk down the Circuit Room's gate passage). He now stops in front of each door, where the way-out prompt shows;
+    - the tutorial's "almost caught" scene at the Chemistry door still showed the old painted Hall. It now shows the HD Hall, figures and door.
+  - **Stages 70 and 71 are live** (deployed 2026-10-26) and committed with their [stage report](AGENT_STAGE_REPORT.md).
   - Committed as `726a934`, so GitHub's `main` matches the website. See the [stage report](AGENT_STAGE_REPORT.md).
 
 ## Earlier actual-project update (2026-10-23)

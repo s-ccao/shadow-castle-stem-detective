@@ -2,6 +2,120 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-71 (the detective stops at the Library's door, and the Chemistry near-miss CG in HD)
+
+- **Date:** 2026-10-26
+- **Status:** deployed to play.shadowcastledetective.com, together with stage 70, at the user's request ("部署到网站，并提交推送到 GitHub"). Committed and pushed with this report.
+- **Request:** "现在你来帮我把一些我游戏的bug修复一下，1比如说libary的玩家问什么可以走到大门的上面，而且final_room的lin的身材比例和顽疾完全不一样，而且，新手教程里面的玩家在进入chemsity_rooom的时候显示的动画，玩家差一点被抓住，用的是老的地图". In English: fix some bugs. Why can the player walk onto the Library's main door? Lin in the Final Room is proportioned quite unlike the player. And the tutorial's "almost caught" scene on entering Chemistry still uses the old map.
+- **Context:** the user plays the website, which runs stage 69. Stage 70 answered the first two reports but was never deployed.
+
+### What changed
+
+- **Standing on the Library's door** (`scenes/floor_1/library_room.tscn`, `scripts/library_room.gd`):
+  - **Cause:** stage 70's `GateThreshold` started at y 1020, where the door's leaves meet its steps. The walls on each side stop the feet at y 940, but the doorway between them stayed open down to 1020. The door is drawn there (its gable from y 921, its leaves to about 1015), and no depth hides anyone at the doorway, so the detective was drawn standing on the door. Stage 70's own `09-doorway` capture shows it.
+  - **Fix:** the threshold now closes the doorway from the jambs' line, its top following the door's gable, (650, 940) → (716, 921) → (782, 940). The band from y 1020 down stays.
+  - `EXIT_RECT` now starts at y 921 instead of 962, so the exit's 14 px contact band still reaches the detective there. The arrival spawn moves from y 930 to 910, clear of the gable.
+  - **Now:** walking straight down at the door stops the feet at y 921.3, and on the gable's west slope at 932.8. The "return to the Castle Hall" prompt shows, and the door is drawn whole below him.
+- **The Circuit Room's gate had the same opening** (`scenes/floor_1/circuit_room.tscn`, `scripts/circuit_room.gd`): its passage was open down to stage 70's threshold at y 1056, through the gate.
+  - The threshold now closes it at the gate's top, y 936. The detective can step into the alcove between the jambs (the user chose this over stopping at the jambs' line, y 918), but not onto the gate.
+  - `EXIT_RECT` starts there instead of 972. The spawn is y 910, just north of the alcove: the room's spawn check wants three open directions, which the alcove does not give.
+  - Walking down stops the feet at y 936, with the prompt showing.
+- **`tests/room_bounds_test.gd`** gains `DOORWAYS`. In the Library, the Dining Hall and the Circuit Room:
+  - the deepest the feet reach between the jambs must not pass the line where the door begins;
+  - some spot the detective can reach must lie within the exit's 14 px band.
+  - **Red and green:** on stage 70's scenes the feet reach y 1016 in the Library (door at 940) and 1048 in the Circuit Room (gate at 936). With the fix they reach 936 and 928 on the 8 px lattice, and both exits are in reach, in both looks. The Dining Hall's door was already closed (968, door at 971).
+- **Tools:** `capture_library.gd`'s arrival (724, 910) and doorway (724, 918) follow the new geometry. Its doorway shot used to stand the detective on the door at (724, 990). `room_circuit.py`'s comment names the new spawn.
+- **Mrs. Lin: no change in this stage.** The website still draws stage 69's body: 155 × 88.5 px, with a head about as wide as the detective's chest. Stage 70 laid her at the cast's drawn height, 100 × 57.5 px beside a detective about 90 px tall, as long lying as he is tall. Measured at game scale, her head now matches his (`04-mrs-lin-scale-stage69-vs-70.jpg`). The website shows this once stage 70 is deployed.
+- **The Chemistry near-miss CG in HD** (`scripts/chemistry_near_miss_cg.gd`):
+  - **Cause:** the CG builds its zoomed shot from copies of the Hall's `BackgroundVisual` and `WallsVisual`, the painted floor and walls, and closes the doorway with a leaf cut from the painted walls. The HD Hall is a separate render laid over those, so the CG showed the old map, with the HD figures in it.
+  - **Fix:** when the HD look is staged, the CG also copies the HD render, drawn above the painted art, and the HD Chemistry door, held at its open frame.
+  - As the detective slips through, the door swings shut back through its 10 frames (`_swing_shut`) instead of the painted leaf sliding across.
+  - The painted look keeps its doorway matte and sliding leaf. The HD figures in the CG are now drawn smooth, as in the game; they were nearest-filtered.
+  - `tests/chemistry_entry_sequence_test.gd` gains 4 checks under `-- --hd` (25 in HD, 21 painted): the CG draws the HD render over the painted one, the HD door stands open and swings to frame 0, and no painted leaf is cut into the shot.
+  - The HD render is opaque. The pale stone edge at the bottom of the shot is the render's own, as in the game.
+
+### Verification
+
+- **Godot:** the headless editor parse (isolated HOME) reports 0 errors. `git diff --check` is clean.
+- **gdlint:** no new issues in the edited scripts and tests (`library_room.gd` and `circuit_room.gd` keep their 24 and 27 earlier ones). `tests/room_bounds_test.gd` is clean.
+- **Full headless suites,** each under its own HOME, matching stage 70:
+  - painted: 58 of 59 pass. `room_spatial_audit` fails only its 6 known Hall cases.
+  - with HD on: 56 of 59 pass. The 3 failures are the known ones: `character_scale_profiles_test` (its 5 painted-size checks), `hd_look_test`'s 2 dormant-mode checks, and `room_spatial_audit`'s Hall cases.
+  - No script or parse error in any log.
+  - `chemistry_presentation_test`, `pause_menu_test` and `knowledge_plate_art_test` refuse a generic HOME; under their own (`.godot/chemistry-*`, `.godot/pause-menu-*`, `.godot/knowledge-art-*` with `KNOWLEDGE_ART_EVIDENCE`) they pass in both looks.
+- **In game, HD, 1024 × 768** (`docs/evidence/2026-10-26-stage71-doors-cg/`):
+  - `00-door-collision-overlay-before.jpg`: each room's south door with its collision and exit box, before the fix.
+  - `01-doorways-and-mrs-lin.jpg`: after walking down into each doorway, the detective stands above the Library's door (centre and west slope) and in the Circuit Room's alcove, above its gate, with the prompt. Beside him, Mrs. Lin is as long as he is tall.
+  - `02-near-miss-cg-hd.jpg` and `03-near-miss-door-open-shut.jpg`: the CG's approach, lunge and slam in HD, with the HD door open and then shut. The painted look is unchanged.
+- **Web build** (exported under an isolated HOME whose export templates link to the installed ones):
+  - `index.pck` is 92,360,712 B, under Vercel's 100 MB limit, 960 B more than stage 70's.
+  - Loaded on its own (`--main-pack`, no project folder), the pack holds this stage: the CG's `HD_DOOR`, the Library's `EXIT_RECT` (622, 921, 204, 165) and gabled threshold, and the Circuit Room's `EXIT_RECT` (640, 936, 168, 150) and threshold at 936. Scripts ship as compressed tokens, so a text search of the pack finds none of them.
+  - From a local server, in headless Chrome: the title in 2.3 s; New Case into the HD Wake Room; 60 fps on the title and in the room; no console errors.
+- **Deployment:** `shadow-castle-detective-play-4ewaak7hn-cyc4.vercel.app` → https://play.shadowcastledetective.com.
+  - The ETags of `index.html`, `index.js`, `index.wasm`, `index.pck` and the service worker equal the local MD5s, and the sizes match.
+  - The service worker's cache is `1793083394|3599348`, so a browser holding the old build is offered the update.
+- **Rollback target:** `shadow-castle-detective-play-ixcl1bnrm-cyc4.vercel.app` (stage 69).
+
+### Risks / follow-up
+
+- **The CG frame** shows the HD render and the Chemistry door, but no Hall exhibits, as before. The Greenhouse exhibit's top 31 px would fall at the frame's bottom edge.
+- **Web frame rate:** measured in the Wake Room only, as in stage 70.
+
+## Stage: UX-20261021-70 (no walking out of the Library, and Mrs. Lin at the cast's size)
+
+- **Date:** 2026-10-26
+- **Status:** implemented and checked locally; deployed, committed and pushed with stage 71.
+- **Request:** "还有一些小bug,比如说libary 的玩家可以走到大门的外面，或者什么的，而且final_room里面的lin的身材太大了，和玩家以及其他人的完全不一样，需要修改". In English: there are some small bugs, for example the player can walk out past the Library's main door; and Lin in the Final Room is far too big, quite unlike the player and everyone else.
+- **Interrupted once:** the machine restarted during the Final Room render, which also cleared the scratch files under `/tmp`. Everything was re-run after the restart.
+
+### What changed
+
+- **The Library's way out** (`scenes/floor_1/library_room.tscn`):
+  - **Cause:** the room's two south walls only flank the doorway. Below them nothing closed the floor, so the detective could walk down the gate's steps, off the bottom of the room, and along the outside of the south wall.
+  - **Measured from the arrival spot on a 4 px lattice:** 105,865 reachable spots, 37,775 of them south of y 1020, outside the room.
+  - **Fix:** a new `RoomCollisions/GateThreshold` closes the whole width from y 1020 down, where the gate's door leaves meet its steps.
+  - **Now:** the reachable floor ends at the threshold (y 1016) and none of it lies outside the room. The exit box is still reached from 308 spots. Holding down, down-left or down-right in the doorway stops the detective at y 1020 with the "return to the Castle Hall" prompt showing.
+- **The Circuit Room had the same opening** (`scenes/floor_1/circuit_room.tscn`), found by the new test below. Its `GateThreshold` starts at y 1056, the foot of the lightning door, inside its exit box.
+- **New `tests/room_bounds_test.gd`:**
+  - It flood-fills, in the Hall and all seven rooms, the floor the detective's body can reach from where it arrives, on an 8 px lattice smaller than the 14 × 8 px body. It fails on any spot outside the room, meaning the follow camera's limits, or one screen for the Wake Room.
+  - It has 16 checks and takes about 5 s.
+  - **Red and green:** on the old scenes it fails the Library (1,254 of 12,215 spots outside) and the Circuit Room (1,247 of 10,782). With the fix, both looks pass 16 of 16.
+- **Mrs. Lin's size** (`tools/blender/room_final.py`):
+  - **Cause:** she was laid at real length, 140 cm, the cast's standing height. The camera shortens a standing figure to 140 × sin 40° = 90 px, but a body lying across the view shows its whole length. So she was drawn 155 × 88.5 px beside a 90 px detective (the cast stand 91–92 px), with a head as wide as his chest.
+  - **Fix:** she is laid at the cast's drawn height, her model scaled by sin 40° (0.643), so lying she is as long as the detective is tall. Her pose and her floor centre (346, 611) are unchanged. The torn violet cuff in her hand shrinks with her.
+  - **Footprint:** her HD footprint shrinks to her own extent, 299–393 × 588–624, from 272–420 × 576–630.
+  - **Re-render:** the room was rendered again (88 s at 128 samples), so the shadow she throws on the flagstones matches her. She is now drawn 100 × 57.5 px.
+  - **Published:** `publish_hd.py` changed only the Final Room's 8 files: the room render, the five prop images (re-rendered with the room) and its two JSON files. The depth map, the other rooms, the figures, the portraits and the maps are byte-identical.
+  - `tools/blender/capture_final.gd`: her stand point moves from (346, 645) to (346, 639), because her box now ends at y 622 instead of 627.5 and the room offers an item within 14 px of its box.
+- **Two Chinese labels** (`scripts/case_script_zh.gd`):
+  - "Mrs. Lin's body" and "Mrs. Lin's notebook" had no entry, so the Chinese prompt read "按 E 查看Mrs. Lin's body". They are now "林女士的遗体" and "林女士的笔记本", the name the Final Room's Chinese text uses for her.
+  - Checking every room's interaction labels against the table found no other gap the player sees. The Circuit Room's switch specs carry labels nothing shows, and the Mechanic's prompt has its own translation.
+
+### Verification
+
+- **Full headless suites,** each under its own HOME:
+  - painted: 58 of 59 pass. `room_spatial_audit` fails only its 6 known Hall cases.
+  - with HD on: 56 of 59 pass, with the same three as stage 69 failing: `character_scale_profiles_test` (its 5 painted-size checks), `hd_look_test`'s two dormant-mode checks, and `room_spatial_audit`'s Hall cases.
+  - `room_bounds_test`, `library_knowledge_access_test`, `interaction_stops_walk_test` and `hall_route_authoring_test` pass in both looks.
+- **Captures, EN and ZH:** all ten pass, 1,056 checks per language and 2,112 in all, every run with its summary line and no script error.
+  - The Final Room's 114 include Mrs. Lin: her footprint blocks the floor where she lies, and standing at (346, 639) offers her, in both looks.
+  - The Library's 141 include the doorway shot: the detective at the door, with the way-out prompt.
+- **In game,** at 1024 × 768 (shots not committed):
+  - beside the detective, the re-rendered Mrs. Lin is as long as he is tall, and her shadow fits her;
+  - the Chinese prompt reads "按 E 查看林女士的遗体".
+- **Godot and lint:** the headless editor parse (and import) reports 0 errors. gdlint is clean on `tests/room_bounds_test.gd` and `tools/blender/capture_final.gd`, pyflakes on `room_final.py`, and `git diff --check` is clean.
+- **Web build** (exported locally, not deployed):
+  - `index.pck` is 92,359,752 B, under Vercel's 100 MB limit.
+  - Against the live stage 69 pack it holds the same 1,030 files, none from `prototypes/`. Only 11 differ: the Library and Circuit Room scenes, the Final Room's six textures and two JSON files, and `case_script_zh`.
+  - Booted in headless Chrome from a local server, it reaches the title in 6.5 s. The HD Wake Room runs at 60 fps standing and walking, with no console errors.
+
+### Risks / follow-up
+
+- **The painted body** is still 123 × 82 px. It only shows when the HD look is off; the game and the website always draw HD.
+- **`character_scale_profiles_test`** still fails with HD on, by design. It asserts the painted body's 140 × 70 px collision, and the HD footprint is now 94 × 36.
+- **The Library's `EXIT_POSITION` (724, 1030)** now lies inside the threshold. The room only uses it to build an exit box when none is given, and it gives `EXIT_RECT`.
+- **Next:** deploy and commit.
+
 ## Stage: UX-20261021-69 (stage 68's two known HD issues fixed)
 
 - **Date:** 2026-10-26

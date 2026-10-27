@@ -948,6 +948,10 @@ const LINES: Dictionary = {
 		"靠近以阅读蜡烛笔记",
 	"Approach the knowledge lock":
 		"走近知识锁",
+	"Mrs. Lin's body":
+		"林女士的遗体",
+	"Mrs. Lin's notebook":
+		"林女士的笔记本",
 	"the Additive Relay":
 		"加色中继器",
 	"the Ashford analysis table":

@@ -423,3 +423,6 @@ polygon = PackedVector2Array(659, 941, 659, 1036, 625, 1034, 625, 1059, 474, 105
 
 [node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=697848978]
 polygon = PackedVector2Array(1418, 961, 1422, 1031, 1361, 1032, 755, 1081, 764, 940, 827, 922, 827, 953, 892, 955, 892, 944, 913, 944, 914, 966, 1331, 969, 1335, 955, 1422, 961)
+
+[node name="GateThreshold" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=1569396265]
+polygon = PackedVector2Array(650, 940, 716, 921, 782, 940, 782, 1020, 1448, 1020, 1448, 1160, 0, 1160, 0, 1020, 650, 1020)

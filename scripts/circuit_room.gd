@@ -14,10 +14,13 @@ const RETURN_SPAWN_ID: String = "circuit_door"
 const POWER_SURGE_AUDIO_PATH: String = "res://assets/audio/sfx/power_restore_surge.wav"
 const POWER_IMPACT_DELAY: float = 0.28
 
-const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 930.0)
+## The gate is wall from its top (y 936) down: the detective can step into the
+## alcove between its jambs, arrives just north of it, and leaves from in front
+## of the gate, where the exit's contact band starts.
+const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 910.0)
 const EXIT_POSITION: Vector2 = Vector2(724.0, 1030.0)
 const EXIT_RADIUS: float = 80.0
-const EXIT_RECT: Rect2 = Rect2(640.0, 972.0, 168.0, 114.0)
+const EXIT_RECT: Rect2 = Rect2(640.0, 936.0, 168.0, 150.0)
 const MECHANIC_POSITION: Vector2 = Vector2(930.0, 850.0)
 const MECHANIC_INTERACT_RADIUS: float = 88.0
 const MECHANIC_VISUAL_SCALE: float = 0.426

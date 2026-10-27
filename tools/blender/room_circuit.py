@@ -1027,7 +1027,7 @@ def exit_piers():
 # The gate out to the Hall: the Hall's portal at 2.8 times its size, its
 # doorway 14 Hall px each side, standing across the passage with its foot
 # just past the room's south edge. Its top (151 px above the foot on screen)
-# then clears a player coming in at the spawn (724, 930) and the shadow at
+# then clears a player coming in at the spawn (724, 910) and the shadow at
 # their feet, and no player walks out in front of it.
 GATE_X = 698.5
 GATE_Y = 1090.0

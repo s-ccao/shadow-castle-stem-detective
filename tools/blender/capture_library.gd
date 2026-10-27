@@ -41,14 +41,15 @@ const BEHIND: Dictionary = {
 	"LowerPanelA": Vector2(512, 718),
 	"UpperPanelCabinet": Vector2(850, 340),
 }
-const ARRIVAL := Vector2(724, 930)
-## In the corridor at the gate, near enough to leave by it.
-const DOORWAY := Vector2(724, 990)
+const ARRIVAL := Vector2(724, 910)
+## At the door, as near as its gable lets the detective stand: near enough to
+## leave by it.
+const DOORWAY := Vector2(724, 918)
 const OPEN_FLOOR := Vector2(1000, 760)
 const ARRAY_FRONT := Vector2(724, 720)
 ## Where to stand for each painted / HD pair.
 const VIEWS: Dictionary = {
-	"01-arrival": Vector2(724, 930),
+	"01-arrival": Vector2(724, 910),
 	"02-optical-array": Vector2(724, 720),
 	"03-spectrum-window": Vector2(724, 330),
 	"04-west-aisle": Vector2(200, 600),

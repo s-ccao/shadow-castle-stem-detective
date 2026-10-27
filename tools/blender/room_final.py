@@ -84,16 +84,20 @@ ENGINE = (1085.0, 458.0)
 ENGINE_R = 120.0
 NOTEBOOK = (306.0, 655.0)
 # Mrs. Lin (MrsLinBody): the cast's Tripo Dr. Lin, laid where the game lays
-# her body. Her floor centre is the body's FurnitureCollision's; she stands
-# as tall as the cast against the detective (cm); her long axis turns from due
-# east toward the south as the painted figure's does, and she rolls toward the
-# room so her face and coat show.
+# her body. Her floor centre is the body's FurnitureCollision's; her long axis
+# turns from due east toward the south as the painted figure's does, and she
+# rolls toward the room so her face and coat show.
+# Her size: the cast stand 140 cm (LIN_HEIGHT) and are drawn as the camera sees
+# an upright, foreshortened to 140 x SIN = 90 px tall. Lying flat she would
+# show her whole length, half again as long as anyone standing beside her, so
+# she is laid at that drawn length (the user's review, stage 70).
 LIN_GLB = os.path.join("prototypes", "blender_chars", "source", "dr_lin_anims.glb")
 LIN_FLOOR = (346.0, 611.0)
-# Her HD footprint (x0, x1, y0, y1): the painted body's north edge, her own
-# width, and at the south the lowest edge she shows (her render's foot, 627.5)
-# so the room offers her to a player who comes up from the south.
-LIN_FOOTPRINT = (272.0, 420.0, 576.0, 630.0)
+# Her HD footprint (x0, x1, y0, y1): her own width and depth about her floor
+# centre, and at the south the lowest edge she shows (her render's foot, 622)
+# so the room offers her to a player who comes up from the south. At her
+# earlier, real length it was (272, 420, 576, 630), the painted body's.
+LIN_FOOTPRINT = (299.0, 393.0, 588.0, 624.0)
 LIN_HEIGHT = 140.0
 LIN_TURN = -18.0
 # She has fallen forward onto her front: the model's eyes are painted open,
@@ -1643,7 +1647,7 @@ def fallen_lin():
                     angle = curl * share * (0.55 if finger == "Thumb" else 1.0)
                     pose.set_rotation(name, Quaternion((1.0, 0.0, 0.0), math.radians(angle * rig.curl_sign[name])))
     rig.apply(pose.channels)
-    laid = laid @ Matrix.Scale(LIN_HEIGHT * RP.PX / height, 4)
+    laid = laid @ Matrix.Scale(LIN_HEIGHT * RP.SIN * RP.PX / height, 4)
     pivot.matrix_world = laid
     low, high = _lin_extent(meshes)
     target = RP.world(LIN_FLOOR[0], LIN_FLOOR[1], 0.0)
@@ -1680,7 +1684,7 @@ def _lin_extent(meshes):
 
 def _lin_cuff(kit, armature):
     """The torn violet cuff, rolled in her upper hand: copper thread at its
-    hem. Returns its objects."""
+    hem, at her laid size. Returns its objects."""
     hand = armature.pose.bones[motion.bone("LeftHand")]
     head = armature.matrix_world @ hand.head
     tail = armature.matrix_world @ hand.tail
@@ -1689,12 +1693,13 @@ def _lin_cuff(kit, armature):
     if along.length < 1e-6:
         along = Vector((1.0, 0.0, 0.0))
     along.normalize()
+    size = RP.SIN * RP.PX
     made = []
     for part, radius, length, material in (
             ("Cuff", 2.4, 11.0, hall._cloth("FinalCuff", (0.32, 0.06, 0.42))),
             ("Thread", 2.6, 0.8, gold())):
-        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=radius * RP.PX, depth=length * RP.PX,
-                                            location=centre + along * (5.0 * RP.PX if part == "Thread" else 0.0))
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=radius * size, depth=length * size,
+                                            location=centre + along * (5.0 * size if part == "Thread" else 0.0))
         obj = bpy.context.active_object
         obj.name = "MrsLin" + part
         obj.rotation_mode = "QUATERNION"

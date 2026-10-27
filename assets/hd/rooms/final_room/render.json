@@ -213,20 +213,20 @@
   ],
   "MrsLinBody/FurnitureCollision/CollisionShape2D": [
    [
-    272.0,
-    576.0
+    299.0,
+    588.0
    ],
    [
-    420.0,
-    576.0
+    393.0,
+    588.0
    ],
    [
-    420.0,
-    630.0
+    393.0,
+    624.0
    ],
    [
-    272.0,
-    630.0
+    299.0,
+    624.0
    ]
   ],
   "RoomCollisions/HDWestVitrine": [
@@ -469,10 +469,10 @@
    "root": "MrsLinBody",
    "image": "render-prop-MrsLinBody.webp",
    "rect": [
-    268.5,
-    539.0,
-    155.0,
-    88.5
+    296.0,
+    564.5,
+    100.0,
+    57.5
    ]
   }
  ]

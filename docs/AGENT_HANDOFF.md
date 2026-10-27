@@ -48,6 +48,15 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
   - **The Hall's intermittent freeze with HD.** The depth pass kept freed footprint sprites as Dictionary keys, and iterating such a Dictionary can loop for ever.
   - **The rule:** an HD module keeps per-node records keyed by `get_instance_id()`, with the node inside the entry, and drops the entries of freed nodes (`hd_depth.gd`'s `entries`, `hd_characters.gd`'s `swaps`).
   - **The lens-scroll's box** ended on the floor in front of the violet reflection cabinet; it now ends at the atlas case (`library_room.gd`).
+- **Fixed in stage 70** (UX-20261021-70):
+  - **Walking out of a room.** The Library's and the Circuit Room's doorways ran off the bottom of the room. Each now has a `RoomCollisions/GateThreshold` at its door's foot (moved up to the door itself in stage 71).
+  - **The rule:** `tests/room_bounds_test.gd` flood-fills the floor the detective can reach in the Hall and every room, and fails on any outside the room. Run it after changing a room's collision.
+  - **Mrs. Lin's size.** A figure lying across the view shows its whole length, while the camera shortens a standing one by sin 40°. `room_final.py` lays her at the cast's drawn height, 140 cm × sin 40°. Lay any other lying figure the same way.
+  - **Two Final Room labels** had no Chinese entry ("Mrs. Lin's body", "Mrs. Lin's notebook").
+- **Fixed in stage 71** (UX-20261021-71):
+  - **Standing on a door.** Stage 70's thresholds sat at each door's foot, so the detective could still walk into the doorway and stand on the Library's door (and down the Circuit Room's gate passage). Each `GateThreshold` now closes its doorway where the door begins: the Library's follows the door's gable (apex y 921); the Circuit Room's lies at the gate's top, y 936, so the detective can step into the alcove between its jambs (the user's choice). Both rooms' `EXIT_RECT` now starts at that line and their arrival spawn is y 910.
+  - **The rule:** a door drawn standing in a doorway is wall, not floor. `room_bounds_test.gd`'s `DOORWAYS` checks that the feet stop where each south door begins and that the exit is still in reach there.
+  - **The Chemistry near-miss CG showed the painted Hall.** It builds its shot from copies of the Hall's art; it now also copies the HD render (`BlenderPrototypeOverlay`) and the HD Chemistry door (`PrototypeDoorChemistry`), which stands open and swings shut through its frames. The painted look keeps its doorway matte and sliding leaf.
 
 ### Hall route, footprints and props (2026-10-21)
 
@@ -107,7 +116,7 @@ You are continuing a late-stage student portfolio game. Preserve the current in-
 
 - **Hub layout:** Bag/Key/Note/Map retain semantic slots at `(16 + slot * 80, 14)`, with 72x106 hit targets. Persistent 14px names and separate shortcut hints share an aligned row; hidden intermediate slots show a quiet unavailable label rather than moving later tools. The 332x112 preview stays at viewport `(12,132)` and fades without positional motion. Keep the existing internal Hub panels and suppression/pause behavior.
 - **Chemistry entry contract:** first arrival now uses the real key/knowledge question gate. `ChemistryDoorQuestion` presents all four choices at once; wrong answers stay locked, correct answers set `door_chemistry_question_answered`, and explicit entry starts the CG. Normal previously completed visits do not replay it. Standalone first-arrival preview resets the two Chemistry door flags.
-- `chemistry_near_miss_cg.gd` animates visual actor/background/door proxies on a dedicated CanvasLayer; the world bodies are held without changing collision scale. Timed completion and skip both enter Chemistry without damage. Do not restore the old false "IT HAS YOU" title.
+- `chemistry_near_miss_cg.gd` animates visual actor/background/door proxies on a dedicated CanvasLayer; the world bodies are held without changing collision scale. Timed completion and skip both enter Chemistry without damage. Do not restore the old false "IT HAS YOU" title. With the HD look staged it draws the HD Hall render and the HD Chemistry door (stage 71); `chemistry_entry_sequence_test -- --hd` checks it.
 - Knowledge artwork is the five original text-free PNG concept plates under `assets/ui/knowledge_plates/`, with editable SVG sources and manifests. `KnowledgeArtwork` must not return to scene-prop crops.
 - Route presentation uses `hall_footprint_marker.gd`: small alternating raster shoe marks, paired turn/stop prints, a 480px forward reveal and restrained alpha shimmer. Polygon arrow blobs, corner beams and scale-bounce are no longer the production renderer.
 - Hub entries now rest as physical tool silhouettes on a narrow leather rail. Cell cages/name bars are removed; explicit focus/hover states and truthful preview slips remain. Normalization/provenance is in `assets/ui/tool_belt/`.
@@ -280,11 +289,9 @@ Manual acceptance flow:
 
 ## Next priorities
 
-0. **After stage 69 (stage 68's two known HD issues fixed, live, committed):**
-   - **Bugs the user reported:**
-     - the player can walk out past the Library's main door;
-     - Dr. Lin is far too big in the Final Room, beside the detective and the cast.
-   - **Web frame rate:** 60 fps in the HD Wake Room, in headless Chrome on the Apple M3. Measure the Hall and the larger rooms too, with `node profile.js <url> <name>` (stage 69's playwright script) or by hand on a visible tab.
+0. **After stages 70 and 71 (the Library's and Circuit Room's doorways closed at the door, Mrs. Lin at the cast's size, the Chemistry near-miss CG in HD; deployed and committed):**
+   - **web frame rate:** 60 fps in the HD Wake Room, in headless Chrome on the Apple M3. Measure the Hall and the larger rooms too, by hand on a visible tab, or with a playwright-core script like stage 69's (title → New Case → Wake Room, then frame times standing and walking). That script was scratch and is gone.
+   - **export:** an isolated HOME has no export templates; link `<HOME>/Library/Application Support/Godot/export_templates` to the installed ones before `--export-release "Web" web/game/index.html`, then deploy from `web/game` with `npx vercel --prod --yes`.
 
 1. **Blender Hall prototype (HD): the whole Hall, all nine props, every door and both characters are built, user review pending.** See stages UX-20261021-39 to -51 and `docs/evidence/2026-10-21-blender-hall-prototype/`. `21-region-iteration.png` through `27-doors-and-gallery-works.png` show the passes in order. In-game sheets: `26-hall-doors.png` (every door), `28-hd-props.png` (every prop), `31-door-behaviour.png` (the doors' behaviour), `34-characters-standing-zh.png` and `35-characters-close.png` (the characters). `29-hd-prop-models.png` shows each pixel sprite above its HD model, `30-hd-doors.png` every door shut, ajar and open, `32-hd-characters.png` both characters in every facing, `33-character-walks.png` their gaits (idle, walk, run) and `36-tripo-characters.png` where each came from.
    - **Characters** (stages 48–50): the detective and the Castle Guardian are Tripo models (stage 49; stage 48's primitive models looked like wooden puppets to the user). Each is a rigged GLB in `prototypes/blender_chars/source/` holding Tripo's preset clips (`<character>_anims.glb`).

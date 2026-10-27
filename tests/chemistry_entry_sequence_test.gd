@@ -80,6 +80,26 @@ func _run() -> void:
 				_expect(cg.find_child("GuardianCG", true, false) != null, "The CG contains the approaching Guardian")
 				var background := cg.find_child("BackgroundVisualCG", true, false) as Sprite2D
 				_expect(background != null and background.z_index >= 0, "The CG background is not hidden beneath its matte")
+				var render := hall.get_node_or_null("BlenderPrototypeOverlay") as Sprite2D
+				if render != null:
+					var hd_render := cg.find_child("BlenderPrototypeOverlayCG", true, false) as Sprite2D
+					_expect(
+						hd_render != null and hd_render.texture == render.texture
+						and background != null and hd_render.z_index > background.z_index,
+						"With the HD look the CG draws the HD Hall over the painted one"
+					)
+					var hd_door := cg.find_child("PrototypeDoorChemistryCG", true, false) as Sprite2D
+					_expect(
+						hd_door != null and hd_door.frame == hd_door.hframes - 1,
+						"The HD Chemistry door stands open in the CG until it swings shut"
+					)
+					_expect(
+						cg.find_child("DoorLeafArtwork", true, false) == null,
+						"No leaf cut from the painted walls closes the HD doorway"
+					)
+					if hd_door != null and not capture:
+						cg.call("_swing_shut", 1.0)
+						_expect(hd_door.frame == 0, "Swinging shut plays the HD door to its shut frame")
 				if capture:
 					await create_timer(0.22).timeout
 				await _capture("04-cg-approach")

@@ -4,6 +4,11 @@ signal finished
 
 const ZOOM := 2.4
 const DOOR_CENTER := Vector2(735, 170)
+## The Hall's HD look (scripts/hd/hd_hall.gd, hd_doors.gd), when it is staged:
+## its render laid over the painted Hall, and the Chemistry door's leaves, a
+## sheet from shut (frame 0) to open (the last frame).
+const HD_RENDER := "BlenderPrototypeOverlay"
+const HD_DOOR := "PrototypeDoorChemistry"
 
 var phase := &"approach"
 var content: Control
@@ -11,6 +16,7 @@ var caption: Label
 var detective: AnimatedSprite2D
 var guardian: AnimatedSprite2D
 var leaf: TextureRect
+var hd_door: Sprite2D
 var doorway_shadow: ColorRect
 var timeline: Tween
 var completed := false
@@ -34,7 +40,7 @@ func play_scene(hall: Node2D) -> void:
 	timeline.parallel().tween_property(detective, "position", Vector2(739, 265), 0.36)
 	timeline.parallel().tween_property(detective, "modulate:a", 0.0, 0.12).set_delay(0.25)
 	timeline.tween_callback(_close_door)
-	timeline.tween_property(leaf, "position:x", 0.0, 0.22).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	timeline.tween_method(_swing_shut, 0.0, 1.0, 0.22).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 	timeline.tween_callback(_door_impact)
 	timeline.tween_property(content, "position", Vector2(0, 96), 0.12).from(Vector2(-4, 98))
 	timeline.parallel().tween_property(guardian, "position", Vector2(680, 410), 0.22)
@@ -90,29 +96,33 @@ func _build(hall: Node2D) -> void:
 	world.position = DOOR_CENTER - door_world * ZOOM
 	content.add_child(world)
 	for path: String in ["WallCollisions/BackgroundVisual", "WallCollisions/WallsVisual"]:
-		var original := hall.get_node(path) as Sprite2D
-		var sprite := Sprite2D.new()
-		sprite.name = original.name + "CG"
-		sprite.texture = original.texture
-		sprite.centered = original.centered
-		sprite.transform = original.global_transform
-		sprite.z_index = 0 if path.ends_with("BackgroundVisual") else 1
-		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		world.add_child(sprite)
+		var z := 0 if path.ends_with("BackgroundVisual") else 1
+		world.add_child(_artwork(hall.get_node(path) as Sprite2D, z, CanvasItem.TEXTURE_FILTER_NEAREST))
+	# The HD Hall draws over the painted one, as in the game, and its own door
+	# stands open in the doorway until it swings shut behind the detective.
+	var render := hall.get_node_or_null(HD_RENDER) as Sprite2D
+	if render != null and render.is_visible_in_tree():
+		world.add_child(_artwork(render, 1, CanvasItem.TEXTURE_FILTER_LINEAR))
+		var door := hall.get_node_or_null(HD_DOOR) as Sprite2D
+		if door != null and door.is_visible_in_tree():
+			hd_door = _artwork(door, 2, CanvasItem.TEXTURE_FILTER_LINEAR)
+			hd_door.frame = door.hframes - 1
+			world.add_child(hd_door)
 
 	var opening_world := Rect2(door_world + Vector2(-34, -25), Vector2(68, 77))
 	var opening := Rect2(
 		DOOR_CENTER + (opening_world.position - door_world) * ZOOM,
 		opening_world.size * ZOOM
 	)
-	var darkness := ColorRect.new()
-	doorway_shadow = darkness
-	darkness.position = opening.position
-	darkness.size = opening.size
-	darkness.color = Color("#05030b")
-	darkness.z_index = 2
-	darkness.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(darkness)
+	if hd_door == null:
+		var darkness := ColorRect.new()
+		doorway_shadow = darkness
+		darkness.position = opening.position
+		darkness.size = opening.size
+		darkness.color = Color("#05030b")
+		darkness.z_index = 2
+		darkness.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.add_child(darkness)
 	detective = _actor(
 		hall.get_node("player/VisualRoot/CharacterSprite") as AnimatedSprite2D,
 		"DetectiveCG", 156.0, &"walk_up"
@@ -126,6 +136,38 @@ func _build(hall: Node2D) -> void:
 	guardian.position = Vector2(400, 470)
 	guardian.speed_scale = 2.2
 	guardian.z_index = 5
+	if hd_door == null:
+		_build_painted_leaf(hall, opening_world, opening)
+	caption = Label.new()
+	caption.name = "NearMissCaption"
+	caption.position = Vector2(32, 694)
+	caption.size = Vector2(960, 50)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	caption.add_theme_font_size_override("font_size", 20)
+	caption.add_theme_color_override("font_color", ArchiveUi.COLOR_PARCHMENT)
+	caption.text = CaseLocale.text("cg.approach")
+	root_control.add_child(caption)
+
+
+## A copy of one of the Hall's artwork sprites, where it stands in the Hall.
+func _artwork(original: Sprite2D, z: int, filter: CanvasItem.TextureFilter) -> Sprite2D:
+	var sprite := Sprite2D.new()
+	sprite.name = original.name + "CG"
+	sprite.texture = original.texture
+	sprite.centered = original.centered
+	sprite.offset = original.offset
+	sprite.hframes = original.hframes
+	sprite.vframes = original.vframes
+	sprite.transform = original.global_transform
+	sprite.z_index = z
+	sprite.texture_filter = filter
+	return sprite
+
+
+## The painted look's door: a leaf cut from the Hall's walls where the door is
+## painted shut, slid across the darkened doorway.
+func _build_painted_leaf(hall: Node2D, opening_world: Rect2, opening: Rect2) -> void:
 	var door_clip := Control.new()
 	door_clip.name = "ClosingDoor"
 	door_clip.position = opening.position
@@ -148,23 +190,18 @@ func _build(hall: Node2D) -> void:
 	leaf.position.x = opening.size.x
 	leaf.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	door_clip.add_child(leaf)
-	caption = Label.new()
-	caption.name = "NearMissCaption"
-	caption.position = Vector2(32, 694)
-	caption.size = Vector2(960, 50)
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	caption.add_theme_font_size_override("font_size", 20)
-	caption.add_theme_color_override("font_color", ArchiveUi.COLOR_PARCHMENT)
-	caption.text = CaseLocale.text("cg.approach")
-	root_control.add_child(caption)
 
 
 func _actor(source: AnimatedSprite2D, actor_name: String, height: float, animation_name: StringName) -> AnimatedSprite2D:
 	var sprite := AnimatedSprite2D.new()
 	sprite.name = actor_name
 	sprite.sprite_frames = source.sprite_frames
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# The HD look's figures are drawn smooth, as the game draws them.
+	sprite.texture_filter = (
+		CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		if source.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		else CanvasItem.TEXTURE_FILTER_NEAREST
+	)
 	var animation := animation_name if source.sprite_frames.has_animation(animation_name) else source.animation
 	var texture := source.sprite_frames.get_frame_texture(animation, 0)
 	var bounds := texture.get_image().get_used_rect()
@@ -188,9 +225,19 @@ func _close_door() -> void:
 	caption.text = CaseLocale.text("cg.door")
 
 
+## Shuts the door `amount` of the way (0 open, 1 shut): the HD door swings back
+## through its frames; the painted leaf slides across the doorway.
+func _swing_shut(amount: float) -> void:
+	if hd_door != null:
+		hd_door.frame = roundi((hd_door.hframes - 1) * (1.0 - amount))
+	elif leaf != null:
+		leaf.position.x = leaf.size.x * (1.0 - amount)
+
+
 func _door_impact() -> void:
 	phase = &"escaped"
-	doorway_shadow.hide()
+	if doorway_shadow != null:
+		doorway_shadow.hide()
 	GameAudio.play(&"switch_throw")
 	caption.text = CaseLocale.text("hall.near_miss_escape")
 

@@ -112,3 +112,6 @@ polygon = PackedVector2Array(72, 960, 153, 966, 532, 958, 532, 929, 635, 916, 63
 
 [node name="BottomRightWall" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=869028076]
 polygon = PackedVector2Array(762, 920, 809, 926, 828, 930, 851, 930, 860, 968, 1441, 951, 1438, 1065, 747, 1068)
+
+[node name="GateThreshold" type="CollisionPolygon2D" parent="RoomCollisions" unique_id=2053714562]
+polygon = PackedVector2Array(628, 936, 770, 936, 770, 1056, 1448, 1056, 1448, 1160, 0, 1160, 0, 1056, 628, 1056)

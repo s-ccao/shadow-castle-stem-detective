@@ -45,10 +45,12 @@ const AMBIENCE_FIXTURES: Array[Dictionary] = [
 	{"position": Vector2(817.0, 964.0), "colour": TORCH_WARM, "radius": 150.0},
 ]
 
-const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 930.0)
+## The door and its gable (apex y 921) are wall: the detective arrives above
+## them and leaves from in front of them, where the exit's contact band starts.
+const PLAYER_SPAWN_POSITION: Vector2 = Vector2(724.0, 910.0)
 const EXIT_POSITION: Vector2 = Vector2(724.0, 1030.0)
 const EXIT_RADIUS: float = 80.0
-const EXIT_RECT: Rect2 = Rect2(622.0, 962.0, 204.0, 124.0)
+const EXIT_RECT: Rect2 = Rect2(622.0, 921.0, 204.0, 165.0)
 const INTERACTION_CONTACT_MARGIN: float = 14.0
 const LEGACY_CONTACT_RADIUS: float = 20.0
 const RECIPE_INTERACT_RADIUS: float = 80.0

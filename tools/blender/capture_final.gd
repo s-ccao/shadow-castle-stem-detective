@@ -52,10 +52,11 @@ const PROPS: Dictionary = {
 		"item": "mrs_lin_notebook", "stand": Vector2(306, 684), "painted": Vector2(306, 684),
 		"shot": "05-notebook",
 	},
-	# Mrs. Lin, the Tripo Dr. Lin where she fell: her HD footprint ends where
-	# she meets the floor, so the room's own approach from the south offers her.
+	# Mrs. Lin, the Tripo Dr. Lin where she fell, laid as long as the cast stand
+	# tall: her HD footprint ends where she meets the floor, so the room's own
+	# approach from the south offers her.
 	"MrsLinBody": {
-		"item": "mrs_lin_body", "stand": Vector2(346, 645), "painted": Vector2(360, 656),
+		"item": "mrs_lin_body", "stand": Vector2(346, 639), "painted": Vector2(360, 656),
 		"shot": "06-body",
 	},
 }
