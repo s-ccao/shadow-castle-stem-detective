@@ -293,6 +293,57 @@ without touching the cache, pin the address instead:
 curl -sSI --resolve example.com:443:76.76.21.21 https://example.com/
 ```
 
+## The website (`web/landing`)
+
+`shadowcastledetective.com` is plain HTML, CSS and JavaScript modules with no
+framework, no npm dependency and no build server: Vercel uploads `web/landing`
+exactly as committed. A small Python builder (standard library only) generates
+the parts that repeat, and its output is committed with the source.
+
+| Path | What it is |
+| --- | --- |
+| `src/games.json` | The case-file catalogue: each game's status, copy in English and Chinese, accent, emblem and art. Its `internal` planning notes are stripped from the published `data/games.json`. |
+| `src/partials/`, `src/templates/`, `src/stories/` | Shared head, boot script, navigation, footer, emblem sprite, the hub's castle scene, the case-page template and Shadow Castle's long page. |
+| `src/i18n/zh.json` | Chinese strings for the interface. Game copy comes from the catalogue. |
+| `src/art/` | The key-art brief, prompts and asset manifest. |
+| `index.html`, `community.html`, `404.html` | Hand-written pages with generated regions between `<!-- build:name -->` markers. |
+| `games/*.html`, `data/games.json`, `i18n/zh.json` | Generated. Edit their sources, never these. |
+| `css/`, `js/`, `tokens.css` | The shared shell and its effects. `DESIGN.md` is the design system. |
+
+`.vercelignore` keeps `src/`, `DESIGN.md` and this README out of the upload.
+
+```bash
+python3 tools/site_build.py          # regenerate after editing src/ or a marked page
+python3 tools/check_site.py          # sync, translations, links, anchors, ids, images, catalogue rules
+python3 tools/serve_site.py          # http://127.0.0.1:8765, routed like Vercel (clean URLs, 404.html)
+cd web/landing && npx vercel         # a preview deployment (viewing it needs a Vercel login)
+cd web/landing && npx vercel --prod  # production, only after the preview is reviewed
+```
+
+`serve_site.py` answers `/api/community` with a clearly labelled fixture; the
+real feed only runs on Vercel.
+
+**Adding a game.** Add an entry to `src/games.json` with a unique `slug` and
+`order`, its `status`, both languages for every text field, an accent token
+`--game-<slug>` in `tokens.css`, an emblem `<symbol id="emblem-<slug>">` in
+`src/partials/emblems.html`, and a lit window for it in `WINDOW_SLOTS` in
+`tools/site_build.py`. Then build and check. Only a `playable` game may carry
+`links.play`, generated key art must be labelled `"label": "concept"`, and
+`embed`, `scores` and `leaderboard` stay `{"enabled": false}` until those
+features exist: `check_site.py` fails otherwise.
+
+**Languages.** English is written in the HTML. Mark translatable elements with
+`data-i18n` (text of an element with no child elements), `data-i18n-html` or
+`data-i18n-attr="attr:key"` and add the Chinese to `src/i18n/zh.json`. The
+visitor's choice is remembered; `?lang=zh` or `?lang=en` forces one.
+
+**Motion.** Every effect reads `html[data-motion]`, which follows the system's
+reduced-motion setting unless the footer's Animations switch overrides it.
+Ambient loops pause off screen and when the tab is hidden.
+
+**Caching.** `/assets/*` is served with a one-year immutable cache. Never
+replace a file there in place; give a new or changed image a new name.
+
 ## Assets
 
 The landing images under `web/landing/assets/` are compressed copies of

@@ -1,4 +1,7 @@
 # Build sources and design notes stay in the repository; the built site is what ships.
+# This file replaces the CLI's .gitignore fallback, so it repeats .env* from there.
 /src
 /DESIGN.md
 /README.md
+
+.env*

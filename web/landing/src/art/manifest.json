@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "art_direction_brief": "BRIEF.md",
+  "assets": [
+    {
+      "id": "evidence-rush-key-art",
+      "role": "concept key art: case card, library stage, case-page hero, Open Graph",
+      "path": "assets/games/evidence-rush/key-art-v1",
+      "status": "planned",
+      "label": "concept",
+      "technical": {
+        "master": "16:9, >= 2048x1152, sRGB, opaque",
+        "derivatives": [
+          "16:9 stage/hero",
+          "16:10 card",
+          "1200x630 og"
+        ],
+        "formats": [
+          "webp",
+          "jpg"
+        ]
+      },
+      "visual_locks": [
+        "palette",
+        "moonlight from upper left",
+        "case accent as brightest light",
+        "calm lower-left copy zone"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "",
+        "creator": "",
+        "created_at": "",
+        "license": "",
+        "attribution": "",
+        "prompt_or_source_record": "prompts.md#evidence-rush"
+      },
+      "verification": {
+        "card_scale_reviewed": false,
+        "stage_scale_reviewed": false,
+        "technical_checks_passed": false,
+        "approved_by": ""
+      }
+    },
+    {
+      "id": "prism-lab-key-art",
+      "role": "concept key art: case card, library stage, case-page hero, Open Graph",
+      "path": "assets/games/prism-lab/key-art-v1",
+      "status": "planned",
+      "label": "concept",
+      "technical": {
+        "master": "16:9, >= 2048x1152, sRGB, opaque",
+        "derivatives": [
+          "16:9 stage/hero",
+          "16:10 card",
+          "1200x630 og"
+        ],
+        "formats": [
+          "webp",
+          "jpg"
+        ]
+      },
+      "visual_locks": [
+        "palette",
+        "moonlight from upper left",
+        "case accent as brightest light",
+        "calm lower-left copy zone"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "",
+        "creator": "",
+        "created_at": "",
+        "license": "",
+        "attribution": "",
+        "prompt_or_source_record": "prompts.md#prism-lab"
+      },
+      "verification": {
+        "card_scale_reviewed": false,
+        "stage_scale_reviewed": false,
+        "technical_checks_passed": false,
+        "approved_by": ""
+      }
+    },
+    {
+      "id": "echo-corridor-key-art",
+      "role": "concept key art: case card, library stage, case-page hero, Open Graph",
+      "path": "assets/games/echo-corridor/key-art-v1",
+      "status": "planned",
+      "label": "concept",
+      "technical": {
+        "master": "16:9, >= 2048x1152, sRGB, opaque",
+        "derivatives": [
+          "16:9 stage/hero",
+          "16:10 card",
+          "1200x630 og"
+        ],
+        "formats": [
+          "webp",
+          "jpg"
+        ]
+      },
+      "visual_locks": [
+        "palette",
+        "moonlight from upper left",
+        "case accent as brightest light",
+        "calm lower-left copy zone"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "",
+        "creator": "",
+        "created_at": "",
+        "license": "",
+        "attribution": "",
+        "prompt_or_source_record": "prompts.md#echo-corridor"
+      },
+      "verification": {
+        "card_scale_reviewed": false,
+        "stage_scale_reviewed": false,
+        "technical_checks_passed": false,
+        "approved_by": ""
+      }
+    },
+    {
+      "id": "time-echo-key-art",
+      "role": "concept key art: case card, library stage, case-page hero, Open Graph",
+      "path": "assets/games/time-echo/key-art-v1",
+      "status": "planned",
+      "label": "concept",
+      "technical": {
+        "master": "16:9, >= 2048x1152, sRGB, opaque",
+        "derivatives": [
+          "16:9 stage/hero",
+          "16:10 card",
+          "1200x630 og"
+        ],
+        "formats": [
+          "webp",
+          "jpg"
+        ]
+      },
+      "visual_locks": [
+        "palette",
+        "moonlight from upper left",
+        "case accent as brightest light",
+        "calm lower-left copy zone"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "",
+        "creator": "",
+        "created_at": "",
+        "license": "",
+        "attribution": "",
+        "prompt_or_source_record": "prompts.md#time-echo"
+      },
+      "verification": {
+        "card_scale_reviewed": false,
+        "stage_scale_reviewed": false,
+        "technical_checks_passed": false,
+        "approved_by": ""
+      }
+    },
+    {
+      "id": "alchemy-shift-key-art",
+      "role": "concept key art: case card, library stage, case-page hero, Open Graph",
+      "path": "assets/games/alchemy-shift/key-art-v1",
+      "status": "planned",
+      "label": "concept",
+      "technical": {
+        "master": "16:9, >= 2048x1152, sRGB, opaque",
+        "derivatives": [
+          "16:9 stage/hero",
+          "16:10 card",
+          "1200x630 og"
+        ],
+        "formats": [
+          "webp",
+          "jpg"
+        ]
+      },
+      "visual_locks": [
+        "palette",
+        "moonlight from upper left",
+        "case accent as brightest light",
+        "calm lower-left copy zone"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "",
+        "creator": "",
+        "created_at": "",
+        "license": "",
+        "attribution": "",
+        "prompt_or_source_record": "prompts.md#alchemy-shift"
+      },
+      "verification": {
+        "card_scale_reviewed": false,
+        "stage_scale_reviewed": false,
+        "technical_checks_passed": false,
+        "approved_by": ""
+      }
+    },
+    {
+      "id": "rune-defense-key-art",
+      "role": "concept key art: case card, library stage, case-page hero, Open Graph",
+      "path": "assets/games/rune-defense/key-art-v1",
+      "status": "planned",
+      "label": "concept",
+      "technical": {
+        "master": "16:9, >= 2048x1152, sRGB, opaque",
+        "derivatives": [
+          "16:9 stage/hero",
+          "16:10 card",
+          "1200x630 og"
+        ],
+        "formats": [
+          "webp",
+          "jpg"
+        ]
+      },
+      "visual_locks": [
+        "palette",
+        "moonlight from upper left",
+        "case accent as brightest light",
+        "calm lower-left copy zone"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "",
+        "creator": "",
+        "created_at": "",
+        "license": "",
+        "attribution": "",
+        "prompt_or_source_record": "prompts.md#rune-defense"
+      },
+      "verification": {
+        "card_scale_reviewed": false,
+        "stage_scale_reviewed": false,
+        "technical_checks_passed": false,
+        "approved_by": ""
+      }
+    }
+  ]
+}

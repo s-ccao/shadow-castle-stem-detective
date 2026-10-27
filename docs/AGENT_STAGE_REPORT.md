@@ -2,6 +2,53 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-72 (the website becomes a case archive: hub, seven case files, library and effects)
+
+- **Date:** 2026-10-27
+- **Status:** phase 2 of the approved website plan. Seven commits on branch `agents/site-game-hall`, not pushed. A Vercel **preview** is deployed; production (shadowcastledetective.com) is unchanged until the user approves it.
+- **Request:** "把 Shadow Castle 从单款游戏展示页升级为具有高品质动画效果和多游戏入口的游戏平台", with stellarascensiongame.com as the reference. In English: turn the single-game page into a games platform with high-quality motion and an entrance for several games; borrow the reference's interaction mechanics (game library, animated hero, scroll storytelling, game cards, previews, HUD) without copying its code, art, video, copy or brand; keep the game, Research, Community, the development record and every link; English and Chinese; desktop and mobile; reduced motion; a data-driven catalogue in which the six unfinished games are Coming soon with no play link; one commit per stage; a preview before production.
+- **Reference study:** the reference's public HTML, CSS and JavaScript were read only to name its mechanics (notes kept in the session, not in the repository). No code, asset, copy or palette was reused.
+
+### What changed (`web/landing`, `web/README.md`, `tools/site_*.py`, `tools/check_site.py`; no Godot file)
+
+- **C1 `c8bef94` shared shell:** new tokens (moonlight, bronze, night sky, glass, one accent per game, IBM Plex Mono, CJK fallbacks, the missing `--color-ink-3`); `css/site.css` with the N10 navigation, Ft5 footer, buttons in all eight states and status stamps; `js/loop.js` (one shared animation loop), `prefs.js` (system reduced motion or the site's Animations switch), `i18n.js` (English in the HTML, Chinese from `i18n/zh.json`), `nav.js`. The community page moved onto the shared shell. `tools/site_build.py` (generator), `tools/check_site.py` (checks), `tools/serve_site.py` (local server routed like Vercel), `DESIGN.md`, `.vercelignore`.
+- **C2 `ba7e8c6` structure:** the hub at `/`; the previous home page word for word at `/games/shadow-castle`, its old anchors forwarded there; the catalogue `src/games.json` (Shadow Castle plus the user's six games, both languages; planning notes stripped from the published `data/games.json`); seven generated case pages, the `/games` archive, a case-file 404, original line emblems, case cards.
+- **C3 `92c21c2` the hub's castle:** a layered vector night scene drawn in code, one window per game (Shadow Castle's lamp lit, six dim candles, a label on hover), a pointer lantern that reveals chalk clues, fog from a generated texture, light rain, rare soft lightning, parallax; portrait screens put the castle above the copy. The Shadow Castle page gets rain, fog and moonlight over its painting.
+- **C4 `6fb225d` scroll storytelling:** rises, a brass heading glint, photographs that develop like prints, the true figures counting up, a reading thread, and a thread that lights each development milestone.
+- **C5 `58770ce` pointer layer:** a brass magnifier cursor that frames what it can open, magnetic primary buttons, ember sparks, tilting cards. The native cursor returns for text entry, touch, forced colours, reduced motion and on any error.
+- **C6 `f12527e` the case-file library:** a modal dialog over every page from the navigation (with a count), a dock, the castle windows and `#cases` deep links; the stage glides between accents and inks each name in; keyboard, touch and Back all work; nothing auto-advances; card previews on hover or a Preview button on touch.
+- **Docs commit:** `web/README.md` → "The website", the website note in `docs/AGENT_HANDOFF.md`, this report, `.hallmark/log.json`, the key-art brief, prompts and manifest in `web/landing/src/art/` (not deployed), evidence images, and `.vercelignore` repeating `.env*` (it replaces the CLI's `.gitignore` fallback).
+- **Copy:** new hub and archive copy is a draft for the user's review. The six games' texts are the user's Chinese, translated to English; development difficulty and planning notes are not published. Chinese uses the game's own terms (林女士, 守卫, 眩晕, 隐身, 净化).
+
+### Verification
+
+- **`python3 tools/check_site.py`:** 11 pages, 229 translation keys, 0 errors, 0 warnings; `site_build.py --check` reports nothing stale.
+- **Godot:** the headless editor parse (isolated HOME `.godot/site-check/home`) exits 0 with no errors, before and after the stage. `git diff --check` is clean for the branch.
+- **`tools/check_static.py` and `tools/check_translations.py`** exit 1 with output byte-identical to `main` (`d17d359`): pre-existing and outside this stage (Markdown `**` in `tools/generate_minigame_answers.gd`; one Chemistry-key translation whose line breaks differ).
+- **Browser:** headless Chrome at 320, 375, 414, 768, 1024 and 1440 px in English and Chinese (a session-only playwright-core harness against `tools/serve_site.py`). Hub, archive, every case page, community and 404: no horizontal overflow, no wrapped buttons or links, no broken images, no console errors or failed requests. Reduced motion (system emulation and the site switch) is clean.
+- **Behaviour:** `/#science-title` forwards to `/games/shadow-castle#science-title`; the library opens from the keyboard onto its case, Up/Down/Home/End browse, Esc returns focus to the opener, a castle window opens its own case, Back closes, a `#cases` link on a case page opens that case, the first tap on touch selects, and the phone sheet scrolls with every row at full height. A scroll-through leaves nothing hidden, every photograph developed, the counters on 8 / 5 / 22, and all milestone seals lit.
+- **Frame time** (headless Chrome, every effect on, 2.5 s): 1440 × 900 median 16.7 ms, p95 16.8 ms; 375 × 812 median 16.7 ms with one 117 ms spike at start.
+- **Weight:** shared JS on every page 16.7 KB (plan ≤ 45 KB); the hub with its lazy modules about 47 KB raw, 15 KB gzip; new CSS about 73 KB raw, 18 KB gzip, over the planned 30 KB raw.
+- **Preview:** `shadow-castle-detective-site-j878xidnp-cyc4.vercel.app` (Vercel login required). This machine's network filter blocks the live and preview hosts, so the community feed was not checked there.
+- **HD screenshots for phase 3:** the repository's own native capture scripts (`tools/blender/capture_*.gd`) ran in English and Chinese, every run exit 0 with no script error, every room's checks passing (Wake Room PASS; Chemistry 102; Circuit Room 111; Library 141; Final Room 114; Greenhouse 114; Dining Hall 129). The captures are staged outside the repository for the user's choice.
+- **Evidence:** `docs/evidence/2026-10-27-site-stage72/` (hub in English and Chinese, a window label under the lantern, the upcoming cards, the library on desktop and phone, a case page, the Shadow Castle page, the archive in Chinese).
+
+### Risks / follow-up
+
+- The preview needs a Vercel login, and this machine cannot open either host; review on another network or device.
+- The hub replaces the old home page. Canonical and Open Graph tags are updated; Chinese is client-side, so crawlers index English; old anchors other than `#top` and `#case-brief` are forwarded by a script.
+- New CSS exceeds the planned budget (73 KB raw, 18 KB gzip).
+- Draft copy awaits review: the hub's title and lead, the six taglines, the English translations of the six premises.
+- The custom cursor replaces the system cursor on mouse devices (with the exits above); it can be dropped on its own if unwanted.
+- Phase 3 needs the user's key art (prompts in `web/landing/src/art/prompts.md`) and a choice of HD screenshots.
+
+### Proposed next stage (UX-20261021-73, phase 3)
+
+- C7: six mechanic animations (Canvas) for the cards, the library stage and the case pages.
+- C8: key art once generated, the chosen HD screenshots in both languages, provenance records.
+- C9: the deduction-board demo with its HUD on the hub.
+- C10: an archive filter, `sitemap.xml`, structured data, `games.schema.json`, the reserved score and leaderboard notes, and an optional site CI job.
+
 ## Stage: UX-20261021-71 (the detective stops at the Library's door, and the Chemistry near-miss CG in HD)
 
 - **Date:** 2026-10-26
