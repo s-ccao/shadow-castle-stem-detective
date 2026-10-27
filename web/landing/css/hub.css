@@ -40,7 +40,19 @@
   pointer-events: none;
 }
 
+/* The copy sits above the scene but lets the pointer through to the windows. */
+@media (orientation: portrait) and (max-width: 47.99rem) {
+  .hub-hero::after {
+    background:
+      linear-gradient(to top, var(--color-paper) 0%, color-mix(in oklch, var(--color-paper) 88%, transparent) 30%, transparent 60%),
+      linear-gradient(to right, color-mix(in oklch, var(--color-night) 40%, transparent), transparent 70%);
+  }
+}
+
 .hub-hero__copy {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
   width: min(100%, var(--content-max));
   display: grid;
   gap: var(--space-md);
@@ -49,6 +61,7 @@
 }
 
 .hub-hero__copy > * {
+  pointer-events: auto;
   animation: hub-rise 1100ms var(--ease-out) both;
 }
 

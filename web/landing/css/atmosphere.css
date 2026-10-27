@@ -1,0 +1,699 @@
+/* Atmosphere: the hub's layered castle scene, and the weather shared with the
+ * Shadow Castle case page. Every loop here pauses off screen and stops when
+ * html[data-motion="reduce"]. Art is original vector work; see DESIGN.md. */
+
+.hub-hero__scene {
+  --fx: 0.5;
+  container: scene / size;
+  overflow: hidden;
+}
+
+@media (min-width: 60rem) {
+  .hub-hero__scene {
+    --fx: 0.66;
+  }
+}
+
+/* Every layer shares one 16:9 frame sized from the hero's height, placed so the
+   keep (x = 1000 of 1600) sits at --fx of the width. The art bleeds past it. */
+.scene-layer {
+  --scene-h: 100cqh;
+  --scene-b: 0cqh;
+  position: absolute;
+  inset-block-end: var(--scene-b);
+  inset-inline-start: calc(100cqw * var(--fx) - var(--scene-h) * 10 / 9);
+  width: calc(var(--scene-h) * 16 / 9);
+  max-width: none;
+  height: var(--scene-h);
+  overflow: visible;
+  translate: var(--lx, 0px) var(--ly, 0px);
+}
+
+/* Portrait screens: the castle takes the upper half, the copy the lower. */
+@container scene (orientation: portrait) {
+  .scene-layer {
+    --scene-h: 56cqh;
+    --scene-b: 42cqh;
+  }
+
+  .sky-moon,
+  .sky-shafts {
+    inset-block-start: 11%;
+    inset-inline-start: 16%;
+  }
+
+  .fog--far {
+    --fog-y: 50%;
+    --fog-h: 22%;
+  }
+
+  .fog--mid {
+    --fog-y: 38%;
+    --fog-h: 24%;
+  }
+
+  .fog--near {
+    --fog-y: 24%;
+    --fog-h: 30%;
+  }
+}
+
+/* ---------- Sky ---------- */
+
+.sky {
+  position: absolute;
+  inset: 0;
+  translate: var(--lx, 0px) var(--ly, 0px);
+}
+
+.sky-stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: var(--color-moon);
+  stroke: var(--color-moon);
+  stroke-width: 0.8;
+  animation: star-twinkle 6s ease-in-out infinite alternate;
+}
+
+.sky-stars--1 {
+  animation-duration: 8s;
+  animation-delay: -3s;
+}
+
+.sky-stars--2 {
+  animation-duration: 11s;
+  animation-delay: -6s;
+}
+
+@keyframes star-twinkle {
+  from {
+    opacity: 0.3;
+  }
+
+  to {
+    opacity: 0.95;
+  }
+}
+
+.sky-moon {
+  position: absolute;
+  inset-block-start: 15%;
+  inset-inline-start: 18%;
+  width: clamp(3.75rem, 6.5vw, 7rem);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+}
+
+.sky-moon::before {
+  content: "";
+  position: absolute;
+  inset: -260%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--color-moon-glow) 0%,
+    color-mix(in oklch, var(--color-moon-glow) 35%, transparent) 17%,
+    transparent 50%
+  );
+}
+
+.sky-moon__disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 64% 60%, color-mix(in oklch, var(--color-moon-2) 70%, transparent) 0 9%, transparent 10%),
+    radial-gradient(circle at 36% 66%, color-mix(in oklch, var(--color-moon-2) 55%, transparent) 0 6%, transparent 7%),
+    radial-gradient(circle at 54% 30%, color-mix(in oklch, var(--color-moon-2) 45%, transparent) 0 5%, transparent 6%),
+    radial-gradient(circle at 36% 34%, var(--color-ink), var(--color-moon) 42%, var(--color-moon-2));
+  box-shadow:
+    0 0 2.5rem var(--color-moon-glow),
+    inset -0.7rem -0.6rem 1.4rem color-mix(in oklch, var(--color-sky-mid) 55%, transparent);
+}
+
+.sky-shafts {
+  position: absolute;
+  inset-block-start: 15%;
+  inset-inline-start: 18%;
+}
+
+.sky-shafts span {
+  position: absolute;
+  inset-block-start: -3.5rem;
+  inset-inline-start: 0;
+  width: 150vmax;
+  height: 7rem;
+  background: linear-gradient(to right, color-mix(in oklch, var(--color-moon) 13%, transparent), transparent 72%);
+  mask-image: linear-gradient(to bottom, transparent, var(--color-night) 40%, var(--color-night) 60%, transparent);
+  mix-blend-mode: screen;
+  opacity: 0.3;
+  transform-origin: 0 50%;
+  rotate: 25deg;
+  animation: shaft-breathe 11s ease-in-out infinite alternate;
+}
+
+.sky-shafts span:nth-child(2) {
+  height: 4rem;
+  rotate: 35deg;
+  animation-duration: 15s;
+  animation-delay: -5s;
+}
+
+.sky-shafts span:nth-child(3) {
+  height: 3rem;
+  rotate: 15deg;
+  animation-duration: 19s;
+  animation-delay: -9s;
+}
+
+@keyframes shaft-breathe {
+  from {
+    opacity: 0.14;
+  }
+
+  to {
+    opacity: 0.5;
+  }
+}
+
+.sky-cloud {
+  position: absolute;
+  inset-inline-start: -45%;
+  width: min(42rem, 72vw);
+  fill: var(--color-sky-horizon);
+  opacity: 0.2;
+  animation: cloud-drift 240s linear infinite;
+}
+
+.sky-cloud--1 {
+  inset-block-start: 11%;
+}
+
+.sky-cloud--2 {
+  inset-block-start: 25%;
+  width: min(32rem, 60vw);
+  opacity: 0.14;
+  animation-duration: 330s;
+  animation-delay: -150s;
+}
+
+@keyframes cloud-drift {
+  to {
+    transform: translateX(240vw);
+  }
+}
+
+.sky-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 72% 8%, color-mix(in oklch, var(--color-moon) 26%, transparent), transparent 72%);
+  opacity: 0;
+}
+
+.hub-hero.is-flashing .sky-flash {
+  animation: sky-flash 950ms var(--ease-out) 1;
+}
+
+@keyframes sky-flash {
+  0% {
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 0.5;
+  }
+
+  17% {
+    opacity: 0.08;
+  }
+
+  27% {
+    opacity: 0.32;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Land and castle ---------- */
+
+.hill--far {
+  fill: var(--color-hill);
+}
+
+.hill--near {
+  fill: color-mix(in oklch, var(--color-hill) 50%, var(--color-keep));
+}
+
+.keep-far {
+  fill: var(--color-keep-far);
+}
+
+.keep-far__windows {
+  fill: var(--color-ember);
+  opacity: 0.5;
+}
+
+.keep-crag {
+  fill: color-mix(in oklch, var(--color-keep) 80%, var(--color-near));
+}
+
+.keep-crag-line {
+  fill: none;
+  stroke: var(--color-keep-lit);
+  stroke-linecap: round;
+  stroke-width: 2;
+  opacity: 0.45;
+}
+
+.keep {
+  fill: var(--color-keep);
+}
+
+.keep-lit {
+  fill: var(--color-keep-lit);
+}
+
+.keep-edge {
+  fill: none;
+  stroke: var(--color-keep-edge);
+  stroke-linecap: round;
+  stroke-width: 1.4;
+  opacity: 0.7;
+}
+
+.keep-slits rect,
+.keep-gate {
+  fill: var(--color-near);
+}
+
+.keep-portcullis {
+  fill: none;
+  stroke: var(--color-keep-lit);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
+.keep-rose {
+  fill: var(--color-near);
+  stroke: var(--color-keep-edge);
+  stroke-width: 1;
+}
+
+.keep-flag__cloth {
+  fill: var(--color-accent);
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: flag-wave 2.8s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes flag-wave {
+  from {
+    transform: skewY(-6deg) scaleX(0.94);
+  }
+
+  to {
+    transform: skewY(5deg) scaleX(1.04);
+  }
+}
+
+/* ---------- The seven windows: one lamp lit, six candles waiting ---------- */
+
+.win {
+  cursor: pointer;
+  outline: none;
+  pointer-events: auto;
+}
+
+.win__halo {
+  fill: var(--win);
+  opacity: 0.05;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity var(--dur-long) var(--ease-out),
+    transform var(--dur-scene) var(--ease-out);
+}
+
+.win__halo--2 {
+  opacity: 0.08;
+}
+
+.win__halo--3 {
+  opacity: 0.14;
+  animation: win-candle 6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -1.7s);
+}
+
+.win__pane {
+  fill: var(--win);
+  opacity: 0.4;
+  transition: opacity 900ms var(--ease-out);
+}
+
+.win__bars {
+  fill: none;
+  stroke: var(--color-keep);
+  stroke-width: 2;
+}
+
+.win__hit {
+  fill: transparent;
+}
+
+.win--lit .win__pane {
+  fill: color-mix(in oklch, var(--win) 58%, var(--color-ember-hot));
+  opacity: 1;
+}
+
+.win--lit .win__halo {
+  opacity: 0.12;
+}
+
+.win--lit .win__halo--2 {
+  opacity: 0.2;
+}
+
+.win--lit .win__halo--3 {
+  opacity: 0.36;
+  animation-name: win-lamp;
+  animation-duration: 3.6s;
+}
+
+.win:hover .win__halo,
+.win.is-hover .win__halo {
+  opacity: 0.2;
+  transform: scale(1.35);
+}
+
+.win:hover .win__pane,
+.win.is-hover .win__pane {
+  opacity: 1;
+}
+
+@keyframes win-candle {
+  0%,
+  100% {
+    opacity: 0.14;
+  }
+
+  46% {
+    opacity: 0.22;
+  }
+
+  50% {
+    opacity: 0.08;
+  }
+
+  54% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes win-lamp {
+  0%,
+  100% {
+    opacity: 0.36;
+  }
+
+  50% {
+    opacity: 0.28;
+  }
+}
+
+/* The scene wakes once: six candles flicker on, then the one lit lamp blooms. */
+.hub-hero.is-sleeping .win__pane,
+.hub-hero.is-sleeping .win__halo {
+  opacity: 0;
+}
+
+.hub-hero.is-waking .win__pane,
+.hub-hero.is-waking .win__halo {
+  transition-delay: calc(var(--i) * 120ms + 300ms);
+}
+
+.hub-hero.is-waking .win--lit .win__pane,
+.hub-hero.is-waking .win--lit .win__halo {
+  transition-delay: 1300ms;
+  transition-duration: 1400ms;
+}
+
+.scene-label {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 2;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.45rem 0.7rem 0.5rem;
+  border: var(--rule-hair) solid color-mix(in oklch, var(--label-accent, var(--color-accent)) 50%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--color-glass-strong);
+  box-shadow: var(--shadow-deep);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  translate: var(--tx, -999px) var(--ty, -999px);
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+
+.scene-label.is-on {
+  opacity: 1;
+}
+
+.scene-label__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.scene-label__status {
+  color: var(--label-accent, var(--color-accent));
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------- Chalk clues, visible only inside the lantern's light ---------- */
+
+.scene-layer--clues {
+  --cx: -999px;
+  --cy: -999px;
+  opacity: 0;
+  mask-image: radial-gradient(circle 9.5rem at var(--cx) var(--cy), var(--color-night) 0%, var(--color-night) 30%, transparent 100%);
+  transition: opacity var(--dur-scene) var(--ease-out);
+  pointer-events: none;
+}
+
+.hub-hero.is-lantern .scene-layer--clues {
+  opacity: 1;
+}
+
+.clue-line {
+  fill: none;
+  stroke: var(--color-clue);
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+
+.clue-dash {
+  stroke-dasharray: 4 5;
+}
+
+.clue-text {
+  fill: var(--color-clue);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.clue-text--sm {
+  font-size: 12px;
+}
+
+.clue-text--rune {
+  font-size: 18px;
+  letter-spacing: 0.3em;
+}
+
+.scene-lantern {
+  position: absolute;
+  inset-block-start: -13rem;
+  inset-inline-start: -13rem;
+  width: 26rem;
+  height: 26rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--color-ember) 20%, transparent),
+    color-mix(in oklch, var(--color-ember) 7%, transparent) 38%,
+    transparent 68%
+  );
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  translate: var(--gx, -999px) var(--gy, -999px);
+  transition: opacity var(--dur-scene) var(--ease-out);
+}
+
+.hub-hero.is-lantern .scene-lantern {
+  opacity: 1;
+}
+
+/* ---------- Foreground ---------- */
+
+.fore-fill {
+  fill: var(--color-near);
+}
+
+.fore-tree path {
+  fill: none;
+  stroke: var(--color-near);
+  stroke-linecap: round;
+}
+
+.fore-fence path {
+  fill: none;
+  stroke: var(--color-near);
+  stroke-width: 3;
+}
+
+.fore-lantern__glow circle {
+  fill: var(--color-ember);
+  opacity: 0.06;
+}
+
+.fore-lantern__glow circle:nth-child(2) {
+  opacity: 0.1;
+}
+
+.fore-lantern__glow circle:nth-child(3) {
+  opacity: 0.22;
+}
+
+.fore-lantern__glow {
+  animation: lantern-flicker 4.2s ease-in-out infinite;
+}
+
+.fore-lantern__flame {
+  fill: var(--color-ember-hot);
+  opacity: 0.85;
+}
+
+@keyframes lantern-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  40% {
+    opacity: 0.8;
+  }
+
+  43% {
+    opacity: 0.96;
+  }
+
+  70% {
+    opacity: 0.88;
+  }
+}
+
+/* ---------- Weather: fog and rain, shared by the hub and case heroes ---------- */
+
+.fog {
+  --fog-tile: 1200px;
+  position: absolute;
+  inset-block-end: var(--fog-y, 0%);
+  inset-inline-start: 0;
+  width: calc(100% + var(--fog-tile));
+  height: var(--fog-h, 40%);
+  background: var(--fog-image, linear-gradient(to top, var(--color-moon-haze), transparent)) repeat-x 0 50% / var(--fog-tile) 100%;
+  opacity: var(--fog-o, 0.5);
+  pointer-events: none;
+  translate: var(--lx, 0px) var(--ly, 0px);
+  animation: fog-drift var(--fog-speed, 120s) linear infinite;
+}
+
+.fog--far {
+  --fog-tile: 1100px;
+  --fog-h: 34%;
+  --fog-y: 16%;
+  --fog-o: 0.3;
+  --fog-speed: 170s;
+}
+
+.fog--mid {
+  --fog-tile: 1400px;
+  --fog-h: 36%;
+  --fog-y: 3%;
+  --fog-o: 0.4;
+  --fog-speed: 115s;
+  scale: -1 1;
+}
+
+.fog--near {
+  --fog-tile: 1800px;
+  --fog-h: 44%;
+  --fog-y: -14%;
+  --fog-o: 0.48;
+  --fog-speed: 78s;
+}
+
+@keyframes fog-drift {
+  to {
+    transform: translateX(calc(var(--fog-tile) * -1));
+  }
+}
+
+.scene-rain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* The Shadow Castle case page: weather over the painted hero. */
+.atmo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.atmo__moonlight {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 42% 55% at 30% 0%, var(--color-moon-haze), transparent 72%);
+  mix-blend-mode: screen;
+  animation: shaft-breathe 12s ease-in-out infinite alternate;
+}
+
+.hero[data-atmosphere] .hero__image {
+  scale: 1.06;
+  translate: var(--lx, 0px) var(--ly, 0px);
+}
+
+/* ---------- Off screen: hold every loop; reduced motion: no loops at all ---------- */
+
+.is-paused :is(.sky-stars, .sky-shafts span, .sky-cloud, .keep-flag__cloth, .win__halo--3, .fore-lantern__glow, .fog, .atmo__moonlight) {
+  animation-play-state: paused;
+}
+
+html[data-motion="reduce"] :is(.sky-stars, .sky-shafts span, .sky-cloud, .keep-flag__cloth, .win__halo--3, .fore-lantern__glow, .fog, .atmo__moonlight) {
+  animation: none;
+}
+
+html[data-motion="reduce"] :is(.scene-layer, .sky, .fog) {
+  translate: none;
+}
+
+html[data-motion="reduce"] :is(.scene-lantern, .scene-layer--clues) {
+  display: none;
+}

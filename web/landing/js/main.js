@@ -25,5 +25,6 @@ function lazy(name, selector, loader) {
 start("prefs", initPrefs);
 start("i18n", initI18n);
 start("nav", initNav);
+lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
 
 export { lazy, start };

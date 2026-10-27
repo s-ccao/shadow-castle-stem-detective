@@ -46,6 +46,19 @@ STATUS_NOTE = {
     "coming-soon": "Not playable yet. When the game is ready, this page will open it.",
 }
 
+# Lit windows on the hub's castle, one per catalogue entry in catalogue order:
+# (x, y, width, height, shape) in the scene's 1600 x 900 viewBox. The flagship
+# takes the keep's great window; a new game needs a new slot drawn here.
+WINDOW_SLOTS = [
+    (1000, 400, 26, 46, "arch"),  # the keep's great window
+    (780, 430, 14, 26, "arch"),  # left tower
+    (1145, 400, 14, 26, "arch"),  # right tower, the observatory
+    (875, 540, 20, 40, "arch"),  # the great hall
+    (1000, 240, 22, 22, "round"),  # the clock window of the upper keep
+    (1315, 490, 12, 22, "arch"),  # the alchemist's turret
+    (1235, 576, 16, 24, "arch"),  # above the gate
+]
+
 MARKER = re.compile(
     r"(?P<indent>[ \t]*)<!-- build:(?P<name>[a-z][a-z0-9-]*)(?P<attrs>(?:\s+[a-z][a-z0-9-]*=\"[^\"]*\")*)\s*-->"
     r".*?"
@@ -108,6 +121,31 @@ def meta_line(key: str, game: dict, cls: str) -> str:
     )
 
 
+def num(value: float) -> str:
+    return f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def window_pane(width: float, height: float, shape: str) -> str:
+    if shape == "round":
+        r = width / 2
+        return f"M{num(-r)} 0a{num(r)} {num(r)} 0 1 0 {num(2 * r)} 0a{num(r)} {num(r)} 0 1 0 {num(-2 * r)} 0Z"
+    hw, hh = width / 2, height / 2
+    spring = -hh + width * 0.55
+    tip = -hh + width * 0.08
+    return (
+        f"M{num(-hw)} {num(hh)}V{num(spring)}Q{num(-hw)} {num(tip)} 0 {num(-hh)}"
+        f"Q{num(hw)} {num(tip)} {num(hw)} {num(spring)}V{num(hh)}Z"
+    )
+
+
+def window_bars(width: float, height: float, shape: str) -> str:
+    if shape == "round":
+        r = width / 2
+        return f"M{num(-r)} 0H{num(r)}M0 {num(-r)}V{num(r)}"
+    hw, hh = width / 2, height / 2
+    return f"M0 {num(-hh + width * 0.4)}V{num(hh)}M{num(-hw)} {num(hh * 0.15)}H{num(hw)}"
+
+
 class Site:
     def __init__(self) -> None:
         self.games = load_catalogue()
@@ -152,6 +190,33 @@ class Site:
     def region_footer(self, attrs: dict[str, str]) -> str:
         links = '        <a href="/games" data-i18n="nav.cases">Case files</a>\n'
         return Template(partial("footer")).substitute(footer_links=links)
+
+    def region_scene(self, attrs: dict[str, str]) -> str:
+        if len(self.games) > len(WINDOW_SLOTS):
+            raise BuildError("the catalogue has more games than castle windows; add a slot to WINDOW_SLOTS")
+        windows = []
+        for index, (game, (x, y, width, height, shape)) in enumerate(zip(self.games, WINDOW_SLOTS)):
+            lit = game["status"] == "playable"
+            radius = max(width, height) * 1.7
+            pane = window_pane(width, height, shape)
+            windows.append(
+                "".join(
+                    [
+                        f'<a class="win{" win--lit" if lit else ""}" href="/games/{game["slug"]}" tabindex="-1" '
+                        f'data-game="{game["slug"]}" data-status="{game["status"]}" '
+                        f'data-label-en="{esc(game["short"]["en"])}" data-label-zh="{esc(game["short"]["zh"])}" '
+                        f'style="--win: var({game["accent"]}); --i: {index}" transform="translate({x} {y})">',
+                        f'<circle class="win__halo" r="{num(radius)}" />',
+                        f'<circle class="win__halo win__halo--2" r="{num(radius * 0.62)}" />',
+                        f'<circle class="win__halo win__halo--3" r="{num(radius * 0.36)}" />',
+                        f'<path class="win__pane" d="{pane}" />',
+                        f'<path class="win__bars" d="{window_bars(width, height, shape)}" />',
+                        f'<circle class="win__hit" r="{num(max(width, height) * 0.95)}" />',
+                        "</a>",
+                    ]
+                )
+            )
+        return Template(partial("scene")).substitute(windows="\n".join(windows))
 
     def region_featured(self, attrs: dict[str, str]) -> str:
         return self.featured(self.game(attrs["slug"]))
@@ -343,7 +408,7 @@ class Site:
         description = (seo.get("description") or {}).get("en") or game["premise"]["en"]
         if game.get("story"):
             body = read(SRC / "stories" / f"{game['story']}.html")
-            css = "/styles.css /css/cards.css /css/game.css"
+            css = "/styles.css /css/atmosphere.css /css/cards.css /css/game.css"
         else:
             body = self.case_main(game)
             css = "/css/cards.css /css/game.css"
