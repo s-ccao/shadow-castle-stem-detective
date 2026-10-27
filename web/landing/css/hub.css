@@ -1,0 +1,284 @@
+/* The hub (/): moonlit hero, the open case, six cases in the dark, the open desk. */
+
+.hub-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: max(40rem, 100svh);
+  display: grid;
+  align-items: end;
+  overflow: clip;
+  background: var(--color-night);
+}
+
+.hub-hero__sky,
+.hub-hero__scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hub-hero__sky {
+  z-index: -3;
+  background:
+    radial-gradient(ellipse 55% 45% at 22% 16%, var(--color-moon-haze), transparent 72%),
+    linear-gradient(to bottom, var(--color-sky-top), var(--color-sky-mid) 46%, var(--color-sky-low) 78%, var(--color-sky-horizon));
+}
+
+.hub-hero__scene {
+  z-index: -2;
+}
+
+/* Fade the scene into the page and keep the copy legible. */
+.hub-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to top, var(--color-paper) 0%, color-mix(in oklch, var(--color-paper) 70%, transparent) 22%, transparent 52%),
+    linear-gradient(to right, color-mix(in oklch, var(--color-night) 70%, transparent), transparent 58%);
+  pointer-events: none;
+}
+
+.hub-hero__copy {
+  width: min(100%, var(--content-max));
+  display: grid;
+  gap: var(--space-md);
+  margin-inline: auto;
+  padding: calc(var(--nav-height) + var(--space-3xl)) var(--page-gutter) var(--space-3xl);
+}
+
+.hub-hero__copy > * {
+  animation: hub-rise 1100ms var(--ease-out) both;
+}
+
+.hub-hero__copy > :nth-child(2) {
+  animation-delay: 110ms;
+}
+
+.hub-hero__copy > :nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.hub-hero__copy > :nth-child(4) {
+  animation-delay: 330ms;
+}
+
+.hub-hero__title {
+  max-width: 11ch;
+  font-size: clamp(2.75rem, 8vw + 0.5rem, 6rem);
+  line-height: 0.96;
+}
+
+:lang(zh) .hub-hero__title {
+  max-width: 9em;
+  line-height: 1.12;
+}
+
+.hub-hero__lead {
+  max-width: 38ch;
+  color: var(--color-ink-2);
+  font-size: var(--text-md);
+}
+
+.hub-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-sm);
+}
+
+@keyframes hub-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+/* ---------- The open case ---------- */
+
+.featured {
+  width: min(100%, var(--content-max));
+  display: grid;
+  gap: var(--space-2xl);
+  align-items: center;
+  margin-inline: auto;
+  padding: var(--space-3xl) var(--page-gutter);
+}
+
+.featured__frame {
+  position: relative;
+  overflow: hidden;
+  border: var(--rule-hair) solid color-mix(in oklch, var(--case-accent) 30%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-deep);
+}
+
+.featured__frame img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Brass corners, like an evidence photograph pinned to the board. */
+.featured__frame::after {
+  content: "";
+  position: absolute;
+  inset: var(--space-sm);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(var(--case-accent), var(--case-accent)) top left / 1.5rem 2px no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) top left / 2px 1.5rem no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) top right / 1.5rem 2px no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) top right / 2px 1.5rem no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) bottom left / 1.5rem 2px no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) bottom left / 2px 1.5rem no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) bottom right / 1.5rem 2px no-repeat,
+    linear-gradient(var(--case-accent), var(--case-accent)) bottom right / 2px 1.5rem no-repeat;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.featured__copy {
+  display: grid;
+  align-content: start;
+  gap: var(--space-md);
+}
+
+.featured__meta {
+  color: var(--case-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+:lang(zh) .featured__meta {
+  letter-spacing: 0.06em;
+}
+
+.featured__title {
+  font-size: clamp(2rem, 3vw + 1rem, 3.25rem);
+  line-height: 1.02;
+}
+
+.featured__alt {
+  margin-block-start: calc(var(--space-xs) * -1);
+  color: var(--color-ink-3);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.featured__premise {
+  max-width: var(--measure);
+  font-size: var(--text-md);
+}
+
+.featured__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  padding-block: var(--space-md);
+  border-block: var(--rule-hair) solid var(--color-rule);
+}
+
+.featured__facts div {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.featured__facts dt {
+  color: var(--case-accent);
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.featured__facts dd {
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.featured__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-xs);
+}
+
+/* ---------- Six cases in the dark, and the open desk ---------- */
+
+.upcoming,
+.open-desk {
+  width: min(100%, var(--content-max));
+  display: grid;
+  gap: var(--space-2xl);
+  margin-inline: auto;
+  padding: var(--space-3xl) var(--page-gutter);
+}
+
+.open-desk {
+  padding-block-end: var(--space-4xl);
+}
+
+.open-desk__list {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border-block-start: var(--rule-hair) solid var(--color-rule);
+  list-style: none;
+}
+
+.open-desk__list li {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-block: var(--space-lg);
+  border-block-end: var(--rule-hair) solid var(--color-rule-2);
+}
+
+.open-desk__list a {
+  width: fit-content;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--dur-short) var(--ease-out);
+}
+
+.open-desk__list p {
+  max-width: var(--measure);
+  color: var(--color-ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .open-desk__list a:hover {
+    color: var(--color-accent);
+  }
+}
+
+@media (min-width: 48rem) {
+  .open-desk__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-2xl);
+  }
+}
+
+@media (min-width: 60rem) {
+  .featured {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: var(--space-3xl);
+    padding-block: var(--space-4xl) var(--space-3xl);
+  }
+}

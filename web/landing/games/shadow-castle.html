@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      /* Language, motion and JS flags before first paint; see js/i18n.js and js/prefs.js. */
+      (function () {
+        var d = document.documentElement, s = null, l = null, m = null;
+        try { s = window.localStorage; } catch (e) {}
+        var q = /[?&]lang=(en|zh)(?:&|$)/.exec(location.search);
+        if (q) {
+          l = q[1];
+          try { s && s.setItem("sc-lang", l); } catch (e) {}
+        } else {
+          try { l = s && s.getItem("sc-lang"); } catch (e) {}
+        }
+        if (l !== "en" && l !== "zh") {
+          var n = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+          l = /^zh\b/i.test(n) ? "zh" : "en";
+        }
+        try { m = s && s.getItem("sc-motion"); } catch (e) {}
+        var r = m === "reduce" || (m !== "full" && !!window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+        d.dataset.lang = l;
+        d.lang = l === "zh" ? "zh-CN" : "en";
+        d.dataset.motion = r ? "reduce" : "full";
+        d.classList.add("js");
+        if (l === "zh") {
+          d.classList.add("i18n-pending");
+          var p = document.createElement("link");
+          p.rel = "preload";
+          p.as = "fetch";
+          p.href = "/i18n/zh.json";
+          p.crossOrigin = "anonymous";
+          document.head.appendChild(p);
+          setTimeout(function () { d.classList.remove("i18n-pending"); }, 900);
+        }
+      })();
+    </script>
+    <title data-i18n="game.shadow-castle.seo.title">Shadow Castle: STEM Detective</title>
+    <meta name="description" content="Shadow Castle: STEM Detective is a 2D pixel-art mystery game where evidence, science, and survival lead to the truth behind Ashford Castle." data-i18n-attr="content:game.shadow-castle.seo.description" />
+    <meta name="theme-color" content="#15131d" />
+    <meta property="og:title" content="Shadow Castle: STEM Detective" />
+    <meta property="og:description" content="Investigate a magical blackout, survive the Guardian, and solve the case with chemistry, optics, circuits, and evidence." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://shadowcastledetective.com/games/shadow-castle" />
+    <meta property="og:image" content="https://shadowcastledetective.com/assets/hero-castle.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://shadowcastledetective.com/games/shadow-castle" />
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/css/site.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/css/cards.css" />
+    <link rel="stylesheet" href="/css/game.css" />
+    <link rel="modulepreload" href="/js/loop.js" />
+    <link rel="modulepreload" href="/js/prefs.js" />
+    <link rel="modulepreload" href="/js/i18n.js" />
+    <link rel="modulepreload" href="/js/nav.js" />
+    <script type="module" src="/js/main.js"></script>
+  </head>
+  <body class="page-case page-case--shadow-castle">
+    <svg class="emblem-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+      <symbol id="emblem-shadow-castle" viewBox="0 0 64 64">
+        <path d="M16 50V30l5-4.5 5 4.5v-9l6-7.5 6 7.5v9l5-4.5 5 4.5v20z" />
+        <path d="M11 50h42" />
+        <circle cx="32" cy="35.5" r="3.4" />
+        <path d="M30.4 38.6 29.4 45h5.2l-1-6.4" />
+        <path d="M21 34v4M43 34v4" opacity=".6" />
+      </symbol>
+      <symbol id="emblem-evidence-rush" viewBox="0 0 64 64">
+        <circle cx="28" cy="34" r="14" />
+        <path d="M38.4 44.4 50.5 56.5" stroke-width="4.5" />
+        <path d="M24 15.5h8M28 15.5V20" />
+        <path d="M28 34v-8.5M28 34l6 4" />
+        <path d="M17.6 23.6l-2.2-2.2" />
+        <path d="M47 18l3-3M48.5 24h4M43 13.5V9.5" opacity=".6" />
+      </symbol>
+      <symbol id="emblem-prism-lab" viewBox="0 0 64 64">
+        <path d="M32 14 49 44H15z" />
+        <path d="M4 35l17.8-3" />
+        <path d="M21.8 32l21 1" opacity=".45" stroke-dasharray="1.5 3" />
+        <path d="M40.5 29 60 21.5" />
+        <path d="M42.8 33H60" opacity=".75" />
+        <path d="M45 37l15 6.5" opacity=".5" />
+      </symbol>
+      <symbol id="emblem-echo-corridor" viewBox="0 0 64 64">
+        <path d="M18 56V30a14 14 0 0 1 28 0v26" />
+        <path d="M12 56h40" />
+        <circle cx="32" cy="44" r="1.8" fill="currentColor" stroke="none" />
+        <path d="M27.7 41.5a5 5 0 0 1 8.6 0" />
+        <path d="M23.3 39a10 10 0 0 1 17.4 0" opacity=".65" />
+        <path d="M19 36.5a15 15 0 0 1 26 0" opacity=".35" />
+      </symbol>
+      <symbol id="emblem-time-echo" viewBox="0 0 64 64">
+        <g opacity=".4" stroke-dasharray="2 3" transform="translate(-8 3)">
+          <path d="M26 12h18M26 52h18" />
+          <path d="M28 12c0 10 5.5 14 5.5 20S28 42 28 52M42 12c0 10-5.5 14-5.5 20S42 42 42 52" />
+        </g>
+        <path d="M26 12h18M26 52h18" />
+        <path d="M28 12c0 10 5.5 14 5.5 20S28 42 28 52M42 12c0 10-5.5 14-5.5 20S42 42 42 52" />
+        <path d="M35 34v7" opacity=".7" />
+        <path d="M30.5 51c1.5-4 3-6 4.5-6s3 2 4.5 6" />
+      </symbol>
+      <symbol id="emblem-alchemy-shift" viewBox="0 0 64 64">
+        <path d="M26 12h12M28.5 12v13L17 45.5A5.5 5.5 0 0 0 21.8 54h20.4a5.5 5.5 0 0 0 4.8-8.5L35.5 25V12" />
+        <path d="M19.8 41.5h24.4" />
+        <circle cx="29" cy="47.5" r="1.6" />
+        <circle cx="35.5" cy="36" r="1.2" opacity=".75" />
+        <circle cx="31.5" cy="29.5" r="1" opacity=".55" />
+        <path d="M47 15v5M44.5 17.5h5" opacity=".6" />
+      </symbol>
+      <symbol id="emblem-rune-defense" viewBox="0 0 64 64">
+        <circle cx="32" cy="34" r="17" />
+        <path d="M32 21v26M32 31.5l-7.5-7.5M32 31.5l7.5-7.5" />
+        <path d="M32 9.5v3.5M32 55v3.5M7.5 34H11M53 34h3.5" opacity=".7" />
+        <path d="M14.5 16.5l2.5 2.5M49.5 16.5 47 19" opacity=".45" />
+      </symbol>
+    </svg>
+    <a class="site-skip" href="#top" data-i18n="nav.skip">Skip to content</a>
+    <header class="site-nav" data-nav data-state="top">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="/" aria-label="Shadow Castle home" data-i18n-attr="aria-label:nav.home_label">
+          <svg class="site-nav__seal" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <circle class="site-nav__ring" cx="16" cy="16" r="14.5" />
+            <path class="site-nav__keep" d="M9.5 24.5V13.6l2.2-2.1 2.1 2.1V10l2.2-2.8 2.2 2.8v3.6l2.1-2.1 2.2 2.1v10.9z" />
+            <path class="site-nav__keyhole" d="M16 15.1a1.8 1.8 0 0 0-1 3.3l-.55 3.7h3.1l-.55-3.7A1.8 1.8 0 0 0 16 15.1z" />
+          </svg>
+          <span class="site-nav__wordmark">
+            <span class="site-nav__name" data-i18n="brand.name">Shadow Castle</span>
+            <small class="site-nav__tagline" data-i18n="brand.tagline">Science-mystery games</small>
+          </span>
+        </a>
+        <nav class="site-nav__links" aria-label="Primary" data-i18n-attr="aria-label:nav.primary_label">
+          <a href="/games" aria-current="page" data-i18n="nav.cases">Case files</a>
+          <a href="https://play.shadowcastledetective.com/research" data-i18n="nav.research">Research</a>
+          <a href="/community" data-i18n="nav.community">Community</a>
+        </nav>
+        <div class="site-nav__tools">
+          <div class="lang-switch" role="group" aria-label="Language" data-i18n-attr="aria-label:nav.lang_label">
+            <button type="button" data-lang-set="en" aria-pressed="true" lang="en">EN</button>
+            <button type="button" data-lang-set="zh" aria-pressed="false" lang="zh-CN">中文</button>
+          </div>
+          <a class="btn btn--primary btn--sm site-nav__play" href="https://play.shadowcastledetective.com/" data-magnet>
+            <span data-i18n="nav.play">Play</span>
+            <span aria-hidden="true">▶</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="top" tabindex="-1" data-case="shadow-castle" style="--case-accent: var(--game-shadow-castle)">
+      <section class="hero" aria-labelledby="hero-title">
+        <img
+          class="hero__image"
+          src="/assets/hero-castle.jpg"
+          width="1448"
+          height="1086"
+          alt="A detective approaches Ashford Castle through rain beneath a violet moon."
+          data-i18n-attr="alt:sc.hero.alt"
+          fetchpriority="high"
+        />
+        <div class="hero__shade" aria-hidden="true"></div>
+        <div class="hero__copy">
+          <p class="case-mark" data-i18n="sc.hero.mark">Ashford Castle · Case 01</p>
+          <h1 id="hero-title" data-i18n="sc.hero.title">The blackout was engineered.</h1>
+          <p class="hero__lead" data-i18n="sc.hero.lead">Follow the evidence. Test the science. Survive the Guardian.</p>
+          <div
+            class="hero__actions"
+            aria-label="Start playing or enter the community"
+            data-i18n-attr="aria-label:sc.hero.actions_label"
+          >
+            <a class="action action--primary" href="https://play.shadowcastledetective.com/">
+              <span data-i18n="sc.hero.play">Play online</span> <span aria-hidden="true">▶</span>
+            </a>
+            <a class="action action--glass" href="/community">
+              <span data-i18n="sc.hero.community">Enter community</span> <span aria-hidden="true">✦</span>
+            </a>
+          </div>
+        </div>
+        <p class="hero__caption" data-i18n="sc.hero.caption">Invitation received. Signal lost. Investigation opened.</p>
+      </section>
+
+      <section class="brief" id="case-brief" aria-labelledby="brief-title">
+        <div class="brief__statement">
+          <h2 id="brief-title" data-i18n="sc.brief.title">Investigate what the castle tried to hide.</h2>
+          <p data-i18n="sc.brief.body">
+            Dr. Lin vanished during a magical blackout. Explore Ashford Castle, recover the
+            records left behind, survive its Guardian, and decide which clues can actually
+            support an accusation.
+          </p>
+          <div class="actions" aria-label="Project links" data-i18n-attr="aria-label:sc.brief.links_label">
+            <a
+              class="action action--secondary"
+              href="https://github.com/s-ccao/shadow-castle-stem-detective"
+            >
+              <span data-i18n="sc.brief.source">Read the source</span> <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+
+        <dl class="case-facts" aria-label="Project facts" data-i18n-attr="aria-label:sc.facts.label">
+          <div>
+            <dt>8</dt>
+            <dd data-i18n="sc.facts.areas">playable areas</dd>
+          </div>
+          <div>
+            <dt>5</dt>
+            <dd data-i18n="sc.facts.npcs">animated NPCs</dd>
+          </div>
+          <div>
+            <dt>22</dt>
+            <dd data-i18n="sc.facts.versions">documented versions</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="fieldwork" aria-labelledby="fieldwork-title">
+        <div class="section-heading">
+          <h2 id="fieldwork-title" data-i18n="sc.fieldwork.title">Every room teaches the next step of the case.</h2>
+          <p data-i18n="sc.fieldwork.body">
+            Science is not a detached quiz layer. A formula, observation, or measurement becomes
+            evidence, a key, or a survival tool somewhere else in the castle.
+          </p>
+        </div>
+
+        <figure class="feature-capture feature-capture--wide">
+          <img
+            src="/assets/final-analysis-board.jpg"
+            width="1024"
+            height="768"
+            alt="The final analysis board links evidence to conclusion slots around a brass mechanism."
+            data-i18n-attr="alt:sc.board.alt"
+            loading="lazy"
+          />
+          <figcaption>
+            <strong data-i18n="sc.board.title">Reason from records.</strong>
+            <span data-i18n="sc.board.body">The final table accepts evidence chains, explains contradictions, and preserves failed
+            attempts so deduction remains experimentation rather than punishment.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="science" aria-labelledby="science-title">
+        <div class="science__intro">
+          <h2 id="science-title" data-i18n="sc.science.title">Learn by operating the evidence.</h2>
+          <p data-i18n="sc.science.body">
+            Brew field potions by placing real materials, repair electrical systems by tracing the
+            fault, and use optics, biology, and timelines to separate suspicion from proof.
+          </p>
+        </div>
+
+        <div class="science__captures">
+          <figure class="feature-capture feature-capture--alchemy">
+            <img
+              src="/assets/alchemy-workbench.jpg"
+              width="1024"
+              height="768"
+              alt="The alchemy workbench showing three loaded materials and a potion extraction path."
+              data-i18n-attr="alt:sc.alchemy.alt"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong data-i18n="sc.alchemy.title">Chemistry becomes counterplay.</strong>
+              <span data-i18n="sc.alchemy.body">Purification changes how the Guardian hunts. Daze and Shroud create tactical choices.
+              The captured build shows the Chinese localization.</span>
+            </figcaption>
+          </figure>
+
+          <figure class="feature-capture feature-capture--circuit">
+            <img
+              src="/assets/circuit-room.jpg"
+              width="1024"
+              height="768"
+              alt="The detective examines a large circuit generator built into a stone workshop."
+              data-i18n-attr="alt:sc.circuit.alt"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong data-i18n="sc.circuit.title">Build, track, diagnose.</strong>
+              <span data-i18n="sc.circuit.body">Three circuit benches teach three different verbs instead of repeating one quiz with
+              different numbers.</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="development" aria-labelledby="development-title">
+        <div class="development__heading">
+          <h2 id="development-title" data-i18n="sc.dev.title">A prototype documented in public.</h2>
+          <p data-i18n="sc.dev.body">
+            The repository records the revisions—not just the result: rejected realistic character
+            art, interaction failures, spatial tests, visual regressions, and the reasoning behind
+            each redesign.
+          </p>
+        </div>
+
+        <ol class="milestones">
+          <li>
+            <span>v0.1–0.5</span>
+            <strong data-i18n="sc.m1.title">Movement became investigation.</strong>
+            <p data-i18n="sc.m1.body">A maze prototype gained evidence, consequences, STEM gates, and a readable opening.</p>
+          </li>
+          <li>
+            <span>v0.6–0.14</span>
+            <strong data-i18n="sc.m2.title">The castle became a system.</strong>
+            <p data-i18n="sc.m2.body">Animated NPCs, dual endings, spatial contracts, and staged optics linked story to play.</p>
+          </li>
+          <li>
+            <span>v0.15–0.22</span>
+            <strong data-i18n="sc.m3.title">The systems learned to speak clearly.</strong>
+            <p data-i18n="sc.m3.body">Hubs, pursuit, audio, maps, alchemy, and circuit hardware were rebuilt around legibility.</p>
+          </li>
+        </ol>
+
+        <a
+          class="history-link"
+          href="https://github.com/s-ccao/shadow-castle-stem-detective/blob/main/docs/DEVELOPMENT_HISTORY.md"
+        >
+          <span data-i18n="sc.dev.history">Read the full development history</span> <span aria-hidden="true">↗</span>
+        </a>
+      </section>
+
+      <section class="other-cases" aria-labelledby="others-title">
+        <div class="other-cases__head">
+          <h2 id="others-title" data-i18n="case.others">Other case files</h2>
+          <a class="other-cases__all" href="/games"><span data-i18n="case.all">All case files</span> <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="case-strip" data-cards="6">
+          <article class="case-card" data-slug="evidence-rush" data-status="coming-soon" data-tilt style="--case-accent: var(--game-evidence-rush)">
+            <div class="case-card__art" aria-hidden="true"><span class="case-card__glow"></span><svg class="emblem case-card__emblem" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-evidence-rush"></use></svg></div>
+            <div class="case-card__body">
+              <span class="stamp" data-status="coming-soon" data-i18n="status.coming-soon">Coming soon</span>
+              <h3 class="case-card__name"><a class="case-card__link" href="/games/evidence-rush" data-i18n="game.evidence-rush.short">Evidence Rush</a></h3>
+              <p class="case-card__alt" lang="zh-CN" data-i18n="game.evidence-rush.alt_short" data-i18n-attr="lang:meta.alt_lang">极速侦探</p>
+              <p class="case-card__meta"><span data-i18n="game.evidence-rush.genre">Deduction</span> <span aria-hidden="true">·</span> <span data-i18n="game.evidence-rush.session">1–3 min a round</span></p>
+              <p class="case-card__tagline" data-i18n="game.evidence-rush.tagline">Find the contradiction before the clock does.</p>
+              <div class="case-card__foot"><span class="case-card__more" aria-hidden="true"><span data-i18n="cards.open">Case file</span> →</span></div>
+            </div>
+          </article>
+          <article class="case-card" data-slug="prism-lab" data-status="coming-soon" data-tilt style="--case-accent: var(--game-prism-lab)">
+            <div class="case-card__art" aria-hidden="true"><span class="case-card__glow"></span><svg class="emblem case-card__emblem" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-prism-lab"></use></svg></div>
+            <div class="case-card__body">
+              <span class="stamp" data-status="coming-soon" data-i18n="status.coming-soon">Coming soon</span>
+              <h3 class="case-card__name"><a class="case-card__link" href="/games/prism-lab" data-i18n="game.prism-lab.short">Prism Lab</a></h3>
+              <p class="case-card__alt" lang="zh-CN" data-i18n="game.prism-lab.alt_short" data-i18n-attr="lang:meta.alt_lang">光学迷宫</p>
+              <p class="case-card__meta"><span data-i18n="game.prism-lab.genre">Physics puzzle</span> <span aria-hidden="true">·</span> <span data-i18n="game.prism-lab.session">2–5 min a level</span></p>
+              <p class="case-card__tagline" data-i18n="game.prism-lab.tagline">Bend the light until the exit wakes.</p>
+              <div class="case-card__foot"><span class="case-card__more" aria-hidden="true"><span data-i18n="cards.open">Case file</span> →</span></div>
+            </div>
+          </article>
+          <article class="case-card" data-slug="echo-corridor" data-status="coming-soon" data-tilt style="--case-accent: var(--game-echo-corridor)">
+            <div class="case-card__art" aria-hidden="true"><span class="case-card__glow"></span><svg class="emblem case-card__emblem" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-echo-corridor"></use></svg></div>
+            <div class="case-card__body">
+              <span class="stamp" data-status="coming-soon" data-i18n="status.coming-soon">Coming soon</span>
+              <h3 class="case-card__name"><a class="case-card__link" href="/games/echo-corridor" data-i18n="game.echo-corridor.short">Echo Corridor</a></h3>
+              <p class="case-card__alt" lang="zh-CN" data-i18n="game.echo-corridor.alt_short" data-i18n-attr="lang:meta.alt_lang">回声走廊</p>
+              <p class="case-card__meta"><span data-i18n="game.echo-corridor.genre">Stealth</span> <span aria-hidden="true">·</span> <span data-i18n="game.echo-corridor.session">3–5 min a round</span></p>
+              <p class="case-card__tagline" data-i18n="game.echo-corridor.tagline">See with sound. Be heard.</p>
+              <div class="case-card__foot"><span class="case-card__more" aria-hidden="true"><span data-i18n="cards.open">Case file</span> →</span></div>
+            </div>
+          </article>
+          <article class="case-card" data-slug="time-echo" data-status="coming-soon" data-tilt style="--case-accent: var(--game-time-echo)">
+            <div class="case-card__art" aria-hidden="true"><span class="case-card__glow"></span><svg class="emblem case-card__emblem" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-time-echo"></use></svg></div>
+            <div class="case-card__body">
+              <span class="stamp" data-status="coming-soon" data-i18n="status.coming-soon">Coming soon</span>
+              <h3 class="case-card__name"><a class="case-card__link" href="/games/time-echo" data-i18n="game.time-echo.short">Time Echo</a></h3>
+              <p class="case-card__alt" lang="zh-CN" data-i18n="game.time-echo.alt_short" data-i18n-attr="lang:meta.alt_lang">时间残影</p>
+              <p class="case-card__meta"><span data-i18n="game.time-echo.genre">Time puzzle</span> <span aria-hidden="true">·</span> <span data-i18n="game.time-echo.session">3–6 min a level</span></p>
+              <p class="case-card__tagline" data-i18n="game.time-echo.tagline">Your past self holds the door.</p>
+              <div class="case-card__foot"><span class="case-card__more" aria-hidden="true"><span data-i18n="cards.open">Case file</span> →</span></div>
+            </div>
+          </article>
+          <article class="case-card" data-slug="alchemy-shift" data-status="coming-soon" data-tilt style="--case-accent: var(--game-alchemy-shift)">
+            <div class="case-card__art" aria-hidden="true"><span class="case-card__glow"></span><svg class="emblem case-card__emblem" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-alchemy-shift"></use></svg></div>
+            <div class="case-card__body">
+              <span class="stamp" data-status="coming-soon" data-i18n="status.coming-soon">Coming soon</span>
+              <h3 class="case-card__name"><a class="case-card__link" href="/games/alchemy-shift" data-i18n="game.alchemy-shift.short">Alchemy Shift</a></h3>
+              <p class="case-card__alt" lang="zh-CN" data-i18n="game.alchemy-shift.alt_short" data-i18n-attr="lang:meta.alt_lang">魔法实验室</p>
+              <p class="case-card__meta"><span data-i18n="game.alchemy-shift.genre">Crafting and management</span> <span aria-hidden="true">·</span> <span data-i18n="game.alchemy-shift.session">2–5 min a round</span></p>
+              <p class="case-card__tagline" data-i18n="game.alchemy-shift.tagline">Brew to order. Keep the lab glowing.</p>
+              <div class="case-card__foot"><span class="case-card__more" aria-hidden="true"><span data-i18n="cards.open">Case file</span> →</span></div>
+            </div>
+          </article>
+          <article class="case-card" data-slug="rune-defense" data-status="coming-soon" data-tilt style="--case-accent: var(--game-rune-defense)">
+            <div class="case-card__art" aria-hidden="true"><span class="case-card__glow"></span><svg class="emblem case-card__emblem" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-rune-defense"></use></svg></div>
+            <div class="case-card__body">
+              <span class="stamp" data-status="coming-soon" data-i18n="status.coming-soon">Coming soon</span>
+              <h3 class="case-card__name"><a class="case-card__link" href="/games/rune-defense" data-i18n="game.rune-defense.short">Rune Defense</a></h3>
+              <p class="case-card__alt" lang="zh-CN" data-i18n="game.rune-defense.alt_short" data-i18n-attr="lang:meta.alt_lang">符文防线</p>
+              <p class="case-card__meta"><span data-i18n="game.rune-defense.genre">Strategy</span> <span aria-hidden="true">·</span> <span data-i18n="game.rune-defense.session">5–10 min a round</span></p>
+              <p class="case-card__tagline" data-i18n="game.rune-defense.tagline">Hold the castle gate with runes.</p>
+              <div class="case-card__foot"><span class="case-card__more" aria-hidden="true"><span data-i18n="cards.open">Case file</span> →</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <p class="site-footer__statement" data-i18n="footer.statement">Follow the evidence. Test the science. Name the author of the crime.</p>
+        <div class="site-footer__row">
+          <nav class="site-footer__links" aria-label="Footer" data-i18n-attr="aria-label:footer.nav_label">
+            <a href="/games" data-i18n="nav.cases">Case files</a>
+            <a href="/community" data-i18n="nav.community">Community</a>
+            <a href="https://play.shadowcastledetective.com/research"><span data-i18n="nav.research">Research</span> <span aria-hidden="true">↗</span></a>
+            <a href="https://github.com/s-ccao/shadow-castle-stem-detective/blob/main/docs/DEVELOPMENT_HISTORY.md"><span data-i18n="footer.history">Development history</span> <span aria-hidden="true">↗</span></a>
+            <a href="https://github.com/s-ccao/shadow-castle-stem-detective">GitHub <span aria-hidden="true">↗</span></a>
+          </nav>
+          <div class="site-footer__prefs">
+            <div class="lang-switch" role="group" aria-label="Language" data-i18n-attr="aria-label:nav.lang_label">
+              <button type="button" data-lang-set="en" aria-pressed="true" lang="en">EN</button>
+              <button type="button" data-lang-set="zh" aria-pressed="false" lang="zh-CN">中文</button>
+            </div>
+            <button type="button" class="motion-switch" role="switch" aria-checked="true" data-motion-toggle>
+              <span class="motion-switch__track" aria-hidden="true"><span class="motion-switch__knob"></span></span>
+              <span data-i18n="prefs.motion">Animations</span>
+            </button>
+          </div>
+        </div>
+        <p class="site-footer__meta">
+          <span data-i18n="footer.product">Shadow Castle: STEM Detective</span>
+          <span aria-hidden="true">·</span>
+          <span data-i18n="footer.stack">Godot 4.7 · GDScript · 2D pixel art</span>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

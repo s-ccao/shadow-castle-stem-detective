@@ -1,0 +1,319 @@
+/* Case pages (/games/<slug>), the archive (/games) and the missing-file page. */
+
+.case-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: min(50rem, 94svh);
+  display: grid;
+  align-items: center;
+  gap: var(--space-xl);
+  overflow: clip;
+  padding: calc(var(--nav-height) + var(--space-2xl)) var(--page-gutter) var(--space-3xl);
+  background:
+    radial-gradient(ellipse 60% 55% at 72% 42%, color-mix(in oklch, var(--case-accent) 14%, transparent), transparent 72%),
+    linear-gradient(to bottom, var(--color-sky-top), var(--color-night) 60%, var(--color-paper));
+}
+
+.case-hero__art {
+  position: relative;
+  width: min(66vw, 20rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+}
+
+.case-hero__art > * {
+  grid-area: 1 / 1;
+}
+
+/* Seal rings around the case emblem. */
+.case-hero__art::before,
+.case-hero__art::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.case-hero__art::before {
+  inset: 6%;
+  border: var(--rule-hair) solid color-mix(in oklch, var(--case-accent) 35%, transparent);
+}
+
+.case-hero__art::after {
+  inset: 0;
+  border: var(--rule-hair) dashed color-mix(in oklch, var(--case-accent) 28%, transparent);
+  animation: case-seal-turn 80s linear infinite;
+}
+
+.case-hero__halo {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--case-accent) 30%, transparent), transparent 66%);
+}
+
+.case-hero__emblem {
+  width: 58%;
+  height: auto;
+  color: var(--case-accent);
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0 1.25rem color-mix(in oklch, var(--case-accent) 55%, transparent));
+}
+
+.case-hero__copy {
+  max-width: 40rem;
+  display: grid;
+  gap: var(--space-md);
+}
+
+.case-hero__copy > * {
+  animation: case-rise 1000ms var(--ease-out) both;
+}
+
+.case-hero__copy > :nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.case-hero__copy > :nth-child(n + 3) {
+  animation-delay: 180ms;
+}
+
+.case-hero__title {
+  font-size: clamp(2.75rem, 7vw, 5.25rem);
+  line-height: 0.95;
+}
+
+:lang(zh) .case-hero__title {
+  line-height: 1.1;
+}
+
+.case-hero__alt {
+  margin-block-start: calc(var(--space-xs) * -1);
+  color: var(--color-ink-3);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.case-hero__meta {
+  color: var(--case-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+:lang(zh) .case-hero__meta {
+  letter-spacing: 0.06em;
+}
+
+.case-hero__tagline {
+  max-width: 30ch;
+  color: var(--color-ink);
+  font-size: var(--text-md);
+}
+
+.case-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-xs);
+}
+
+.case-hero__note {
+  max-width: 34rem;
+  flex-basis: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border-inline-start: 2px solid var(--case-accent);
+  background: color-mix(in oklch, var(--case-accent) 8%, transparent);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+}
+
+@keyframes case-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+}
+
+@keyframes case-seal-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.case-body {
+  width: min(100%, var(--content-max));
+  display: grid;
+  gap: var(--space-2xl);
+  margin-inline: auto;
+  padding: var(--space-3xl) var(--page-gutter);
+}
+
+.case-premise,
+.case-planned {
+  display: grid;
+  align-content: start;
+  gap: var(--space-md);
+}
+
+.case-premise h2,
+.case-planned h2 {
+  font-size: var(--text-2xl);
+  line-height: 1.1;
+}
+
+.case-premise p {
+  max-width: var(--measure);
+  color: var(--color-ink-2);
+  font-size: var(--text-md);
+}
+
+.case-planned__list {
+  display: grid;
+  gap: var(--space-sm);
+  padding: 0;
+  list-style: none;
+}
+
+.case-planned__list li {
+  position: relative;
+  padding-inline-start: var(--space-lg);
+  color: var(--color-ink);
+}
+
+.case-planned__list li::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0.6em;
+  inset-inline-start: 0.1rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--case-accent);
+  transform: rotate(45deg);
+}
+
+.case-planned__note {
+  color: var(--color-ink-3);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Other case files ---------- */
+
+.other-cases {
+  width: min(100%, var(--content-max));
+  display: grid;
+  gap: var(--space-xl);
+  margin-inline: auto;
+  padding: var(--space-3xl) var(--page-gutter) var(--space-4xl);
+  border-block-start: var(--rule-hair) solid var(--color-rule-2);
+}
+
+.other-cases__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+.other-cases__head h2 {
+  font-size: var(--text-2xl);
+  line-height: 1.1;
+}
+
+.other-cases__all {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ---------- Archive and missing file ---------- */
+
+.archive-head,
+.archive {
+  width: min(100%, var(--content-max));
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+}
+
+.archive-head {
+  display: grid;
+  gap: var(--space-md);
+  padding-block: calc(var(--nav-height) + var(--space-3xl)) var(--space-2xl);
+}
+
+.archive-head h1 {
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  line-height: 0.95;
+}
+
+.archive-head__intro {
+  max-width: var(--measure);
+  font-size: var(--text-md);
+}
+
+.archive {
+  padding-block-end: var(--space-4xl);
+}
+
+.missing {
+  max-width: 46rem;
+  min-height: 82svh;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-md);
+  margin-inline: auto;
+  padding: calc(var(--nav-height) + var(--space-3xl)) var(--page-gutter) var(--space-3xl);
+}
+
+.missing__emblem {
+  width: 4.5rem;
+  height: auto;
+  color: var(--color-accent);
+  opacity: 0.8;
+}
+
+.missing h1 {
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  line-height: 1;
+}
+
+.missing__body {
+  max-width: var(--measure);
+  font-size: var(--text-md);
+}
+
+.missing__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-sm);
+}
+
+@media (min-width: 56rem) {
+  .case-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: var(--space-3xl);
+  }
+
+  .case-hero__art {
+    order: 2;
+    width: min(100%, 30rem);
+  }
+
+  .case-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3xl);
+  }
+}

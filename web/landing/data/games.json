@@ -1,0 +1,498 @@
+{
+ "version": 1,
+ "games": [
+  {
+   "slug": "shadow-castle",
+   "order": 0,
+   "kind": "flagship",
+   "status": "playable",
+   "accent": "--game-shadow-castle",
+   "emblem": "shadow-castle",
+   "story": "shadow-castle",
+   "name": {
+    "en": "Shadow Castle: STEM Detective",
+    "zh": "暗影城堡：STEM 侦探"
+   },
+   "short": {
+    "en": "Shadow Castle",
+    "zh": "暗影城堡"
+   },
+   "tagline": {
+    "en": "The blackout was engineered.",
+    "zh": "这场停电是人为的。"
+   },
+   "genre": {
+    "en": "Science mystery",
+    "zh": "科学推理"
+   },
+   "session": {
+    "en": "Story campaign",
+    "zh": "剧情冒险"
+   },
+   "premise": {
+    "en": "Dr. Lin vanished during a magical blackout. Explore Ashford Castle, recover the records left behind, survive its Guardian, and decide which clues can actually support an accusation.",
+    "zh": "林女士在一场魔法停电中失踪。探索阿什福德城堡，找回留下的记录，躲过城堡的守卫，再判断哪些线索真正足以支撑一项指控。"
+   },
+   "facts": [
+    {
+     "value": "8",
+     "label": {
+      "en": "playable areas",
+      "zh": "个可游玩区域"
+     }
+    },
+    {
+     "value": "5",
+     "label": {
+      "en": "animated NPCs",
+      "zh": "个动画 NPC"
+     }
+    },
+    {
+     "value": "22",
+     "label": {
+      "en": "documented versions",
+      "zh": "个有记录的版本"
+     }
+    }
+   ],
+   "plannedFeatures": [],
+   "links": {
+    "play": "https://play.shadowcastledetective.com/",
+    "source": "https://github.com/s-ccao/shadow-castle-stem-detective"
+   },
+   "media": {
+    "cover": {
+     "src": "/assets/hero-castle.jpg",
+     "width": 1448,
+     "height": 1086,
+     "kind": "painting",
+     "alt": {
+      "en": "A detective approaches Ashford Castle through rain beneath a violet moon.",
+      "zh": "紫色月光下，一名侦探冒雨走向阿什福德城堡。"
+     }
+    },
+    "stills": [
+     {
+      "src": "/assets/final-analysis-board.jpg",
+      "width": 1024,
+      "height": 768,
+      "kind": "screenshot",
+      "alt": {
+       "en": "The final analysis board links evidence to conclusion slots around a brass mechanism.",
+       "zh": "最终分析板把证据连到黄铜机关周围的结论槽。"
+      }
+     },
+     {
+      "src": "/assets/alchemy-workbench.jpg",
+      "width": 1024,
+      "height": 768,
+      "kind": "screenshot",
+      "alt": {
+       "en": "The alchemy workbench showing three loaded materials and a potion extraction path.",
+       "zh": "炼金工作台上放着三种材料，并显示药剂的提取路径。"
+      }
+     },
+     {
+      "src": "/assets/circuit-room.jpg",
+      "width": 1024,
+      "height": 768,
+      "kind": "screenshot",
+      "alt": {
+       "en": "The detective examines a large circuit generator built into a stone workshop.",
+       "zh": "侦探正在检查嵌在石砌工坊里的大型电路发电机。"
+      }
+     }
+    ]
+   },
+   "seo": {
+    "title": {
+     "en": "Shadow Castle: STEM Detective",
+     "zh": "暗影城堡：STEM 侦探"
+    },
+    "description": {
+     "en": "Shadow Castle: STEM Detective is a 2D pixel-art mystery game where evidence, science, and survival lead to the truth behind Ashford Castle.",
+     "zh": "《暗影城堡：STEM 侦探》是一款 2D 像素风推理游戏：证据、科学与求生，带你揭开阿什福德城堡背后的真相。"
+    },
+    "ogDescription": "Investigate a magical blackout, survive the Guardian, and solve the case with chemistry, optics, circuits, and evidence.",
+    "image": "/assets/hero-castle.jpg"
+   },
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  },
+  {
+   "slug": "evidence-rush",
+   "order": 1,
+   "kind": "standalone",
+   "status": "coming-soon",
+   "accent": "--game-evidence-rush",
+   "emblem": "evidence-rush",
+   "name": {
+    "en": "Evidence Rush",
+    "zh": "极速侦探"
+   },
+   "short": {
+    "en": "Evidence Rush",
+    "zh": "极速侦探"
+   },
+   "tagline": {
+    "en": "Find the contradiction before the clock does.",
+    "zh": "在时间耗尽前，找出那处矛盾。"
+   },
+   "genre": {
+    "en": "Deduction",
+    "zh": "推理"
+   },
+   "session": {
+    "en": "1–3 min a round",
+    "zh": "1–3 分钟一局"
+   },
+   "premise": {
+    "en": "Every case is generated fresh: the crime, the suspects' testimony and the evidence. Find the contradiction within the time limit and complete the chain of reasoning. New cases can arrive every day.",
+    "zh": "系统随机生成案件、嫌疑人证词和证据。玩家在有限时间内找出矛盾，完成推理链。案件可以每天更新。"
+   },
+   "facts": [],
+   "plannedFeatures": [
+    {
+     "en": "Drag evidence cards onto testimony",
+     "zh": "拖拽证据卡"
+    },
+    {
+     "en": "Red threads animate between linked clues",
+     "zh": "线索之间的连线动画"
+    },
+    {
+     "en": "The whole clue board lights up when the deduction holds",
+     "zh": "推理正确时，整张线索板亮起"
+    },
+    {
+     "en": "A daily challenge with its own leaderboard",
+     "zh": "每日挑战与排行榜"
+    }
+   ],
+   "links": {},
+   "media": {},
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  },
+  {
+   "slug": "prism-lab",
+   "order": 2,
+   "kind": "standalone",
+   "status": "coming-soon",
+   "accent": "--game-prism-lab",
+   "emblem": "prism-lab",
+   "name": {
+    "en": "Prism Lab",
+    "zh": "光学迷宫"
+   },
+   "short": {
+    "en": "Prism Lab",
+    "zh": "光学迷宫"
+   },
+   "tagline": {
+    "en": "Bend the light until the exit wakes.",
+    "zh": "让光线转弯，直到出口亮起。"
+   },
+   "genre": {
+    "en": "Physics puzzle",
+    "zh": "物理解谜"
+   },
+   "session": {
+    "en": "2–5 min a level",
+    "zh": "2–5 分钟一关"
+   },
+   "premise": {
+    "en": "Rotate mirrors and prisms to guide a beam through the castle's mechanisms and light the exit. Later levels add dispersion, moving obstacles and timed rooms.",
+    "zh": "旋转镜子和棱镜，让光线穿过机关并点亮出口。后期加入分光、移动障碍和限时关卡。"
+   },
+   "facts": [],
+   "plannedFeatures": [
+    {
+     "en": "Light beams traced in real time",
+     "zh": "实时光线追踪视觉"
+    },
+    {
+     "en": "Refraction halos through every prism",
+     "zh": "折射光晕"
+    },
+    {
+     "en": "An energy ripple when a mechanism wakes",
+     "zh": "激活机关时的能量扩散"
+    }
+   ],
+   "links": {},
+   "media": {},
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  },
+  {
+   "slug": "echo-corridor",
+   "order": 3,
+   "kind": "standalone",
+   "status": "coming-soon",
+   "accent": "--game-echo-corridor",
+   "emblem": "echo-corridor",
+   "name": {
+    "en": "Echo Corridor",
+    "zh": "回声走廊"
+   },
+   "short": {
+    "en": "Echo Corridor",
+    "zh": "回声走廊"
+   },
+   "tagline": {
+    "en": "See with sound. Be heard.",
+    "zh": "用声音看见，也会被听见。"
+   },
+   "genre": {
+    "en": "Stealth",
+    "zh": "潜行"
+   },
+   "session": {
+    "en": "3–5 min a round",
+    "zh": "3–5 分钟一局"
+   },
+   "premise": {
+    "en": "Explore a labyrinth whose lights have failed. Send out a pulse to see the walls for a moment, but every pulse draws the patrolling guards.",
+    "zh": "玩家探索一座灯光失灵的迷宫。发出脉冲可以短暂看清墙壁，但也会吸引巡逻的守卫。"
+   },
+   "facts": [],
+   "plannedFeatures": [
+    {
+     "en": "Sound rings that ripple through the dark",
+     "zh": "声波圆环"
+    },
+    {
+     "en": "A maze that appears only for a moment",
+     "zh": "暂时显现的迷宫"
+    },
+    {
+     "en": "Guards whose awareness shifts as they hunt",
+     "zh": "敌人的动态感知范围"
+    }
+   ],
+   "links": {},
+   "media": {},
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  },
+  {
+   "slug": "time-echo",
+   "order": 4,
+   "kind": "standalone",
+   "status": "coming-soon",
+   "accent": "--game-time-echo",
+   "emblem": "time-echo",
+   "name": {
+    "en": "Time Echo",
+    "zh": "时间残影"
+   },
+   "short": {
+    "en": "Time Echo",
+    "zh": "时间残影"
+   },
+   "tagline": {
+    "en": "Your past self holds the door.",
+    "zh": "过去的你，替你按住机关。"
+   },
+   "genre": {
+    "en": "Time puzzle",
+    "zh": "时间解谜"
+   },
+   "session": {
+    "en": "3–6 min a level",
+    "zh": "3–6 分钟一关"
+   },
+   "premise": {
+    "en": "Record your own movement, then let an echo replay it. Use your past self to hold switches and ride platforms so that your present self can get through.",
+    "zh": "玩家录制自己的移动轨迹，随后产生一个重复此前行动的残影。利用残影保持开关、移动平台，让现在的自己通过障碍。"
+   },
+   "facts": [],
+   "plannedFeatures": [
+    {
+     "en": "Echo trails of every recorded run",
+     "zh": "残影轨迹"
+    },
+    {
+     "en": "Rewind particles as time flows back",
+     "zh": "时间倒流粒子"
+    },
+    {
+     "en": "Past and present moving at once",
+     "zh": "过去与现在同时运动"
+    }
+   ],
+   "links": {},
+   "media": {},
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  },
+  {
+   "slug": "alchemy-shift",
+   "order": 5,
+   "kind": "standalone",
+   "status": "coming-soon",
+   "accent": "--game-alchemy-shift",
+   "emblem": "alchemy-shift",
+   "name": {
+    "en": "Alchemy Shift",
+    "zh": "魔法实验室"
+   },
+   "short": {
+    "en": "Alchemy Shift",
+    "zh": "魔法实验室"
+   },
+   "tagline": {
+    "en": "Brew to order. Keep the lab glowing.",
+    "zh": "按单调药，让实验室一直亮着。"
+   },
+   "genre": {
+    "en": "Crafting and management",
+    "zh": "合成经营"
+   },
+   "session": {
+    "en": "2–5 min a round",
+    "zh": "2–5 分钟一局"
+   },
+   "premise": {
+    "en": "Brew magical potions from invented ingredients to fill a steady stream of orders. Recipes, the order of each step and machine upgrades all change the result.",
+    "zh": "使用虚构材料制作魔法药剂，满足不断出现的订单。配方、顺序和机器升级影响效果。"
+   },
+   "facts": [],
+   "plannedFeatures": [
+    {
+     "en": "Liquids that mix and change colour",
+     "zh": "液体混合"
+    },
+    {
+     "en": "Glassware that glows",
+     "zh": "玻璃容器发光"
+    },
+    {
+     "en": "Particles that change with every reaction",
+     "zh": "粒子变化"
+    },
+    {
+     "en": "Brewing combos and lab upgrades",
+     "zh": "合成连击和实验室升级"
+    }
+   ],
+   "links": {},
+   "media": {},
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  },
+  {
+   "slug": "rune-defense",
+   "order": 6,
+   "kind": "standalone",
+   "status": "coming-soon",
+   "accent": "--game-rune-defense",
+   "emblem": "rune-defense",
+   "name": {
+    "en": "Rune Defense",
+    "zh": "符文防线"
+   },
+   "short": {
+    "en": "Rune Defense",
+    "zh": "符文防线"
+   },
+   "tagline": {
+    "en": "Hold the castle gate with runes.",
+    "zh": "以符文，守住城堡大门。"
+   },
+   "genre": {
+    "en": "Strategy",
+    "zh": "策略"
+   },
+   "session": {
+    "en": "5–10 min a round",
+    "zh": "5–10 分钟一局"
+   },
+   "premise": {
+    "en": "Set magic runes with different effects at the castle entrance to hold back wave after wave of advancing monsters. Each level offers three random upgrades to choose from.",
+    "zh": "在城堡入口布置具有不同效果的魔法符文，应对一波波自动移动的怪物。每一关随机提供三种升级选择。"
+   },
+   "facts": [],
+   "plannedFeatures": [
+    {
+     "en": "Runes that combine",
+     "zh": "可组合的符文"
+    },
+    {
+     "en": "Chain reactions",
+     "zh": "连锁反应"
+    },
+    {
+     "en": "Area energy effects",
+     "zh": "范围能量特效"
+    },
+    {
+     "en": "Roguelite progression",
+     "zh": "Roguelite 成长"
+    }
+   ],
+   "links": {},
+   "media": {},
+   "embed": {
+    "enabled": false
+   },
+   "scores": {
+    "enabled": false
+   },
+   "leaderboard": {
+    "enabled": false,
+    "daily": false
+   }
+  }
+ ]
+}

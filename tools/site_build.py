@@ -5,10 +5,12 @@ Hand-written pages keep generated regions between markers:
 
     <!-- build:nav current="community" -->  ...generated...  <!-- /build:nav -->
 
-Whole pages under games/ are generated from data/games.json and src/templates/,
-and i18n/zh.json merges src/i18n/zh.json with the catalogue's Chinese copy.
-Generated files are committed: Vercel uploads web/landing as-is and runs no
-build, so the repository must always hold the built site.
+The game catalogue lives in src/games.json. The builder publishes it as
+data/games.json (minus the private "internal" notes), renders every case page
+under games/ from src/templates/page.html, and merges the catalogue's Chinese
+copy with src/i18n/zh.json into i18n/zh.json. Generated files are committed:
+Vercel uploads web/landing as-is and runs no build, so the repository must
+always hold the built site.
 
     python3 tools/site_build.py           write every generated file
     python3 tools/site_build.py --check   list stale files and change nothing
@@ -26,13 +28,23 @@ from string import Template
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "web" / "landing"
 SRC = SITE / "src"
+SOURCE_CATALOGUE = SRC / "games.json"
 CATALOGUE = SITE / "data" / "games.json"
-
-PLAY_URL = "https://play.shadowcastledetective.com/"
 SITE_URL = "https://shadowcastledetective.com"
+DEFAULT_OG_IMAGE = "/assets/hero-castle.jpg"
 
 # Pages written by hand whose marked regions the builder fills in.
-HAND_WRITTEN = ["index.html", "community.html"]
+HAND_WRITTEN = ["index.html", "community.html", "404.html"]
+
+STATUS_LABEL = {
+    "playable": "Playable",
+    "in-development": "In development",
+    "coming-soon": "Coming soon",
+}
+STATUS_NOTE = {
+    "in-development": "In development and not playable yet.",
+    "coming-soon": "Not playable yet. When the game is ready, this page will open it.",
+}
 
 MARKER = re.compile(
     r"(?P<indent>[ \t]*)<!-- build:(?P<name>[a-z][a-z0-9-]*)(?P<attrs>(?:\s+[a-z][a-z0-9-]*=\"[^\"]*\")*)\s*-->"
@@ -65,16 +77,46 @@ def indent(block: str, prefix: str) -> str:
 
 
 def load_catalogue() -> list[dict]:
-    if not CATALOGUE.exists():
-        return []
-    data = json.loads(read(CATALOGUE))
-    games = sorted(data["games"], key=lambda game: game["order"])
-    return games
+    data = json.loads(read(SOURCE_CATALOGUE))
+    return sorted(data["games"], key=lambda game: game["order"])
+
+
+def stamp(status: str) -> str:
+    return f'<span class="stamp" data-status="{status}" data-i18n="status.{status}">{STATUS_LABEL[status]}</span>'
+
+
+def emblem(name: str, cls: str = "emblem") -> str:
+    return (
+        f'<svg class="{cls}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">'
+        f'<use href="#emblem-{name}"></use></svg>'
+    )
+
+
+def alt_name(key: str, game: dict, cls: str, field: str = "name") -> str:
+    # Shows the other language's name: Chinese under English, English under Chinese.
+    suffix = "alt" if field == "name" else f"alt_{field}"
+    return (
+        f'<p class="{cls}" lang="zh-CN" data-i18n="{key}.{suffix}" data-i18n-attr="lang:meta.alt_lang">'
+        f"{esc(game[field]['zh'])}</p>"
+    )
+
+
+def meta_line(key: str, game: dict, cls: str) -> str:
+    return (
+        f'<p class="{cls}"><span data-i18n="{key}.genre">{esc(game["genre"]["en"])}</span> '
+        f'<span aria-hidden="true">·</span> <span data-i18n="{key}.session">{esc(game["session"]["en"])}</span></p>'
+    )
 
 
 class Site:
     def __init__(self) -> None:
         self.games = load_catalogue()
+        self.by_slug = {game["slug"]: game for game in self.games}
+
+    def game(self, slug: str) -> dict:
+        if slug not in self.by_slug:
+            raise BuildError(f"unknown game '{slug}'")
+        return self.by_slug[slug]
 
     # ---------- shared regions ----------
 
@@ -91,16 +133,300 @@ class Site:
         links = "".join(f'<link rel="stylesheet" href="{esc(href)}" />\n' for href in attrs.get("css", "").split())
         return Template(partial("head")).substitute(page_css=links)
 
+    def region_emblems(self, attrs: dict[str, str]) -> str:
+        return partial("emblems")
+
     def region_nav(self, attrs: dict[str, str]) -> str:
         current = attrs.get("current", "")
+
+        def mark(name: str) -> str:
+            return ' aria-current="page"' if current == name else ""
+
+        cases = f'      <a href="/games"{mark("cases")} data-i18n="nav.cases">Case files</a>\n'
         return Template(partial("nav")).substitute(
-            tagline="STEM Detective",
-            cases_link="",
-            community_current=' aria-current="page"' if current == "community" else "",
+            tagline="Science-mystery games",
+            cases_link=cases,
+            community_current=mark("community"),
         )
 
     def region_footer(self, attrs: dict[str, str]) -> str:
-        return Template(partial("footer")).substitute(footer_links="")
+        links = '        <a href="/games" data-i18n="nav.cases">Case files</a>\n'
+        return Template(partial("footer")).substitute(footer_links=links)
+
+    def region_featured(self, attrs: dict[str, str]) -> str:
+        return self.featured(self.game(attrs["slug"]))
+
+    def region_case_cards(self, attrs: dict[str, str]) -> str:
+        status = attrs.get("status")
+        games = [game for game in self.games if not status or game["status"] == status]
+        return self.grid(games, attrs.get("heading", "h3"))
+
+    # ---------- components ----------
+
+    def card(self, game: dict, heading: str = "h3") -> str:
+        slug, status = game["slug"], game["status"]
+        key = f"game.{slug}"
+        cover = (game.get("media") or {}).get("cover")
+        if cover:
+            art = (
+                f'<img class="case-card__image" src="{esc(cover["src"])}" width="{cover["width"]}" '
+                f'height="{cover["height"]}" alt="" loading="lazy" decoding="async" />'
+            )
+        else:
+            art = f'<span class="case-card__glow"></span>{emblem(game["emblem"], "emblem case-card__emblem")}'
+        play = ""
+        if status == "playable" and game["links"].get("play"):
+            play = (
+                f'<a class="btn btn--primary btn--sm case-card__play" href="{esc(game["links"]["play"])}" data-magnet>'
+                '<span data-i18n="cards.play">Play</span> <span aria-hidden="true">▶</span></a>'
+            )
+        return "\n".join(
+            [
+                f'<article class="case-card" data-slug="{slug}" data-status="{status}" data-tilt '
+                f'style="--case-accent: var({game["accent"]})">',
+                f'  <div class="case-card__art" aria-hidden="true">{art}</div>',
+                '  <div class="case-card__body">',
+                f"    {stamp(status)}",
+                f'    <{heading} class="case-card__name"><a class="case-card__link" href="/games/{slug}" '
+                f'data-i18n="{key}.short">{esc(game["short"]["en"])}</a></{heading}>',
+                f"    {alt_name(key, game, 'case-card__alt', 'short')}",
+                f"    {meta_line(key, game, 'case-card__meta')}",
+                f'    <p class="case-card__tagline" data-i18n="{key}.tagline">{esc(game["tagline"]["en"])}</p>',
+                f'    <div class="case-card__foot">{play}<span class="case-card__more" aria-hidden="true">'
+                '<span data-i18n="cards.open">Case file</span> →</span></div>',
+                "  </div>",
+                "</article>",
+            ]
+        )
+
+    def grid(self, games: list[dict], heading: str = "h3", cls: str = "case-grid") -> str:
+        cards = "\n".join(self.card(game, heading) for game in games)
+        return f'<div class="{cls}" data-cards="{len(games)}">\n{indent(cards, "  ")}\n</div>'
+
+    def featured(self, game: dict) -> str:
+        slug = game["slug"]
+        key = f"game.{slug}"
+        still = game["media"]["stills"][0]
+        facts = "\n".join(
+            f'    <div><dt data-countup>{esc(fact["value"])}</dt>'
+            f'<dd data-i18n="{key}.fact.{index}">{esc(fact["label"]["en"])}</dd></div>'
+            for index, fact in enumerate(game.get("facts", []))
+        )
+        return "\n".join(
+            [
+                '<div class="featured__media">',
+                '  <figure class="featured__frame" data-develop>',
+                f'    <img src="{esc(still["src"])}" width="{still["width"]}" height="{still["height"]}" '
+                f'alt="{esc(still["alt"]["en"])}" data-i18n-attr="alt:{key}.still.0.alt" loading="lazy" decoding="async" />',
+                "  </figure>",
+                "</div>",
+                '<div class="featured__copy">',
+                f"  {stamp(game['status'])}",
+                f"  {meta_line(key, game, 'featured__meta')}",
+                f'  <h2 class="featured__title" id="featured-title" data-i18n="{key}.name">{esc(game["name"]["en"])}</h2>',
+                f"  {alt_name(key, game, 'featured__alt')}",
+                f'  <p class="featured__premise" data-i18n="{key}.premise">{esc(game["premise"]["en"])}</p>',
+                '  <dl class="featured__facts">',
+                facts,
+                "  </dl>",
+                '  <div class="featured__actions">',
+                f'    <a class="btn btn--primary" href="{esc(game["links"]["play"])}" data-magnet>'
+                '<span data-i18n="cards.play_online">Play online</span> <span aria-hidden="true">▶</span></a>',
+                f'    <a class="btn btn--ghost" href="/games/{slug}"><span data-i18n="cards.read_case">Read the case file</span> '
+                '<span aria-hidden="true">→</span></a>',
+                "  </div>",
+                "</div>",
+            ]
+        )
+
+    def case_main(self, game: dict) -> str:
+        slug, status = game["slug"], game["status"]
+        key = f"game.{slug}"
+        if status == "playable":
+            primary = (
+                f'<a class="btn btn--primary" href="{esc(game["links"]["play"])}" data-magnet>'
+                '<span data-i18n="cards.play_online">Play online</span> <span aria-hidden="true">▶</span></a>'
+            )
+        else:
+            primary = f'<p class="case-hero__note" data-i18n="case.status.{status}">{STATUS_NOTE[status]}</p>'
+        features = "\n".join(
+            f'<li data-i18n="{key}.feature.{index}">{esc(feature["en"])}</li>'
+            for index, feature in enumerate(game.get("plannedFeatures", []))
+        )
+        planned = ""
+        if features:
+            planned = "\n".join(
+                [
+                    '<section class="case-planned" aria-labelledby="planned-title">',
+                    '  <h2 id="planned-title" data-i18n="case.planned_title">Planned features</h2>',
+                    '  <ul class="case-planned__list">',
+                    indent(features, "    "),
+                    "  </ul>",
+                    '  <p class="case-planned__note" data-i18n="case.planned_note">'
+                    "Planned, not final: features may change while the game is built.</p>",
+                    "</section>",
+                ]
+            )
+        return "\n".join(
+            [
+                '<section class="case-hero" aria-labelledby="case-title">',
+                '  <div class="case-hero__art" aria-hidden="true">',
+                '    <span class="case-hero__halo"></span>',
+                f"    {emblem(game['emblem'], 'emblem case-hero__emblem')}",
+                "  </div>",
+                '  <div class="case-hero__copy">',
+                f"    {stamp(status)}",
+                f'    <h1 class="case-hero__title" id="case-title"><span data-i18n="{key}.name">{esc(game["name"]["en"])}</span></h1>',
+                f"    {alt_name(key, game, 'case-hero__alt')}",
+                f"    {meta_line(key, game, 'case-hero__meta')}",
+                f'    <p class="case-hero__tagline" data-i18n="{key}.tagline">{esc(game["tagline"]["en"])}</p>',
+                '    <div class="case-hero__actions">',
+                f"      {primary}",
+                '      <a class="btn btn--ghost" href="/games"><span aria-hidden="true">←</span> '
+                '<span data-i18n="case.back">All case files</span></a>',
+                "    </div>",
+                "  </div>",
+                "</section>",
+                '<div class="case-body">',
+                '  <section class="case-premise" aria-labelledby="premise-title">',
+                '    <h2 id="premise-title" data-i18n="case.premise_title">The case</h2>',
+                f'    <p data-i18n="{key}.premise">{esc(game["premise"]["en"])}</p>',
+                "  </section>",
+                indent(planned, "  ") if planned else "",
+                "</div>",
+            ]
+        )
+
+    def other_cases(self, game: dict) -> str:
+        others = [other for other in self.games if other["slug"] != game["slug"]]
+        return "\n".join(
+            [
+                '<section class="other-cases" aria-labelledby="others-title">',
+                '  <div class="other-cases__head">',
+                '    <h2 id="others-title" data-i18n="case.others">Other case files</h2>',
+                '    <a class="other-cases__all" href="/games"><span data-i18n="case.all">All case files</span> '
+                '<span aria-hidden="true">→</span></a>',
+                "  </div>",
+                indent(self.grid(others, "h3", "case-strip"), "  "),
+                "</section>",
+            ]
+        )
+
+    # ---------- pages ----------
+
+    def page(self, *, title: str, title_key: str, description: str, description_key: str, path: str,
+             og_description: str, og_image: str, css: str, body_class: str, main: str,
+             current: str = "", main_attrs: str = "") -> str:
+        return Template(read(SRC / "templates" / "page.html")).substitute(
+            boot=indent(partial("boot"), "    "),
+            title=esc(title),
+            title_key=title_key,
+            description=esc(description),
+            description_key=description_key,
+            og_title=esc(title),
+            og_description=esc(og_description),
+            og_image=esc(SITE_URL + og_image),
+            canonical=esc(SITE_URL + path),
+            head=indent(self.region_head({"css": css}), "    "),
+            body_class=body_class,
+            emblems=indent(partial("emblems"), "    "),
+            nav=indent(self.region_nav({"current": current}), "    "),
+            main_attrs=main_attrs,
+            main=indent(main, "      "),
+            footer=indent(self.region_footer({}), "    "),
+        )
+
+    def game_page(self, game: dict) -> str:
+        slug = game["slug"]
+        seo = game.get("seo") or {}
+        title = (seo.get("title") or {}).get("en") or f"{game['name']['en']} · Shadow Castle case files"
+        description = (seo.get("description") or {}).get("en") or game["premise"]["en"]
+        if game.get("story"):
+            body = read(SRC / "stories" / f"{game['story']}.html")
+            css = "/styles.css /css/cards.css /css/game.css"
+        else:
+            body = self.case_main(game)
+            css = "/css/cards.css /css/game.css"
+        image = seo.get("image") or ((game.get("media") or {}).get("cover") or {}).get("src") or DEFAULT_OG_IMAGE
+        return self.page(
+            title=title,
+            title_key=f"game.{slug}.seo.title",
+            description=description,
+            description_key=f"game.{slug}.seo.description",
+            path=f"/games/{slug}",
+            og_description=seo.get("ogDescription") or description,
+            og_image=image,
+            css=css,
+            body_class=f"page-case page-case--{slug}",
+            main=body.strip("\n") + "\n\n" + self.other_cases(game),
+            current="cases",
+            main_attrs=f' data-case="{slug}" style="--case-accent: var({game["accent"]})"',
+        )
+
+    def archive_page(self) -> str:
+        main = "\n".join(
+            [
+                '<section class="archive-head" aria-labelledby="archive-title">',
+                '  <p class="case-mark" data-i18n="archive.mark">Ashford Castle · Case archive</p>',
+                '  <h1 id="archive-title" data-i18n="archive.title">Case files</h1>',
+                '  <p class="archive-head__intro" data-i18n="archive.intro">'
+                "Seven cases from Ashford Castle. One is open to play; six are being built in the open.</p>",
+                "</section>",
+                '<section class="archive" aria-labelledby="archive-title">',
+                indent(self.grid(self.games, "h2"), "  "),
+                "</section>",
+            ]
+        )
+        return self.page(
+            title="Case files · Shadow Castle",
+            title_key="meta.archive.title",
+            description="Every Shadow Castle case: one science-mystery game to play in your browser today, "
+            "six more being built in the open.",
+            description_key="meta.archive.description",
+            path="/games",
+            og_description="One case open to play, six more in the dark. The Shadow Castle case files.",
+            og_image=DEFAULT_OG_IMAGE,
+            css="/css/cards.css /css/game.css",
+            body_class="page-archive",
+            main=main,
+            current="cases",
+        )
+
+    # ---------- data ----------
+
+    def public_catalogue(self) -> str:
+        games = [{key: value for key, value in game.items() if key != "internal"} for game in self.games]
+        return json.dumps({"version": 1, "games": games}, ensure_ascii=False, indent=1) + "\n"
+
+    def game_strings(self) -> dict[str, str]:
+        strings: dict[str, str] = {}
+        for game in self.games:
+            key = f"game.{game['slug']}"
+            for field in ("name", "short", "tagline", "genre", "session", "premise"):
+                strings[f"{key}.{field}"] = game[field]["zh"]
+            strings[f"{key}.alt"] = game["name"]["en"]
+            strings[f"{key}.alt_short"] = game["short"]["en"]
+            for index, fact in enumerate(game.get("facts", [])):
+                strings[f"{key}.fact.{index}"] = fact["label"]["zh"]
+            for index, feature in enumerate(game.get("plannedFeatures", [])):
+                strings[f"{key}.feature.{index}"] = feature["zh"]
+            media = game.get("media") or {}
+            if media.get("cover"):
+                strings[f"{key}.cover.alt"] = media["cover"]["alt"]["zh"]
+            for index, still in enumerate(media.get("stills") or []):
+                strings[f"{key}.still.{index}.alt"] = still["alt"]["zh"]
+            seo = game.get("seo") or {}
+            strings[f"{key}.seo.title"] = (seo.get("title") or {}).get("zh") or f"{game['name']['zh']} · 暗影城堡案件档案"
+            strings[f"{key}.seo.description"] = (seo.get("description") or {}).get("zh") or game["premise"]["zh"]
+        return strings
+
+    def zh_dictionary(self) -> str:
+        merged = json.loads(read(SRC / "i18n" / "zh.json"))
+        for key, value in self.game_strings().items():
+            if key in merged and merged[key] != value:
+                raise BuildError(f"i18n key '{key}' is defined twice with different text")
+            merged[key] = value
+        return json.dumps(merged, ensure_ascii=False, indent=0, sort_keys=True) + "\n"
 
     # ---------- outputs ----------
 
@@ -115,29 +441,30 @@ class Site:
 
         return MARKER.sub(replace, text)
 
-    def zh_dictionary(self) -> str:
-        merged = json.loads(read(SRC / "i18n" / "zh.json"))
-        for key, value in self.game_strings().items():
-            if key in merged and merged[key] != value:
-                raise BuildError(f"i18n key '{key}' is defined twice with different text")
-            merged[key] = value
-        return json.dumps(merged, ensure_ascii=False, indent=0, sort_keys=True) + "\n"
-
-    def game_strings(self) -> dict[str, str]:
-        return {}
-
     def outputs(self) -> dict[Path, str]:
         files: dict[Path, str] = {}
         for name in HAND_WRITTEN:
             path = SITE / name
-            files[path] = self.fill(read(path))
+            if path.exists():
+                files[path] = self.fill(read(path))
+        files[CATALOGUE] = self.public_catalogue()
         files[SITE / "i18n" / "zh.json"] = self.zh_dictionary()
+        files[SITE / "games" / "index.html"] = self.archive_page()
+        for game in self.games:
+            files[SITE / "games" / f"{game['slug']}.html"] = self.game_page(game)
         return files
 
 
+def orphans(expected: set[Path]) -> list[Path]:
+    # Generated case pages whose game left the catalogue; never deleted automatically.
+    return [path for path in sorted((SITE / "games").glob("*.html")) if path not in expected]
+
+
 def build(write: bool) -> list[Path]:
+    site = Site()
+    outputs = site.outputs()
     stale: list[Path] = []
-    for path, content in Site().outputs().items():
+    for path, content in outputs.items():
         current = read(path) if path.exists() else None
         if current == content:
             continue
@@ -145,6 +472,8 @@ def build(write: bool) -> list[Path]:
         if write:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
+    for path in orphans(set(outputs)):
+        raise BuildError(f"{path.relative_to(ROOT)} has no catalogue entry; remove it by hand if the game is gone")
     return stale
 
 

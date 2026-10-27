@@ -63,6 +63,31 @@ main:focus {
   outline-offset: 3px;
 }
 
+h1,
+h2,
+h3,
+p,
+figure,
+dl,
+dd,
+ol,
+ul {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  min-width: 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
 /* Chinese reads better without the Latin display tracking and with a touch more leading. */
 :lang(zh) h1,
 :lang(zh) h2,
@@ -106,6 +131,51 @@ html.i18n-pending [data-i18n-html] {
 
 .site-skip:focus-visible {
   transform: none;
+}
+
+/* ---------- Shared marks, section heads and emblems ---------- */
+
+.case-mark {
+  width: fit-content;
+  padding-block-end: var(--space-xs);
+  border-block-end: var(--rule-hair) solid var(--color-accent);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section-head {
+  max-width: 46rem;
+  display: grid;
+  gap: var(--space-md);
+}
+
+.section-head h2 {
+  font-size: clamp(var(--text-2xl), 3vw + 1rem, var(--text-3xl));
+  line-height: 1.05;
+}
+
+.section-head p {
+  max-width: var(--measure);
+  font-size: var(--text-md);
+}
+
+.emblem-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.emblem {
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ---------- Buttons: default · hover · focus · active · disabled · loading · error · success ---------- */

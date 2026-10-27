@@ -1,0 +1,206 @@
+/* Case cards: the hub's upcoming grid, the /games archive and every "other case files" strip. */
+
+.case-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
+  gap: var(--space-lg);
+}
+
+.case-strip {
+  display: grid;
+  grid-auto-columns: minmax(15.5rem, 18.5rem);
+  grid-auto-flow: column;
+  gap: var(--space-md);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-block: var(--space-xs) var(--space-md);
+  scroll-snap-type: x mandatory;
+  scrollbar-color: var(--color-rule) transparent;
+  scrollbar-width: thin;
+}
+
+.case-strip > .case-card {
+  scroll-snap-align: start;
+}
+
+.case-card {
+  --case-accent: var(--color-accent);
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(170deg, color-mix(in oklch, var(--case-accent) 8%, var(--color-paper-2)), var(--color-paper-2) 55%);
+  transition:
+    translate var(--dur-long) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-long) var(--ease-out);
+}
+
+.case-card__art {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-block-end: var(--rule-hair) solid var(--color-rule-2);
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 58%, color-mix(in oklch, var(--case-accent) 18%, transparent), transparent 70%),
+    var(--color-night);
+}
+
+.case-card__art > * {
+  grid-area: 1 / 1;
+}
+
+.case-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.85) brightness(0.86);
+  transition:
+    scale 900ms var(--ease-out),
+    filter var(--dur-long) var(--ease-out);
+}
+
+.case-card__glow {
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--case-accent) 42%, transparent), transparent 68%);
+  opacity: 0.7;
+  transition:
+    opacity var(--dur-long) var(--ease-out),
+    scale var(--dur-long) var(--ease-out);
+}
+
+.case-card__emblem {
+  width: 34%;
+  height: auto;
+  color: var(--case-accent);
+  stroke-width: 2.2;
+  transition:
+    scale var(--dur-long) var(--ease-out),
+    filter var(--dur-long) var(--ease-out);
+}
+
+/* A coming-soon case is a window not yet lit: dim until hovered. */
+.case-card[data-status="coming-soon"] .case-card__glow {
+  opacity: 0.38;
+}
+
+.case-card[data-status="coming-soon"] .case-card__emblem {
+  opacity: 0.82;
+}
+
+.case-card__body {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+}
+
+.case-card__name {
+  margin-block-start: var(--space-xs);
+  font-size: var(--text-lg);
+  line-height: 1.15;
+}
+
+.case-card__link {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+/* The whole card is the link target; the Play button sits above it. */
+.case-card__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.case-card__link:focus-visible {
+  outline: none;
+}
+
+.case-card:has(.case-card__link:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.case-card__alt {
+  color: var(--color-ink-3);
+  font-size: var(--text-sm);
+}
+
+.case-card__meta {
+  color: color-mix(in oklch, var(--case-accent) 78%, var(--color-ink));
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:lang(zh) .case-card__meta {
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+}
+
+.case-card__tagline {
+  color: var(--color-ink-2);
+}
+
+.case-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-sm);
+}
+
+.case-card__play {
+  position: relative;
+  z-index: 2;
+}
+
+.case-card__more {
+  margin-inline-start: auto;
+  color: var(--case-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: translate var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .case-card:hover {
+    border-color: color-mix(in oklch, var(--case-accent) 55%, transparent);
+    box-shadow:
+      0 1.25rem 3rem var(--color-shadow),
+      0 0 2.75rem -0.75rem color-mix(in oklch, var(--case-accent) 60%, transparent);
+    translate: 0 -4px;
+  }
+
+  .case-card:hover .case-card__glow {
+    opacity: 1;
+    scale: 1.12;
+  }
+
+  .case-card:hover .case-card__emblem {
+    opacity: 1;
+    filter: drop-shadow(0 0 0.75rem color-mix(in oklch, var(--case-accent) 70%, transparent));
+    scale: 1.06;
+  }
+
+  .case-card:hover .case-card__image {
+    filter: none;
+    scale: 1.05;
+  }
+
+  .case-card:hover .case-card__more {
+    translate: 4px 0;
+  }
+}

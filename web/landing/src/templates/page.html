@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+$boot
+    <title data-i18n="$title_key">$title</title>
+    <meta name="description" content="$description" data-i18n-attr="content:$description_key" />
+    <meta name="theme-color" content="#15131d" />
+    <meta property="og:title" content="$og_title" />
+    <meta property="og:description" content="$og_description" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="$canonical" />
+    <meta property="og:image" content="$og_image" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="$canonical" />
+$head
+  </head>
+  <body class="$body_class">
+$emblems
+$nav
+
+    <main id="top" tabindex="-1"$main_attrs>
+$main
+    </main>
+
+$footer
+  </body>
+</html>

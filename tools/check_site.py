@@ -193,11 +193,16 @@ def check_catalogue(errors: list[str]) -> None:
     if not site_build.CATALOGUE.exists():
         return
     tokens = (SITE / "tokens.css").read_text(encoding="utf-8")
+    sprite = (SITE / "src" / "partials" / "emblems.html").read_text(encoding="utf-8")
     games = json.loads(site_build.CATALOGUE.read_text(encoding="utf-8"))["games"]
     seen: set[str] = set()
     for game in games:
         slug = game.get("slug", "")
         where = f"game '{slug or '?'}'"
+        if "internal" in game:
+            errors.append(f"data/games.json: {where} publishes its private 'internal' notes")
+        if f'id="emblem-{game.get("emblem")}"' not in sprite:
+            errors.append(f"data/games.json: {where} emblem {game.get('emblem')!r} is not in the sprite")
         if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug):
             errors.append(f"data/games.json: {where} has an invalid slug")
         if slug in seen:
@@ -252,7 +257,8 @@ def main() -> int:
     zh = json.loads((SITE / "i18n" / "zh.json").read_text(encoding="utf-8"))
     for key in sorted(used_keys - zh.keys()):
         errors.append(f"i18n: '{key}' has no Chinese string")
-    generated_prefixes = ("game.",)
+    # Keys chosen by catalogue data (game copy, statuses) are not expected to appear literally.
+    generated_prefixes = ("game.", "status.", "case.status.")
     for key in sorted(zh.keys() - used_keys):
         if not key.startswith(generated_prefixes):
             warnings.append(f"i18n: '{key}' is never used")
