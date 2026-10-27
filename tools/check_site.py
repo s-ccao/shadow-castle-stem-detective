@@ -174,6 +174,10 @@ def check_scripts(errors: list[str], used_keys: set[str]) -> None:
             if not resolved.exists():
                 errors.append(f"{script.relative_to(SITE)}: import {target} does not resolve")
         used_keys.update(key for key in keys.findall(text) if not key.endswith((".js", ".json", ".css", ".html")))
+        # Markup built in JavaScript can translate attributes too.
+        for pairs in re.findall(r'data-i18n-attr="([^"]+)"', text):
+            found = (pair.split(":", 1)[1].strip() for pair in pairs.split(";") if ":" in pair)
+            used_keys.update(key for key in found if "." in key)
 
 
 def check_styles(errors: list[str]) -> None:

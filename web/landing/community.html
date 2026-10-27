@@ -57,6 +57,7 @@
     />
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/css/site.css" />
+    <link rel="stylesheet" href="/css/library.css" />
     <link rel="stylesheet" href="/community.css" />
     <link rel="modulepreload" href="/js/loop.js" />
     <link rel="modulepreload" href="/js/prefs.js" />
@@ -68,6 +69,65 @@
     <script type="module" src="/community.js"></script>
   </head>
   <body>
+    <!-- build:emblems -->
+    <svg class="emblem-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+      <symbol id="emblem-shadow-castle" viewBox="0 0 64 64">
+        <path d="M16 50V30l5-4.5 5 4.5v-9l6-7.5 6 7.5v9l5-4.5 5 4.5v20z" />
+        <path d="M11 50h42" />
+        <circle cx="32" cy="35.5" r="3.4" />
+        <path d="M30.4 38.6 29.4 45h5.2l-1-6.4" />
+        <path d="M21 34v4M43 34v4" opacity=".6" />
+      </symbol>
+      <symbol id="emblem-evidence-rush" viewBox="0 0 64 64">
+        <circle cx="28" cy="34" r="14" />
+        <path d="M38.4 44.4 50.5 56.5" stroke-width="4.5" />
+        <path d="M24 15.5h8M28 15.5V20" />
+        <path d="M28 34v-8.5M28 34l6 4" />
+        <path d="M17.6 23.6l-2.2-2.2" />
+        <path d="M47 18l3-3M48.5 24h4M43 13.5V9.5" opacity=".6" />
+      </symbol>
+      <symbol id="emblem-prism-lab" viewBox="0 0 64 64">
+        <path d="M32 14 49 44H15z" />
+        <path d="M4 35l17.8-3" />
+        <path d="M21.8 32l21 1" opacity=".45" stroke-dasharray="1.5 3" />
+        <path d="M40.5 29 60 21.5" />
+        <path d="M42.8 33H60" opacity=".75" />
+        <path d="M45 37l15 6.5" opacity=".5" />
+      </symbol>
+      <symbol id="emblem-echo-corridor" viewBox="0 0 64 64">
+        <path d="M18 56V30a14 14 0 0 1 28 0v26" />
+        <path d="M12 56h40" />
+        <circle cx="32" cy="44" r="1.8" fill="currentColor" stroke="none" />
+        <path d="M27.7 41.5a5 5 0 0 1 8.6 0" />
+        <path d="M23.3 39a10 10 0 0 1 17.4 0" opacity=".65" />
+        <path d="M19 36.5a15 15 0 0 1 26 0" opacity=".35" />
+      </symbol>
+      <symbol id="emblem-time-echo" viewBox="0 0 64 64">
+        <g opacity=".4" stroke-dasharray="2 3" transform="translate(-8 3)">
+          <path d="M26 12h18M26 52h18" />
+          <path d="M28 12c0 10 5.5 14 5.5 20S28 42 28 52M42 12c0 10-5.5 14-5.5 20S42 42 42 52" />
+        </g>
+        <path d="M26 12h18M26 52h18" />
+        <path d="M28 12c0 10 5.5 14 5.5 20S28 42 28 52M42 12c0 10-5.5 14-5.5 20S42 42 42 52" />
+        <path d="M35 34v7" opacity=".7" />
+        <path d="M30.5 51c1.5-4 3-6 4.5-6s3 2 4.5 6" />
+      </symbol>
+      <symbol id="emblem-alchemy-shift" viewBox="0 0 64 64">
+        <path d="M26 12h12M28.5 12v13L17 45.5A5.5 5.5 0 0 0 21.8 54h20.4a5.5 5.5 0 0 0 4.8-8.5L35.5 25V12" />
+        <path d="M19.8 41.5h24.4" />
+        <circle cx="29" cy="47.5" r="1.6" />
+        <circle cx="35.5" cy="36" r="1.2" opacity=".75" />
+        <circle cx="31.5" cy="29.5" r="1" opacity=".55" />
+        <path d="M47 15v5M44.5 17.5h5" opacity=".6" />
+      </symbol>
+      <symbol id="emblem-rune-defense" viewBox="0 0 64 64">
+        <circle cx="32" cy="34" r="17" />
+        <path d="M32 21v26M32 31.5l-7.5-7.5M32 31.5l7.5-7.5" />
+        <path d="M32 9.5v3.5M32 55v3.5M7.5 34H11M53 34h3.5" opacity=".7" />
+        <path d="M14.5 16.5l2.5 2.5M49.5 16.5 47 19" opacity=".45" />
+      </symbol>
+    </svg>
+    <!-- /build:emblems -->
     <!-- build:nav current="community" -->
     <a class="site-skip" href="#top" data-i18n="nav.skip">Skip to content</a>
     <header class="site-nav" data-nav data-state="top">
@@ -84,7 +144,7 @@
           </span>
         </a>
         <nav class="site-nav__links" aria-label="Primary" data-i18n-attr="aria-label:nav.primary_label">
-          <a href="/games" data-i18n="nav.cases">Case files</a>
+          <a class="site-nav__cases" href="/games" data-library-open><span data-i18n="nav.cases">Case files</span> <b class="site-nav__count">7</b></a>
           <a href="https://play.shadowcastledetective.com/research" data-i18n="nav.research">Research</a>
           <a href="/community" aria-current="page" data-i18n="nav.community">Community</a>
         </nav>
@@ -194,5 +254,12 @@
       </div>
     </footer>
     <!-- /build:footer -->
+    <!-- build:dock -->
+    <a class="case-dock" href="/games" data-library-open aria-label="Open the case files" data-i18n-attr="aria-label:library.dock_label">
+      <span class="case-dock__count" aria-hidden="true">7</span>
+      <span class="case-dock__label" data-i18n="nav.cases">Case files</span>
+      <span class="case-dock__dots" aria-hidden="true"><i style="--c: var(--game-shadow-castle)"></i><i style="--c: var(--game-evidence-rush)"></i><i style="--c: var(--game-prism-lab)"></i><i style="--c: var(--game-echo-corridor)"></i><i style="--c: var(--game-time-echo)"></i><i style="--c: var(--game-alchemy-shift)"></i><i style="--c: var(--game-rune-defense)"></i></span>
+    </a>
+    <!-- /build:dock -->
   </body>
 </html>

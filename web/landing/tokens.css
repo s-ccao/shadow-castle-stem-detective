@@ -114,3 +114,11 @@
   --z-sparks: 990;
   --z-cursor: 1000;
 }
+
+/* The library stage glides between case accents. @property cannot read var(),
+   so its initial value repeats --game-shadow-castle; nothing else uses it. */
+@property --stage-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: oklch(76% 0.15 75);
+}

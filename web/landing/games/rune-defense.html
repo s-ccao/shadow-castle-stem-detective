@@ -56,6 +56,7 @@
     />
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/css/site.css" />
+    <link rel="stylesheet" href="/css/library.css" />
     <link rel="stylesheet" href="/css/cards.css" />
     <link rel="stylesheet" href="/css/game.css" />
     <link rel="modulepreload" href="/js/loop.js" />
@@ -138,7 +139,7 @@
           </span>
         </a>
         <nav class="site-nav__links" aria-label="Primary" data-i18n-attr="aria-label:nav.primary_label">
-          <a href="/games" aria-current="page" data-i18n="nav.cases">Case files</a>
+          <a class="site-nav__cases" href="/games" aria-current="page" data-library-open><span data-i18n="nav.cases">Case files</span> <b class="site-nav__count">7</b></a>
           <a href="https://play.shadowcastledetective.com/research" data-i18n="nav.research">Research</a>
           <a href="/community" data-i18n="nav.community">Community</a>
         </nav>
@@ -196,7 +197,7 @@
           <a class="other-cases__all" href="/games"><span data-i18n="case.all">All case files</span> <span aria-hidden="true">→</span></a>
         </div>
         <div class="case-strip" data-cards="6">
-          <article class="case-card" data-slug="shadow-castle" data-status="playable" data-tilt style="--case-accent: var(--game-shadow-castle)">
+          <article class="case-card" data-slug="shadow-castle" data-status="playable" data-tilt data-preview="[&quot;/assets/final-analysis-board.jpg&quot;, &quot;/assets/alchemy-workbench.jpg&quot;, &quot;/assets/circuit-room.jpg&quot;]" style="--case-accent: var(--game-shadow-castle)">
             <div class="case-card__art" aria-hidden="true"><img class="case-card__image" src="/assets/hero-castle.jpg" width="1448" height="1086" alt="" loading="lazy" decoding="async" /></div>
             <div class="case-card__body">
               <span class="stamp" data-status="playable" data-i18n="status.playable">Playable</span>
@@ -295,5 +296,10 @@
         </p>
       </div>
     </footer>
+    <a class="case-dock" href="/games" data-library-open aria-label="Open the case files" data-i18n-attr="aria-label:library.dock_label">
+      <span class="case-dock__count" aria-hidden="true">7</span>
+      <span class="case-dock__label" data-i18n="nav.cases">Case files</span>
+      <span class="case-dock__dots" aria-hidden="true"><i style="--c: var(--game-shadow-castle)"></i><i style="--c: var(--game-evidence-rush)"></i><i style="--c: var(--game-prism-lab)"></i><i style="--c: var(--game-echo-corridor)"></i><i style="--c: var(--game-time-echo)"></i><i style="--c: var(--game-alchemy-shift)"></i><i style="--c: var(--game-rune-defense)"></i></span>
+    </a>
   </body>
 </html>

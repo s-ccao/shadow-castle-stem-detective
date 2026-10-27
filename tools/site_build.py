@@ -180,7 +180,10 @@ class Site:
         def mark(name: str) -> str:
             return ' aria-current="page"' if current == name else ""
 
-        cases = f'      <a href="/games"{mark("cases")} data-i18n="nav.cases">Case files</a>\n'
+        cases = (
+            f'      <a class="site-nav__cases" href="/games"{mark("cases")} data-library-open>'
+            f'<span data-i18n="nav.cases">Case files</span> <b class="site-nav__count">{len(self.games)}</b></a>\n'
+        )
         return Template(partial("nav")).substitute(
             tagline="Science-mystery games",
             cases_link=cases,
@@ -218,6 +221,20 @@ class Site:
             )
         return Template(partial("scene")).substitute(windows="\n".join(windows))
 
+    def region_dock(self, attrs: dict[str, str]) -> str:
+        dots = "".join(f'<i style="--c: var({game["accent"]})"></i>' for game in self.games)
+        count = len(self.games)
+        return "\n".join(
+            [
+                f'<a class="case-dock" href="/games" data-library-open aria-label="Open the case files" '
+                'data-i18n-attr="aria-label:library.dock_label">',
+                f'  <span class="case-dock__count" aria-hidden="true">{count}</span>',
+                '  <span class="case-dock__label" data-i18n="nav.cases">Case files</span>',
+                f'  <span class="case-dock__dots" aria-hidden="true">{dots}</span>',
+                "</a>",
+            ]
+        )
+
     def region_featured(self, attrs: dict[str, str]) -> str:
         return self.featured(self.game(attrs["slug"]))
 
@@ -247,7 +264,7 @@ class Site:
             )
         return "\n".join(
             [
-                f'<article class="case-card" data-slug="{slug}" data-status="{status}" data-tilt '
+                f'<article class="case-card" data-slug="{slug}" data-status="{status}" data-tilt{self.preview_attr(game)} '
                 f'style="--case-accent: var({game["accent"]})">',
                 f'  <div class="case-card__art" aria-hidden="true">{art}</div>',
                 '  <div class="case-card__body">',
@@ -263,6 +280,10 @@ class Site:
                 "</article>",
             ]
         )
+
+    def preview_attr(self, game: dict) -> str:
+        stills = [still["src"] for still in (game.get("media") or {}).get("stills") or []]
+        return f' data-preview="{esc(json.dumps(stills))}"' if stills else ""
 
     def grid(self, games: list[dict], heading: str = "h3", cls: str = "case-grid") -> str:
         cards = "\n".join(self.card(game, heading) for game in games)
@@ -399,6 +420,7 @@ class Site:
             main_attrs=main_attrs,
             main=indent(main, "      "),
             footer=indent(self.region_footer({}), "    "),
+            dock=indent(self.region_dock({}), "    "),
         )
 
     def game_page(self, game: dict) -> str:
