@@ -3,6 +3,46 @@
   "art_direction_brief": "BRIEF.md",
   "assets": [
     {
+      "id": "shadow-castle-hd-stills-v1",
+      "role": "gameplay screenshots: hub featured block, card preview, library stage, Shadow Castle page",
+      "path": "assets/games/shadow-castle/<still>.<en|zh>.<1024|640>.webp",
+      "status": "shipped",
+      "label": "screenshot",
+      "items": [
+        "final-archive",
+        "library-spectrum",
+        "chemistry-butler",
+        "circuit-generator",
+        "dining-hearth"
+      ],
+      "technical": {
+        "master": "1024x768 PNG at native game resolution, HD visual mode, one capture per language",
+        "derivatives": [
+          "1024x768 WebP q0.86",
+          "640x480 WebP q0.84"
+        ],
+        "formats": [
+          "webp"
+        ]
+      },
+      "source": {
+        "kind": "captured",
+        "url_or_tool": "tools/blender/capture_*.gd run against this repository's Godot 4.7 project, English and Chinese locales",
+        "creator": "Shadow Castle project",
+        "created_at": "2026-10-27",
+        "license": "project-owned",
+        "attribution": "",
+        "prompt_or_source_record": "frames final_room/04-engine, library_room/03-spectrum-window, chemistry_room/06-butler, circuit_room/03-generator, dining_hall_room/03-hearth; picked by the project owner from the 12-frame contact sheet (numbers 9, 8, 3, 5, 12)",
+        "edits": "downscaled and WebP-encoded in Chrome (canvas, high-quality smoothing); no retouching; in-game prompts left as captured"
+      },
+      "verification": {
+        "card_scale_reviewed": true,
+        "stage_scale_reviewed": true,
+        "technical_checks_passed": true,
+        "approved_by": "project owner (frame selection)"
+      }
+    },
+    {
       "id": "evidence-rush-key-art",
       "role": "concept key art: case card, library stage, case-page hero, Open Graph",
       "path": "assets/games/evidence-rush/key-art-v1",

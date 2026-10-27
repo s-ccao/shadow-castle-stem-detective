@@ -86,10 +86,10 @@ class Page(HTMLParser):
         if tag in {"a", "use"} or (tag == "link" and not {"preconnect", "dns-prefetch"} & set(rel)):
             if a.get("href"):
                 self.urls.append((tag, a["href"]))
-        for name in ("src", "poster", "data-src"):
+        for name in ("src", "poster", "data-src", "data-zh-src"):
             if a.get(name):
                 self.urls.append((tag, a[name]))
-        for name in ("srcset", "data-srcset"):
+        for name in ("srcset", "data-srcset", "data-zh-srcset"):
             for candidate in (a.get(name) or "").split(","):
                 if candidate.strip():
                     self.urls.append((tag, candidate.strip().split()[0]))
@@ -235,9 +235,14 @@ def check_catalogue(errors: list[str]) -> None:
         for image in [media.get("cover")] + list(media.get("stills") or []):
             if not image:
                 continue
-            for key in ("src", "fallback"):
-                if image.get(key) and not (SITE / image[key].lstrip("/")).exists():
-                    errors.append(f"data/games.json: {where} media file {image[key]} does not exist")
+            for key in ("src", "small", "fallback"):
+                value = image.get(key) or {}
+                for path in [value] if isinstance(value, str) else value.values():
+                    if not (SITE / path.lstrip("/")).exists():
+                        errors.append(f"data/games.json: {where} media file {path} does not exist")
+                if isinstance(value, dict) and value and set(value) != {"en", "zh"}:
+                    errors.append(f"data/games.json: {where} media {key} needs exactly 'en' and 'zh' paths")
+            bilingual(image.get("alt"), f"{where} media alt text", errors)
             if image.get("kind") == "concept" and image.get("label") != "concept":
                 errors.append(f"data/games.json: {where} concept art must be labelled as concept art")
         vignette = media.get("vignette")

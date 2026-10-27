@@ -121,6 +121,36 @@ def meta_line(key: str, game: dict, cls: str) -> str:
     )
 
 
+def localized(value, lang: str) -> str:
+    """A media path, or an {en, zh} pair of paths, resolved for one language."""
+    return value if isinstance(value, str) else value[lang]
+
+
+def shot(still: dict, alt_key: str, sizes: str) -> str:
+    """An <img> for a catalogue still; the Chinese capture swaps in with the language."""
+    sources = {}
+    for lang in ("en", "zh"):
+        src = localized(still["src"], lang)
+        srcset = ""
+        if still.get("small"):
+            srcset = f'{localized(still["small"], lang)} {still["smallWidth"]}w, {src} {still["width"]}w'
+        sources[lang] = (src, srcset)
+    (src, srcset), (zh_src, zh_srcset) = sources["en"], sources["zh"]
+    parts = [f'src="{esc(src)}"']
+    if srcset:
+        parts.append(f'srcset="{esc(srcset)}" sizes="{esc(sizes)}"')
+    if zh_src != src:
+        parts.append(f'data-zh-src="{esc(zh_src)}"')
+        if zh_srcset:
+            parts.append(f'data-zh-srcset="{esc(zh_srcset)}"')
+    parts += [
+        f'width="{still["width"]}" height="{still["height"]}"',
+        f'alt="{esc(still["alt"]["en"])}" data-i18n-attr="alt:{alt_key}"',
+        'loading="lazy" decoding="async"',
+    ]
+    return f"<img {' '.join(parts)} />"
+
+
 def num(value: float) -> str:
     return f"{value:.1f}".rstrip("0").rstrip(".")
 
@@ -238,6 +268,33 @@ class Site:
     def region_featured(self, attrs: dict[str, str]) -> str:
         return self.featured(self.game(attrs["slug"]))
 
+    def stills(self, attrs: dict[str, str]) -> list[tuple[int, dict]]:
+        game = self.game(attrs.get("slug", ""))
+        wanted = attrs.get("ids", "").split()
+        found = [(index, still) for index, still in enumerate(game["media"]["stills"]) if still.get("id") in wanted]
+        if len(found) != len(wanted):
+            raise BuildError(f"stills {wanted} are not all in {game['slug']}'s catalogue entry")
+        return sorted(found, key=lambda item: wanted.index(item[1]["id"]))
+
+    def region_still(self, attrs: dict[str, str]) -> str:
+        key = f"game.{attrs['slug']}"
+        return "\n".join(shot(still, f"{key}.still.{index}.alt", attrs.get("sizes", "100vw")) for index, still in self.stills(attrs))
+
+    def region_stills(self, attrs: dict[str, str]) -> str:
+        key = f"game.{attrs['slug']}"
+        figures = [
+            "\n".join(
+                [
+                    '<figure class="feature-capture room-shot">',
+                    f'  {shot(still, f"{key}.still.{index}.alt", attrs.get("sizes", "100vw"))}',
+                    f'  <figcaption><strong data-i18n="{key}.still.{index}.caption">{esc(still["caption"]["en"])}</strong></figcaption>',
+                    "</figure>",
+                ]
+            )
+            for index, still in self.stills(attrs)
+        ]
+        return "\n".join(figures)
+
     def region_case_cards(self, attrs: dict[str, str]) -> str:
         status = attrs.get("status")
         games = [game for game in self.games if not status or game["status"] == status]
@@ -283,7 +340,9 @@ class Site:
 
     def preview_attr(self, game: dict) -> str:
         media = game.get("media") or {}
-        stills = [still["src"] for still in media.get("stills") or []]
+        stills = [
+            {lang: localized(still.get("small") or still["src"], lang) for lang in ("en", "zh")} for still in media.get("stills") or []
+        ]
         if stills:
             return f' data-preview="{esc(json.dumps(stills))}"'
         return f' data-vignette="{esc(media["vignette"])}"' if media.get("vignette") else ""
@@ -305,8 +364,7 @@ class Site:
             [
                 '<div class="featured__media">',
                 '  <figure class="featured__frame" data-develop>',
-                f'    <img src="{esc(still["src"])}" width="{still["width"]}" height="{still["height"]}" '
-                f'alt="{esc(still["alt"]["en"])}" data-i18n-attr="alt:{key}.still.0.alt" loading="lazy" decoding="async" />',
+                f'    {shot(still, f"{key}.still.0.alt", "(min-width: 60rem) 46vw, 92vw")}',
                 "  </figure>",
                 "</div>",
                 '<div class="featured__copy">',
@@ -434,7 +492,7 @@ class Site:
         title = (seo.get("title") or {}).get("en") or f"{game['name']['en']} · Shadow Castle case files"
         description = (seo.get("description") or {}).get("en") or game["premise"]["en"]
         if game.get("story"):
-            body = read(SRC / "stories" / f"{game['story']}.html")
+            body = self.fill(read(SRC / "stories" / f"{game['story']}.html"))
             css = "/styles.css /css/atmosphere.css /css/cards.css /css/game.css"
         else:
             body = self.case_main(game)
@@ -507,6 +565,8 @@ class Site:
                 strings[f"{key}.cover.alt"] = media["cover"]["alt"]["zh"]
             for index, still in enumerate(media.get("stills") or []):
                 strings[f"{key}.still.{index}.alt"] = still["alt"]["zh"]
+                if still.get("caption"):
+                    strings[f"{key}.still.{index}.caption"] = still["caption"]["zh"]
             seo = game.get("seo") or {}
             strings[f"{key}.seo.title"] = (seo.get("title") or {}).get("zh") or f"{game['name']['zh']} · 暗影城堡案件档案"
             strings[f"{key}.seo.description"] = (seo.get("description") or {}).get("zh") or game["premise"]["zh"]

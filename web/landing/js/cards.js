@@ -1,6 +1,6 @@
 import { finePointer } from "./loop.js";
 import { motionOn } from "./prefs.js";
-import { t } from "./i18n.js";
+import { pick, t } from "./i18n.js";
 
 // Card previews. A fine pointer that rests on a card for a moment plays its
 // preview (Shadow Castle's stills, or an upcoming case's mechanic vignette);
@@ -17,11 +17,11 @@ const vignettes = new WeakMap();
 function stack(card) {
   let preview = card.querySelector(".case-card__preview");
   if (preview) return preview;
-  const sources = JSON.parse(card.dataset.preview || "[]");
+  const count = JSON.parse(card.dataset.preview || "[]").length;
   preview = document.createElement("div");
   preview.className = "case-card__preview";
   preview.setAttribute("aria-hidden", "true");
-  preview.innerHTML = sources.map((src) => `<img alt="" data-src="${src}" decoding="async" />`).join("");
+  preview.innerHTML = '<img alt="" decoding="async" />'.repeat(count);
   card.querySelector(".case-card__art").append(preview);
   return preview;
 }
@@ -53,8 +53,11 @@ function play(card) {
   }
   const images = [...stack(card).querySelectorAll("img")];
   if (!images.length) return;
-  images.forEach((img) => {
-    if (!img.src) img.src = img.dataset.src;
+  // Each still is an {en, zh} pair: the screenshot follows the page language.
+  const sources = JSON.parse(card.dataset.preview);
+  images.forEach((img, i) => {
+    const src = pick(sources[i]);
+    if (img.getAttribute("src") !== src) img.src = src;
   });
   let shown = 0;
   images.forEach((img, i) => img.classList.toggle("is-shown", i === 0));

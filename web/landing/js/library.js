@@ -156,6 +156,7 @@ function build() {
   });
   document.addEventListener("sc:langchange", () => {
     if (!dialog) return;
+    refreshStills();
     renderText();
     if (current >= 0) renderInfo(games[current], false);
   });
@@ -185,7 +186,7 @@ function layerFor(game, index) {
   const stills = [game.media?.cover, ...(game.media?.stills || [])].filter(Boolean);
   if (stills.length) {
     layer.className = "library__layer library__layer--stills";
-    layer.innerHTML = stills.map((still) => `<img alt="" data-src="${escape(still.src)}" decoding="async" />`).join("");
+    layer.innerHTML = stills.map((still) => `<img alt="" data-src="${escape(pick(still.src))}" decoding="async" />`).join("");
   } else {
     layer.className = "library__layer library__layer--case";
     layer.innerHTML = `
@@ -214,6 +215,18 @@ function stageLayout(w, h) {
 function syncStage() {
   vignettes.forEach((mounting, index) => {
     mounting.then((scene) => (dialog.open && index === current ? scene.play({ restart: true }) : scene.pause()), () => {});
+  });
+}
+
+// Screenshots are captured per language; swap them when the language changes.
+function refreshStills() {
+  ui.media.querySelectorAll(".library__layer--stills").forEach((layer) => {
+    const game = games[Number(layer.dataset.layer)];
+    const stills = [game.media?.cover, ...(game.media?.stills || [])].filter(Boolean);
+    layer.querySelectorAll("img").forEach((img, i) => {
+      img.dataset.src = pick(stills[i].src);
+      if (img.getAttribute("src")) img.src = img.dataset.src;
+    });
   });
 }
 

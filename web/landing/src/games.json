@@ -41,33 +41,73 @@
         },
         "stills": [
           {
-            "src": "/assets/final-analysis-board.jpg",
+            "id": "final-archive",
+            "src": { "en": "/assets/games/shadow-castle/final-archive.en.1024.webp", "zh": "/assets/games/shadow-castle/final-archive.zh.1024.webp" },
+            "small": { "en": "/assets/games/shadow-castle/final-archive.en.640.webp", "zh": "/assets/games/shadow-castle/final-archive.zh.640.webp" },
+            "smallWidth": 640,
             "width": 1024,
             "height": 768,
             "kind": "screenshot",
+            "caption": { "en": "Final Archive", "zh": "终局档案室" },
             "alt": {
-              "en": "The final analysis board links evidence to conclusion slots around a brass mechanism.",
-              "zh": "最终分析板把证据连到黄铜机关周围的结论槽。"
+              "en": "The detective stands before the Final Archive's brass engine, ringed by gold inlay and tall shelves of records.",
+              "zh": "侦探站在终局档案室的黄铜机关前，四周是金色纹路和高大的档案架。"
             }
           },
           {
-            "src": "/assets/alchemy-workbench.jpg",
+            "id": "library-spectrum",
+            "src": { "en": "/assets/games/shadow-castle/library-spectrum.en.1024.webp", "zh": "/assets/games/shadow-castle/library-spectrum.zh.1024.webp" },
+            "small": { "en": "/assets/games/shadow-castle/library-spectrum.en.640.webp", "zh": "/assets/games/shadow-castle/library-spectrum.zh.640.webp" },
+            "smallWidth": 640,
             "width": 1024,
             "height": 768,
             "kind": "screenshot",
+            "caption": { "en": "Library", "zh": "图书馆" },
             "alt": {
-              "en": "The alchemy workbench showing three loaded materials and a potion extraction path.",
-              "zh": "炼金工作台上放着三种材料，并显示药剂的提取路径。"
+              "en": "In the Library, a spectrum of coloured light falls from a high window onto the reading floor.",
+              "zh": "图书馆里，一道彩色光谱从高窗洒落在阅览区。"
             }
           },
           {
-            "src": "/assets/circuit-room.jpg",
+            "id": "chemistry-butler",
+            "src": { "en": "/assets/games/shadow-castle/chemistry-butler.en.1024.webp", "zh": "/assets/games/shadow-castle/chemistry-butler.zh.1024.webp" },
+            "small": { "en": "/assets/games/shadow-castle/chemistry-butler.en.640.webp", "zh": "/assets/games/shadow-castle/chemistry-butler.zh.640.webp" },
+            "smallWidth": 640,
             "width": 1024,
             "height": 768,
             "kind": "screenshot",
+            "caption": { "en": "Chemistry Room", "zh": "化学室" },
             "alt": {
-              "en": "The detective examines a large circuit generator built into a stone workshop.",
-              "zh": "侦探正在检查嵌在石砌工坊里的大型电路发电机。"
+              "en": "In the Chemistry Room, the detective approaches the Butler beside shelves of reagents.",
+              "zh": "化学室里，侦探走向站在试剂架旁的管家。"
+            }
+          },
+          {
+            "id": "circuit-generator",
+            "src": { "en": "/assets/games/shadow-castle/circuit-generator.en.1024.webp", "zh": "/assets/games/shadow-castle/circuit-generator.zh.1024.webp" },
+            "small": { "en": "/assets/games/shadow-castle/circuit-generator.en.640.webp", "zh": "/assets/games/shadow-castle/circuit-generator.zh.640.webp" },
+            "smallWidth": 640,
+            "width": 1024,
+            "height": 768,
+            "kind": "screenshot",
+            "caption": { "en": "Circuit Room", "zh": "电路室" },
+            "alt": {
+              "en": "In the Circuit Room, the detective examines the arcane generator built into the stone wall.",
+              "zh": "电路室里，侦探正在检查嵌在石墙里的奥术发电机。"
+            }
+          },
+          {
+            "id": "dining-hearth",
+            "src": { "en": "/assets/games/shadow-castle/dining-hearth.en.1024.webp", "zh": "/assets/games/shadow-castle/dining-hearth.zh.1024.webp" },
+            "small": { "en": "/assets/games/shadow-castle/dining-hearth.en.640.webp", "zh": "/assets/games/shadow-castle/dining-hearth.zh.640.webp" },
+            "smallWidth": 640,
+            "width": 1024,
+            "height": 768,
+            "kind": "screenshot",
+            "caption": { "en": "Dining Hall", "zh": "餐厅" },
+            "alt": {
+              "en": "The Dining Hall's hearth glows behind the detective while candles light the long table.",
+              "zh": "餐厅的壁炉在侦探身后亮着，烛光照着长桌。"
             }
           }
         ]

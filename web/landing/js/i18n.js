@@ -3,6 +3,7 @@
 //   data-i18n="key"            text content (leaf elements only)
 //   data-i18n-html="key"       inner HTML from the site's own dictionary
 //   data-i18n-attr="attr:key;attr:key"
+//   data-zh-src / data-zh-srcset   the Chinese capture of a screenshot
 const root = document.documentElement;
 const KEY = "sc-lang";
 const originals = new WeakMap();
@@ -58,7 +59,22 @@ function each(scope, selector, fn) {
   scope.querySelectorAll(selector).forEach(fn);
 }
 
+// Screenshots follow the language; this needs no dictionary, so it runs at once.
+function swapSources(scope) {
+  const zh = lang() === "zh";
+  each(scope, "[data-zh-src], [data-zh-srcset]", (el) => {
+    for (const attr of ["srcset", "src"]) {
+      const chinese = el.getAttribute(`data-zh-${attr}`);
+      if (chinese == null) continue;
+      const english = remember(el, `@${attr}`, el.getAttribute(attr) ?? "");
+      const next = zh ? chinese : english;
+      if (el.getAttribute(attr) !== next) el.setAttribute(attr, next);
+    }
+  });
+}
+
 export function translate(scope = document) {
+  swapSources(scope);
   each(scope, "[data-i18n]", (el) => {
     const next = lookup(el.dataset.i18n, remember(el, "#text", el.textContent));
     if (el.textContent !== next) el.textContent = next;
@@ -118,6 +134,7 @@ export function initI18n() {
     root.classList.remove("i18n-pending");
     return;
   }
+  swapSources(document);
   load()
     .then(() => {
       translate(document);
