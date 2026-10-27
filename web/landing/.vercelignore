@@ -1,0 +1,4 @@
+# Build sources and design notes stay in the repository; the built site is what ships.
+/src
+/DESIGN.md
+/README.md

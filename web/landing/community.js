@@ -1,31 +1,43 @@
+import { lang, t } from "/js/i18n.js";
+
 const feedList = document.querySelector("#feed-list");
 const feedStatus = document.querySelector("#feed-status");
 const feedTitle = document.querySelector("#feed-title");
 const newPost = document.querySelector("#new-post");
 const tabs = [...document.querySelectorAll(".network__tab")];
 let activeRequest = null;
+let activeCategory = "all";
+// { kind: "loading" } | { kind: "ready", discussions } | { kind: "error", status?, invalid?, message? }
+let state = { kind: "loading" };
 
 const categoryCopy = {
   all: {
-    title: "Recent discussions",
+    title: ["community.feed_title.all", "Recent discussions"],
     post: "general",
   },
   "q-a": {
-    title: "Puzzle help",
+    title: ["community.feed_title.qa", "Puzzle help"],
     post: "q-a",
   },
   ideas: {
-    title: "Theories & ideas",
+    title: ["community.feed_title.ideas", "Theories & ideas"],
     post: "ideas",
   },
   "show-and-tell": {
-    title: "Investigator showcase",
+    title: ["community.feed_title.show", "Investigator showcase"],
     post: "show-and-tell",
   },
 };
 
+class FeedError extends Error {
+  constructor(details) {
+    super(details.message || "Community archive error.");
+    this.details = details;
+  }
+}
+
 function formatDate(value) {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(lang() === "zh" ? "zh-CN" : undefined, {
     month: "short",
     day: "numeric",
     year: new Date(value).getFullYear() === new Date().getFullYear() ? undefined : "numeric",
@@ -53,36 +65,62 @@ function makeDiscussion(item) {
   excerpt.textContent = item.excerpt;
   const meta = document.createElement("div");
   meta.className = "discussion__meta";
-  meta.textContent = `${item.author} · updated ${formatDate(item.updated)} · open discussion ↗`;
+  meta.textContent = [
+    item.author,
+    `${t("community.meta.updated", "updated")} ${formatDate(item.updated)}`,
+    t("community.meta.open", "open discussion ↗"),
+  ].join(" · ");
 
   body.append(title, excerpt, meta);
   link.append(avatar, body);
   return link;
 }
 
-async function loadCategory(category, signal) {
-  const copy = categoryCopy[category];
-  feedTitle.textContent = copy.title;
-  newPost.href =
-    `https://github.com/s-ccao/shadow-castle-stem-detective/discussions/new?category=${copy.post}`;
+function errorText(details) {
+  let reason = details.message || "";
+  if (details.status) {
+    reason = t("community.error.status", "Community archive returned {status}.").replace("{status}", details.status);
+  } else if (details.invalid) {
+    reason = t("community.error.invalid", "Community archive returned an invalid response.");
+  }
+  return `${reason} ${t("community.status.error", "Open the full network to continue.")}`.trim();
+}
+
+function render() {
+  feedTitle.textContent = t(...categoryCopy[activeCategory].title);
+  if (state.kind === "ready" && state.discussions.length > 0) {
+    feedStatus.hidden = true;
+    feedList.replaceChildren(...state.discussions.map(makeDiscussion));
+    return;
+  }
   feedList.replaceChildren();
   feedStatus.hidden = false;
-  feedStatus.textContent = "Opening the archive…";
+  if (state.kind === "loading") {
+    feedStatus.textContent = t("community.status.loading", "Opening the archive…");
+  } else if (state.kind === "ready") {
+    feedStatus.textContent = t("community.status.empty", "No field notes here yet. Start the first one.");
+  } else {
+    feedStatus.textContent = errorText(state);
+  }
+}
+
+async function loadCategory(category, signal) {
+  activeCategory = category;
+  newPost.href =
+    `https://github.com/s-ccao/shadow-castle-stem-detective/discussions/new?category=${categoryCopy[category].post}`;
+  state = { kind: "loading" };
+  render();
 
   const response = await fetch(`/api/community?category=${encodeURIComponent(category)}`, { signal });
   if (!response.ok) {
-    throw new Error(`Community archive returned ${response.status}.`);
+    throw new FeedError({ status: response.status });
   }
   const payload = await response.json();
   if (!Array.isArray(payload.discussions)) {
-    throw new Error("Community archive returned an invalid response.");
+    throw new FeedError({ invalid: true });
   }
-  if (payload.discussions.length === 0) {
-    feedStatus.textContent = "No field notes here yet. Start the first one.";
-    return;
-  }
-  feedStatus.hidden = true;
-  feedList.replaceChildren(...payload.discussions.map(makeDiscussion));
+  state = { kind: "ready", discussions: payload.discussions };
+  render();
 }
 
 async function selectCategory(category) {
@@ -102,8 +140,8 @@ async function selectCategory(category) {
     if (error.name === "AbortError") {
       return;
     }
-    feedStatus.hidden = false;
-    feedStatus.textContent = `${error.message} Open the full network to continue.`;
+    state = { kind: "error", ...(error.details || { message: error.message }) };
+    render();
   } finally {
     if (activeRequest === request) {
       activeRequest = null;
@@ -114,5 +152,7 @@ async function selectCategory(category) {
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => selectCategory(tab.dataset.category));
 });
+
+document.addEventListener("sc:langchange", render);
 
 selectCategory("all");

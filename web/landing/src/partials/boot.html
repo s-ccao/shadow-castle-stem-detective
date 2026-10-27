@@ -1,0 +1,34 @@
+<script>
+  /* Language, motion and JS flags before first paint; see js/i18n.js and js/prefs.js. */
+  (function () {
+    var d = document.documentElement, s = null, l = null, m = null;
+    try { s = window.localStorage; } catch (e) {}
+    var q = /[?&]lang=(en|zh)(?:&|$)/.exec(location.search);
+    if (q) {
+      l = q[1];
+      try { s && s.setItem("sc-lang", l); } catch (e) {}
+    } else {
+      try { l = s && s.getItem("sc-lang"); } catch (e) {}
+    }
+    if (l !== "en" && l !== "zh") {
+      var n = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+      l = /^zh\b/i.test(n) ? "zh" : "en";
+    }
+    try { m = s && s.getItem("sc-motion"); } catch (e) {}
+    var r = m === "reduce" || (m !== "full" && !!window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+    d.dataset.lang = l;
+    d.lang = l === "zh" ? "zh-CN" : "en";
+    d.dataset.motion = r ? "reduce" : "full";
+    d.classList.add("js");
+    if (l === "zh") {
+      d.classList.add("i18n-pending");
+      var p = document.createElement("link");
+      p.rel = "preload";
+      p.as = "fetch";
+      p.href = "/i18n/zh.json";
+      p.crossOrigin = "anonymous";
+      document.head.appendChild(p);
+      setTimeout(function () { d.classList.remove("i18n-pending"); }, 900);
+    }
+  })();
+</script>

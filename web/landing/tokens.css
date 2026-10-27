@@ -18,8 +18,47 @@
   --color-transparent: oklch(12% 0.02 284 / 0);
   --color-scrim: oklch(8% 0.016 284 / 0.56);
 
-  --font-display: "Fraunces", ui-serif, serif;
-  --font-body: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  /* Platform extension (2026-10-27): moonlight, bronze, night sky and glass. */
+  --color-ink-3: oklch(62% 0.018 282);
+  --color-moon: oklch(88% 0.05 235);
+  --color-moon-2: oklch(74% 0.07 240);
+  --color-moon-glow: oklch(84% 0.08 235 / 0.32);
+  --color-moon-haze: oklch(70% 0.06 250 / 0.12);
+  --color-bronze: oklch(60% 0.1 62);
+  --color-bronze-2: oklch(44% 0.075 58);
+  --color-ember: oklch(80% 0.14 62);
+  --color-ember-hot: oklch(92% 0.08 85);
+  --color-night: oklch(10% 0.022 286);
+  --color-sky-top: oklch(14% 0.04 278);
+  --color-sky-mid: oklch(21% 0.06 292);
+  --color-sky-low: oklch(29% 0.075 305);
+  --color-sky-horizon: oklch(36% 0.07 320);
+  --color-hill: oklch(25% 0.045 288);
+  --color-keep-far: oklch(21% 0.04 286);
+  --color-keep: oklch(15% 0.03 288);
+  --color-keep-lit: oklch(27% 0.05 262);
+  --color-keep-edge: oklch(46% 0.06 250);
+  --color-near: oklch(8% 0.018 290);
+  --color-glass: oklch(15% 0.025 284 / 0.66);
+  --color-glass-strong: oklch(13% 0.025 284 / 0.9);
+  --color-glass-edge: oklch(88% 0.04 260 / 0.14);
+  --color-veil: oklch(6% 0.02 285 / 0.74);
+  --color-shadow: oklch(4% 0.02 285 / 0.62);
+  --color-clue: oklch(86% 0.07 220 / 0.72);
+  --color-sheen: oklch(99% 0.01 85 / 0.34);
+
+  /* One accent per case file; data/games.json refers to these by name. */
+  --game-shadow-castle: oklch(76% 0.15 75);
+  --game-evidence-rush: oklch(67% 0.19 25);
+  --game-rune-defense: oklch(73% 0.16 48);
+  --game-alchemy-shift: oklch(81% 0.16 140);
+  --game-echo-corridor: oklch(81% 0.11 185);
+  --game-time-echo: oklch(75% 0.13 285);
+  --game-prism-lab: oklch(77% 0.15 335);
+
+  --font-display: "Fraunces", "Songti SC", "Noto Serif SC", "Source Han Serif SC", "STSong", ui-serif, serif;
+  --font-body: "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, "PingFang SC", monospace;
 
   --text-micro: 0.65rem;
   --text-xs: 0.75rem;
@@ -50,6 +89,9 @@
   --rule-hair: 1px;
   --radius-sm: 0.2rem;
   --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-pill: 999px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
@@ -57,8 +99,18 @@
   --dur-micro: 120ms;
   --dur-short: 220ms;
   --dur-long: 420ms;
+  --dur-scene: 600ms;
+  --dur-reveal: 900ms;
+
+  --nav-height: 4.25rem;
+  --shadow-deep: 0 1.5rem 4rem var(--color-shadow);
 
   --z-base: 1;
   --z-raised: 10;
   --z-sticky: 200;
+  --z-nav: 300;
+  --z-dock: 310;
+  --z-library: 400;
+  --z-sparks: 990;
+  --z-cursor: 1000;
 }
