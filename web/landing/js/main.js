@@ -1,6 +1,7 @@
 import { initPrefs } from "./prefs.js";
 import { initI18n } from "./i18n.js";
 import { initNav } from "./nav.js";
+import { initReveal } from "./reveal.js";
 
 // Every system starts in isolation: one failure must never take the page down.
 function start(name, fn) {
@@ -25,6 +26,7 @@ function lazy(name, selector, loader) {
 start("prefs", initPrefs);
 start("i18n", initI18n);
 start("nav", initNav);
+start("reveal", initReveal);
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
 
 export { lazy, start };

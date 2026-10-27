@@ -202,6 +202,61 @@
   font-size: var(--text-sm);
 }
 
+/* ---------- Shadow Castle milestones: a brass thread lights each seal (js/reveal.js) ---------- */
+
+.milestones.is-threaded {
+  position: relative;
+  padding-inline-start: 2.25rem;
+}
+
+.milestones.is-threaded::before,
+.milestones.is-threaded::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0.55rem;
+  width: 2px;
+}
+
+.milestones.is-threaded::before {
+  background: var(--color-rule-2);
+}
+
+.milestones.is-threaded::after {
+  background: linear-gradient(to bottom, var(--color-bronze), var(--color-accent), var(--color-ember-hot));
+  box-shadow: 0 0 12px color-mix(in oklch, var(--color-accent) 55%, transparent);
+  transform: scaleY(var(--thread, 0));
+  transform-origin: top;
+}
+
+.milestones.is-threaded li {
+  position: relative;
+}
+
+.milestones.is-threaded li::before {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(var(--space-xl) + 0.3rem);
+  inset-inline-start: calc(-2.15rem + 1px);
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--color-rule);
+  border-radius: 50%;
+  background: var(--color-paper);
+  transition:
+    background-color var(--dur-long) var(--ease-out),
+    border-color var(--dur-long) var(--ease-out),
+    box-shadow var(--dur-long) var(--ease-out);
+}
+
+.milestones.is-threaded li.is-lit::before {
+  border-color: var(--color-ember-hot);
+  background: var(--color-accent);
+  box-shadow:
+    0 0 0 0.3rem color-mix(in oklch, var(--color-accent) 20%, transparent),
+    0 0 1.1rem var(--color-accent);
+}
+
 /* ---------- Other case files ---------- */
 
 .other-cases {

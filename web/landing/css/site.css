@@ -734,6 +734,92 @@ html.i18n-pending [data-i18n-html] {
   letter-spacing: 0.08em;
 }
 
+/* ---------- Scroll storytelling (js/reveal.js) ---------- */
+
+html.js-ready[data-motion="full"] .rv:not(.is-in) {
+  opacity: 0;
+}
+
+.rv.is-in {
+  animation: rv-rise 900ms var(--ease-out) both;
+  animation-delay: calc(var(--d, 0) * 90ms);
+}
+
+@keyframes rv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+/* A single brass glint crosses a heading the first time it is read. */
+.is-sweeping {
+  background: linear-gradient(
+      100deg,
+      var(--color-ink) 0 40%,
+      var(--color-ember-hot) 47%,
+      var(--color-accent) 50%,
+      var(--color-ember-hot) 53%,
+      var(--color-ink) 60% 100%
+    )
+    100% 0 / 280% 100%;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: title-sweep 1.8s 0.15s var(--ease-out) both;
+}
+
+@keyframes title-sweep {
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Photographs develop like prints in a darkroom tray. */
+.develop {
+  position: relative;
+}
+
+.develop img {
+  transition:
+    filter 1400ms var(--ease-out),
+    opacity 900ms var(--ease-out);
+}
+
+html.js-ready[data-motion="full"] .develop:not(.is-developed) img {
+  filter: sepia(0.85) saturate(0.6) brightness(1.6) contrast(0.6);
+  opacity: 0.35;
+}
+
+.featured__frame.develop.is-developed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(115deg, transparent 30%, color-mix(in oklch, var(--color-ember-hot) 20%, transparent) 50%, transparent 70%) -100% 0 / 220% 100% no-repeat;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: develop-sheen 1500ms var(--ease-out) both;
+}
+
+@keyframes develop-sheen {
+  to {
+    background-position: 160% 0;
+    opacity: 0;
+  }
+}
+
+.scroll-thread {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: calc(var(--z-nav) + 2);
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-bronze), var(--color-accent) 45%, var(--color-ember-hot) 75%, var(--color-moon));
+  box-shadow: 0 0 10px color-mix(in oklch, var(--color-accent) 60%, transparent);
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
 /* ---------- Reduced motion: the site switch and the system setting both land here ---------- */
 
 html[data-motion="reduce"] {
