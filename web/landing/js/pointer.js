@@ -1,10 +1,12 @@
-import { addTicker, clamp, damp, finePointer, tokenRgb } from "./loop.js";
+import { addTicker, clamp, damp, finePointer } from "./loop.js";
+import { adoptOverlay } from "./overlay.js";
 import { motionOn } from "./prefs.js";
 
 // The pointer layer: a brass magnifier cursor that frames what it can open,
-// magnetic primary buttons, ember sparks, and tilting case cards. All of it is
-// decoration; the native cursor returns for text entry, touch, forced colours,
-// reduced motion, and on any error.
+// magnetic primary buttons, and tilting case cards. (The light the pointer casts,
+// the lantern and the prism trail, lives in js/night/.) All of it is decoration;
+// the native cursor returns for text entry, touch, forced colours, reduced motion,
+// and on any error.
 const root = document.documentElement;
 const forcedColors = matchMedia("(forced-colors: active)");
 const INTERACTIVE = "a[href], button, [role='button'], [role='switch'], summary, label, select, .case-card, .win";
@@ -12,40 +14,6 @@ const NATIVE = "input, textarea, select, [contenteditable='true'], [data-native-
 
 function cursorAllowed() {
   return finePointer.matches && motionOn() && !forcedColors.matches;
-}
-
-// ---------- Overlay host ----------
-// A modal <dialog> (the case-file library) is drawn in the browser's top layer,
-// above every z-index on the page, so the magnifier and sparks would vanish
-// under it while the native cursor stays hidden. While a modal is open, the
-// overlays live inside it; they return to <body> when it closes.
-const overlays = [];
-
-function topModal() {
-  const open = document.querySelectorAll("dialog[open]");
-  for (let i = open.length - 1; i >= 0; i -= 1) {
-    try {
-      if (open[i].matches(":modal")) return open[i];
-    } catch {
-      return open[i]; // no :modal support: an open dialog is the best guess
-    }
-  }
-  return null;
-}
-
-function rehomeOverlays() {
-  try {
-    const host = topModal() || document.body;
-    for (const el of overlays) if (el.parentElement !== host) host.append(el);
-  } catch (error) {
-    console.error(error);
-    root.classList.remove("has-cursor"); // never leave the visitor without a pointer
-  }
-}
-
-function adoptOverlay(el) {
-  overlays.push(el);
-  rehomeOverlays();
 }
 
 // ---------- Cursor ----------
@@ -191,140 +159,6 @@ function createCursor() {
   sync();
 }
 
-// ---------- Sparks: an ember burst on every press, a faint trail behind the mouse ----------
-function createSparks() {
-  const canvas = document.createElement("canvas");
-  canvas.className = "sc-sparks";
-  canvas.setAttribute("aria-hidden", "true");
-  adoptOverlay(canvas);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  const colors = ["--color-ember", "--color-ember-hot", "--color-accent", "--color-moon"].map((name) => tokenRgb(name).join(","));
-  const particles = [];
-  let dpr = 1;
-  let stop = null;
-  let trail = 0;
-  let px = -1;
-  let py = -1;
-
-  function size() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(window.innerWidth * dpr);
-    canvas.height = Math.round(window.innerHeight * dpr);
-  }
-  size();
-  window.addEventListener("resize", size);
-
-  function tick(now, dt) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = "lighter";
-    for (let i = particles.length - 1; i >= 0; i -= 1) {
-      const p = particles[i];
-      p.life -= dt / p.duration;
-      if (p.life <= 0) {
-        particles.splice(i, 1);
-        continue;
-      }
-      const drag = Math.pow(0.986, dt / 16);
-      p.vx *= drag;
-      p.vy = p.vy * drag + p.gravity * dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      const a = p.life;
-      if (p.ring) {
-        ctx.strokeStyle = `rgba(${p.color},${(a * 0.65).toFixed(3)})`;
-        ctx.lineWidth = 1.5 * dpr * a;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, (1 - a) * p.ring * dpr, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (p.streak) {
-        ctx.strokeStyle = `rgba(${p.color},${a.toFixed(3)})`;
-        ctx.lineWidth = p.size * dpr;
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x - p.vx * 20, p.y - p.vy * 20);
-        ctx.stroke();
-      } else {
-        const radius = p.size * dpr * (0.5 + a * 0.5);
-        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 3);
-        glow.addColorStop(0, `rgba(${p.color},${(a * 0.9).toFixed(3)})`);
-        glow.addColorStop(1, `rgba(${p.color},0)`);
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius * 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.globalCompositeOperation = "source-over";
-    if (!particles.length) {
-      stop = null;
-      return false;
-    }
-    return true;
-  }
-
-  const kick = () => {
-    if (!stop) stop = addTicker(tick);
-  };
-
-  function burst(x, y, small) {
-    x *= dpr;
-    y *= dpr;
-    particles.push({ x, y, vx: 0, vy: 0, gravity: 0, life: 1, duration: 520, color: colors[1], ring: small ? 30 : 44 });
-    if (!small) particles.push({ x, y, vx: 0, vy: 0, gravity: 0, life: 1, duration: 760, color: colors[3], ring: 72 });
-    const streaks = small ? 8 : 15;
-    for (let i = 0; i < streaks; i += 1) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = (0.16 + Math.random() * 0.4) * dpr;
-      particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        gravity: 0.0007 * dpr,
-        life: 1,
-        duration: 480 + Math.random() * 420,
-        color: colors[i % 3],
-        size: 1.1 + Math.random(),
-        streak: true,
-      });
-    }
-    kick();
-  }
-
-  document.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0 || !motionOn() || forcedColors.matches) return;
-    if (event.target.closest?.(`${NATIVE}, [data-no-sparks]`)) return;
-    burst(event.clientX, event.clientY, event.pointerType !== "mouse");
-  });
-
-  document.addEventListener(
-    "pointermove",
-    (event) => {
-      if (event.pointerType !== "mouse" || !motionOn() || !finePointer.matches) return;
-      if (px >= 0) trail += Math.hypot(event.clientX - px, event.clientY - py);
-      px = event.clientX;
-      py = event.clientY;
-      if (trail < 22 || particles.length > 120 || event.target.closest?.("[data-no-sparks]")) return;
-      trail = 0;
-      particles.push({
-        x: px * dpr,
-        y: py * dpr,
-        vx: (Math.random() - 0.5) * 0.03 * dpr,
-        vy: (0.01 + Math.random() * 0.025) * dpr,
-        gravity: 0,
-        life: 1,
-        duration: 620 + Math.random() * 320,
-        color: colors[Math.random() < 0.7 ? 0 : 3],
-        size: 0.8 + Math.random() * 0.8,
-      });
-      kick();
-    },
-    { passive: true },
-  );
-}
-
 // ---------- Magnetic primary buttons and tilting cards (delegated, so injected content works too) ----------
 function createMagnetsAndTilt() {
   const states = new WeakMap();
@@ -435,9 +269,6 @@ function createMagnetsAndTilt() {
 }
 
 export function initPointer() {
-  createSparks();
   createMagnetsAndTilt();
   createCursor();
-  // showModal() and close() toggle the open attribute.
-  new MutationObserver(rehomeOverlays).observe(document.body, { subtree: true, attributeFilter: ["open"] });
 }

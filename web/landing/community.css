@@ -4,16 +4,14 @@
 
 html {
   color-scheme: dark;
-  background: var(--color-paper);
 }
 
+/* The night sky is painted on html by /css/site.css; body stays clear so its canvas
+   layers (fog, moon dust, the lantern's evidence) show through. */
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--color-focus) 18%, transparent), transparent 34rem),
-    radial-gradient(circle at 92% 10%, color-mix(in srgb, #6d4ad8 13%, transparent), transparent 30rem),
-    var(--color-paper);
+  background: transparent;
   color: var(--color-ink);
   font-family: var(--font-body);
 }

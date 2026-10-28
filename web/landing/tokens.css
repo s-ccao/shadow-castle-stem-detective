@@ -47,6 +47,15 @@
   --color-clue: oklch(86% 0.07 220 / 0.72);
   --color-sheen: oklch(99% 0.01 85 / 0.34);
 
+  /* Pointer light (2026-10-28): white light split by the prism trail, red to violet. */
+  --color-spectrum-1: oklch(66% 0.21 24);
+  --color-spectrum-2: oklch(76% 0.16 58);
+  --color-spectrum-3: oklch(91% 0.16 98);
+  --color-spectrum-4: oklch(83% 0.19 150);
+  --color-spectrum-5: oklch(78% 0.14 230);
+  --color-spectrum-6: oklch(60% 0.21 272);
+  --color-spectrum-7: oklch(64% 0.23 305);
+
   /* One accent per case file; data/games.json refers to these by name. */
   --game-shadow-castle: oklch(76% 0.15 75);
   --game-evidence-rush: oklch(67% 0.19 25);
@@ -111,8 +120,14 @@
   --z-nav: 300;
   --z-dock: 310;
   --z-library: 400;
-  --z-sparks: 990;
+  --z-light: 985;
+  --z-loupe: 995;
   --z-cursor: 1000;
+  --z-intro: 1900;
+  /* Night-sky layers paint behind all content, in this order. */
+  --z-sky-fog: -3;
+  --z-sky-dust: -2;
+  --z-sky-evidence: -1;
 }
 
 /* The library stage glides between case accents. @property cannot read var(),

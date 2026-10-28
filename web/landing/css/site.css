@@ -12,10 +12,18 @@
   box-sizing: border-box;
 }
 
+/* The night sky behind every page: moon haze from the upper left, an arcane glow
+   low on the right, fine grain, deepening to night. Canvas layers (night.css) add
+   fog, moon dust and the lantern's evidence above it. */
 html {
   overflow-x: clip;
   color-scheme: dark;
-  background: var(--color-paper);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") 0 0 / 180px 180px,
+    radial-gradient(ellipse 70% 52% at 6% -14%, color-mix(in oklch, var(--color-moon) 15%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 55% at 104% 106%, color-mix(in oklch, var(--color-arcane) 14%, transparent), transparent 70%),
+    linear-gradient(to bottom, var(--color-sky-top), var(--color-paper) 42%, var(--color-night)) var(--color-paper);
+  background-attachment: fixed;
   scroll-padding-top: calc(var(--nav-height) + var(--space-md));
   -webkit-text-size-adjust: 100%;
 }
@@ -24,7 +32,7 @@ body {
   min-width: 20rem;
   margin: 0;
   overflow-x: clip;
-  background: var(--color-paper);
+  background: transparent;
   color: var(--color-ink-2);
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -599,7 +607,7 @@ html.i18n-pending [data-i18n-html] {
 
 .site-footer {
   border-block-start: var(--rule-hair) solid var(--color-rule);
-  background: linear-gradient(to bottom, var(--color-paper), var(--color-night));
+  background: linear-gradient(to bottom, transparent, var(--color-night) 70%);
 }
 
 .site-footer__inner {
@@ -947,15 +955,6 @@ html.has-cursor :is(input, textarea, select, [contenteditable="true"], [data-nat
   scale: 1.45;
 }
 
-.sc-sparks {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-sparks);
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-}
-
 /* A soft highlight that follows the pointer across a tilting card. */
 .tilt-glare {
   position: absolute;
@@ -973,7 +972,7 @@ html.has-cursor :is(input, textarea, select, [contenteditable="true"], [data-nat
   opacity: 1;
 }
 
-html[data-motion="reduce"] :is(.sc-cursor, .sc-sparks, .tilt-glare) {
+html[data-motion="reduce"] :is(.sc-cursor, .tilt-glare) {
   display: none;
 }
 

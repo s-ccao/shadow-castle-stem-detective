@@ -1,0 +1,263 @@
+/* The night around every page (see DESIGN.md, "Night sky and pointer light").
+   Behind the content: fog and moon shafts, moon dust that gathers into each
+   chapter's subject, and the evidence a lantern develops on the wall. In front:
+   the pointer's light. Plus the story layer: the keyhole, case numerals, the loupe.
+   All of it is decoration: aria-hidden, never interactive, gone in forced colours. */
+
+.night-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.night-layer--fog {
+  z-index: var(--z-sky-fog);
+}
+
+.night-layer--dust {
+  z-index: var(--z-sky-dust);
+}
+
+.night-layer--evidence {
+  z-index: var(--z-sky-evidence);
+}
+
+/* Screened onto the page beneath it, under the magnifier. */
+.night-light {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-light);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* ---------- Evidence markers: numbered tent cards dropped by a click on bare wall ---------- */
+
+.evidence-marker {
+  position: absolute;
+  z-index: var(--z-light);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2xs);
+  translate: -50% -100%;
+  pointer-events: none;
+  animation: evidence-marker 2.9s var(--ease-out) forwards;
+}
+
+.evidence-marker b {
+  display: grid;
+  place-items: center;
+  min-width: 2.6rem;
+  height: 1.9rem;
+  padding: 0.15rem 0.6rem 0;
+  background: linear-gradient(var(--color-ember-hot), var(--color-accent) 60%, var(--color-bronze));
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+  color: var(--color-accent-ink);
+  font: 700 0.95rem/1 var(--font-mono);
+}
+
+.evidence-marker i {
+  order: -1;
+  width: 3.2rem;
+  height: 0.5rem;
+  margin-block-end: -0.45rem;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklch, var(--color-ember) 55%, transparent), transparent);
+}
+
+.evidence-marker span {
+  color: var(--color-ember-hot);
+  font: 600 0.6rem/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  text-shadow: 0 0 0.5rem var(--color-night), 0 0 0.2rem var(--color-night);
+}
+
+@keyframes evidence-marker {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+    translate: -50% -70%;
+  }
+  10% {
+    opacity: 1;
+    scale: 1.12;
+    translate: -50% -100%;
+  }
+  16% {
+    scale: 1;
+  }
+  82% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.92;
+    translate: -50% -96%;
+  }
+}
+
+/* ---------- Keyhole: the first page of a visit opens like a door ---------- */
+
+.night-keyhole {
+  --keyhole: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 72'%3E%3Cpath d='M23 0a17 17 0 1 1 0 34a17 17 0 1 1 0-34zM15 28h16l7 44H8z'/%3E%3C/svg%3E");
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 46%, color-mix(in oklch, var(--color-ember) 34%, transparent) 0, transparent 9rem),
+    radial-gradient(circle at 50% 46%, var(--color-paper-2), var(--color-night) 75%);
+  -webkit-mask-image: var(--keyhole), linear-gradient(var(--color-night) 0 0);
+  -webkit-mask-position: 50% 46%, 0 0;
+  -webkit-mask-size: 46px 72px, 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: xor;
+  mask-image: var(--keyhole), linear-gradient(var(--color-night) 0 0);
+  mask-position: 50% 46%, 0 0;
+  mask-size: 46px 72px, 100% 100%;
+  mask-repeat: no-repeat;
+  mask-composite: exclude;
+  animation: night-keyhole 1.5s var(--ease-in) 0.45s forwards;
+}
+
+@keyframes night-keyhole {
+  to {
+    -webkit-mask-size: 4600px 7200px, 100% 100%;
+    mask-size: 4600px 7200px, 100% 100%;
+  }
+}
+
+/* ---------- Case numerals: Roman chapter numbers drifting behind each chapter ---------- */
+
+.night-numeral {
+  position: absolute;
+  inset-block-start: -0.12em;
+  inset-inline-end: var(--page-gutter);
+  z-index: -1;
+  background: linear-gradient(color-mix(in oklch, var(--color-accent) 20%, transparent), transparent 78%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: 600 clamp(7rem, 15vw, 14rem) / 1 var(--font-display);
+  letter-spacing: -0.02em;
+  -webkit-text-stroke: 1.5px color-mix(in oklch, var(--color-accent) 44%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s var(--ease-out);
+}
+
+.night-numeral.is-in {
+  opacity: 1;
+}
+
+/* ---------- The loupe: the magnifier really magnifies a capture ---------- */
+
+.loupe {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-loupe);
+  width: 184px;
+  height: 184px;
+  margin: -92px 0 0 -92px;
+  opacity: 0;
+  scale: 0.5;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    scale 260ms var(--ease-out);
+}
+
+.loupe.is-on {
+  opacity: 1;
+  scale: 1;
+}
+
+.loupe__view {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 6px solid var(--color-bronze);
+  border-radius: 50%;
+  outline: 1px solid var(--color-ember-hot);
+  outline-offset: -1px;
+  background-color: var(--color-night);
+  background-repeat: no-repeat;
+  box-shadow:
+    0 0.9rem 2.2rem var(--color-shadow),
+    0 0 1.6rem color-mix(in oklch, var(--color-ember) 32%, transparent),
+    inset 0 0 1.4rem var(--color-shadow);
+}
+
+.loupe.is-pixel .loupe__view {
+  image-rendering: pixelated;
+}
+
+/* The scan line sweeps until the evidence locks. */
+.loupe__view::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: var(--scan, 0%);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-clue), transparent);
+  box-shadow: 0 0 0.6rem var(--color-clue);
+  opacity: var(--scan-a, 0);
+}
+
+.loupe__view::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 24%, color-mix(in oklch, var(--color-ink) 26%, transparent), transparent 34%);
+}
+
+.loupe__read {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 50%;
+  translate: -50% 0.6rem;
+  padding: 0.3rem 0.6rem;
+  border: var(--rule-hair) solid color-mix(in oklch, var(--color-accent) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-strong);
+  color: var(--color-ember-hot);
+  font: 600 0.62rem/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.loupe.is-locked .loupe__view {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0.9rem 2.2rem var(--color-shadow),
+    0 0 2.4rem color-mix(in oklch, var(--color-accent) 60%, transparent),
+    inset 0 0 1.4rem var(--color-shadow);
+}
+
+.loupe.is-locked .loupe__read {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+/* While the loupe looks, it is the magnifier: the cursor keeps only its centre dot. */
+html.is-looking :is(.sc-cursor__lens, .sc-cursor__frame) {
+  opacity: 0 !important;
+}
+
+html[data-motion="reduce"] :is(.night-light, .night-keyhole, .evidence-marker, .loupe) {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  :is(.night-layer, .night-light, .evidence-marker, .night-keyhole, .night-numeral, .loupe) {
+    display: none;
+  }
+}

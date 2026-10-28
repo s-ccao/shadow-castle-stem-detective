@@ -23,7 +23,7 @@ body {
   min-width: 20rem;
   margin: 0;
   overflow-x: clip;
-  background: var(--color-paper);
+  background: transparent; /* the night sky is painted on html (css/site.css) */
   color: var(--color-ink-2);
   font-family: var(--font-body);
   font-size: var(--text-base);

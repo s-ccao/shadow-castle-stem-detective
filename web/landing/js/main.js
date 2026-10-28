@@ -92,6 +92,14 @@ start("library", initLibraryLauncher);
 lazy("cards", ".case-card[data-preview], .case-card[data-vignette]", () => import("./cards.js").then((m) => m.initCards));
 lazy("vignettes", ".case-hero__art[data-vignette]", () => import("./vignettes/stage.js").then((m) => m.initHeroVignettes));
 lazy("pointer", null, () => import("./pointer.js").then((m) => m.initPointer));
+lazy("night", null, () => import("./night/sky.js").then((m) => m.initNight));
+lazy("story", "main", () => import("./story.js").then((m) => m.initStory));
+// The pointer's light (the lantern and the prism trail) and the loupe need a mouse.
+if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
+  lazy("lantern", null, () => import("./night/lantern.js").then((m) => m.initLantern));
+  lazy("trail", null, () => import("./night/trail.js").then((m) => m.initTrail));
+  lazy("loupe", ".feature-capture img, .hero__image", () => import("./loupe.js").then((m) => m.initLoupe));
+}
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
 near("demo", "[data-demo]", () => import("./demo/deduction.js").then((m) => m.initDemo));
 lazy("archive", "[data-archive-filter]", () => import("./archive.js").then((m) => m.initArchiveFilter));
