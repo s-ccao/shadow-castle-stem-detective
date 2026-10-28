@@ -209,6 +209,11 @@
   }
 }
 
+/* The preview is a mechanic sketch, not the concept art, so the label steps aside. */
+.case-card.is-previewing .art-tag {
+  opacity: 0;
+}
+
 /* ---------- Previews (js/cards.js) ---------- */
 
 .case-card__preview {

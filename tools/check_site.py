@@ -261,7 +261,7 @@ def check_catalogue(errors: list[str]) -> None:
         for image in [media.get("cover")] + list(media.get("stills") or []):
             if not image:
                 continue
-            for key in ("src", "small", "fallback"):
+            for key in ("src", "small", "thumb", "fallback"):
                 value = image.get(key) or {}
                 for path in [value] if isinstance(value, str) else value.values():
                     if not (SITE / path.lstrip("/")).exists():
@@ -271,6 +271,9 @@ def check_catalogue(errors: list[str]) -> None:
             bilingual(image.get("alt"), f"{where} media alt text", errors)
             if image.get("kind") == "concept" and image.get("label") != "concept":
                 errors.append(f"data/games.json: {where} concept art must be labelled as concept art")
+        seo_image = (game.get("seo") or {}).get("image")
+        if seo_image and not (SITE / seo_image.lstrip("/")).exists():
+            errors.append(f"data/games.json: {where} sharing image {seo_image} does not exist")
         vignette = media.get("vignette")
         if vignette and not (re.fullmatch(r"[a-z0-9-]+", vignette) and (SITE / "js" / "vignettes" / f"{vignette}.js").exists()):
             errors.append(f"data/games.json: {where} vignette {vignette!r} has no js/vignettes/{vignette}.js")

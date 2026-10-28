@@ -33,6 +33,9 @@
       "media": {
         "cover": {
           "src": "/assets/hero-castle.jpg",
+          "small": "/assets/games/shadow-castle/cover-card.640.webp",
+          "smallWidth": 640,
+          "thumb": "/assets/games/shadow-castle/cover-thumb.320.webp",
           "width": 1448,
           "height": 1086,
           "kind": "painting",
@@ -151,7 +154,25 @@
         { "en": "A daily challenge with its own leaderboard", "zh": "每日挑战与排行榜" }
       ],
       "links": {},
-      "media": { "vignette": "evidence-rush" },
+      "media": {
+        "cover": {
+          "id": "key-art",
+          "src": "/assets/games/evidence-rush/key-art-v1.card.800.webp",
+          "small": "/assets/games/evidence-rush/key-art-v1.card.480.webp",
+          "smallWidth": 480,
+          "thumb": "/assets/games/evidence-rush/key-art-v1.thumb.320.webp",
+          "width": 800,
+          "height": 500,
+          "kind": "concept",
+          "label": "concept",
+          "alt": {
+            "en": "Concept art: a detective in silhouette studies a candlelit evidence board where red threads converge on one glowing card, beside a brass pocket watch.",
+            "zh": "概念图：侦探的剪影站在烛光下的证据板前，红线汇聚到一张发光的卡片上，旁边是一只黄铜怀表。"
+          }
+        },
+        "vignette": "evidence-rush"
+      },
+      "seo": { "image": "/assets/games/evidence-rush/key-art-v1.og.jpg" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -180,7 +201,25 @@
         { "en": "An energy ripple when a mechanism wakes", "zh": "激活机关时的能量扩散" }
       ],
       "links": {},
-      "media": { "vignette": "prism-lab" },
+      "media": {
+        "cover": {
+          "id": "key-art",
+          "src": "/assets/games/prism-lab/key-art-v1.card.800.webp",
+          "small": "/assets/games/prism-lab/key-art-v1.card.480.webp",
+          "smallWidth": 480,
+          "thumb": "/assets/games/prism-lab/key-art-v1.thumb.320.webp",
+          "width": 800,
+          "height": 500,
+          "kind": "concept",
+          "label": "concept",
+          "alt": {
+            "en": "Concept art: a moonbeam bounces off a brass mirror into a crystal prism and fans into a spectrum that lights a sealed door's magenta lock.",
+            "zh": "概念图：月光经黄铜镜反射射入水晶棱镜，分成一道光谱，点亮封印之门上的品红色门锁。"
+          }
+        },
+        "vignette": "prism-lab"
+      },
+      "seo": { "image": "/assets/games/prism-lab/key-art-v1.og.jpg" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -209,7 +248,25 @@
         { "en": "Guards whose awareness shifts as they hunt", "zh": "敌人的动态感知范围" }
       ],
       "links": {},
-      "media": { "vignette": "echo-corridor" },
+      "media": {
+        "cover": {
+          "id": "key-art",
+          "src": "/assets/games/echo-corridor/key-art-v1.card.800.webp",
+          "small": "/assets/games/echo-corridor/key-art-v1.card.480.webp",
+          "smallWidth": 480,
+          "thumb": "/assets/games/echo-corridor/key-art-v1.thumb.320.webp",
+          "width": 800,
+          "height": 500,
+          "kind": "concept",
+          "label": "concept",
+          "alt": {
+            "en": "Concept art: teal sound rings outline a dark stone corridor around a crouching detective while a guard with a lamp patrols further on.",
+            "zh": "概念图：青色声波勾勒出黑暗石廊的轮廓，侦探压低身子潜行，远处一名提灯守卫正在巡逻。"
+          }
+        },
+        "vignette": "echo-corridor"
+      },
+      "seo": { "image": "/assets/games/echo-corridor/key-art-v1.og.jpg" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -238,7 +295,25 @@
         { "en": "Past and present moving at once", "zh": "过去与现在同时运动" }
       ],
       "links": {},
-      "media": { "vignette": "time-echo" },
+      "media": {
+        "cover": {
+          "id": "key-art",
+          "src": "/assets/games/time-echo/key-art-v1.card.800.webp",
+          "small": "/assets/games/time-echo/key-art-v1.card.480.webp",
+          "smallWidth": 480,
+          "thumb": "/assets/games/time-echo/key-art-v1.thumb.320.webp",
+          "width": 800,
+          "height": 500,
+          "kind": "concept",
+          "label": "concept",
+          "alt": {
+            "en": "Concept art: a detective crosses a clockwork bridge while a violet echo of their past self holds the lever beside a lit gate.",
+            "zh": "概念图：侦探走过钟楼里的机械桥，紫色的过去残影正握着亮灯闸门旁的拉杆。"
+          }
+        },
+        "vignette": "time-echo"
+      },
+      "seo": { "image": "/assets/games/time-echo/key-art-v1.og.jpg" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -268,7 +343,25 @@
         { "en": "Brewing combos and lab upgrades", "zh": "合成连击和实验室升级" }
       ],
       "links": {},
-      "media": { "vignette": "alchemy-shift" },
+      "media": {
+        "cover": {
+          "id": "key-art",
+          "src": "/assets/games/alchemy-shift/key-art-v1.card.800.webp",
+          "small": "/assets/games/alchemy-shift/key-art-v1.card.480.webp",
+          "smallWidth": 480,
+          "thumb": "/assets/games/alchemy-shift/key-art-v1.thumb.320.webp",
+          "width": 800,
+          "height": 500,
+          "kind": "concept",
+          "label": "concept",
+          "alt": {
+            "en": "Concept art: blue and orange liquids pour into a round flask that glows green in an alchemist's copper workshop.",
+            "zh": "概念图：蓝色和橙色的液体倒入圆底烧瓶，在炼金师的铜制工坊里化作发光的绿色药剂。"
+          }
+        },
+        "vignette": "alchemy-shift"
+      },
+      "seo": { "image": "/assets/games/alchemy-shift/key-art-v1.og.jpg" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },
@@ -298,7 +391,25 @@
         { "en": "Roguelite progression", "zh": "Roguelite 成长" }
       ],
       "links": {},
-      "media": { "vignette": "rune-defense" },
+      "media": {
+        "cover": {
+          "id": "key-art",
+          "src": "/assets/games/rune-defense/key-art-v1.card.800.webp",
+          "small": "/assets/games/rune-defense/key-art-v1.card.480.webp",
+          "smallWidth": 480,
+          "thumb": "/assets/games/rune-defense/key-art-v1.thumb.320.webp",
+          "width": 800,
+          "height": 500,
+          "kind": "concept",
+          "label": "concept",
+          "alt": {
+            "en": "Concept art: glowing runes ring the courtyard before the castle gate as shadowy monsters close in.",
+            "zh": "概念图：城门前的庭院里，发光的符文连成防线，阴影般的怪物正步步逼近。"
+          }
+        },
+        "vignette": "rune-defense"
+      },
+      "seo": { "image": "/assets/games/rune-defense/key-art-v1.og.jpg" },
       "embed": { "enabled": false },
       "scores": { "enabled": false },
       "leaderboard": { "enabled": false, "daily": false },

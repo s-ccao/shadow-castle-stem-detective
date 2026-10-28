@@ -977,6 +977,33 @@ html[data-motion="reduce"] :is(.sc-cursor, .sc-sparks, .tilt-glare) {
   display: none;
 }
 
+/* ---------- Concept-art label: generated art always says what it is ---------- */
+
+.art-tag {
+  position: absolute;
+  inset-block-end: var(--space-xs);
+  inset-inline-start: var(--space-xs);
+  z-index: 2;
+  padding: 0.3em 0.65em 0.26em;
+  border: var(--rule-hair) solid var(--color-glass-edge);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-strong);
+  color: var(--color-ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+
+:lang(zh) .art-tag {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+}
+
 /* ---------- Mechanic vignettes (js/vignettes/): canvases that fade in once drawn ---------- */
 
 .vignette {

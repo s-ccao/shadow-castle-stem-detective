@@ -96,6 +96,9 @@ gradient keeps that direction.
   threads for links that hold and the case accent for the contradiction. It
   says "Demo" in a stamp and never presents itself as a game build.
 - **Archive filter:** pill toggle buttons with `aria-pressed` and counts.
+- **Concept-art label (`.art-tag`):** a small glass pill in mono capitals in the
+  corner of any generated art ("Concept art" / 概念图). It steps aside while a
+  card plays its mechanic preview and never appears on screenshots or paintings.
 
 ## Languages
 

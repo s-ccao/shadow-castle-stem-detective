@@ -46,6 +46,9 @@ STATUS_NOTE = {
     "coming-soon": "Not playable yet. When the game is ready, this page will open it.",
 }
 
+# A case card's art is at most about 25rem wide; on a phone it spans the column.
+CARD_SIZES = "(min-width: 40rem) 25rem, 92vw"
+
 # Lit windows on the hub's castle, one per catalogue entry in catalogue order:
 # (x, y, width, height, shape) in the scene's 1600 x 900 viewBox. The flagship
 # takes the keep's great window; a new game needs a new slot drawn here.
@@ -307,10 +310,20 @@ class Site:
         key = f"game.{slug}"
         cover = (game.get("media") or {}).get("cover")
         if cover:
+            src = localized(cover["src"], "en")
+            srcset = ""
+            if cover.get("small"):
+                srcset = (
+                    f' srcset="{esc(localized(cover["small"], "en"))} {cover["smallWidth"]}w, {esc(src)} {cover["width"]}w"'
+                    f' sizes="{CARD_SIZES}"'
+                )
             art = (
-                f'<img class="case-card__image" src="{esc(cover["src"])}" width="{cover["width"]}" '
+                f'<img class="case-card__image" src="{esc(src)}"{srcset} width="{cover["width"]}" '
                 f'height="{cover["height"]}" alt="" loading="lazy" decoding="async" />'
             )
+            # Generated art is never shown without saying so.
+            if cover.get("kind") == "concept":
+                art += '<span class="art-tag" data-i18n="art.concept">Concept art</span>'
         else:
             art = f'<span class="case-card__glow"></span>{emblem(game["emblem"], "emblem case-card__emblem")}'
         play = ""

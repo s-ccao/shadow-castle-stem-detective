@@ -305,7 +305,7 @@ the parts that repeat, and its output is committed with the source.
 | `src/games.json` | The case-file catalogue: each game's status, copy in English and Chinese, accent, emblem and art. Its `internal` planning notes are stripped from the published `data/games.json`. |
 | `src/partials/`, `src/templates/`, `src/stories/` | Shared head, boot script, navigation, footer, emblem sprite, the hub's castle scene, the case-page template and Shadow Castle's long page. |
 | `src/i18n/zh.json` | Chinese strings for the interface. Game copy comes from the catalogue. |
-| `src/art/` | The key-art brief, prompts and asset manifest. |
+| `src/art/` | The key-art brief, prompts, asset manifest and provenance record. |
 | `index.html`, `community.html`, `404.html` | Hand-written pages with generated regions between `<!-- build:name -->` markers. Story pages may use regions too. |
 | `games/*.html`, `data/games.json`, `i18n/zh.json`, `sitemap.xml`, `robots.txt` | Generated. Edit their sources, never these. |
 | `data/games.schema.json` | JSON Schema for the catalogue, including the reserved platform fields. |
@@ -336,6 +336,13 @@ real feed only runs on Vercel.
 features exist: `check_site.py` fails otherwise. A game that is not playable
 yet can name a mechanic loop in `media.vignette`; the case page, its card and
 the library stage then play it.
+
+**Concept art.** A cover with `"kind": "concept"` must also carry
+`"label": "concept"`; the builder then prints a "Concept art" tag on every card
+that shows it. Give covers a `small` card size and a `thumb` for the library
+list, record the image's origin in `src/art/manifest.json` and
+`src/art/PROVENANCE.md`, and use generated art only at sizes its native
+resolution supports.
 
 **Screenshots.** A still's `src` (and `small`, the 640-wide copy) may be one
 path or an `{"en", "zh"}` pair of captures. The builder writes the English

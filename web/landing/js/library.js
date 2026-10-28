@@ -110,7 +110,7 @@ function build() {
     row.style.setProperty("--k", String(index));
     const cover = game.media?.cover;
     const thumb = cover
-      ? `<img src="${escape(cover.src)}" alt="" width="${cover.width}" height="${cover.height}" loading="lazy" decoding="async" />`
+      ? `<img src="${escape(pick(cover.thumb || cover.src))}" alt="" width="${cover.width}" height="${cover.height}" loading="lazy" decoding="async" />`
       : `<svg class="emblem" viewBox="0 0 64 64" focusable="false"><use href="#emblem-${escape(game.emblem)}"></use></svg>`;
     row.innerHTML = `
       <span class="library__thumb" aria-hidden="true">${thumb}</span>
@@ -183,8 +183,9 @@ function layerFor(game, index) {
   layer = document.createElement("div");
   layer.dataset.layer = String(index);
   layer.style.setProperty("--case-accent", `var(${game.accent})`);
+  // A case with a mechanic vignette shows it on the stage; its cover appears on cards and in the list.
   const stills = [game.media?.cover, ...(game.media?.stills || [])].filter(Boolean);
-  if (stills.length) {
+  if (stills.length && !game.media?.vignette) {
     layer.className = "library__layer library__layer--stills";
     layer.innerHTML = stills.map((still) => `<img alt="" data-src="${escape(pick(still.src))}" decoding="async" />`).join("");
   } else {
