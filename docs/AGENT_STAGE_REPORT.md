@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-74 (the six upcoming cases get their concept key art)
 
 - **Date:** 2026-10-27
-- **Status:** commit `aba09d0` and the docs commits on branch `agents/site-game-hall`, not pushed. The user reviewed the preview and approved it ("可以上线"); it is **in production** since 2026-10-27 (see Production).
+- **Status:** commit `aba09d0` and the docs commits on branch `agents/site-game-hall`. The user reviewed the preview and approved it ("可以上线"); it is **in production** since 2026-10-27 (see Production). The branch is now in `main` (see GitHub).
 - **Input:** the user generated six images with ChatGPT and delivered them in `~/Downloads/shadow-castle-key-art/`. Its README and manifest state that Evidence Rush is a native 1672 × 940 generation, while the other five are 836 × 313 panels from a 1672 × 941 six-panel sheet, enlarged to 2048 × 1152 and not native high resolution.
 
 ### What changed (`web/landing`, `web/README.md`, `tools/site_build.py`, `tools/check_site.py`; no Godot file)
@@ -39,10 +39,18 @@
 - **Verified live:** 35 files are byte-identical to the branch: the hub, the archive, two case pages, the catalogue, the dictionary, three stylesheets and scripts, and every key-art derivative and cover size. `og:image` on `/games/prism-lab` is its key art. A missing page answers 404, and `/api/community` answers 200. In headless Chrome every card image loads, at 1× on `/games` and at 2× on the Chinese hub; the tags read "Concept art" / 概念图, with no console error.
 - **Rollback target:** the stage 73 deployment, `npx vercel rollback shadow-castle-detective-site-8pbu2ake0-cyc4.vercel.app`.
 
+### GitHub
+
+- **Pushed:** the branch is at `origin/agents/site-game-hall`.
+- **No pull request:** this session could not open one. The editor's PR tool did not see the worktree, `gh` is not installed, and the agent did not read the owner's GitHub credentials.
+- **Merged directly:** at the owner's request ("你可以 do it", then "merge"), `main` was fast-forwarded to the branch in one atomic push. Every commit keeps its hash, and there is no merge commit. The owner's local `main` was fast-forwarded too.
+- **No deployment triggered:** the website's Vercel project is not connected to Git, and `web-export.yml` deploys the game only for `v*` tags.
+- **CI on the branch:** the Website workflow passed. The GDScript workflow fails at "Check for load-time errors gdparse misses", as it has on `main` since before this branch.
+
 ### Risks / follow-up
 
 - Five images are enlargements, so the cards look slightly soft on high-density screens. Regenerating each prompt on its own (16:9, at least 1920 wide) would let the case heroes and the library stage use the art, as `key-art-v2.*`.
-- Production now serves the unpushed branch; merge `agents/site-game-hall` before deploying the website from `main`.
+- Resolved: `main` now carries the website, so `web/landing` can be deployed from `main` again.
 
 ## Stage: UX-20261021-73 (phase 3: mechanic loops, HD captures in both languages, a demo case, platform groundwork)
 
