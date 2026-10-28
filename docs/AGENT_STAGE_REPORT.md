@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-74 (the six upcoming cases get their concept key art)
 
 - **Date:** 2026-10-27
-- **Status:** commit `aba09d0` and this docs commit on branch `agents/site-game-hall`, not pushed. A Vercel **preview** is deployed. Production stays on stage 73 until the user approves this preview, as they asked to see it first.
+- **Status:** commit `aba09d0` and the docs commits on branch `agents/site-game-hall`, not pushed. The user reviewed the preview and approved it ("可以上线"); it is **in production** since 2026-10-27 (see Production).
 - **Input:** the user generated six images with ChatGPT and delivered them in `~/Downloads/shadow-castle-key-art/`. Its README and manifest state that Evidence Rush is a native 1672 × 940 generation, while the other five are 836 × 313 panels from a 1672 × 941 six-panel sheet, enlarged to 2048 × 1152 and not native high resolution.
 
 ### What changed (`web/landing`, `web/README.md`, `tools/site_build.py`, `tools/check_site.py`; no Godot file)
@@ -33,10 +33,16 @@
   - No overflow on a phone and no console errors.
 - **Preview:** `shadow-castle-detective-site-o4e9xzpeh-cyc4.vercel.app` (Vercel login required). `vercel curl` confirms a card image, a sharing image, a thumbnail and the catalogue.
 
+### Production
+
+- **Deployed:** `npx vercel deploy --prod` from `web/landing` at `d223a7f` → `shadow-castle-detective-site-lii4bp3eu-cyc4.vercel.app`, now behind `shadowcastledetective.com`.
+- **Verified live:** 35 files are byte-identical to the branch: the hub, the archive, two case pages, the catalogue, the dictionary, three stylesheets and scripts, and every key-art derivative and cover size. `og:image` on `/games/prism-lab` is its key art. A missing page answers 404, and `/api/community` answers 200. In headless Chrome every card image loads, at 1× on `/games` and at 2× on the Chinese hub; the tags read "Concept art" / 概念图, with no console error.
+- **Rollback target:** the stage 73 deployment, `npx vercel rollback shadow-castle-detective-site-8pbu2ake0-cyc4.vercel.app`.
+
 ### Risks / follow-up
 
 - Five images are enlargements, so the cards look slightly soft on high-density screens. Regenerating each prompt on its own (16:9, at least 1920 wide) would let the case heroes and the library stage use the art, as `key-art-v2.*`.
-- After the user approves: `npx vercel --prod`. Its rollback target is then the stage 73 deployment `shadow-castle-detective-site-8pbu2ake0-cyc4.vercel.app`.
+- Production now serves the unpushed branch; merge `agents/site-game-hall` before deploying the website from `main`.
 
 ## Stage: UX-20261021-73 (phase 3: mechanic loops, HD captures in both languages, a demo case, platform groundwork)
 
