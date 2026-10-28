@@ -2,6 +2,42 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-74 (the six upcoming cases get their concept key art)
+
+- **Date:** 2026-10-27
+- **Status:** commit `aba09d0` and this docs commit on branch `agents/site-game-hall`, not pushed. A Vercel **preview** is deployed. Production stays on stage 73 until the user approves this preview, as they asked to see it first.
+- **Input:** the user generated six images with ChatGPT and delivered them in `~/Downloads/shadow-castle-key-art/`. Its README and manifest state that Evidence Rush is a native 1672 × 940 generation, while the other five are 836 × 313 panels from a 1672 × 941 six-panel sheet, enlarged to 2048 × 1152 and not native high resolution.
+
+### What changed (`web/landing`, `web/README.md`, `tools/site_build.py`, `tools/check_site.py`; no Godot file)
+
+- **Derivatives** in `assets/games/<slug>/key-art-v1.*`, made in Chrome; Evidence Rush comes from its native file:
+  - 800- and 480-wide WebP cards (16:10, cropped around the subject);
+  - a 320-wide WebP thumbnail;
+  - a 1200 × 630 JPEG sharing image.
+
+  Shadow Castle's cover also gains a 640 card size and a 320 thumbnail, so cards and the library list no longer load the 431 KB painting.
+- **Catalogue:** the six games gain `media.cover` (`kind` and `label` "concept", alt text in both languages) and `seo.image`. The schema gains `thumb`, and `check_site.py` checks that thumbnails and sharing images exist.
+- **Cards** show the art with responsive sources and a "Concept art" / 概念图 tag. Hovering (or Preview) still plays the mechanic vignette, and the tag steps aside while it does. The library list uses the thumbnails.
+- **Not used at large sizes:** five images lack the resolution, so the library stage and the case heroes keep their vignettes.
+- **Provenance:** `src/art/manifest.json` records the tool, date, prompt, native resolution, SHA-256 of the delivered file, edits and review for each image; `src/art/PROVENANCE.md` summarises them. `web/README.md` and `DESIGN.md` describe the concept-art rule and label.
+
+### Verification
+
+- **`python3 tools/check_site.py`:** 11 pages, 269 translation keys, 0 errors, 0 warnings. `git diff --check` is clean.
+- **Browser matrix:** hub, archive, a case page, the Shadow Castle page and community at 320, 768 and 1440 px in English and Chinese: 30 runs, 0 findings.
+- **Behaviour:**
+  - Cards load the 480 image at 1× and the 800 image at 2×.
+  - The tags read "Concept art" / 概念图 and hide while a preview plays.
+  - The library list loads the seven thumbnails, and its stage still shows Shadow Castle's stills and the six vignettes.
+  - `og:image` points at the new JPEG.
+  - No overflow on a phone and no console errors.
+- **Preview:** `shadow-castle-detective-site-o4e9xzpeh-cyc4.vercel.app` (Vercel login required). `vercel curl` confirms a card image, a sharing image, a thumbnail and the catalogue.
+
+### Risks / follow-up
+
+- Five images are enlargements, so the cards look slightly soft on high-density screens. Regenerating each prompt on its own (16:9, at least 1920 wide) would let the case heroes and the library stage use the art, as `key-art-v2.*`.
+- After the user approves: `npx vercel --prod`. Its rollback target is then the stage 73 deployment `shadow-castle-detective-site-8pbu2ake0-cyc4.vercel.app`.
+
 ## Stage: UX-20261021-73 (phase 3: mechanic loops, HD captures in both languages, a demo case, platform groundwork)
 
 - **Date:** 2026-10-27
