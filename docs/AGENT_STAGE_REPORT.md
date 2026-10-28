@@ -2,6 +2,51 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-76 (every page gets a living night: moon dust, the lantern's evidence, the prism trail, a story layer)
+
+- **Date:** 2026-10-28
+- **Status:** commit `305c4c9` (with the castle-window fix `d967237` before it) and this docs commit on branch `agents/site-game-hall`. **On preview, awaiting the owner's approval**; production still serves stage 75.
+- **Reports from the owner:**
+  - "接触到代表游戏的门不是很灵敏……也没有选定" (the castle windows that stand for the games are insensitive and don't select).
+  - "鼠标滑动的效果不好……背景只是黑色的……需要的是让人惊艳的符合我游戏的效果" (the pointer effect is weak, the background is plain black; wants something stunning that fits the game).
+  - Also study https://pixelobservatorygame.com/ (a friend's single-game site) and adapt its interactions to Shadow Castle's own style: the mechanics only, never its code, art or copy.
+- **Choice:** four switchable prototypes on the throwaway branch `prototype/site-fx` (`9ef7782`, local only, not pushed): A, a lantern revealing hidden evidence; B, a prism trail; C, rune circuitry; D, moon-dust formations after Pixel Observatory's chapter-morphing star dust. Plus a story layer. The owner chose "D 背景 + A 的提灯线形 + B 的拖动特效" and all four story pieces.
+
+### Castle windows (`d967237`)
+
+- The hero headline's box took the pointer (`.hub-hero__copy > * { pointer-events: auto }`) and covered one to three windows between 1024 and 1600 px; the right-edge case dock covered Alchemy Shift's window near 960 px.
+- Now only the hero's links and buttons take the pointer, and the hub keeps the dock hidden, and out of the tab order, until the hero has scrolled away (`html.past-hero`).
+
+### What changed (`web/landing`; no Godot file)
+
+- **Sky:** `html` paints moon haze, an arcane glow, SVG grain and the night gradient. `body`, the footer, case heroes, `styles.css` and `community.css` no longer paint over it.
+- **New layers (`css/night.css`, `js/night/`):**
+  - `sky.js`: fog banks and two breathing moon shafts.
+  - `dust.js` and `shapes.js`: about 14,000 WebGL motes (6,000 on phones). Per chapter they form the moon, the castle, a magnifier, the evidence web, a flask, gears, the seven case doors in their accents, and per game a prism, an hourglass, sound waves, a rune circle, a fingerprint or a keyhole. Each formation sits in the largest empty square between the content, found on a 32-column grid and re-checked every second. The pointer parts the dust, a click sends a shockwave, fast scrolling streaks it. Software WebGL gets no dust.
+  - `lantern.js`: an evidence wall, painted in document-space cells and developed by the pointer's light. Holding still widens the pool. A click flashes (at most three a second) and, on bare wall, drops a numbered marker.
+  - `trail.js`: the prism trail, in the new `--color-spectrum-1…7` tokens.
+  - `light.js`: one screened front canvas for all of it.
+- **Story layer:** `js/story.js` (keyhole on the first page of a visit, cipher headings that keep an `aria-label` while decoding, Roman case numerals) and `js/loupe.js` (a magnifier that magnifies captures at whole pixel multiples, scans, then locks the evidence). New strings: `evidence.marker`, `loupe.scan`, `loupe.locked`.
+- **Pointer:** the ember sparks are removed. The overlay host moves to `js/overlay.js`, so the light canvas follows the cursor into the library dialog.
+- `DESIGN.md` gains "Night sky and pointer light"; the palette and motion rules are updated.
+
+### Verification
+
+- **Session harness** (headless Chrome on the Apple GPU):
+  - Desktop: the keyhole shows and the h1 decodes, then settles. Moving the pointer over the fieldwork chapter reveals evidence beside the web formation; a click leaves marker "01". Frames: 16.7 ms average and 16.8 ms worst while moving or idle. The first cut had a 150 ms hitch when the lantern first painted its cells; it now paints at most two cells a frame and the rest in idle time.
+  - Reduced motion: no keyhole, headings intact, the light layer hidden, the dust held in shape.
+  - iPhone 13: the castle formation over "Walk the castle", no lantern or trail module loaded, no overflow.
+  - Chinese: cipher through CJK glyphs, 「扫描」/「证据锁定」, 「证物」.
+- **Earlier loops, all green:** the cursor in the library at 1440 and 1024 px (the light layer now stands in for the sparks), the press jump, every castle window and the 12-size sweep, library behaviour. The matrix of 6 pages × 320/768/1440 px × English/Chinese (36 runs) plus reduced motion (4 runs) has 0 findings.
+- **Checks:** `python3 tools/check_site.py` reports 11 pages, 272 keys, 0 errors. Godot headless editor parse exits 0, `git diff --check` is clean, and `node --check` passes on every module.
+- **Preview:** `shadow-castle-detective-site-q7hwfgqxx-cyc4.vercel.app` (Vercel login required). The same files are served locally by `tools/serve_site.py`.
+
+### Risks
+
+- GPU and battery: the dust and fog animate continuously while visible (paused in hidden tabs and behind full-bleed heroes); low-core machines and phones get 6,000 motes.
+- Evidence cells cost about 0.6 MB each in canvas memory (24 to about 50 cached, by viewport size).
+- Cipher headings change glyph widths while decoding; the heading's height is locked meanwhile.
+
 ## Stage: UX-20261021-75 (the magnifier cursor stays visible over the case-file library and stays put when pressed)
 
 - **Date:** 2026-10-28
