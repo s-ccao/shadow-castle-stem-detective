@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-76 (every page gets a living night: moon dust, the lantern's evidence, the prism trail, a story layer)
 
 - **Date:** 2026-10-28
-- **Status:** commit `305c4c9` (with the castle-window fix `d967237` before it) and this docs commit on branch `agents/site-game-hall`. **On preview, awaiting the owner's approval**; production still serves stage 75.
+- **Status:** commit `305c4c9` (with the castle-window fix `d967237` before it) and the docs commits on branch `agents/site-game-hall`. The owner reviewed it locally and approved it ("可以上线，并同步 main"); it is **in production** since 2026-10-28, and `main` is fast-forwarded to the branch (see Production).
 - **Reports from the owner:**
   - "接触到代表游戏的门不是很灵敏……也没有选定" (the castle windows that stand for the games are insensitive and don't select).
   - "鼠标滑动的效果不好……背景只是黑色的……需要的是让人惊艳的符合我游戏的效果" (the pointer effect is weak, the background is plain black; wants something stunning that fits the game).
@@ -46,6 +46,16 @@
 - GPU and battery: the dust and fog animate continuously while visible (paused in hidden tabs and behind full-bleed heroes); low-core machines and phones get 6,000 motes.
 - Evidence cells cost about 0.6 MB each in canvas memory (24 to about 50 cached, by viewport size).
 - Cipher headings change glyph widths while decoding; the heading's height is locked meanwhile.
+
+### Production
+
+- **Deployed:** `npx vercel deploy --prod` from `web/landing` at `9500127` → `shadow-castle-detective-site-nrtf24eqc-cyc4.vercel.app`, now behind `shadowcastledetective.com`.
+- **Verified live:**
+  - 25 key files (every new module, `pointer.js`, `main.js`, the stylesheets, the dictionary and four pages) are byte-identical to the branch.
+  - Against `https://shadowcastledetective.com`, the stage 76 check passes in full: keyhole, cipher, lantern, marker, 16.7 ms frames, reduced motion, phone, no errors.
+  - Also green against the live site: the cursor in the library, every castle window, and the press loop.
+- **Rollback target:** `npx vercel rollback shadow-castle-detective-site-nesljlxi5-cyc4.vercel.app` (stage 75).
+- **GitHub:** the branch and `main` are pushed together (fast-forward), and the owner's local `main` follows. The prototype branch `prototype/site-fx` stays local.
 
 ## Stage: UX-20261021-75 (the magnifier cursor stays visible over the case-file library and stays put when pressed)
 
