@@ -43,7 +43,8 @@ html.library-open {
   transition:
     translate var(--dur-long) var(--ease-out),
     border-color var(--dur-short) var(--ease-out),
-    opacity var(--dur-short) var(--ease-out);
+    opacity var(--dur-short) var(--ease-out),
+    visibility 0s linear;
 }
 
 .case-dock__count {
@@ -98,11 +99,16 @@ html.library-open {
   outline-offset: 3px;
 }
 
+/* On the hub the castle's windows and the hero's own button open the case files,
+   and the dock would cover a window: it waits until the hero scrolls away. */
 html.library-open .case-dock,
-html.footer-in-view .case-dock {
+html.footer-in-view .case-dock,
+html:not(.past-hero) .page-hub .case-dock {
+  visibility: hidden; /* out of the tab order too, once it has slid away */
   opacity: 0;
   pointer-events: none;
   translate: 0 150%;
+  transition-delay: 0s, 0s, 0s, var(--dur-long);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -139,12 +145,15 @@ html.footer-in-view .case-dock {
   }
 
   html.footer-in-view .case-dock {
+    visibility: visible;
     opacity: 1;
     pointer-events: auto;
     translate: 0 -50%;
+    transition-delay: 0s;
   }
 
-  html.library-open .case-dock {
+  html.library-open .case-dock,
+  html:not(.past-hero) .page-hub .case-dock {
     translate: 100% -50%;
   }
 

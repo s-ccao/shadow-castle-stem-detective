@@ -69,6 +69,13 @@ function initLibraryLauncher() {
   });
   const deep = /^#cases(?:\/([a-z0-9-]+))?$/.exec(location.hash);
   if (deep) load().then((m) => m.openLibrary(deep[1] || caseOfPage()));
+  const hero = document.querySelector(".hub-hero");
+  if (hero && "IntersectionObserver" in window) {
+    new IntersectionObserver(
+      ([entry]) => document.documentElement.classList.toggle("past-hero", entry.intersectionRatio < 0.5),
+      { threshold: 0.5 },
+    ).observe(hero);
+  }
   const footer = document.querySelector(".site-footer");
   if (footer && "IntersectionObserver" in window) {
     new IntersectionObserver(([entry]) => {

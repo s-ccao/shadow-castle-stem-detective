@@ -40,7 +40,6 @@
   pointer-events: none;
 }
 
-/* The copy sits above the scene but lets the pointer through to the windows. */
 @media (orientation: portrait) and (max-width: 47.99rem) {
   .hub-hero::after {
     background:
@@ -49,6 +48,8 @@
   }
 }
 
+/* The copy sits above the scene but lets the pointer through to the windows:
+   its text boxes reach over the castle, so only the controls take the pointer. */
 .hub-hero__copy {
   position: relative;
   z-index: 1;
@@ -61,8 +62,11 @@
 }
 
 .hub-hero__copy > * {
-  pointer-events: auto;
   animation: hub-rise 1100ms var(--ease-out) both;
+}
+
+.hub-hero__copy :is(a, button) {
+  pointer-events: auto;
 }
 
 .hub-hero__copy > :nth-child(2) {
