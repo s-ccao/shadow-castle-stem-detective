@@ -21,6 +21,10 @@ const RESUME_DELAY_FRAMES := 2
 
 ## Tests replace this so the quit path can be verified without closing the engine.
 var quit_handler: Callable
+## A browser tab cannot close itself: there, quitting returns the visitor to the
+## website's case files (see `onExit` in web/shell/loading_shell.html), and the
+## confirmation says so. Tests set this to check that copy on a desktop build.
+var quit_returns_to_site := OS.has_feature("web")
 
 var _open := false
 var _confirm_kind := ""
@@ -59,7 +63,7 @@ func _ready() -> void:
 	layer = MENU_LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
-	quit_handler = get_tree().quit
+	quit_handler = func() -> void: GameExit.quit(get_tree())
 	_bind_controller_start()
 	_build()
 	_wire_focus()
@@ -278,8 +282,9 @@ func _on_scene_changed() -> void:
 
 
 func _quit_supported() -> bool:
-	# A browser page cannot close its own tab, and iOS apps must not quit themselves.
-	return not (OS.has_feature("web") or OS.has_feature("ios"))
+	# iOS apps must not quit themselves. In a browser, quitting takes the visitor
+	# back to the case files instead of closing the tab.
+	return not OS.has_feature("ios")
 
 
 # ------------------------------------------------------------------ copy
@@ -328,6 +333,8 @@ func _refresh_confirm_copy() -> void:
 	var quitting := _confirm_kind == "quit"
 	var room := _room_label(GameState.resume_room_id)
 	var body_key := "pause.quit_body" if quitting else "pause.menu_body"
+	if quitting and quit_returns_to_site:
+		body_key = "pause.quit_body_web"
 	if room.is_empty():
 		body_key += "_plain"
 	_confirm_title.text = CaseLocale.text("pause.quit_title" if quitting else "pause.menu_title")

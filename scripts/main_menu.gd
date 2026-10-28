@@ -450,7 +450,7 @@ func start_game() -> void:
 
 
 func quit_game() -> void:
-	get_tree().quit()
+	GameExit.quit(get_tree())
 
 
 func _refresh_copy(_language: String = "") -> void:

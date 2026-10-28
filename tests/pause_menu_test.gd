@@ -192,6 +192,20 @@ func _confirm_page_audit() -> void:
 	_expect((_find("ConfirmTitle") as Label).text == str(locale.call("text", "pause.quit_title")), "Quit asks for confirmation")
 	await _capture("04-quit-confirm")
 	await _audit_fit("Quit confirmation")
+	# The browser build returns to the website's case files instead of closing.
+	menu.set("quit_returns_to_site", true)
+	menu.call("_refresh_confirm_copy")
+	var resume_room := str(locale.call("room_name", str(state.get("resume_room_id"))))
+	var browser_body := (_find("ConfirmBody") as Label).text
+	_expect(
+		browser_body == str(locale.call("text", "pause.quit_body_web", {"room": resume_room}))
+		or browser_body == str(locale.call("text", "pause.quit_body_web_plain")),
+		"In a browser, the quit confirmation says it returns to the case files"
+	)
+	await _capture("04b-quit-confirm-browser")
+	await _audit_fit("Browser quit confirmation")
+	menu.set("quit_returns_to_site", false)
+	menu.call("_refresh_confirm_copy")
 	(_find("CancelButton") as Button).pressed.emit()
 	_expect(_is_open() and root.gui_get_focus_owner() == _find("QuitButton"), "Cancel returns to the main settings page")
 	_expect(quit_calls == 0, "Opening quit confirmation does not quit")

@@ -55,6 +55,21 @@ const TEXT: Dictionary = {
 		"en": "Your investigation is saved automatically. Choose Continue next time to resume.",
 		"zh": "调查进度已自动保存。下次选择「继续案件」即可接着调查。",
 	},
+	# The browser build returns to the website's case files rather than closing.
+	"pause.quit_body_web": {
+		"en": (
+			"Your case is saved automatically. You return to the case files; "
+			+ "next time, Continue resumes at the {room} entrance."
+		),
+		"zh": "调查进度已自动保存。退出后回到案件档案；下次选择「继续案件」，会从{room}入口继续。",
+	},
+	"pause.quit_body_web_plain": {
+		"en": (
+			"Your investigation is saved automatically. You return to the case files; "
+			+ "choose Continue next time to resume."
+		),
+		"zh": "调查进度已自动保存。退出后回到案件档案；下次选择「继续案件」即可接着调查。",
+	},
 	"pause.quit_confirm": {"en": "QUIT", "zh": "确认退出"},
 	"pause.cancel": {"en": "CANCEL", "zh": "取消"},
 	"menu.language_title": {"en": "CASE LANGUAGE", "zh": "案件语言"},

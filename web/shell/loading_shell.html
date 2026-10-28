@@ -208,6 +208,17 @@
 	#boot.failed .plate, #boot.failed .note { display: none; }
 	#boot.failed #notice { display: block; }
 
+	/* 退出之后：同一块档案面板回到原位，写着“案件已合上”，然后回到网站的案件档案。
+	   底部这行链接只在跳转慢、或者离线回不去的时候才派得上用场。 */
+	#boot.leaving .note { font-size: clamp(0.6rem, 1.8vw, 0.72rem); color: var(--muted); }
+	.note a {
+		color: var(--accent);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		margin: 0 0.7em;
+	}
+	.note a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 	@media (prefers-reduced-motion: reduce) {
 		.storm, .plate { animation: none; }
 		#boot { transition: none; }
@@ -387,6 +398,66 @@ window.shadowCastleUpdate = (function () {
 
 	const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
 
+	// 浏览器标签页不能自己关掉，所以游戏里的“退出”在这里接住：回到网站的案件
+	// 档案（游戏库），并选中这一案。引擎要等存档写进浏览器存储之后才会调用
+	// onExit，所以跳转不会丢进度。从本机预览服务器进来的，就回本机。
+	const CASE_FILES = (function () {
+		let origin = 'https://shadowcastledetective.com';
+		try {
+			const from = new URL(document.referrer);
+			if (from.hostname === 'localhost' || from.hostname === '127.0.0.1') { origin = from.origin; }
+		} catch (e) { /* 没有来源：回正式站 */ }
+		return origin + '/#cases/shadow-castle';
+	}());
+	let closing = false;
+
+	function link(href, text) {
+		const a = document.createElement('a');
+		a.href = href;
+		a.textContent = text;
+		return a;
+	}
+
+	function closeCase(code) {
+		if (closing) { return; }
+		closing = true;
+		stop();
+		boot.classList.remove('done', 'failed');
+		document.body.appendChild(boot);
+		if (code !== 0) {
+			fail((zh ? '游戏意外停止（代码 ' + code + '）。' : 'The game stopped unexpectedly (code ' + code + ').'));
+			return;
+		}
+		boot.classList.add('leaving');
+		kickerEl.textContent = zh ? '案件已合上  /  阿什福德庄园' : 'CASE CLOSED  /  ASHFORD ESTATE';
+		bytesEl.textContent = new URL(CASE_FILES).host.toUpperCase();
+		pctEl.textContent = '↩';
+		for (let i = 0; i < SEGMENTS; i++) { segs[i].className = 'on'; }
+		const toCaseFiles = link(CASE_FILES, zh ? '打开案件档案' : 'Open the case files');
+		if (navigator.onLine === false) {
+			// 离线也能玩，但网站要联网：留在这里，给两条路。
+			phaseEl.textContent = zh ? '离线中 · 联网后才能回到案件档案' : 'OFFLINE · CONNECT TO RETURN';
+			noteEl.replaceChildren(link(window.location.pathname, zh ? '重新打开案件' : 'Reopen the case'), toCaseFiles);
+			return;
+		}
+		phaseEl.textContent = zh ? '正在返回案件档案' : 'RETURNING TO THE CASE FILES';
+		noteEl.replaceChildren(toCaseFiles);
+		// replace 而不是 assign：在网站上按“后退”，不该回到这张已经合上的页面。
+		setTimeout(function () { window.location.replace(CASE_FILES); }, 450);
+	}
+
+	// 游戏在退出前会先打招呼（GameExit.quit）。正常情况下引擎写完存档、退出，
+	// 然后调用 onExit；但 Godot 网页版在最后清理时偶尔会抛错，onExit 就永远等
+	// 不到 —— 那时存档早已写完，所以出错同样算“已退出”。十秒都没动静，也不能
+	// 把人晾在一张冻住的画面上。
+	window.shadowCastleExit = {
+		requested: function () {
+			if (closing) { return; }
+			window.addEventListener('error', function () { closeCase(0); }, { once: true });
+			setTimeout(function () { closeCase(0); }, 10000);
+		},
+	};
+
 	// Service worker 默认是在 startGame 结束之后才注册的，也就是说第一次那
 	// 130MB 是在它存在之前就下完的，一个字节都没进缓存 —— 玩家要来第三次才
 	// 享受得到。这里先注册再接管，第一次下载就顺手存下来，第二次进来就是本地
@@ -468,13 +539,19 @@ window.shadowCastleUpdate = (function () {
 					bytesEl.textContent = (zh ? '正在取回 ' : 'FETCHING ') + mb(totalBytes) + ' MB';
 				}
 			},
+			'onExit': closeCase,
 		}).then(function () {
 			settled = true;
 			target = 1;
 			// 让最后那一格补满被看见，再淡出 —— 底下就是同一幅画的真菜单。
 			setTimeout(function () {
+				if (closing) { return; }
 				boot.classList.add('done');
-				setTimeout(function () { stop(); boot.remove(); }, 780);
+				setTimeout(function () {
+					if (closing) { return; }
+					stop();
+					boot.remove();
+				}, 780);
 			}, 300);
 		}, fail);
 	}

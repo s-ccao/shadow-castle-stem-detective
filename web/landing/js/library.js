@@ -254,9 +254,13 @@ function renderInfo(game, animate = true) {
   ui.stamp.dataset.status = game.status;
   ui.stamp.textContent = t(`status.${game.status}`, STATUS[game.status]);
   ui.name.setAttribute("aria-label", name);
-  ui.name.innerHTML = `<span aria-hidden="true">${[...name]
-    .map((ch, i) => (ch === " " ? " " : `<span class="ch" style="--i:${i}">${escape(ch)}</span>`))
-    .join("")}</span>`;
+  // Each letter is an inline-block so it can ink in on its own, which would let a line
+  // break inside a word ("S / TEM"); Latin words are kept whole. Chinese still breaks
+  // between characters.
+  let i = 0;
+  const letters = (text) => [...text].map((ch) => `<span class="ch" style="--i:${i++}">${escape(ch)}</span>`).join("");
+  const words = name.split(" ").map((word) => (/[\u3000-\u9fff\uff00-\uffef]/.test(word) ? letters(word) : `<span class="word">${letters(word)}</span>`));
+  ui.name.innerHTML = `<span aria-hidden="true">${words.join(" ")}</span>`;
   const other = lang() === "zh" ? game.name.en : game.name.zh;
   ui.alt.textContent = other;
   ui.alt.lang = lang() === "zh" ? "en" : "zh-CN";

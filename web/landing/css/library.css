@@ -397,6 +397,10 @@ html:not(.past-hero) .page-hub .case-dock {
 }
 
 /* Each letter inks in. */
+.library__name .word {
+  white-space: nowrap;
+}
+
 .library__name .ch {
   display: inline-block;
   opacity: 0;
