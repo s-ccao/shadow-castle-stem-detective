@@ -863,7 +863,7 @@ html.has-cursor :is(input, textarea, select, [contenteditable="true"], [data-nat
     scale var(--dur-short) var(--ease-out),
     border-color var(--dur-short) var(--ease-out),
     background-color var(--dur-short) var(--ease-out);
-  will-change: transform;
+  will-change: translate, scale;
 }
 
 /* The magnifier's handle. */

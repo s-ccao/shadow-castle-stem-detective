@@ -14,6 +14,40 @@ function cursorAllowed() {
   return finePointer.matches && motionOn() && !forcedColors.matches;
 }
 
+// ---------- Overlay host ----------
+// A modal <dialog> (the case-file library) is drawn in the browser's top layer,
+// above every z-index on the page, so the magnifier and sparks would vanish
+// under it while the native cursor stays hidden. While a modal is open, the
+// overlays live inside it; they return to <body> when it closes.
+const overlays = [];
+
+function topModal() {
+  const open = document.querySelectorAll("dialog[open]");
+  for (let i = open.length - 1; i >= 0; i -= 1) {
+    try {
+      if (open[i].matches(":modal")) return open[i];
+    } catch {
+      return open[i]; // no :modal support: an open dialog is the best guess
+    }
+  }
+  return null;
+}
+
+function rehomeOverlays() {
+  try {
+    const host = topModal() || document.body;
+    for (const el of overlays) if (el.parentElement !== host) host.append(el);
+  } catch (error) {
+    console.error(error);
+    root.classList.remove("has-cursor"); // never leave the visitor without a pointer
+  }
+}
+
+function adoptOverlay(el) {
+  overlays.push(el);
+  rehomeOverlays();
+}
+
 // ---------- Cursor ----------
 function createCursor() {
   const el = document.createElement("div");
@@ -22,7 +56,7 @@ function createCursor() {
   el.innerHTML =
     '<span class="sc-cursor__lens"></span><span class="sc-cursor__dot"></span>' +
     '<span class="sc-cursor__frame"><i></i><i></i><i></i><i></i></span>';
-  document.body.append(el);
+  adoptOverlay(el);
   const [lens, dot, frame] = el.children;
   const s = { x: -99, y: -99, lx: -99, ly: -99, fx: 0, fy: 0, fw: 0, fh: 0, fa: 0, target: null, frameable: false, seen: false };
   let stop = null;
@@ -81,7 +115,10 @@ function createCursor() {
       s.fw = damp(s.fw, goal.w, 20, dt);
       s.fh = damp(s.fh, goal.h, 20, dt);
       s.fa = damp(s.fa, box ? 1 : 0, 16, dt);
-      lens.style.transform = `translate3d(${s.lx.toFixed(1)}px, ${s.ly.toFixed(1)}px, 0)`;
+      // Position with `translate`, not `transform`: the press and hover `scale` in CSS
+      // applies after `translate` but before `transform`, so it would scale the offset
+      // too and throw the lens towards the page's corner.
+      lens.style.translate = `${s.lx.toFixed(1)}px ${s.ly.toFixed(1)}px`;
       lens.style.opacity = (1 - s.fa).toFixed(3);
       dot.style.transform = `translate3d(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px, 0)`;
       frame.style.transform = `translate3d(${s.fx.toFixed(1)}px, ${s.fy.toFixed(1)}px, 0)`;
@@ -159,7 +196,7 @@ function createSparks() {
   const canvas = document.createElement("canvas");
   canvas.className = "sc-sparks";
   canvas.setAttribute("aria-hidden", "true");
-  document.body.append(canvas);
+  adoptOverlay(canvas);
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const colors = ["--color-ember", "--color-ember-hot", "--color-accent", "--color-moon"].map((name) => tokenRgb(name).join(","));
@@ -401,4 +438,6 @@ export function initPointer() {
   createSparks();
   createMagnetsAndTilt();
   createCursor();
+  // showModal() and close() toggle the open attribute.
+  new MutationObserver(rehomeOverlays).observe(document.body, { subtree: true, attributeFilter: ["open"] });
 }

@@ -71,6 +71,15 @@ gradient keeps that direction.
 - Canvas vignettes (`js/vignettes/`) are pure functions of loop progress: with
   motion off they draw one telling frame instead of looping. The demo board's
   bump and shake are the only bouncy motions, and both stop under "reduce".
+- An element that script moves every frame and CSS also scales or rotates is
+  positioned with the `translate` property, never `transform`: the individual
+  `scale` and `rotate` properties apply after `translate` but before
+  `transform`, so they would scale the position too (the magnifier once jumped
+  towards the page corner on every press).
+- The case-file library is a modal `<dialog>`, drawn in the browser's top layer
+  above every z-index. Anything that must show above it, like the magnifier
+  and sparks, has to live inside the open dialog; `js/pointer.js` moves its
+  overlays in and out automatically.
 
 ## Components
 
