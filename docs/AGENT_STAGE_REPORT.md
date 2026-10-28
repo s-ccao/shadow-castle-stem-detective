@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-75 (the magnifier cursor stays visible over the case-file library and stays put when pressed)
 
 - **Date:** 2026-10-28
-- **Status:** commit `43f257c` and this docs commit on branch `agents/site-game-hall`, ahead of `main` (`ad5247d`). A Vercel **preview** is deployed. Production stays on stage 74 until the owner approves.
+- **Status:** commit `43f257c` and the docs commits on branch `agents/site-game-hall`. The owner tried the fix and approved it ("可以上线，并同步到 GitHub 的 main"); it is **in production** since 2026-10-28, and `main` is fast-forwarded to the branch (see Production).
 - **Reports from the owner:**
   - "打开案件档案的时候……会覆盖掉我的指针" (opening the case files covers the pointer).
   - "点击的背景的时候鼠标会瞬移往左边一点然后跳回来" (pressing on the background makes the cursor jump left and back).
@@ -40,9 +40,12 @@
 - **No in-repo regression test:** the repository has no browser test seam, and adding Playwright would be a large new dependency. The two rules are in `DESIGN.md` instead.
 - **Preview:** `shadow-castle-detective-site-dlw72l8ej-cyc4.vercel.app` (Vercel login required). The same files are served locally by `tools/serve_site.py`.
 
-### Next
+### Production
 
-- After the owner approves: `npx vercel --prod` from `web/landing`, then push the branch and fast-forward `main`, so `main` keeps matching production.
+- **Deployed:** `npx vercel deploy --prod` from `web/landing` at `0e10eef` → `shadow-castle-detective-site-nesljlxi5-cyc4.vercel.app`, now behind `shadowcastledetective.com`.
+- **Verified live:** `js/pointer.js`, `css/site.css`, the hub and `/games` are byte-identical to the branch. Both repro loops pass against `https://shadowcastledetective.com`: the magnifier and sparks are visible inside the library, the magnifier returns to the page after closing, and the lens stays 0 px from the pointer when pressed and in the hover state.
+- **Rollback target:** `npx vercel rollback shadow-castle-detective-site-lii4bp3eu-cyc4.vercel.app` (stage 74).
+- **GitHub:** the branch and `main` are pushed together (fast-forward), and the owner's local `main` follows.
 
 ## Stage: UX-20261021-74 (the six upcoming cases get their concept key art)
 
