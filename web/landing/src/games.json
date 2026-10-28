@@ -1,4 +1,5 @@
 {
+  "$schema": "../data/games.schema.json",
   "version": 1,
   "games": [
     {
@@ -9,6 +10,7 @@
       "accent": "--game-shadow-castle",
       "emblem": "shadow-castle",
       "story": "shadow-castle",
+      "languages": ["en", "zh-CN"],
       "name": { "en": "Shadow Castle: STEM Detective", "zh": "暗影城堡：STEM 侦探" },
       "short": { "en": "Shadow Castle", "zh": "暗影城堡" },
       "tagline": { "en": "The blackout was engineered.", "zh": "这场停电是人为的。" },

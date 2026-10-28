@@ -87,5 +87,6 @@ lazy("vignettes", ".case-hero__art[data-vignette]", () => import("./vignettes/st
 lazy("pointer", null, () => import("./pointer.js").then((m) => m.initPointer));
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
 near("demo", "[data-demo]", () => import("./demo/deduction.js").then((m) => m.initDemo));
+lazy("archive", "[data-archive-filter]", () => import("./archive.js").then((m) => m.initArchiveFilter));
 
 export { lazy, start };

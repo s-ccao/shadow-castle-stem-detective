@@ -9,6 +9,10 @@
    "accent": "--game-shadow-castle",
    "emblem": "shadow-castle",
    "story": "shadow-castle",
+   "languages": [
+    "en",
+    "zh-CN"
+   ],
    "name": {
     "en": "Shadow Castle: STEM Detective",
     "zh": "暗影城堡：STEM 侦探"

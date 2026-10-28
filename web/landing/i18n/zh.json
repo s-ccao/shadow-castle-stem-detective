@@ -1,6 +1,9 @@
 {
+"archive.all": "全部",
+"archive.filter": "按状态筛选案件档案",
 "archive.intro": "来自阿什福德城堡的七个案件：一个已经开放游玩，另外六个正在公开打造中。",
 "archive.mark": "阿什福德城堡 · 案件档案馆",
+"archive.shown": "显示 {n} 个案件档案",
 "archive.title": "案件档案",
 "brand.name": "暗影城堡",
 "brand.tagline": "科学推理游戏",

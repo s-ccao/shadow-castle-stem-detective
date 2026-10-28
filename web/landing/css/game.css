@@ -345,6 +345,53 @@
   padding-block-end: var(--space-4xl);
 }
 
+.archive-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-block-end: var(--space-xl);
+}
+
+.archive-filter[hidden] {
+  display: none;
+}
+
+.archive-filter button {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0 var(--space-md);
+  border: var(--rule-hair) solid var(--color-glass-edge);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass);
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+
+.archive-filter button b {
+  color: var(--color-ink-3);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.archive-filter button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: color-mix(in oklch, var(--color-accent) 14%, var(--color-glass));
+  color: var(--color-ink);
+}
+
+.archive-filter button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .missing {
   max-width: 46rem;
   min-height: 82svh;

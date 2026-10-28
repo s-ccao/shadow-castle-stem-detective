@@ -465,7 +465,8 @@ class Site:
 
     def page(self, *, title: str, title_key: str, description: str, description_key: str, path: str,
              og_description: str, og_image: str, css: str, body_class: str, main: str,
-             current: str = "", main_attrs: str = "") -> str:
+             current: str = "", main_attrs: str = "", structured: str = "") -> str:
+        head = self.region_head({"css": css}) + (f"\n{structured}" if structured else "")
         return Template(read(SRC / "templates" / "page.html")).substitute(
             boot=indent(partial("boot"), "    "),
             title=esc(title),
@@ -476,7 +477,7 @@ class Site:
             og_description=esc(og_description),
             og_image=esc(SITE_URL + og_image),
             canonical=esc(SITE_URL + path),
-            head=indent(self.region_head({"css": css}), "    "),
+            head=indent(head, "    "),
             body_class=body_class,
             emblems=indent(partial("emblems"), "    "),
             nav=indent(self.region_nav({"current": current}), "    "),
@@ -497,7 +498,8 @@ class Site:
         else:
             body = self.case_main(game)
             css = "/css/cards.css /css/game.css"
-        image = seo.get("image") or ((game.get("media") or {}).get("cover") or {}).get("src") or DEFAULT_OG_IMAGE
+        cover = (game.get("media") or {}).get("cover") or {}
+        image = seo.get("image") or (localized(cover["src"], "en") if cover else DEFAULT_OG_IMAGE)
         return self.page(
             title=title,
             title_key=f"game.{slug}.seo.title",
@@ -511,7 +513,33 @@ class Site:
             main=body.strip("\n") + "\n\n" + self.other_cases(game),
             current="cases",
             main_attrs=f' data-case="{slug}" style="--case-accent: var({game["accent"]})"',
+            structured=self.structured(game, image, description),
         )
+
+    def structured(self, game: dict, image: str, description: str) -> str:
+        """schema.org VideoGame data, for games people can actually play."""
+        if game["status"] != "playable":
+            return ""
+        links = game.get("links") or {}
+        data = {
+            "@context": "https://schema.org",
+            "@type": "VideoGame",
+            "name": game["name"]["en"],
+            "alternateName": game["name"]["zh"],
+            "url": f"{SITE_URL}/games/{game['slug']}",
+            "description": description,
+            "genre": game["genre"]["en"],
+            "image": SITE_URL + image,
+            "gamePlatform": "Web browser",
+        }
+        if game.get("languages"):
+            data["inLanguage"] = game["languages"]
+        if links.get("play"):
+            data["potentialAction"] = {"@type": "PlayAction", "target": links["play"]}
+        if links.get("source"):
+            data["sameAs"] = [links["source"]]
+        body = json.dumps(data, ensure_ascii=False, indent=2).replace("</", "<\\/")
+        return f'<script type="application/ld+json">\n{body}\n</script>'
 
     def archive_page(self) -> str:
         main = "\n".join(
@@ -523,6 +551,7 @@ class Site:
                 "Seven cases from Ashford Castle. One is open to play; six are being built in the open.</p>",
                 "</section>",
                 '<section class="archive" aria-labelledby="archive-title">',
+                indent(self.archive_filter(), "  "),
                 indent(self.grid(self.games, "h2"), "  "),
                 "</section>",
             ]
@@ -542,7 +571,37 @@ class Site:
             current="cases",
         )
 
+    def archive_filter(self) -> str:
+        # Hidden until js/archive.js runs, so it never shows as dead buttons.
+        counts = {status: sum(game["status"] == status for game in self.games) for status in STATUS_LABEL}
+        buttons = [
+            f'<button type="button" aria-pressed="true" data-filter="all"><span data-i18n="archive.all">All</span> '
+            f"<b>{len(self.games)}</b></button>"
+        ] + [
+            f'<button type="button" aria-pressed="false" data-filter="{status}"><span data-i18n="status.{status}">{label}</span> '
+            f"<b>{counts[status]}</b></button>"
+            for status, label in STATUS_LABEL.items()
+            if counts[status]
+        ]
+        return "\n".join(
+            [
+                '<div class="archive-filter" role="group" aria-label="Filter case files by status" '
+                'data-i18n-attr="aria-label:archive.filter" data-archive-filter hidden>',
+                indent("\n".join(buttons), "  "),
+                '  <p class="visually-hidden" role="status" data-archive-count></p>',
+                "</div>",
+            ]
+        )
+
     # ---------- data ----------
+
+    def sitemap(self) -> str:
+        paths = ["/", "/games", *[f"/games/{game['slug']}" for game in self.games], "/community"]
+        urls = "\n".join(f"  <url><loc>{SITE_URL}{path}</loc></url>" for path in paths)
+        return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}\n</urlset>\n'
+
+    def robots(self) -> str:
+        return f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n"
 
     def public_catalogue(self) -> str:
         games = [{key: value for key, value in game.items() if key != "internal"} for game in self.games]
@@ -602,6 +661,8 @@ class Site:
         files[CATALOGUE] = self.public_catalogue()
         files[SITE / "i18n" / "zh.json"] = self.zh_dictionary()
         files[SITE / "games" / "index.html"] = self.archive_page()
+        files[SITE / "sitemap.xml"] = self.sitemap()
+        files[SITE / "robots.txt"] = self.robots()
         for game in self.games:
             files[SITE / "games" / f"{game['slug']}.html"] = self.game_page(game)
         return files

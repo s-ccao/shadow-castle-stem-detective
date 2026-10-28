@@ -1,0 +1,33 @@
+name: Website
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "web/landing/**"
+      - "tools/site_build.py"
+      - "tools/check_site.py"
+      - ".github/workflows/site.yml"
+  pull_request:
+    paths:
+      - "web/landing/**"
+      - "tools/site_build.py"
+      - "tools/check_site.py"
+      - ".github/workflows/site.yml"
+
+jobs:
+  check:
+    name: Build and check web/landing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Generated pages must match their sources, every string needs its
+      # Chinese, links and images must resolve, and the catalogue must keep
+      # its promises (no play link on a game that is not playable).
+      - name: Check the website
+        run: python3 tools/check_site.py

@@ -8,6 +8,7 @@
   * images carry alt text and intrinsic size; pages carry a title, a
     description and a canonical URL
   * JavaScript module imports and stylesheet url()s resolve
+  * sitemap.xml lists only deployable pages; structured data parses as JSON
   * the game catalogue keeps its promises: nothing offers a play link unless
     it is playable, every player-facing field exists in both languages,
     reserved platform features stay switched off until they are built
@@ -188,6 +189,31 @@ def check_styles(errors: list[str]) -> None:
                 errors.append(f"{sheet.relative_to(SITE)}: url({url}) does not exist")
 
 
+def check_sitemap(errors: list[str]) -> None:
+    sitemap = SITE / "sitemap.xml"
+    if not sitemap.exists():
+        errors.append("sitemap.xml is missing; run python3 tools/site_build.py")
+        return
+    pages = set(deployable_pages())
+    for loc in re.findall(r"<loc>([^<]+)</loc>", sitemap.read_text(encoding="utf-8")):
+        if not loc.startswith(site_build.SITE_URL + "/"):
+            errors.append(f"sitemap.xml: {loc} is not on {site_build.SITE_URL}")
+            continue
+        target, _ = resolve(loc[len(site_build.SITE_URL):], sitemap)
+        if target not in pages or target.name == "404.html":
+            errors.append(f"sitemap.xml: {loc} is not a deployable page")
+
+
+def check_structured(errors: list[str]) -> None:
+    for page in deployable_pages():
+        text = page.read_text(encoding="utf-8")
+        for block in re.findall(r'<script type="application/ld\+json">(.*?)</script>', text, re.S):
+            try:
+                json.loads(block)
+            except json.JSONDecodeError as error:
+                errors.append(f"{page.relative_to(SITE)}: structured data is not valid JSON ({error})")
+
+
 def bilingual(value, where: str, errors: list[str]) -> None:
     if not (isinstance(value, dict) and str(value.get("en", "")).strip() and str(value.get("zh", "")).strip()):
         errors.append(f"data/games.json: {where} needs non-empty 'en' and 'zh' text")
@@ -265,6 +291,8 @@ def main() -> int:
     check_scripts(errors, used_keys)
     check_styles(errors)
     check_catalogue(errors)
+    check_sitemap(errors)
+    check_structured(errors)
 
     zh = json.loads((SITE / "i18n" / "zh.json").read_text(encoding="utf-8"))
     for key in sorted(used_keys - zh.keys()):

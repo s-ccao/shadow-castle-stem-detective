@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shadowcastledetective.com/data/games.schema.json",
+  "title": "Shadow Castle case-file catalogue",
+  "description": "The games on shadowcastledetective.com. The source is web/landing/src/games.json; tools/site_build.py publishes it as /data/games.json without each game's private 'internal' notes, and tools/check_site.py enforces the rules described here.",
+  "type": "object",
+  "required": ["version", "games"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "games": { "type": "array", "items": { "$ref": "#/$defs/game" } }
+  },
+  "$defs": {
+    "text": {
+      "description": "Player-facing copy in both languages.",
+      "type": "object",
+      "required": ["en", "zh"],
+      "properties": {
+        "en": { "type": "string", "minLength": 1 },
+        "zh": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "path": { "type": "string", "pattern": "^/" },
+    "localizedPath": {
+      "description": "One file, or one capture per language.",
+      "oneOf": [
+        { "$ref": "#/$defs/path" },
+        {
+          "type": "object",
+          "required": ["en", "zh"],
+          "properties": { "en": { "$ref": "#/$defs/path" }, "zh": { "$ref": "#/$defs/path" } },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "image": {
+      "type": "object",
+      "required": ["src", "width", "height", "kind", "alt"],
+      "properties": {
+        "id": { "type": "string", "description": "Lets a page pick the image in a build region." },
+        "src": { "$ref": "#/$defs/localizedPath" },
+        "small": { "$ref": "#/$defs/localizedPath", "description": "A smaller copy for cards and srcset." },
+        "smallWidth": { "type": "integer", "minimum": 1 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "kind": { "enum": ["painting", "screenshot", "concept"] },
+        "label": { "const": "concept", "description": "Concept art is always shown with a visible 'Concept art' label." },
+        "caption": { "$ref": "#/$defs/text" },
+        "alt": { "$ref": "#/$defs/text" }
+      },
+      "if": { "properties": { "kind": { "const": "concept" } } },
+      "then": { "required": ["label"] }
+    },
+    "reserved": {
+      "description": "A platform feature that is designed but not built. It stays {\"enabled\": false} until it exists; check_site.py fails otherwise.",
+      "type": "object",
+      "required": ["enabled"],
+      "properties": { "enabled": { "type": "boolean" } }
+    },
+    "game": {
+      "type": "object",
+      "required": [
+        "slug", "order", "kind", "status", "accent", "emblem",
+        "name", "short", "tagline", "genre", "session", "premise",
+        "links", "media", "embed", "scores", "leaderboard"
+      ],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "order": { "type": "integer", "minimum": 0 },
+        "kind": { "enum": ["flagship", "standalone", "mini"] },
+        "status": { "enum": ["playable", "in-development", "coming-soon"] },
+        "accent": { "type": "string", "pattern": "^--game-[a-z0-9-]+$", "description": "A colour token defined in tokens.css." },
+        "emblem": { "type": "string", "description": "A <symbol id=\"emblem-…\"> in src/partials/emblems.html." },
+        "story": { "type": "string", "description": "src/stories/<story>.html replaces the generated case page." },
+        "languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Languages the game itself can be played in (BCP 47), for structured data."
+        },
+        "name": { "$ref": "#/$defs/text" },
+        "short": { "$ref": "#/$defs/text" },
+        "tagline": { "$ref": "#/$defs/text" },
+        "genre": { "$ref": "#/$defs/text" },
+        "session": { "$ref": "#/$defs/text" },
+        "premise": { "$ref": "#/$defs/text" },
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": { "value": { "type": "string" }, "label": { "$ref": "#/$defs/text" } }
+          }
+        },
+        "plannedFeatures": { "type": "array", "items": { "$ref": "#/$defs/text" } },
+        "links": {
+          "type": "object",
+          "properties": {
+            "play": { "type": "string", "format": "uri", "description": "Only a playable game may carry a play link." },
+            "source": { "type": "string", "format": "uri" }
+          }
+        },
+        "media": {
+          "type": "object",
+          "properties": {
+            "cover": { "$ref": "#/$defs/image" },
+            "stills": { "type": "array", "items": { "$ref": "#/$defs/image" } },
+            "vignette": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+$",
+              "description": "A module in js/vignettes/ that animates the game's core mechanic."
+            }
+          }
+        },
+        "seo": {
+          "type": "object",
+          "properties": {
+            "title": { "$ref": "#/$defs/text" },
+            "description": { "$ref": "#/$defs/text" },
+            "ogDescription": { "type": "string" },
+            "image": { "$ref": "#/$defs/path" }
+          }
+        },
+        "embed": {
+          "allOf": [{ "$ref": "#/$defs/reserved" }],
+          "properties": {
+            "path": { "type": "string", "description": "Planned: /play/<slug>, a page that hosts an embeddable build." }
+          }
+        },
+        "scores": {
+          "allOf": [{ "$ref": "#/$defs/reserved" }],
+          "properties": {
+            "metric": { "enum": ["points", "seconds"], "description": "What a score counts." },
+            "order": { "enum": ["asc", "desc"], "description": "Whether lower or higher ranks first." }
+          }
+        },
+        "leaderboard": {
+          "allOf": [{ "$ref": "#/$defs/reserved" }],
+          "properties": { "daily": { "type": "boolean", "description": "A board that resets with each daily challenge." } }
+        },
+        "internal": { "type": "object", "description": "Planning notes; source only, never published." }
+      },
+      "if": { "properties": { "status": { "not": { "const": "playable" } } } },
+      "then": { "properties": { "links": { "not": { "required": ["play"] } } } }
+    }
+  }
+}

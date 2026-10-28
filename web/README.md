@@ -306,9 +306,12 @@ the parts that repeat, and its output is committed with the source.
 | `src/partials/`, `src/templates/`, `src/stories/` | Shared head, boot script, navigation, footer, emblem sprite, the hub's castle scene, the case-page template and Shadow Castle's long page. |
 | `src/i18n/zh.json` | Chinese strings for the interface. Game copy comes from the catalogue. |
 | `src/art/` | The key-art brief, prompts and asset manifest. |
-| `index.html`, `community.html`, `404.html` | Hand-written pages with generated regions between `<!-- build:name -->` markers. |
-| `games/*.html`, `data/games.json`, `i18n/zh.json` | Generated. Edit their sources, never these. |
+| `index.html`, `community.html`, `404.html` | Hand-written pages with generated regions between `<!-- build:name -->` markers. Story pages may use regions too. |
+| `games/*.html`, `data/games.json`, `i18n/zh.json`, `sitemap.xml`, `robots.txt` | Generated. Edit their sources, never these. |
+| `data/games.schema.json` | JSON Schema for the catalogue, including the reserved platform fields. |
+| `data/demo-case.json` | The hub's demo case: statements, evidence and which links hold, in both languages. |
 | `css/`, `js/`, `tokens.css` | The shared shell and its effects. `DESIGN.md` is the design system. |
+| `js/vignettes/`, `js/demo/` | Canvas loops of each upcoming game's mechanic, and the demo board. Both load on demand. |
 
 `.vercelignore` keeps `src/`, `DESIGN.md` and this README out of the upload.
 
@@ -330,7 +333,27 @@ real feed only runs on Vercel.
 `tools/site_build.py`. Then build and check. Only a `playable` game may carry
 `links.play`, generated key art must be labelled `"label": "concept"`, and
 `embed`, `scores` and `leaderboard` stay `{"enabled": false}` until those
-features exist: `check_site.py` fails otherwise.
+features exist: `check_site.py` fails otherwise. A game that is not playable
+yet can name a mechanic loop in `media.vignette`; the case page, its card and
+the library stage then play it.
+
+**Screenshots.** A still's `src` (and `small`, the 640-wide copy) may be one
+path or an `{"en", "zh"}` pair of captures. The builder writes the English
+capture into the page with `data-zh-src`/`data-zh-srcset`, and `i18n.js` swaps
+them before the dictionary loads, so a Chinese visit never downloads the
+English capture. Give regenerated captures new file names (see Caching).
+
+**Mechanic vignettes.** `js/vignettes/<name>.js` default-exports
+`{ period, still, draw(ctx, kit, p, view, palette) }`: `draw` paints the scene
+at loop progress `p` (0–1) in a 160 × 100 unit box centred on the origin, using
+the helpers and site colours that `stage.js` passes in. Because a scene is a
+function of `p`, pausing and the reduced-motion still frame (`p = still`) need
+no state. Keep each module under 6 KB.
+
+**The demo case.** The hub's deduction board reads `data/demo-case.json`. It is
+written for the site, uses none of the main game's characters, and is labelled
+a demo; `links` lists the pairs that hold (`"supports"`) or clash
+(`"contradicts"`), and every other pairing reads as unrelated.
 
 **Languages.** English is written in the HTML. Mark translatable elements with
 `data-i18n` (text of an element with no child elements), `data-i18n-html` or
@@ -343,6 +366,25 @@ Ambient loops pause off screen and when the tab is hidden.
 
 **Caching.** `/assets/*` is served with a one-year immutable cache. Never
 replace a file there in place; give a new or changed image a new name.
+
+**Platform reservations.** The catalogue reserves three features so that
+mini-games, scores and leaderboards can arrive without reshaping the data.
+None of them exists yet, and each stays `{"enabled": false}` until it does:
+
+- `embed`: a planned `/play/<slug>` page that hosts an embeddable build of a
+  small game. The route is not created; `embed.path` names it when it is.
+- `scores`: a game reports a finished run to its host page with
+  `window.parent.postMessage({ type: "sc:score", version: 1, game: "<slug>",
+  score, metric: "points" | "seconds", runId }, "https://shadowcastledetective.com")`.
+  The host accepts the message only from the game's own origin and only for
+  the slug it embeds, then forwards it to a planned `/api/scores` endpoint.
+- `leaderboard` (with `daily` for challenges such as Evidence Rush's): ranked
+  runs from `/api/scores`. Scores are tied to the play site's existing
+  Investigator ID accounts and signed sessions (see Cloud saves), so the
+  website never keeps a second account database. Anonymous runs stay local.
+
+`.github/workflows/site.yml` runs `check_site.py` on every push that touches the
+website.
 
 ## Assets
 

@@ -163,6 +163,12 @@
         <p class="archive-head__intro" data-i18n="archive.intro">Seven cases from Ashford Castle. One is open to play; six are being built in the open.</p>
       </section>
       <section class="archive" aria-labelledby="archive-title">
+        <div class="archive-filter" role="group" aria-label="Filter case files by status" data-i18n-attr="aria-label:archive.filter" data-archive-filter hidden>
+          <button type="button" aria-pressed="true" data-filter="all"><span data-i18n="archive.all">All</span> <b>7</b></button>
+          <button type="button" aria-pressed="false" data-filter="playable"><span data-i18n="status.playable">Playable</span> <b>1</b></button>
+          <button type="button" aria-pressed="false" data-filter="coming-soon"><span data-i18n="status.coming-soon">Coming soon</span> <b>6</b></button>
+          <p class="visually-hidden" role="status" data-archive-count></p>
+        </div>
         <div class="case-grid" data-cards="7">
           <article class="case-card" data-slug="shadow-castle" data-status="playable" data-tilt data-preview="[{&quot;en&quot;: &quot;/assets/games/shadow-castle/final-archive.en.640.webp&quot;, &quot;zh&quot;: &quot;/assets/games/shadow-castle/final-archive.zh.640.webp&quot;}, {&quot;en&quot;: &quot;/assets/games/shadow-castle/library-spectrum.en.640.webp&quot;, &quot;zh&quot;: &quot;/assets/games/shadow-castle/library-spectrum.zh.640.webp&quot;}, {&quot;en&quot;: &quot;/assets/games/shadow-castle/chemistry-butler.en.640.webp&quot;, &quot;zh&quot;: &quot;/assets/games/shadow-castle/chemistry-butler.zh.640.webp&quot;}, {&quot;en&quot;: &quot;/assets/games/shadow-castle/circuit-generator.en.640.webp&quot;, &quot;zh&quot;: &quot;/assets/games/shadow-castle/circuit-generator.zh.640.webp&quot;}, {&quot;en&quot;: &quot;/assets/games/shadow-castle/dining-hearth.en.640.webp&quot;, &quot;zh&quot;: &quot;/assets/games/shadow-castle/dining-hearth.zh.640.webp&quot;}]" style="--case-accent: var(--game-shadow-castle)">
             <div class="case-card__art" aria-hidden="true"><img class="case-card__image" src="/assets/hero-castle.jpg" width="1448" height="1086" alt="" loading="lazy" decoding="async" /></div>

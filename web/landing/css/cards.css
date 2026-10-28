@@ -40,6 +40,10 @@
     box-shadow var(--dur-long) var(--ease-out);
 }
 
+.case-card[hidden] {
+  display: none;
+}
+
 .case-card__art {
   position: relative;
   aspect-ratio: 16 / 10;
