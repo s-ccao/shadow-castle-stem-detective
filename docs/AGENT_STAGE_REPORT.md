@@ -2,6 +2,48 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-75 (the magnifier cursor stays visible over the case-file library and stays put when pressed)
+
+- **Date:** 2026-10-28
+- **Status:** commit `43f257c` and this docs commit on branch `agents/site-game-hall`, ahead of `main` (`ad5247d`). A Vercel **preview** is deployed. Production stays on stage 74 until the owner approves.
+- **Reports from the owner:**
+  - "打开案件档案的时候……会覆盖掉我的指针" (opening the case files covers the pointer).
+  - "点击的背景的时候鼠标会瞬移往左边一点然后跳回来" (pressing on the background makes the cursor jump left and back).
+
+### Root causes
+
+1. **Hidden pointer.**
+   - The library is a modal `<dialog>`, which the browser draws in the top layer, above every z-index.
+   - The magnifier and the click sparks lived in `<body>` underneath it, and the site hides the native cursor while the magnifier is on.
+   - Probe results ruled out the other explanations: the magnifier was still `visibility: visible`, and its lens still followed the pointer. A maximum z-index changed nothing; moving the magnifier into the dialog made it visible at the right position.
+2. **Jump on press.**
+   - The lens was positioned with an inline `transform`, while CSS animated its `scale` (0.86 pressed, 1.45 over large targets).
+   - The individual `scale` property applies after `translate` but before `transform`, so it also scaled the offset. Measured: the pointer at 1100,160 put the lens at 946,138; the hover state threw it 415 px.
+
+### What changed (`web/landing/js/pointer.js`, `web/landing/css/site.css`, `web/landing/DESIGN.md`)
+
+- The pointer layer keeps its overlays (magnifier, sparks) inside any open modal dialog and moves them back to `<body>` when the dialog closes. A `MutationObserver` watches the `open` attribute. If moving them ever fails, the native cursor returns.
+- The lens is positioned with the `translate` property; the press and hover scale animations are unchanged.
+- `DESIGN.md` records both rules: anything above the library lives inside the dialog, and elements moved by script that CSS also scales are positioned with `translate`.
+
+### Verification
+
+- **Repro loops** (headless Chrome, session harness):
+  - **Before**, red on every run:
+    - Inside the library the area under the pointer was pixel-identical with and without the magnifier, and the native cursor was `none`.
+    - The lens left the pointer by 156–186 px while pressed, and by 415 px in the hover state.
+  - **After**, green on every run:
+    - The magnifier is visible over the list and the stage at 1440 and 820 px, sparks show inside the library, and the magnifier is back on the page after closing.
+    - The lens stays 0 px from the pointer when pressed and in the hover state, while still scaling 0.86 and 1.45.
+- **Library behaviour:** opening with the keyboard, arrows, End, Esc returning focus, a castle window, Back, a deep link and the first tap on a phone all behave as before, with no errors.
+- **`python3 tools/check_site.py`:** 0 errors. The browser matrix (4 pages × 375, 1024 and 1440 px × English/Chinese, plus reduced motion) is clean. The Godot headless editor parse exits 0. `git diff --check` is clean.
+- **No in-repo regression test:** the repository has no browser test seam, and adding Playwright would be a large new dependency. The two rules are in `DESIGN.md` instead.
+- **Preview:** `shadow-castle-detective-site-dlw72l8ej-cyc4.vercel.app` (Vercel login required). The same files are served locally by `tools/serve_site.py`.
+
+### Next
+
+- After the owner approves: `npx vercel --prod` from `web/landing`, then push the branch and fast-forward `main`, so `main` keeps matching production.
+
 ## Stage: UX-20261021-74 (the six upcoming cases get their concept key art)
 
 - **Date:** 2026-10-27
