@@ -2,6 +2,55 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-77 (Quit in the browser game returns to the website's case files)
+
+- **Date:** 2026-10-28
+- **Status:** commit `5115109` and the docs commits on branch `agents/site-game-hall`. Exported locally and served at `127.0.0.1:8766` for the owner's review; **not yet deployed**.
+- **Report from the owner:** "在暗影城堡里面点击 quit 应该可以退出来，重新回到我的这个多游戏界面" (Quit inside Shadow Castle should leave the game and return to the multi-game site).
+- **The owner's choices:** return to the home page with the case-file library open on Shadow Castle, and show Quit in the in-game Esc settings on the web as well.
+
+### Root causes
+
+1. **Nothing handled a browser quit.** The title screen's Quit called `get_tree().quit()`. A tab cannot close itself, and the shell had no `onExit`, so the page froze on the title screen. The Esc settings hid Quit on the web for the same reason.
+2. **Godot's web exit never reached `onExit`.** Probe: pressing Quit threw `TypeError: Cannot read properties of null (reading 'currentTime')`. The stack ran `SampleNode._pause` ← `sample_set_pause` ← wasm.
+   - `GodotOS.finish_async` first waits for pending saves and runs the exit hooks; the audio hook closes the AudioContext and sets it to null.
+   - It then does a final file-system sync and calls the engine cleanup.
+   - In that cleanup every still-playing `AudioStreamPlayer` is paused as it leaves the tree, and reads the null context. The exception ends the exit before `Module.onExit`.
+   - Saves were already flushed by then.
+
+### What changed
+
+- **`web/shell/loading_shell.html`:**
+  - `onExit` brings the loading plate back, reading "CASE CLOSED · RETURNING TO THE CASE FILES" (or the Chinese copy), and the destination host.
+  - It then calls `location.replace` with `https://shadowcastledetective.com/#cases/shadow-castle`, so Back does not return to the closed page.
+  - A `localhost` or `127.0.0.1` referrer returns there instead.
+  - Offline, the plate stays, with "Reopen the case" and "Open the case files".
+  - `window.shadowCastleExit.requested()` makes an error, or ten seconds without an exit, count as the exit.
+  - A non-zero exit code shows the failure notice.
+- **`scripts/game_exit.gd` (new, `GameExit.quit`):** on the web it stops every `AudioStreamPlayer`, `AudioStreamPlayer2D` and `AudioStreamPlayer3D`, tells the shell, then quits. Desktop builds just quit.
+  - `scripts/main_menu.gd` and the Esc settings' `quit_handler` use it.
+- **`autoload/pause_menu.gd`:** Quit is hidden only on iOS now. On the web its confirmation uses `pause.quit_body_web` / `_plain` from `autoload/case_locale.gd` (EN/ZH): "You return to the case files; next time, Continue resumes at the {room} entrance."
+- **Case-file library (`web/landing/js/library.js`, `css/library.css`):** the title broke inside words ("Shadow Castle: S / TEM Detective" at 1024 px). The cause is that letters are inline-blocks for the ink-in. Latin words are now kept whole in a `white-space: nowrap` span; Chinese still breaks between characters.
+- **Docs:** `web/README.md` → "Quitting in the browser"; `docs/AGENT_HANDOFF.md` QA step 19.
+
+### Verification
+
+- **Browser, end to end** (headless Chrome, GPU, 1024 × 768, the local export reached from the local site):
+  - **Title Quit:** the "case closed" plate shows, then `127.0.0.1:8765/#cases/shadow-castle` with the library open and Shadow Castle selected. The `currentTime` error is gone.
+  - **Room:** New Case → skip the intro → Wake Room → Esc. **QUIT GAME** shows, with the browser copy. Confirming returns to the case files, and reopening the game offers **Continue · Resume: Wake Room**, so the save survived leaving the page.
+  - **Chinese:** 「案件已合上」「正在返回案件档案」, landing on 「案件档案」 with 暗影城堡 selected.
+  - **Offline:** the plate stays, with both links.
+  - The only remaining console line is the engine's own exit report (`Pages in use exist at exit in PagedAllocator`).
+- **Godot:**
+  - `tests/pause_menu_test.gd`: PASS, 157 checks, EN and ZH. A new check covers the browser copy and its fit in the dossier.
+  - The headless editor parse exits 0.
+  - gdparse passes; gdlint counts are unchanged (`case_locale.gd` stays at its baseline of 53).
+  - `check_static.py` and `check_translations.py` only report their pre-existing findings (`**` in `tools/generate_minigame_answers.gd`; a Wake Room key line in `case_script_zh.gd`).
+- **Export:** `index.wasm` and `index.js` match production's sizes byte for byte (same engine). `index.pck` is 92,362,220 bytes, 1.5 KB more than production's, for the script and text changes.
+- **Site:**
+  - The library title holds whole words, with no overflow: 7 games × 5 widths (320–1440 px) × EN/ZH, 70 checks.
+  - `check_site.py`: 0 errors. `library-test`, `cursor-test` and an 18-run matrix are clean.
+
 ## Stage: UX-20261021-76 (every page gets a living night: moon dust, the lantern's evidence, the prism trail, a story layer)
 
 - **Date:** 2026-10-28

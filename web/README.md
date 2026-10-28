@@ -234,6 +234,26 @@ against a browser that has already run the game, still unregister the worker and
 clear `caches` first — the automatic path costs a reload, and a stale first
 paint is easy to misread as the new build failing.
 
+## Quitting in the browser
+
+A tab cannot close itself, so **Quit** (the title screen's, and the Esc
+settings' after it saves) leaves for the website instead: the shell brings the
+loading plate back as "Case closed", then replaces the page with the case-file
+library opened on this case, `https://shadowcastledetective.com/#cases/shadow-castle`.
+When the visitor came from a local server (`localhost` or `127.0.0.1`, as the
+referrer), it returns there instead, so the round trip can be tried before a
+release. Offline, the plate stays, offering **Reopen the case** and
+**Open the case files**.
+
+Godot calls the shell's `onExit` only after flushing every save to IndexedDB.
+Its web build, though, closes the AudioContext before its final cleanup, and
+that cleanup then pauses each still-playing sound and throws, so `onExit` never
+arrives. `GameExit.quit()` (`scripts/game_exit.gd`) therefore stops every audio
+player first and tells the shell (`window.shadowCastleExit.requested()`); the
+shell also treats an error or ten seconds of silence after that as the exit.
+Desktop builds simply quit, and iOS builds still show no Quit in the Esc
+settings.
+
 ## Domains and HTTPS
 All of this is done; it is written down because the certificate behaviour is
 not what the Vercel UI implies.
