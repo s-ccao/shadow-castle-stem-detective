@@ -23,6 +23,25 @@ function lazy(name, selector, loader) {
     .catch((error) => console.error(`[${name}]`, error));
 }
 
+// Below-the-fold features load as their section comes within reach of the viewport.
+function near(name, selector, loader) {
+  const target = document.querySelector(selector);
+  if (!target) return;
+  if (!("IntersectionObserver" in window)) {
+    lazy(name, null, loader);
+    return;
+  }
+  const watcher = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      watcher.disconnect();
+      lazy(name, null, loader);
+    },
+    { rootMargin: "600px 0px" },
+  );
+  watcher.observe(target);
+}
+
 // The case-file library loads on first intent; its triggers are plain links to /games.
 function initLibraryLauncher() {
   let module = null;
@@ -67,5 +86,6 @@ lazy("cards", ".case-card[data-preview], .case-card[data-vignette]", () => impor
 lazy("vignettes", ".case-hero__art[data-vignette]", () => import("./vignettes/stage.js").then((m) => m.initHeroVignettes));
 lazy("pointer", null, () => import("./pointer.js").then((m) => m.initPointer));
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));
+near("demo", "[data-demo]", () => import("./demo/deduction.js").then((m) => m.initDemo));
 
 export { lazy, start };

@@ -86,7 +86,7 @@ class Page(HTMLParser):
         if tag in {"a", "use"} or (tag == "link" and not {"preconnect", "dns-prefetch"} & set(rel)):
             if a.get("href"):
                 self.urls.append((tag, a["href"]))
-        for name in ("src", "poster", "data-src", "data-zh-src"):
+        for name in ("src", "poster", "data-src", "data-zh-src", "data-demo"):
             if a.get(name):
                 self.urls.append((tag, a[name]))
         for name in ("srcset", "data-srcset", "data-zh-srcset"):

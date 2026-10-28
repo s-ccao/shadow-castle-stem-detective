@@ -228,6 +228,7 @@
 /* ---------- Six cases in the dark, and the open desk ---------- */
 
 .upcoming,
+.demo,
 .open-desk {
   width: min(100%, var(--content-max));
   display: grid;

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "id": "observatory-lens",
+  "seconds": 60,
+  "title": { "en": "The Observatory Lens", "zh": "观星台的镜片" },
+  "brief": {
+    "en": "Overnight, the brass lens vanished from the observatory telescope. Three people were awake, and one of their statements cannot be true.",
+    "zh": "一夜之间，观星台望远镜上的黄铜镜片不见了。当晚有三个人醒着，其中一份证词不可能成立。"
+  },
+  "statements": [
+    {
+      "id": "clockmaker",
+      "who": { "en": "Clockmaker", "zh": "钟表匠" },
+      "text": {
+        "en": "I spent the whole evening repairing the hall clock. I never climbed the tower.",
+        "zh": "整晚我都在大厅修钟，从没爬上过塔楼。"
+      }
+    },
+    {
+      "id": "cook",
+      "who": { "en": "Cook", "zh": "厨师" },
+      "text": {
+        "en": "I carried tea up to the observatory at nine. The lens was still in the telescope.",
+        "zh": "九点我把茶送上观星台，那时镜片还在望远镜里。"
+      }
+    },
+    {
+      "id": "archivist",
+      "who": { "en": "Archivist", "zh": "档案员" },
+      "text": {
+        "en": "I heard the tower door just after midnight, but I never left the library.",
+        "zh": "午夜刚过，我听见塔楼的门响了，但我一直没离开图书馆。"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "oil",
+      "icon": "drop",
+      "name": { "en": "Clock oil", "zh": "钟表油" },
+      "text": {
+        "en": "Fresh oil on the tower's stair rail: the same clove-scented oil used on the hall clock.",
+        "zh": "塔楼楼梯扶手上有新鲜的油渍，和大厅那座钟用的丁香味钟油一模一样。"
+      }
+    },
+    {
+      "id": "tray",
+      "icon": "cup",
+      "name": { "en": "Tea tray", "zh": "茶盘" },
+      "text": {
+        "en": "A tea tray on the observatory desk, the pot long cold.",
+        "zh": "观星台桌上放着茶盘，茶壶早已凉透。"
+      }
+    },
+    {
+      "id": "lock",
+      "icon": "lock",
+      "name": { "en": "Lock record", "zh": "门锁记录" },
+      "text": {
+        "en": "The tower's clockwork lock logged two openings: 21:02 and 00:10.",
+        "zh": "塔楼的发条锁记录了两次开启：21:02 和 00:10。"
+      }
+    },
+    {
+      "id": "lamp",
+      "icon": "lamp",
+      "name": { "en": "Library lamp", "zh": "图书馆油灯" },
+      "text": {
+        "en": "The library lamp burned its oil right down to dawn.",
+        "zh": "图书馆的油灯一直烧到了天亮。"
+      }
+    }
+  ],
+  "links": {
+    "oil>clockmaker": "contradicts",
+    "tray>cook": "supports",
+    "lock>cook": "supports",
+    "lock>archivist": "supports",
+    "lamp>archivist": "supports"
+  },
+  "solved": {
+    "en": "The clock oil puts the Clockmaker on the tower stairs, so “I never climbed the tower” cannot be true. That is a contradiction, not yet a culprit.",
+    "zh": "钟表油说明钟表匠到过塔楼楼梯，所以“从没爬上过塔楼”不可能成立。这是一处矛盾，还不等于找到了犯人。"
+  },
+  "hint": {
+    "en": "Look for evidence that puts someone where they say they never went.",
+    "zh": "找一找：哪条证据把某人放到了他声称没去过的地方？"
+  },
+  "next": {
+    "play": "https://play.shadowcastledetective.com/",
+    "case": "/games/evidence-rush"
+  }
+}
