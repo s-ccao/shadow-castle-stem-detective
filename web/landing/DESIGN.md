@@ -68,6 +68,9 @@ gradient keeps that direction.
 - Ambient loops pause when off screen or when the tab is hidden. One shared
   requestAnimationFrame (`js/loop.js`) drives every continuous effect.
 - Nothing auto-advances. Selection follows hover and focus.
+- Canvas vignettes (`js/vignettes/`) are pure functions of loop progress: with
+  motion off they draw one telling frame instead of looping. The demo board's
+  bump and shake are the only bouncy motions, and both stop under "reduce".
 
 ## Components
 
@@ -81,6 +84,18 @@ gradient keeps that direction.
 - **Case cards and the case-file library:** see `css/cards.css` and
   `css/library.css`. The library is a modal dialog: focus moves in, Esc closes,
   focus returns to its opener.
+- **Mechanic vignettes:** a 160 × 100 unit canvas scene per upcoming game, in
+  the case's accent over night, with moonlight and brass as supporting light.
+  Shown in a card's art on hover (or Preview on touch), across the library
+  stage, and in a round lens inside the case page's seal rings.
+- **Screenshots:** evidence-photograph frames (`.feature-capture`, the
+  featured frame's brass corners) that develop like prints; captures follow the
+  page language.
+- **Demo board (`css/demo.css`):** an evidence board panel with a HUD of
+  mono-type chips, statement and evidence cards as real buttons, moonlit
+  threads for links that hold and the case accent for the contradiction. It
+  says "Demo" in a stamp and never presents itself as a game build.
+- **Archive filter:** pill toggle buttons with `aria-pressed` and counts.
 
 ## Languages
 

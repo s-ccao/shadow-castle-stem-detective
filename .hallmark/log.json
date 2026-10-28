@@ -5,6 +5,18 @@
     "theme": "custom",
     "theme_axes": "dark / roman-serif / chromatic-amber",
     "vibe": "gothic case archive, brass, violet, moonlight",
+    "enrichment": "Canvas mechanic vignettes per game + interactive demo case board with HUD + per-language HD captures",
+    "nav": "N10 Floating on scroll morph",
+    "footer": "Ft5 Statement",
+    "studied": "url, interaction mechanics only",
+    "brief": "phase 3: six mechanic vignettes, HD captures in both languages, a demo case board, archive filter, sitemap, catalogue schema"
+  },
+  {
+    "date": "2026-10-27",
+    "macrostructure": "Marquee Hero (hub) + Long Document (case pages)",
+    "theme": "custom",
+    "theme_axes": "dark / roman-serif / chromatic-amber",
+    "vibe": "gothic case archive, brass, violet, moonlight",
     "enrichment": "E5 hand-built SVG scene (layered castle) + Canvas weather",
     "nav": "N10 Floating on scroll morph",
     "footer": "Ft5 Statement",

@@ -2,6 +2,74 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-73 (phase 3: mechanic loops, HD captures in both languages, a demo case, platform groundwork)
+
+- **Date:** 2026-10-27
+- **Status:** phase 3 of the approved website plan. Four commits and this docs commit on branch `agents/site-game-hall`, on top of stage 72, not pushed. A new Vercel **preview** is deployed; production (shadowcastledetective.com) is unchanged until the user approves it. Concept key art waits for the user's images.
+- **User input this stage:** replies in Chinese. The user could not open the preview or the linked files, so the site now runs locally (`tools/serve_site.py`) in VS Code's built-in browser, and the key-art prompts sit in `~/Desktop/shadow-castle-key-art/` as one ready-to-paste file per game with the style reference and Chinese instructions. Chosen HD captures: sheet numbers 3, 5, 8, 9 and 12. Keep the magnifier cursor. The user will generate the key art. Start phase 3.
+
+### What changed (`web/landing`, `web/README.md`, `tools/site_build.py`, `tools/check_site.py`, `.github/workflows/site.yml`; no Godot file)
+
+- **C7 `5f5872a` mechanic vignettes:** `js/vignettes/stage.js` runs short canvas loops of each upcoming game's core verb. It uses the one shared animation loop, caps device pixels by a pixel budget, pauses off screen and in hidden tabs, and draws a single still frame under reduced motion; every scene is a pure function of loop progress. The six scenes (4.1–5.7 KB each, loaded on demand):
+  - Evidence Rush: cards land, threads link evidence to statements, a "≠" seal marks the contradiction, the board lights.
+  - Prism Lab: two mirrors turn into line, a prism's spectrum wakes a lock.
+  - Echo Corridor: a pulse reveals the maze and the guard turns towards it.
+  - Time Echo: record, rewind, and a violet echo holds the plate.
+  - Alchemy Shift: two liquids turn elixir green, the order ticks off and the combo bursts.
+  - Rune Defense: runes are set, shadows march, a chain of bursts holds the gate.
+
+  They play on card hover (or the touch Preview button), on the library stage, and in a lens in each case page's hero. Catalogue field `media.vignette`, checked by `check_site.py`. Also fixes card previews that kept playing after the pointer left for empty space.
+- **C8 `e38ea00` HD captures:** the five frames the user picked (Final Archive, Library, Chemistry Room, Circuit Room, Dining Hall), English and Chinese, as WebP at 1024 and 640 wide under `assets/games/shadow-castle/` (35–109 KB each, 1.39 MB in all).
+  - They replace the old stills in the hub's featured block, the card preview and the library, take over the Circuit Room figure, and fill a new "Walk the castle" gallery on the Shadow Castle page.
+  - Stills accept `{en, zh}` sources; `data-zh-src`/`data-zh-srcset` swap before the dictionary loads, so a Chinese visit fetches only Chinese captures.
+  - Story pages can now use build regions. Room names follow `autoload/case_locale.gd`; provenance is in `src/art/manifest.json`.
+- **C9 `bb2655a` demo deduction board:** "The Observatory Lens" (`data/demo-case.json`), an original case with a Clockmaker, a Cook and an Archivist and none of the main game's characters.
+  - Input: drag with a mouse, pick-then-place on touch, Enter/Space/Escape on the keyboard.
+  - HUD: a 60-second clock that starts on the first move and pauses in hidden tabs, plus link and contradiction counts; a live region reports each result.
+  - Solving lights the board and offers Shadow Castle and the Evidence Rush case file; time-out gives a hint and a retry. It is labelled a demo throughout.
+  - The module (15.0 KB), its CSS and data load only as the section nears the viewport.
+- **C10 `7bff43e` platform groundwork:**
+  - A `/games` status filter, kept in `?status=` and hidden without JavaScript.
+  - Generated `sitemap.xml` and `robots.txt`, and schema.org VideoGame data for playable games only.
+  - `data/games.schema.json`, including the reserved embed, scores and leaderboard fields. Both catalogues validate against it, and a play link on an unreleased game is rejected.
+  - `check_site.py` now checks the sitemap and the structured data, and `.github/workflows/site.yml` runs it on pushes that touch the site.
+  - `web/README.md` documents per-language screenshots, vignettes, the demo, and the planned `/play/<slug>`, score messages and Investigator-ID leaderboards.
+- **Docs commit:** this report, the website note in `docs/AGENT_HANDOFF.md`, `web/landing/DESIGN.md`, `.hallmark/log.json`, evidence images.
+
+### Verification
+
+- **`python3 tools/check_site.py`:** 11 pages, 268 translation keys, 0 errors, 0 warnings.
+- **Godot:** the headless editor parse (isolated HOME) exits 0 with no errors. `git diff --check` is clean.
+- **`tools/check_static.py` and `tools/check_translations.py`** exit 1 with the same pre-existing findings as stage 72 (`**` in `tools/generate_minigame_answers.gd`; one Chemistry key's line breaks). This branch changes no game file.
+- **Browser matrix:** 11 pages × 320–1440 px × English/Chinese, 132 runs. The only findings are the intended 404 status of a missing page. Reduced motion: 20 runs, clean.
+- **Behaviour:**
+  - Vignettes draw on hover, Preview, the library stage and the lens; they stop when the pointer leaves and hold one still frame under reduced motion.
+  - Captures follow the language, including in the open library; a Chinese visit requests no English capture.
+  - The demo passes these paths: a consistent link, an unrelated link, drag to solve, keyboard only, the 10-second warning, time-out, reset, and tap-tap on a phone in Chinese.
+  - The archive filter works, including deep links.
+- **Frame time:** p95 16.7–16.8 ms on the hub, a card vignette, the library stage and a case lens, also at 4× CPU slowdown.
+- **Weight:**
+  - Vignettes: the 6.3 KB runner plus one 4.1–5.7 KB scene per game shown.
+  - Demo: 15.0 KB JavaScript, 8.3 KB CSS and 3.3 KB data, all lazy.
+  - Archive filter: 1.5 KB.
+  - JavaScript loaded on every page grew by 1.5 KB (`main.js`, `i18n.js`); the lazy card and library modules grew by 0.9 and 1.4 KB.
+- **Preview:** `shadow-castle-detective-site-roanqqp2g-cyc4.vercel.app` (Vercel login required). `vercel curl` confirms the sitemap, the vignette runner, the demo data, a Chinese capture and a case page.
+- **Evidence:** `docs/evidence/2026-10-27-site-stage73/` (card vignette, library stage, case lens, solved demo, phone demo, featured block, gallery, archive filter, the six vignette stills).
+
+### Risks / follow-up
+
+- Concept key art is outstanding; until it arrives the six games show their mechanic loops and emblems.
+- Draft copy still awaits the user's review (hub title and lead, taglines, the English premises, the demo case); the user can now see it locally.
+- Captures 3 (Chemistry Room) and 5 (Circuit Room) keep the in-game "Press E…" prompts, as chosen.
+- Screenshots ship as WebP only. Every browser that renders the site's CSS baseline (`color-mix`, `:has`, `<dialog>`) decodes WebP, so the planned JPEG fallback was dropped.
+- CSS remains over the plan's 30 KB (stage 72); the demo's CSS is lazy.
+- The preview needs a Vercel login, and this machine's network filter blocks the live and preview hosts.
+
+### Proposed next stage
+
+- C8b: concept key art once generated. Make a contact sheet for the user's choice, then 16:9, 16:10 and 1200 × 630 crops, a visible "Concept art" label and provenance.
+- After the user reviews the preview: `npx vercel --prod` from `web/landing`, verify the live files and record the previous production deployment for rollback.
+
 ## Stage: UX-20261021-72 (the website becomes a case archive: hub, seven case files, library and effects)
 
 - **Date:** 2026-10-27
