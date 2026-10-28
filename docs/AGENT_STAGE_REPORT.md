@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-73 (phase 3: mechanic loops, HD captures in both languages, a demo case, platform groundwork)
 
 - **Date:** 2026-10-27
-- **Status:** phase 3 of the approved website plan. Four commits and this docs commit on branch `agents/site-game-hall`, on top of stage 72, not pushed. A new Vercel **preview** is deployed; production (shadowcastledetective.com) is unchanged until the user approves it. Concept key art waits for the user's images.
+- **Status:** phase 3 of the approved website plan. Four commits and the docs commits on branch `agents/site-game-hall`, on top of stage 72, not pushed. **In production** since 2026-10-27 after the user's approval ("可以上线"); see Production below. Concept key art waits for the user's original image files.
 - **User input this stage:** replies in Chinese. The user could not open the preview or the linked files, so the site now runs locally (`tools/serve_site.py`) in VS Code's built-in browser, and the key-art prompts sit in `~/Desktop/shadow-castle-key-art/` as one ready-to-paste file per game with the style reference and Chinese instructions. Chosen HD captures: sheet numbers 3, 5, 8, 9 and 12. Keep the magnifier cursor. The user will generate the key art. Start phase 3.
 
 ### What changed (`web/landing`, `web/README.md`, `tools/site_build.py`, `tools/check_site.py`, `.github/workflows/site.yml`; no Godot file)
@@ -56,9 +56,20 @@
 - **Preview:** `shadow-castle-detective-site-roanqqp2g-cyc4.vercel.app` (Vercel login required). `vercel curl` confirms the sitemap, the vignette runner, the demo data, a Chinese capture and a case page.
 - **Evidence:** `docs/evidence/2026-10-27-site-stage73/` (card vignette, library stage, case lens, solved demo, phone demo, featured block, gallery, archive filter, the six vignette stills).
 
+### Production
+
+- **Deployed:** `npx vercel deploy --prod` from `web/landing` at `6609f95` → `shadow-castle-detective-site-8pbu2ake0-cyc4.vercel.app`, now behind `shadowcastledetective.com`.
+- **Verified live:**
+  - 18 key files (pages, sitemap, robots, catalogue, dictionary, demo data, scripts, styles, a Chinese capture, the hero painting) are byte-identical to the branch.
+  - `/assets/*` carries the one-year immutable cache, and a missing page answers 404 with the case-file page.
+  - `/api/community` answers JSON, and the community page renders the live discussion.
+  - In headless Chrome the hub, the Chinese Shadow Castle page and the community page load with no console error, and `/#science-title` forwards to `/games/shadow-castle#science-title`.
+- **Rollback target:** the previous production deployment `shadow-castle-detective-site-8l8dy9d7f-cyc4.vercel.app` (`dpl_DstPBHSyuHK52pUfZdYE8znDsJnV`, 2026-09-16): `cd web/landing && npx vercel rollback shadow-castle-detective-site-8l8dy9d7f-cyc4.vercel.app`.
+- **Branch caution:** production now serves the unpushed branch `agents/site-game-hall`. Until it is merged, a website deploy from `main` would bring back the old single-game page.
+
 ### Risks / follow-up
 
-- Concept key art is outstanding; until it arrives the six games show their mechanic loops and emblems.
+- Concept key art is outstanding: the user generated six images but shared only a 793 × 768 screenshot of them, too small to ship; the originals are needed. Until then the six games show their mechanic loops and emblems.
 - Draft copy still awaits the user's review (hub title and lead, taglines, the English premises, the demo case); the user can now see it locally.
 - Captures 3 (Chemistry Room) and 5 (Circuit Room) keep the in-game "Press E…" prompts, as chosen.
 - Screenshots ship as WebP only. Every browser that renders the site's CSS baseline (`color-mix`, `:has`, `<dialog>`) decodes WebP, so the planned JPEG fallback was dropped.
