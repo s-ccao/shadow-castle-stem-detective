@@ -121,15 +121,42 @@ content, in order:
    pours, at its front, under the pointer and in lightning; elsewhere it sinks
    to a faint trace and thins into rising mist, and behind text it dims so the
    text stays readable. Touching a bottle lifts its stopper and lets out vapour;
-   each potion answers the pointer in its own way, over its bottle, along its
-   stream and on a click: the lantern potion sheds sparks and, clicked, lights
-   the wall's evidence; luminol drips and stains, and clicked it erupts in a
-   crown of droplets that spatter the wall, then a sweep of ultraviolet turns
-   the spatter luminol blue and develops a hidden fingerprint behind it (about
-   three seconds); the prism potion splits into
-   its spectrum; the echo draught rings; the time potion turns a clock back and
-   holds its sand; transmutation bubbles and runs through every colour; the
-   ward oil raises runes and a rune hexagon.
+   each potion answers the pointer in its own way, over its bottle and along its
+   stream: the lantern potion sheds sparks, luminol drips and stains, the prism
+   potion splits into its spectrum, the echo draught rings, the time potion
+   turns a clock back and holds its sand, transmutation bubbles and runs
+   through every colour, and the ward oil raises runes.
+
+   A click plays the potion's own sequence over the page, about three seconds
+   long (`night/potion-scenes.js`, loaded the first time the pointer nears a
+   bottle; at most three play at once). Sequences aim into open space and
+   towards the middle of the screen, so a bottle near the top still shows its
+   whole effect.
+   - **Lantern** (Shadow Castle): the potion catches fire at the mouth, a flame
+     blue at the root and white at the heart. A lantern beam sweeps the dark in
+     shafts of light, lighting the dust it crosses and pooling where it lands,
+     and the wall's hidden evidence develops under it. The flame gutters out in
+     smoke.
+   - **Luminol** (Evidence Rush): the potion erupts in a crown of droplets that
+     spatter the wall; a sweep of ultraviolet turns the spatter luminol blue and
+     develops a hidden fingerprint behind it.
+   - **Refraction** (Prism Lab): a crystal forms above the bottle, or beside it
+     near the top of the screen. A white beam enters it and leaves as the
+     spectrum, each colour bouncing off unseen mirrors, until the crystal
+     shatters into glints.
+   - **Echolocation** (Echo Corridor): a ping, then sound waves roll out;
+     whatever a wavefront touches on the page shows its outline for a moment
+     and pings back.
+   - **Rewind** (Time Echo): a clock face forms; its hands race backwards, time
+     ripples fold inwards, the bottle's past selves trail behind it and sand
+     streams back up into it. Then everything stops and lets go.
+   - **Transmutation** (Alchemy Shift): a circle of transmutation draws itself
+     around the bottle; the potion runs through every case's colour, orbs of
+     every colour spiral in and the circle's nodes burst into sparks.
+   - **Ward** (Rune Defense): two rings of runes wheel around the bottle and
+     raise a dome of hexagonal light, brightest at its rim. Red bolts crackle in
+     from the dark and break on it in ripples and sparks; then the runes close
+     in and seal the ward into the bottle in a flash.
 
 **Lightning** answers the scroll up to eleven times a second, some strikes
 forking to a second target, and the storm also strikes on its own every second
@@ -150,8 +177,8 @@ stars.
 
 In front of the content, one screened canvas (`night/light.js`) under the
 magnifier carries the pointer's light: the lantern's glow and flashes, the
-pointer's lightning, the click's ring and the potions' click bursts. Painters register with it and it
-stops drawing when none has light left. Full-bleed heroes cover the layers
+pointer's lightning, the click's ring and the potions' click sequences.
+Painters register with it and it stops drawing when none has light left. Full-bleed heroes cover the layers
 behind them, so those skip drawing while a hero fills the screen.
 
 The story layer (`js/story.js`, `js/loupe.js`): the first page of a visit opens
