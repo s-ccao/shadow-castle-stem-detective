@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-78 (a castle for every case, the potion chain and rune lightning replace the moon dust)
 
 - **Date:** 2026-10-29
-- **Status:** commits `d7d67de` and `075a12d` (the owner's first review) and the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
+- **Status:** commits `d7d67de`, `075a12d` (the owner's first review) and `4fee9a6` (a timing fix), plus the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
 - **Report from the owner:** "那几个城堡呢，而且现在的背景时星空汇聚，我想要的是那种滑动时魔药倒出来，符文闪电的那种符合我游戏的ui特效" (where are the castles; the background is a starfield gathering; they want the potion pouring as the page slides, and rune lightning).
 - **The owner's choices:**
   - a castle for every case;
@@ -41,6 +41,14 @@ In short: the potion should cover the background rather than run down the margin
   - Frames are 16.7 ms on average and 16.8 ms at worst while scrolling, on the hub and the case page. Before relayout moved to idle time, one 450 ms stall was seen during a hub scroll.
   - The hover, click and "following" sequences were inspected on the hub and the case page; iPhone 13 and reduced motion are clean.
   - All regression loops and the matrix are green (36 + 4 runs, 0 findings); `check_site` reports 0 errors and the Godot parse exits 0.
+
+### A bug found in the VS Code browser (`4fee9a6`)
+
+- **The error:** `TypeError: ring is not iterable` in the rune wall.
+- **Cause:** an animation frame's timestamp can fall a moment before the click that started a surge, so the surge read before its first ring and threw.
+- **Effect:** the error removed the wall's loop without marking it stopped, so lightning behind the page never came back.
+- **Fix:** effect ages are clamped at zero, the loop recovers from errors, and flash levels stay within 0–1.
+- **Check:** a click storm on bottles and bare wall while scrolling, on three pages, reports no console errors, nor does the VS Code browser.
 
 ### What changed (`web/landing`; no Godot file)
 
