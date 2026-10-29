@@ -42,6 +42,18 @@ In short: the potion should cover the background rather than run down the margin
   - The hover, click and "following" sequences were inspected on the hub and the case page; iPhone 13 and reduced motion are clean.
   - All regression loops and the matrix are green (36 + 4 runs, 0 findings); `check_site` reports 0 errors and the Godot parse exits 0.
 
+### The owner's third review: the second potion's click
+
+- **Request:** "第二个魔药的点击触发特效感觉很廉价，需要升级高端，让人感觉很惊艳" (the second potion's click effect felt cheap and should be high-end and stunning). The second bottle on the hub and on Shadow Castle's page holds Evidence Rush's luminol.
+- **Change:** its click is now a forensic reveal of about 3.4 s, drawn over the page (`luminolScene` in `js/night/potion.js`):
+  - **Eruption:** a white-hot flash and a crimson bloom and ring at the mouth, then a crown of 40 glossy droplets (six large ones) flying out in arcs with motion trails and highlights.
+  - **Spatter:** each droplet lands as a stain stretched along its travel, with radial spines (longest on the leading side) and satellite droplets.
+  - **Reveal:** a band of ultraviolet sweeps across. Each stain it passes turns luminol blue and pulses, and a hidden fingerprint develops behind the sweep: a spiral whorl inside an egg-shaped print, with ridge endings and uneven pressure.
+  - **Fade:** after 2.6 s everything fades back into the night. At most three sequences run at once, and none runs under reduced motion.
+- **Verification:**
+  - Frames were captured at 0.09, 0.33, 0.8, 1.2, 1.7 and 2.5 s.
+  - Three clicks in a row hold at 16.7 ms average and 16.8 ms worst, with no errors.
+
 ### The owner's second review: more lightning
 
 - **Request:** "闪电的频率还需要增加" (the lightning should be more frequent still).

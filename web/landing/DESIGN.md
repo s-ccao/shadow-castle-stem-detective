@@ -123,7 +123,10 @@ content, in order:
    text stays readable. Touching a bottle lifts its stopper and lets out vapour;
    each potion answers the pointer in its own way, over its bottle, along its
    stream and on a click: the lantern potion sheds sparks and, clicked, lights
-   the wall's evidence; luminol drips and stains; the prism potion splits into
+   the wall's evidence; luminol drips and stains, and clicked it erupts in a
+   crown of droplets that spatter the wall, then a sweep of ultraviolet turns
+   the spatter luminol blue and develops a hidden fingerprint behind it (about
+   three seconds); the prism potion splits into
    its spectrum; the echo draught rings; the time potion turns a clock back and
    holds its sand; transmutation bubbles and runs through every colour; the
    ward oil raises runes and a rune hexagon.

@@ -252,6 +252,8 @@ export function initPotion() {
   const ember = tokenRgb("--color-ember");
   const ink = tokenRgb("--color-ink");
   const spectrum = [1, 2, 3, 4, 5, 6, 7].map((n) => tokenRgb(`--color-spectrum-${n}`));
+  const luminolBlue = tokenRgb("--color-clue");
+  const ultraviolet = tokenRgb("--color-arcane");
   const caseColor = Object.fromEntries(CASES.map((slug) => [slug, tokenRgb(`--game-${slug}`)]));
   const pageCase = document.querySelector("main[data-case]")?.dataset.case;
   const first = Math.max(0, CASES.indexOf(pageCase));
@@ -276,6 +278,7 @@ export function initPotion() {
   const mist = [];
   const backFx = [];
   const frontFx = [];
+  const scenes = []; // whole click sequences, drawn over the page
   const P = (kind, x, y, o = {}) => ({ kind, x, y, vx: 0, vy: 0, ax: 0, ay: 0, rot: 0, vr: 0, size: 6, r0: 0, r1: 0, a: 1, color: gold, life: 800, t0: performance.now(), ...o });
   const add = (list, p) => {
     if (list.length < cap) list.push(p);
@@ -327,16 +330,7 @@ export function initPotion() {
         if (Math.random() < 0.5) add(backFx, P("drop", x, y, { vx: rand(-0.02, 0.02), vy: 0.01, ay: 0.0004, life: 700, size: 2, color }));
       },
       click(b) {
-        for (let i = 0; i < 18; i += 1) {
-          const a = rand(0, TAU);
-          const v = rand(0.15, 0.36);
-          add(frontFx, P("drop", b.x, b.y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.08, ay: 0.0006, life: rand(900, 1300), size: rand(2, 3.6), color: b.color }));
-        }
-        for (let i = 0; i < 10; i += 1) {
-          const a = rand(0, TAU);
-          const d = rand(40, 150);
-          add(frontFx, P("splat", b.x + Math.cos(a) * d, b.y + Math.sin(a) * d * 0.7, { size: rand(7, 14), life: 1900, t0: performance.now() + rand(120, 520), color: b.color }));
-        }
+        if (scenes.length < 3) scenes.push(luminolScene(b));
       },
     },
     prism: {
@@ -1207,11 +1201,230 @@ export function initPotion() {
     }
   }
 
-  // Click bursts are drawn over the page, in the pointer's light.
+  // ---------- Evidence Rush's potion, clicked: a forensic reveal ----------
+  // The potion erupts from the bottle and spatters the wall around it; a band of
+  // ultraviolet sweeps across, every stain it passes answers in luminol blue, and a
+  // hidden fingerprint develops behind the sweep, then all of it sinks into the night.
+  function makeSplat(d, now) {
+    const dir = Math.atan2(d.vy, d.vx);
+    const r = d.r * (1.1 + Math.hypot(d.vx, d.vy) * 0.9);
+    const n = 9 + Math.floor(rand(0, 6));
+    return {
+      x: d.x,
+      y: d.land,
+      dir,
+      r,
+      stretch: rand(1.35, 1.9),
+      t: now,
+      litAt: 0,
+      spikes: Array.from({ length: n }, (_, i) => {
+        const a = (i / n) * TAU + rand(-0.2, 0.2);
+        return { a, len: r * rand(0.25, 0.75) * (1 + 0.9 * Math.max(0, Math.cos(a))), w: rand(0.09, 0.16) };
+      }),
+      sats: Array.from({ length: 1 + Math.floor(rand(0, 3)) }, (_, i) => ({ d: r * (2.4 + i * 1.2 + rand(0, 0.7)), a: rand(-0.18, 0.18), r: r * rand(0.14, 0.3) })),
+    };
+  }
+
+  function drawSplat(g, s, now, sy, sweepX, fade, red) {
+    if (!s.litAt && sweepX >= s.x) s.litAt = now;
+    const lit = s.litAt ? Math.min(1, (now - s.litAt) / 260) : 0;
+    const grow = Math.min(1, (now - s.t) / 110);
+    const pulse = lit ? 0.82 + 0.18 * Math.sin(now * 0.011 + s.x * 0.05) : 1;
+    const color = mix(red, luminolBlue, Math.round(lit * 4) / 4);
+    g.save();
+    g.translate(s.x, s.y - sy);
+    g.rotate(s.dir);
+    g.globalAlpha = (0.3 + 0.45 * lit) * fade * pulse;
+    g.drawImage(glowOf(lit > 0.5 ? luminolBlue : red), -s.r * 3.4, -s.r * 3.4, s.r * 6.8, s.r * 6.8);
+    g.globalAlpha = (0.8 + 0.2 * lit) * fade * pulse;
+    g.fillStyle = rgba(color, 1);
+    g.beginPath();
+    g.ellipse(0, 0, s.r * s.stretch * grow, s.r * grow, 0, 0, TAU);
+    g.fill();
+    g.beginPath();
+    for (const k of s.spikes) {
+      // Spines leave the rim of the stretched body.
+      const rim = (a) => [Math.cos(a) * s.r * s.stretch * 0.92, Math.sin(a) * s.r * 0.92];
+      const [ax, ay] = rim(k.a - k.w);
+      const [bx, by] = rim(k.a + k.w);
+      const [cx, cy] = rim(k.a);
+      const reach = 1 + (k.len / s.r) * grow;
+      g.moveTo(ax, ay);
+      g.lineTo(cx * reach, cy * reach);
+      g.lineTo(bx, by);
+      g.closePath();
+    }
+    g.fill();
+    for (const sat of s.sats) {
+      g.beginPath();
+      g.arc(Math.cos(sat.a) * sat.d * grow, Math.sin(sat.a) * sat.d * grow, sat.r, 0, TAU);
+      g.fill();
+    }
+    g.restore();
+  }
+
+  function luminolScene(b) {
+    const t0 = performance.now();
+    const red = b.color;
+    const mouth = [b.x, b.y - b.h / 2];
+    const floor = b.y + b.h / 2;
+    const drops = Array.from({ length: 40 }, (_, i) => {
+      const big = i < 6;
+      const a = -Math.PI / 2 + rand(-1.15, 1.15);
+      const v = big ? rand(0.3, 0.5) : rand(0.34, 0.85);
+      return { x: mouth[0] + rand(-3, 3), y: mouth[1], vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: big ? rand(5.5, 8) : rand(2.2, 5), land: floor + rand(-55, 80), t: t0 + rand(0, 180), done: false };
+    });
+    const splats = [];
+    // The hidden print: a whorl of broken ridges.
+    const size = 220 * Math.max(0.85, b.s);
+    const ridges = [];
+    const spacing = size * 0.032;
+    const turns = 13;
+    const egg = (x, y) => (x / (size * 0.36)) ** 2 + ((y - size * 0.02) / (size * (y < 0 ? 0.5 : 0.42))) ** 2 <= 1;
+    let run = [];
+    let gapUntil = 0;
+    let nextGap = rand(0.9, 2.6);
+    const flush = () => {
+      if (run.length > 2) ridges.push(run);
+      run = [];
+    };
+    for (let th = 0.6; th < turns * TAU; th += 0.045) {
+      const r = spacing * (th / TAU) * 1.0 + 2;
+      // Pressed, not drawn: the whorl leans and its ridges waver.
+      const x = Math.cos(th) * r * 0.82 + Math.sin(th * 2.1 + r * 0.05) * 1.6;
+      const y = Math.sin(th) * r * 1.08 + Math.cos(th * 1.7) * 1.4 + r * 0.06;
+      const inside = egg(x, y);
+      if (th < gapUntil || !inside) {
+        flush();
+        continue;
+      }
+      run.push([x, y, 0.55 + 0.45 * Math.sin(th * 0.7 + r * 0.03) ** 2]);
+      if (th > nextGap) {
+        flush();
+        gapUntil = th + rand(0.08, 0.22);
+        nextGap = gapUntil + rand(0.7, 2.8);
+      }
+    }
+    flush();
+    const pc = [b.x - b.dir * size * 0.15, floor - size * 0.2];
+    const left = pc[0] - 240;
+    const right = pc[0] + 240;
+    return (g, now, dt, sy) => {
+      const age = now - t0;
+      if (age > 3400) return false;
+      const fade = age > 2600 ? Math.max(0, 1 - (age - 2600) / 800) : 1;
+      g.globalCompositeOperation = "lighter";
+      g.lineCap = "round";
+      g.lineJoin = "round";
+      // The eruption: a crimson bloom and a ring at the mouth.
+      if (age < 520) {
+        const k = age / 520;
+        if (age < 200) {
+          const hot = 1 - age / 200;
+          g.globalAlpha = hot * hot;
+          const rw = 26 + age * 0.35;
+          g.drawImage(white, mouth[0] - rw, mouth[1] - sy - rw, rw * 2, rw * 2);
+        }
+        g.globalAlpha = (1 - k) ** 2;
+        const r = 40 + k * 170;
+        g.drawImage(glowOf(red), mouth[0] - r, mouth[1] - sy - r, r * 2, r * 2);
+        g.strokeStyle = rgba(red, 1);
+        g.lineWidth = 2.4 * (1 - k) + 0.5;
+        g.beginPath();
+        g.arc(mouth[0], mouth[1] - sy, 10 + k * 96, 0, TAU);
+        g.stroke();
+      }
+      // Drops in flight, streaked by their speed, spattering where they land.
+      for (const d of drops) {
+        if (d.done || now < d.t) continue;
+        d.vy += 0.0016 * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        if (d.vy > 0 && d.y >= d.land) {
+          d.done = true;
+          splats.push(makeSplat(d, now));
+          continue;
+        }
+        const tx = d.x - d.vx * 26;
+        const ty = d.y - sy - d.vy * 26;
+        const trail = g.createLinearGradient(tx, ty, d.x, d.y - sy);
+        trail.addColorStop(0, rgba(red, 0));
+        trail.addColorStop(1, rgba(red, 0.95));
+        g.globalAlpha = 0.5;
+        g.drawImage(glowOf(red), d.x - d.r * 3, d.y - sy - d.r * 3, d.r * 6, d.r * 6);
+        g.globalAlpha = 1;
+        g.strokeStyle = trail;
+        g.lineWidth = d.r * 1.8;
+        g.beginPath();
+        g.moveTo(tx, ty);
+        g.lineTo(d.x, d.y - sy);
+        g.stroke();
+        g.fillStyle = rgba(mix(red, ink, 0.25), 1);
+        g.beginPath();
+        g.arc(d.x, d.y - sy, d.r, 0, TAU);
+        g.fill();
+        g.fillStyle = rgba(ink, 0.9);
+        g.beginPath();
+        g.arc(d.x - d.r * 0.35, d.y - sy - d.r * 0.35, d.r * 0.3, 0, TAU);
+        g.fill();
+      }
+      // Ultraviolet sweeps across; stains and the print answer behind it.
+      const sweep = Math.min(1, Math.max(0, (age - 650) / 1100));
+      const sx = left + (right - left) * sweep;
+      for (const sp of splats) drawSplat(g, sp, now, sy, age > 650 ? sx : -1e9, fade, red);
+      if (age > 650) {
+        const top = pc[1] - sy - size * 0.8;
+        if (sweep < 1) {
+          const band = g.createLinearGradient(sx - 70, 0, sx + 16, 0);
+          band.addColorStop(0, rgba(ultraviolet, 0));
+          band.addColorStop(0.78, rgba(ultraviolet, 0.32));
+          band.addColorStop(1, rgba(ultraviolet, 0));
+          g.globalAlpha = 1;
+          g.fillStyle = band;
+          g.fillRect(sx - 70, top, 86, size * 1.6);
+          const line = g.createLinearGradient(0, top, 0, top + size * 1.6);
+          line.addColorStop(0, rgba(ultraviolet, 0));
+          line.addColorStop(0.5, rgba(mix(ultraviolet, ink, 0.4), 0.9));
+          line.addColorStop(1, rgba(ultraviolet, 0));
+          g.globalAlpha = 1;
+          g.fillStyle = line;
+          g.fillRect(sx + 11, top, 2, size * 1.6);
+        }
+        g.save();
+        g.beginPath();
+        g.rect(left - 20, top, sx - left + 20, size * 1.6);
+        g.clip();
+        const pulse = 0.85 + 0.15 * Math.sin(age * 0.012);
+        // Glow, then crisp ridges whose brightness follows the pressure of the press.
+        g.globalAlpha = 0.16 * fade * pulse;
+        g.strokeStyle = rgba(luminolBlue, 1);
+        g.lineWidth = 7;
+        g.beginPath();
+        for (const pts of ridges) pts.forEach(([x, y], i) => (i ? g.lineTo(pc[0] + x, pc[1] - sy + y) : g.moveTo(pc[0] + x, pc[1] - sy + y)));
+        g.stroke();
+        g.strokeStyle = rgba(mix(luminolBlue, ink, 0.5), 1);
+        g.lineWidth = 1.7;
+        for (const pts of ridges) {
+          g.globalAlpha = 0.95 * fade * pulse * pts[Math.floor(pts.length / 2)][2];
+          g.beginPath();
+          pts.forEach(([x, y], i) => (i ? g.lineTo(pc[0] + x, pc[1] - sy + y) : g.moveTo(pc[0] + x, pc[1] - sy + y)));
+          g.stroke();
+        }
+        g.restore();
+      }
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = "source-over";
+      return true;
+    };
+  }
+
+  // Click bursts and sequences are drawn over the page, in the pointer's light.
   addPainter((g, now, dt) => {
-    if (!frontFx.length) return false;
-    drawParticles(g, frontFx, now, dt, window.scrollY);
-    return frontFx.length > 0;
+    if (!frontFx.length && !scenes.length) return false;
+    const sy = window.scrollY;
+    drawParticles(g, frontFx, now, dt, sy);
+    for (let i = scenes.length - 1; i >= 0; i -= 1) if (!scenes[i](g, now, dt, sy)) scenes.splice(i, 1);
+    return frontFx.length > 0 || scenes.length > 0;
   });
 
   api.light = (k) => {
@@ -1264,6 +1477,7 @@ export function initPotion() {
       mist.length = 0;
       backFx.length = 0;
       frontFx.length = 0;
+      scenes.length = 0;
       draw(performance.now());
     }
   };
