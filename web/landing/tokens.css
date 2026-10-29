@@ -125,9 +125,11 @@
   --z-cursor: 1000;
   --z-intro: 1900;
   /* Night-sky layers paint behind all content, in this order. */
-  --z-sky-fog: -3;
-  --z-sky-dust: -2;
-  --z-sky-evidence: -1;
+  --z-sky-castles: -5;
+  --z-sky-fog: -4;
+  --z-sky-runes: -3;
+  --z-sky-evidence: -2;
+  --z-sky-potion: -1;
 }
 
 /* The library stage glides between case accents. @property cannot read var(),

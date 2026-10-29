@@ -4,8 +4,10 @@ import { TAU, fit, heroCovers, rgba, rng, skyLayer, sprite } from "./kit.js";
 
 // The night behind every page. CSS paints the sky itself (html in css/site.css);
 // this adds drifting fog banks and two breathing moon shafts that slide with the
-// page at their own depths, then wakes the moon dust (dust.js) where WebGL can
-// carry it. Under reduced motion the fog holds still and only follows the scroll.
+// page at their own depths, then raises the rest of the night: a castle for every
+// case on the hills (castles.js), rune circuitry and its lightning (runes.js), and
+// the potion that flows from bottle to bottle down the page (potion.js). Under
+// reduced motion the fog holds still and only follows the scroll.
 const forcedColors = matchMedia("(forced-colors: active)");
 
 function mountFog() {
@@ -93,5 +95,14 @@ function mountFog() {
 export function initNight() {
   if (forcedColors.matches) return;
   mountFog();
-  return import("./dust.js").then((m) => m.initDust());
+  return Promise.all([import("./castles.js"), import("./potion.js"), import("./runes.js")]).then(([castles, potion, runes]) => {
+    // Each layer stands alone: one failing must not take the others with it.
+    for (const init of [castles.initCastles, potion.initPotion, runes.initRunes]) {
+      try {
+        init();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
 }

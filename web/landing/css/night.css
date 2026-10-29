@@ -1,7 +1,8 @@
 /* The night around every page (see DESIGN.md, "Night sky and pointer light").
-   Behind the content: fog and moon shafts, moon dust that gathers into each
-   chapter's subject, and the evidence a lantern develops on the wall. In front:
-   the pointer's light. Plus the story layer: the keyhole, case numerals, the loupe.
+   Behind the content: a castle for every case on the hills, fog and moon shafts,
+   rune circuitry, the evidence a lantern develops on the wall, and the potion that
+   flows from bottle to bottle down the margins. In front: the pointer's light and
+   the lightning. Plus the story layer: the keyhole, case numerals, the loupe.
    All of it is decoration: aria-hidden, never interactive, gone in forced colours. */
 
 .night-layer {
@@ -12,16 +13,24 @@
   pointer-events: none;
 }
 
+.night-layer--castles {
+  z-index: var(--z-sky-castles);
+}
+
 .night-layer--fog {
   z-index: var(--z-sky-fog);
 }
 
-.night-layer--dust {
-  z-index: var(--z-sky-dust);
+.night-layer--runes {
+  z-index: var(--z-sky-runes);
 }
 
 .night-layer--evidence {
   z-index: var(--z-sky-evidence);
+}
+
+.night-layer--potion {
+  z-index: var(--z-sky-potion);
 }
 
 /* Screened onto the page beneath it, under the magnifier. */

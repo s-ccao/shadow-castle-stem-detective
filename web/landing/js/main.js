@@ -94,10 +94,10 @@ lazy("vignettes", ".case-hero__art[data-vignette]", () => import("./vignettes/st
 lazy("pointer", null, () => import("./pointer.js").then((m) => m.initPointer));
 lazy("night", null, () => import("./night/sky.js").then((m) => m.initNight));
 lazy("story", "main", () => import("./story.js").then((m) => m.initStory));
-// The pointer's light (the lantern and the prism trail) and the loupe need a mouse.
+// The pointer's light (the lantern) and the loupe need a mouse; rune lightning
+// (js/night/runes.js) answers scrolls and taps everywhere and the mouse where there is one.
 if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
   lazy("lantern", null, () => import("./night/lantern.js").then((m) => m.initLantern));
-  lazy("trail", null, () => import("./night/trail.js").then((m) => m.initTrail));
   lazy("loupe", ".feature-capture img, .hero__image", () => import("./loupe.js").then((m) => m.initLoupe));
 }
 lazy("atmosphere", "[data-atmosphere]", () => import("./atmosphere.js").then((m) => m.initAtmosphere));

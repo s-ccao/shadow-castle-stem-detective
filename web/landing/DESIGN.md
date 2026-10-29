@@ -28,7 +28,7 @@ stylesheet — add a named token first.
 | Moonlight | `--color-moon`, `--color-moon-2`, `--color-moon-glow` | Key light, coming-soon status, glass edges |
 | Bronze / ember | `--color-bronze`, `--color-ember`, `--color-ember-hot` | Button gradients, the lantern, evidence markers |
 | Night sky | `--color-night`, `--color-sky-*`, `--color-hill`, `--color-keep*`, `--color-near` | The page sky (on `html`) and hero scene layers |
-| Spectrum | `--color-spectrum-1` … `-7` | The prism trail and the prism motif only, never UI |
+| Spectrum | `--color-spectrum-1` … `-7` | Prism Lab's castle and the lantern's prism sketch only, never UI |
 | Case accents | `--game-<slug>` | One per catalogue entry; tints its card, window, stage and page hero |
 
 The moon lights the scene from the upper left. Every illustration, glow and
@@ -65,7 +65,7 @@ gradient keeps that direction.
 - Every animated system reads `html[data-motion]`. "reduce" comes from the
   system setting or the site's Animations switch (footer, library); it stops
   ambient loops, parallax, the custom cursor, the pointer's light, the keyhole,
-  cipher headings and previews, holds the moon dust in its current shape, and
+  cipher headings, lightning and previews, holds the potion and the castles still, and
   shrinks transitions to 150 ms fades.
 - Ambient loops pause when off screen or when the tab is hidden. One shared
   requestAnimationFrame (`js/loop.js`) drives every continuous effect.
@@ -95,25 +95,44 @@ content, in order:
    stay transparent so it shows through.
 2. **Fog** (`night/sky.js`): drifting banks and two breathing moon shafts,
    sliding with the page at their own depths.
-3. **Moon dust** (`night/dust.js`, WebGL): as a chapter reaches the middle of
-   the screen, the dust gathers into its subject (`night/shapes.js`): the moon,
-   the castle, a magnifier, the evidence web, a flask, gears, the seven case
-   doors in their accents, and one motif per upcoming game. It forms in the
-   largest open space between the content, never on top of reading; with no
-   room it sits dimly behind. The pointer parts it like a lens, a click sends a
-   shockwave, fast scrolling draws it into rain. Software WebGL gets no dust.
-4. **Evidence** (`night/lantern.js`, fine pointers): the wall hides UV prints,
+3. **Castles** (`night/castles.js`): one castle per case stands on the hills at
+   the foot of every page, each with its own outline (Shadow Castle's keep and
+   rose window, Evidence Rush's court hall and clock, Prism Lab's crystal
+   spires, Echo Corridor's arcade, Time Echo's hourglass tower, Alchemy Shift's
+   onion dome and still, Rune Defense's bastion). Windows burn in the case's
+   accent: the playable case is lit, the others glow faintly until they come
+   into focus. The skyline turns to the case being read (its page, or the card
+   under the pointer on the hub) and pans with the scroll elsewhere.
+4. **Rune circuitry** (`night/runes.js`): faint brass traces and rune pads
+   etched into the walls; lightning energizes them.
+5. **Evidence** (`night/lantern.js`, fine pointers): the wall hides UV prints,
    footprints, chalk formulas, sketches, seals and red thread. The pointer's
    lantern develops them; they fade back within two seconds. Holding still
    widens the pool. A click develops a wide circle, and on bare wall drops a
    numbered evidence marker.
+6. **The potion** (`night/potion.js`): a bottle (flask, Erlenmeyer, vial,
+   round-bottom in turn) stands in the margin at the start of each chapter,
+   holding one case's colour. A glass tube runs from its tap down the page,
+   across the gap between chapters and into the next bottle. The potion follows
+   the reading line (62% down the screen): it drains out of one bottle, runs
+   along the tube shading into the next colour, and pours into the next bottle,
+   which fills and smokes. Bottles keep clear of the case-file dock; phones keep
+   them in the right margin.
+
+**Lightning** answers every scroll gesture (at most three strikes a second):
+from the clouds onto the head of the flowing potion, a castle's spire (whose
+windows flare) or a rune pad, with a rune flaring where it lands. Those strikes
+fall behind the content, so text they cross stays readable; while a hero fills
+most of the screen they strike it from in front instead: one of the hub
+castle's windows or its flag, or the sky of the case painting. The pointer
+throws short arcs to the nearest rune pad as it moves, and a click bursts into
+a ring of runes and a surge through the circuitry.
 
 In front of the content, one screened canvas (`night/light.js`) under the
-magnifier carries the pointer's light: the lantern's glow, the prism trail
-(white light that disperses into the spectrum, wider the faster the hand) and
-the click's flash and ring. Painters register with it and it stops drawing when
-none has light left. Full-bleed heroes cover the layers behind them, so those
-skip drawing while a hero fills the screen.
+magnifier carries the pointer's light: the lantern's glow and flashes, the
+pointer's lightning and the click's ring. Painters register with it and it
+stops drawing when none has light left. Full-bleed heroes cover the layers
+behind them, so those skip drawing while a hero fills the screen.
 
 The story layer (`js/story.js`, `js/loupe.js`): the first page of a visit opens
 through a keyhole (`?intro=1` replays it); headings resolve out of alchemical
@@ -122,9 +141,10 @@ case numerals drift behind each chapter; over a capture or the case painting
 the magnifier really magnifies (pixel captures at whole multiples of their
 pixels), scans while held still, then locks the evidence.
 
-Budgets: about 14,000 motes (6,000 on phones and low-core machines), canvases
-at most 1.5× device pixels (the evidence wall at 1×), at most two new evidence
-cells painted per frame with the rest prepared in idle time.
+Budgets: canvases at most 1.5× device pixels (1× on phones and low-core
+machines, and for the evidence wall); the castles redraw at 30 fps while idle;
+the circuitry and lightning draw only while something is lit; at most two new
+evidence cells painted per frame with the rest prepared in idle time.
 
 ## Components
 

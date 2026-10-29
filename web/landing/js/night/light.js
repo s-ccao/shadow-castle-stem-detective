@@ -1,5 +1,6 @@
 import { addTicker } from "../loop.js";
 import { adoptOverlay } from "../overlay.js";
+import { lowPower } from "./kit.js";
 
 // The pointer's light: one canvas above the page and under the magnifier, screened
 // onto whatever lies beneath. Painters (the lantern's glow, the prism trail, camera
@@ -14,7 +15,7 @@ let stop = null;
 let dirty = false;
 
 function size() {
-  view.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  view.dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5);
   view.w = window.innerWidth;
   view.h = window.innerHeight;
   canvas.width = Math.round(view.w * view.dpr);

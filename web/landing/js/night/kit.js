@@ -1,4 +1,4 @@
-// Small shared pieces for the night layers (sky.js, dust.js, lantern.js, trail.js).
+// Small shared pieces for the night layers (sky.js, castles.js, potion.js, runes.js, lantern.js).
 export const TAU = Math.PI * 2;
 
 // Deterministic randomness, so the same page always hides the same evidence.
