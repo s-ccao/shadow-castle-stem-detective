@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-78 (a castle for every case, the potion chain and rune lightning replace the moon dust)
 
 - **Date:** 2026-10-29
-- **Status:** commits `d7d67de`, `075a12d` (the owner's first review), `4fee9a6` (a timing fix), `f0a386f` (more lightning), `9b30ebb` (luminol) and `f958fd9` (every potion's click), plus the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
+- **Status:** commits `d7d67de`, `075a12d` (the owner's first review), `4fee9a6` (a timing fix), `f0a386f` (more lightning), `9b30ebb` (luminol) and `f958fd9` (every potion's click), plus the docs commits on branch `agents/site-game-hall`. **In production since 2026-10-29** (site deployment `izj8ttjmo`, built from `36f51e9`); the owner approved it after reviewing every potion's click.
 - **Report from the owner:** "那几个城堡呢，而且现在的背景时星空汇聚，我想要的是那种滑动时魔药倒出来，符文闪电的那种符合我游戏的ui特效" (where are the castles; the background is a starfield gathering; they want the potion pouring as the page slides, and rune lightning).
 - **The owner's choices:**
   - a castle for every case;
@@ -137,6 +137,14 @@ In short: the potion should cover the background rather than run down the margin
   - Library behaviour.
   - The matrix: 6 pages × 320/768/1440 px × EN/ZH (36 runs) and reduced motion (4 runs), 0 findings.
 - **Checks:** `check_site.py` reports 0 errors, every module passes `node --check`, the Godot headless parse exits 0, and `git diff --check` is clean.
+
+### Production
+
+- **Website:** `npx vercel deploy --prod` from `web/landing` → `shadow-castle-detective-site-izj8ttjmo-cyc4.vercel.app`, behind `shadowcastledetective.com`. No game file changed, so the game stays on stage 77's deployment.
+  - The eleven shipped night and style files (`potion.js`, `potion-scenes.js`, `runes.js`, `castles.js`, `lantern.js`, `sky.js`, `kit.js`, `light.js`, `main.js`, `night.css`, `tokens.css`) are byte-identical to the branch; the removed `dust.js` answers 404, and `DESIGN.md` stays unpublished by `.vercelignore`.
+  - Rollback: `npx vercel rollback shadow-castle-detective-site-723lgi1xf-cyc4.vercel.app` (stage 77).
+- **Live, end to end:** all seven click sequences on their case pages hold 16.67 ms average and 16.8 ms worst with no errors; `night78-test` finds every night layer on the hub, the case pages and a phone, scrolls and idles at 16.67 ms, has no overflow on the phone and draws no light under reduced motion.
+- **GitHub:** the branch and `main` are pushed together (fast-forward), and the owner's local `main` follows.
 
 ## Stage: UX-20261021-77 (Quit in the browser game returns to the website's case files)
 
