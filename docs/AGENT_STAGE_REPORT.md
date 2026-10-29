@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-78 (a castle for every case, the potion chain and rune lightning replace the moon dust)
 
 - **Date:** 2026-10-29
-- **Status:** commits `d7d67de`, `075a12d` (the owner's first review) and `4fee9a6` (a timing fix), plus the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
+- **Status:** commits `d7d67de`, `075a12d` (the owner's first review), `4fee9a6` (a timing fix), `f0a386f` (more lightning), `9b30ebb` (luminol) and `f958fd9` (every potion's click), plus the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
 - **Report from the owner:** "那几个城堡呢，而且现在的背景时星空汇聚，我想要的是那种滑动时魔药倒出来，符文闪电的那种符合我游戏的ui特效" (where are the castles; the background is a starfield gathering; they want the potion pouring as the page slides, and rune lightning).
 - **The owner's choices:**
   - a castle for every case;
@@ -53,6 +53,23 @@ In short: the potion should cover the background rather than run down the margin
 - **Verification:**
   - Frames were captured at 0.09, 0.33, 0.8, 1.2, 1.7 and 2.5 s.
   - Three clicks in a row hold at 16.7 ms average and 16.8 ms worst, with no errors.
+
+### The owner's fourth decision: every potion's click at luminol's level (`f958fd9`)
+
+- **Decision:** after the luminol reveal, the owner chose to bring the other six potions' clicks to the same level before anything ships.
+- **Change:** every click now plays its own sequence of about three seconds over the page. The sequences live in `js/night/potion-scenes.js`, which `potion.js` loads the first time the pointer nears a bottle; the old per-potion click bursts and the luminol code inside `potion.js` are gone.
+  - **Lantern** (Shadow Castle): the potion catches fire, a flame blue at the root and white at the heart. A lantern beam sweeps across the middle of the screen in shafts of light, with crisp edges, the dust it crosses glittering and a pool of light where it lands; the wall's hidden evidence develops under it (`sc:reveal`). The flame gutters out in smoke.
+  - **Luminol** (Evidence Rush): unchanged from the third review, moved into the new module.
+  - **Refraction** (Prism Lab): a crystal forms above the bottle, or beside it when the bottle is near the top of the screen. A white beam enters it and leaves as seven colours that bounce off unseen mirrors towards the middle of the screen, then the crystal shatters into glints.
+  - **Echolocation** (Echo Corridor): a ping and four sonar wavefronts; whatever a wavefront touches on the page shows its outline and pings back.
+  - **Rewind** (Time Echo): a Roman-numeral clock face; its hands race backwards and freeze, time ripples fold inwards, ghost bottles trail behind and sand spirals back into the bottle, then falls.
+  - **Transmutation** (Alchemy Shift): a circle with a hexagram and glyphs draws itself; the potion runs through every case's colour while orbs of every colour spiral in and the circle's nodes spark.
+  - **Ward** (Rune Defense): two rings of runes wheel in opposite directions and raise a glassy dome of hexagonal cells, brightest at its rim. Eleven red bolts crackle in and break on it, each lighting a ripple across the cells, an arc of the rim and a spray of sparks; then the runes spin up, the dome closes into the bottle and it flashes.
+- **Visual review:** frames at 0.25, 0.9, 1.7 and 2.3 s for every sequence, with the bottle centred where the page allows. Two were redone after the first look: the lantern's beam was too faint and its flame blocky, and the ward's cells were flat orange tiles washing over the title; both now read clearly and leave the text legible.
+- **Verification:**
+  - Frames with nothing else running, one click per sequence, 3.6 s each: 16.67 ms average and 16.8 ms p95 for all seven at 1280 × 800 and on a 390 px touch screen; one 50 ms frame at the ward's first frame on desktop; no console errors.
+  - Regression loops: press, window (all seven windows, twelve viewports), library (keyboard, click, back, deep link, phone), `night78-test` (scroll and idle 16.67 ms), `click-storm` and the cursor loop at 1440 and 1024 are green. The cursor loop cannot run at 390 px because the nav's case-files link sits behind the phone menu; phone taps are covered by the window and library loops.
+  - `check.js`: 36 runs (six pages, three widths, both languages) and 12 reduced-motion runs, 0 findings. `check_site` reports 11 pages, 272 keys, 0 errors; every module passes `node --check`; `git diff --check` is clean; the Godot parse exits 0.
 
 ### The owner's second review: more lightning
 
