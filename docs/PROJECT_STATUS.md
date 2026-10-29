@@ -1,10 +1,19 @@
 # Project status
 
-**Last updated:** 2026-10-26
+**Last updated:** 2026-10-28
 
 **Phase:** feature-complete prototype entering visual polish, full-flow QA, and portfolio handoff.
 
-## Latest actual-project update (2026-10-25)
+## Latest actual-project update (2026-10-28)
+
+- **Quit in the browser game returns to the website** (stage 77, live). Pressing Quit used to freeze the page, because a tab cannot close itself.
+  - Now the title screen's Quit shows a "Case closed" plate, then opens the website's case-file library on Shadow Castle.
+  - The Esc settings show Quit on the web too. It saves first, and its confirmation says where it goes.
+  - Reopening the game offers Continue.
+  - Desktop builds still quit, and iOS still has no Quit in the Esc settings.
+  - See the [stage report](AGENT_STAGE_REPORT.md) and `web/README.md` → "Quitting in the browser".
+
+## Earlier actual-project update (2026-10-25)
 
 - **The HD look is in the game and on the website** (stage 68). The game now draws, itself:
   - every Blender room;

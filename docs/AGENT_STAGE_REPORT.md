@@ -5,7 +5,7 @@
 ## Stage: UX-20261021-77 (Quit in the browser game returns to the website's case files)
 
 - **Date:** 2026-10-28
-- **Status:** commit `5115109` and the docs commits on branch `agents/site-game-hall`. Exported locally and served at `127.0.0.1:8766` for the owner's review; **not yet deployed**.
+- **Status:** commit `5115109` and the docs commits on branch `agents/site-game-hall`. The owner reviewed it locally and approved it ("可以上线，并同步 main"). The game and the website are **in production** since 2026-10-28, and `main` is fast-forwarded to the branch (see Production).
 - **Report from the owner:** "在暗影城堡里面点击 quit 应该可以退出来，重新回到我的这个多游戏界面" (Quit inside Shadow Castle should leave the game and return to the multi-game site).
 - **The owner's choices:** return to the home page with the case-file library open on Shadow Castle, and show Quit in the in-game Esc settings on the web as well.
 
@@ -50,6 +50,19 @@
 - **Site:**
   - The library title holds whole words, with no overflow: 7 games × 5 widths (320–1440 px) × EN/ZH, 70 checks.
   - `check_site.py`: 0 errors. `library-test`, `cursor-test` and an 18-run matrix are clean.
+
+### Production
+
+- **Game:** `npx vercel deploy --prod` from `web/game` → `shadow-castle-detective-play-jf7ltanxl-cyc4.vercel.app`, behind `play.shadowcastledetective.com`.
+  - Every payload file matches the local export's size. `index.html` is byte-identical, `index.wasm` is served as `application/wasm`, and the pck and wasm headers are `GDPC` and `\0asm`.
+  - `/research` and `/research/paper.pdf` still serve.
+  - Rollback: `npx vercel rollback shadow-castle-detective-play-4ewaak7hn-cyc4.vercel.app` (stage 71).
+- **Website:** `npx vercel deploy --prod` from `web/landing` → `shadow-castle-detective-site-723lgi1xf-cyc4.vercel.app`.
+  - The library files, `main.js` and two pages are byte-identical to the branch.
+  - Rollback: `…-nrtf24eqc-…` (stage 76).
+- **Live, end to end:** from `https://shadowcastledetective.com/` into the game, Quit on the title screen → "Case closed" → `https://shadowcastledetective.com/#cases/shadow-castle`, with the library open on Shadow Castle and no page errors.
+- **Players with the old build cached** get the in-game "new game update" notice and its Restart now.
+- **GitHub:** the branch and `main` are pushed together (fast-forward), and the owner's local `main` follows. That checkout's `web/game` still holds stage 71's export, so export again before deploying from it.
 
 ## Stage: UX-20261021-76 (every page gets a living night: moon dust, the lantern's evidence, the prism trail, a story layer)
 
