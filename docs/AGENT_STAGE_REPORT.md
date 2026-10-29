@@ -2,6 +2,60 @@
 
 > **Purpose:** Shared mailbox from the implementation agent to the GitHub/Codex maintainer. This report contains no credentials and is not authorization to publish automatically.
 
+## Stage: UX-20261021-78 (a castle for every case, the potion chain and rune lightning replace the moon dust)
+
+- **Date:** 2026-10-29
+- **Status:** commit `d7d67de` and the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
+- **Report from the owner:** "那几个城堡呢，而且现在的背景时星空汇聚，我想要的是那种滑动时魔药倒出来，符文闪电的那种符合我游戏的ui特效" (where are the castles; the background is a starfield gathering; they want the potion pouring as the page slides, and rune lightning).
+- **The owner's choices:**
+  - a castle for every case;
+  - replace the moon dust;
+  - both scroll and pointer;
+  - "每次滑动的时候闪电都发出特效，而且魔药从瓶子里面流出，顺着网页进入到了下一个瓶子，魔药的颜色也会改变" (lightning on every scroll; the potion flows out of a bottle, along the page, into the next bottle, and changes colour).
+
+### What changed (`web/landing`; no Godot file)
+
+- **`js/night/castles.js` (new):**
+  - Seven castles on the hills at the foot of every page, each drawn in code with its own outline: Shadow Castle's keep and rose window, Evidence Rush's court hall and clock, Prism Lab's crystal spires, Echo Corridor's arcade, Time Echo's hourglass tower, Alchemy Shift's dome and smoking still, Rune Defense's bastion and rune.
+  - Windows burn in each case's `--game-*` accent. Shadow Castle is lit; the others glow faintly until they come into focus.
+  - The skyline turns to the page's case, or to the case card under the pointer on the hub, and pans with the scroll elsewhere.
+  - A struck castle's windows flare. Near and far castles alternate, and the skyline sits behind fog and hills.
+- **`js/night/potion.js` (new):**
+  - A bottle per chapter in the margins: flask, Erlenmeyer, vial and round-bottom in turn.
+  - A glass tube runs from each bottle's brass tap down the page, across the gap between chapters and into the next bottle's mouth.
+  - The liquid follows the reading line, 62% down the screen. It drains the bottle (which tips slightly), runs along the tube as a gradient into the next case's colour with a glowing head and bubbles, then pours with a splash, filling the next bottle, which blooms and smokes.
+  - Bottles keep clear of the case-file dock. On 1280–1440 px they all stand in the left margin; from about 1900 px they alternate sides and the potion crosses the page. Phones use the right margin.
+- **`js/night/runes.js` (new):**
+  - Faint brass rune circuitry on the walls, energized where lightning lands.
+  - Every scroll gesture strikes, at most three times a second: the head of the flowing potion (with a crackle on the glass), a castle spire, or a rune pad. Each strike leaves a rune flaring where it lands.
+  - These strikes fall behind the content. While a hero fills most of the screen they strike it from in front instead: one of the hub castle's windows or its flag, or the case painting's sky.
+  - The pointer throws short arcs to the nearest rune pad.
+  - A click bursts into bolts, a rotating ring of runes and a surge through the circuitry.
+- **Removed:** `js/night/dust.js` and `shapes.js` (the WebGL moon dust) and `trail.js` (the prism trail).
+- **Other files:**
+  - `sky.js` raises the three new layers, each isolated from the others' failures.
+  - The `--z-sky-*` tokens are reordered in `css/night.css` and `tokens.css`.
+  - `light.js` and the rune wall drop to 1× resolution on phones and low-core machines.
+  - `DESIGN.md` → "Night sky and pointer light" is rewritten.
+
+### Verification
+
+- **Session harness (headless Chrome, Apple GPU):**
+  - Frames: scrolling and idle are both 16.7 ms on average and 16.8 ms at worst on the hub.
+  - Layers are present on the hub, case pages and phone, with no console errors.
+  - The Prism Lab page centres its castle.
+  - Potion sequence on the case page: it runs down into the empty flask, gets struck, and the flask fills from gold to red within 1.5 s. At 1920 px it crosses the page into the right-margin flask.
+  - Scroll strikes behind the content leave the text untouched. Over the hub hero a strike lands on a castle window; over the case painting, in its sky.
+  - iPhone 13: a thin tube and small flasks in the right margin, no overflow.
+  - Reduced motion: every layer is still, and the light layer is hidden.
+- **Regression loops, all green:**
+  - The cursor in the library at 1440 and 1024 px.
+  - The press loop.
+  - Every hub castle window, plus the 12-size sweep.
+  - Library behaviour.
+  - The matrix: 6 pages × 320/768/1440 px × EN/ZH (36 runs) and reduced motion (4 runs), 0 findings.
+- **Checks:** `check_site.py` reports 0 errors, every module passes `node --check`, the Godot headless parse exits 0, and `git diff --check` is clean.
+
 ## Stage: UX-20261021-77 (Quit in the browser game returns to the website's case files)
 
 - **Date:** 2026-10-28
