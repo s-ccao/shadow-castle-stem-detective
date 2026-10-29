@@ -5,13 +5,42 @@
 ## Stage: UX-20261021-78 (a castle for every case, the potion chain and rune lightning replace the moon dust)
 
 - **Date:** 2026-10-29
-- **Status:** commit `d7d67de` and the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
+- **Status:** commits `d7d67de` and `075a12d` (the owner's first review) and the docs commits on branch `agents/site-game-hall`. **On local review, awaiting the owner's approval**; production still serves stage 77.
 - **Report from the owner:** "那几个城堡呢，而且现在的背景时星空汇聚，我想要的是那种滑动时魔药倒出来，符文闪电的那种符合我游戏的ui特效" (where are the castles; the background is a starfield gathering; they want the potion pouring as the page slides, and rune lightning).
 - **The owner's choices:**
   - a castle for every case;
   - replace the moon dust;
   - both scroll and pointer;
   - "每次滑动的时候闪电都发出特效，而且魔药从瓶子里面流出，顺着网页进入到了下一个瓶子，魔药的颜色也会改变" (lightning on every scroll; the potion flows out of a bottle, along the page, into the next bottle, and changes colour).
+
+### The owner's first review, and what changed (`075a12d`)
+
+> "魔药流动的意思是覆盖掉那些星光的背景，不是只是单纯的在侧边栏流动，滑动鼠标，闪电照亮魔药瓶子，鼠标触碰到魔药瓶子，瓶子盖子自动打开，点击时会有特效，然后随着网页往下滑，里面的魔药也会流出来，消失在黑夜中，如果鼠标跟随着魔药水，会发现倒在下一个瓶子上，药水的颜色也会变，不同的药水和鼠标交互的效果也不一样。闪电的频率需要调快一点"
+
+In short: the potion should cover the background rather than run down the margin; it flows out, vanishes into the night, and following it with the mouse leads to the next bottle; touching a bottle opens it, clicking it does something, and each potion reacts to the mouse differently; lightning should come faster and light up the bottles.
+
+- **Bottles** stand in the largest open space at the start of each chapter, up to 190 px tall, chosen on a 16 px grid. Each has a stopper: cork, glass or brass cap. It lifts and lets out vapour when the pointer touches the bottle, while it pours, or while it receives.
+- **The stream** is planned by A* over a 24 px grid through the page's gaps. Text costs most, pictures little (the potion passes behind them) and the outer edges more. The route is smoothed and meanders.
+  - It is bright where it pours, at its front, under the pointer and in a lightning flash. Elsewhere it sinks to a faint trace and thins into rising mist, and behind text it dims.
+  - Once the next bottle is full, the stream that filled it dries up into the night.
+- **Seven potion behaviours**, each over its bottle, along its stream and on a click:
+  - lantern sparks, and the wall's evidence on a click;
+  - luminol drips and stains;
+  - the prism potion splitting into its spectrum;
+  - echo rings;
+  - a clock running backwards, and floating sand;
+  - transmutation bubbles running through every colour;
+  - runes and a rune hexagon.
+- **Lightning:**
+  - Scroll strikes come up to six a second, aimed at bottles, the potion's front, spires or runes, and each flashes the potion's whole course.
+  - Pointer lightning lights the nearest bottle.
+  - A click on a bottle draws bolts into it; there the lantern drops no marker.
+  - The rune wall no longer shows its field of dots, which read as stars.
+- **Performance:** colours feeding the glow-sprite cache come in fixed steps, and relayout waits for idle time.
+- **Verification:**
+  - Frames are 16.7 ms on average and 16.8 ms at worst while scrolling, on the hub and the case page. Before relayout moved to idle time, one 450 ms stall was seen during a hub scroll.
+  - The hover, click and "following" sequences were inspected on the hub and the case page; iPhone 13 and reduced motion are clean.
+  - All regression loops and the matrix are green (36 + 4 runs, 0 findings); `check_site` reports 0 errors and the Godot parse exits 0.
 
 ### What changed (`web/landing`; no Godot file)
 
