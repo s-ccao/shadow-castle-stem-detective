@@ -128,10 +128,13 @@ content, in order:
    holds its sand; transmutation bubbles and runs through every colour; the
    ward oil raises runes and a rune hexagon.
 
-**Lightning** answers the scroll up to six times a second: from the clouds onto
-a bottle (which lights up), the head of the flowing potion, a castle's spire
-(whose windows flare) or a rune, with a rune flaring where it lands, and every
-strike shows the potion's whole course for a moment. Those strikes fall behind
+**Lightning** answers the scroll up to eleven times a second, some strikes
+forking to a second target, and the storm also strikes on its own every second
+or two (not while the tab is hidden or the case files are open): from the
+clouds onto a bottle (which lights up), the head of the flowing potion, a
+castle's spire (whose windows flare) or a rune, with a rune flaring where it
+lands. Strikes show the potion's whole course for a moment, at most about three
+times a second. Those strikes fall behind
 the content, so text they cross stays readable; while a hero fills most of the
 screen they strike it from in front instead: one of the hub castle's windows or
 its flag, or the sky of the case painting. Moving the pointer throws lightning

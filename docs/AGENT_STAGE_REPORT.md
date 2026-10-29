@@ -42,6 +42,22 @@ In short: the potion should cover the background rather than run down the margin
   - The hover, click and "following" sequences were inspected on the hub and the case page; iPhone 13 and reduced motion are clean.
   - All regression loops and the matrix are green (36 + 4 runs, 0 findings); `check_site` reports 0 errors and the Godot parse exits 0.
 
+### The owner's second review: more lightning
+
+- **Request:** "闪电的频率还需要增加" (the lightning should be more frequent still).
+- **Change, in `js/night/runes.js`:**
+  - Scroll strikes up to about eleven a second (every 90 ms), set off by any scroll movement; 40% of them fork to a second target.
+  - A standing storm strikes on its own every 0.7–2.2 s, also at rest. It waits while the tab is hidden or the case files are open.
+  - Pointer lightning comes every 40 px of movement, at most every 55 ms.
+- **Safeguards:**
+  - The potion's whole-course flash stays at most about three a second, so the streams never strobe.
+  - Every bolt stays a thin line with a small glow, well below the general-flash area.
+  - None strikes under reduced motion.
+- **Verification:**
+  - Frames hold at 16.7 ms average and 16.8 ms worst while scrolling and at rest.
+  - Four frames 150 ms apart during a scroll each show at least one bolt.
+  - The click storm on three pages and the stage test report no errors.
+
 ### A bug found in the VS Code browser (`4fee9a6`)
 
 - **The error:** `TypeError: ring is not iterable` in the rune wall.
