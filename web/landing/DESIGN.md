@@ -111,26 +111,40 @@ content, in order:
    widens the pool. A click develops a wide circle, and on bare wall drops a
    numbered evidence marker.
 6. **The potion** (`night/potion.js`): a bottle (flask, Erlenmeyer, vial,
-   round-bottom in turn) stands in the margin at the start of each chapter,
-   holding one case's colour. A glass tube runs from its tap down the page,
-   across the gap between chapters and into the next bottle. The potion follows
-   the reading line (62% down the screen): it drains out of one bottle, runs
-   along the tube shading into the next colour, and pours into the next bottle,
-   which fills and smokes. Bottles keep clear of the case-file dock; phones keep
-   them in the right margin.
+   round-bottom in turn, each with its stopper) stands in the largest open space
+   at the start of each chapter, holding one case's potion and colour. As the
+   reading line (62% down the screen) passes, the potion pours over the lip and
+   runs down the page behind the content, routed through the gaps (text costs
+   most, pictures little, the outer edges more), shading into the next potion's
+   colour and pouring into the next bottle, which fills; once full, the stream
+   that filled it dries up into the night. The stream is bright only where it
+   pours, at its front, under the pointer and in lightning; elsewhere it sinks
+   to a faint trace and thins into rising mist, and behind text it dims so the
+   text stays readable. Touching a bottle lifts its stopper and lets out vapour;
+   each potion answers the pointer in its own way, over its bottle, along its
+   stream and on a click: the lantern potion sheds sparks and, clicked, lights
+   the wall's evidence; luminol drips and stains; the prism potion splits into
+   its spectrum; the echo draught rings; the time potion turns a clock back and
+   holds its sand; transmutation bubbles and runs through every colour; the
+   ward oil raises runes and a rune hexagon.
 
-**Lightning** answers every scroll gesture (at most three strikes a second):
-from the clouds onto the head of the flowing potion, a castle's spire (whose
-windows flare) or a rune pad, with a rune flaring where it lands. Those strikes
-fall behind the content, so text they cross stays readable; while a hero fills
-most of the screen they strike it from in front instead: one of the hub
-castle's windows or its flag, or the sky of the case painting. The pointer
-throws short arcs to the nearest rune pad as it moves, and a click bursts into
-a ring of runes and a surge through the circuitry.
+**Lightning** answers the scroll up to six times a second: from the clouds onto
+a bottle (which lights up), the head of the flowing potion, a castle's spire
+(whose windows flare) or a rune, with a rune flaring where it lands, and every
+strike shows the potion's whole course for a moment. Those strikes fall behind
+the content, so text they cross stays readable; while a hero fills most of the
+screen they strike it from in front instead: one of the hub castle's windows or
+its flag, or the sky of the case painting. Moving the pointer throws lightning
+at the nearest bottle, lighting it, or at a rune pad; a click bursts into a ring
+of runes and a surge through the circuitry, and a click on a bottle draws the
+lightning into it. Every bolt is a thin line with a small glow, far below the
+area that makes a flash hazardous, and none strikes under reduced motion. The
+walls stay dark until lightning reaches them: no field of dots that reads as
+stars.
 
 In front of the content, one screened canvas (`night/light.js`) under the
 magnifier carries the pointer's light: the lantern's glow and flashes, the
-pointer's lightning and the click's ring. Painters register with it and it
+pointer's lightning, the click's ring and the potions' click bursts. Painters register with it and it
 stops drawing when none has light left. Full-bleed heroes cover the layers
 behind them, so those skip drawing while a hero fills the screen.
 
@@ -143,8 +157,10 @@ pixels), scans while held still, then locks the evidence.
 
 Budgets: canvases at most 1.5× device pixels (1× on phones and low-core
 machines, and for the evidence wall); the castles redraw at 30 fps while idle;
-the circuitry and lightning draw only while something is lit; at most two new
-evidence cells painted per frame with the rest prepared in idle time.
+the circuitry and lightning draw only while something is lit; potion particles
+capped at 320 (150 on low-power devices), stream colours quantized so glow
+sprites stay few; the potion's routes are re-planned in idle time; at most two
+new evidence cells painted per frame with the rest prepared in idle time.
 
 ## Components
 

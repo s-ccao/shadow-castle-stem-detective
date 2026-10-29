@@ -2,18 +2,21 @@ import { addTicker, finePointer, onScroll, tokenRgb } from "../loop.js";
 import { motionOn } from "../prefs.js";
 import { addPainter, wakeLight } from "./light.js";
 import { TAU, fit, heroCovers, lowPower, rgba, skyLayer, sprite } from "./kit.js";
-import { potionHead } from "./potion.js";
+import { flashPotion, lightBottle, potionBottles, potionHead } from "./potion.js";
 import { castleSpires } from "./castles.js";
 
 // Rune lightning. Faint brass circuitry with rune pads is etched into the walls behind
-// every page. Lightning answers every scroll, striking where the potion is flowing, a
-// castle's spire, or over a hero the castle's flag; it leaps from the pointer to the
-// nearest rune, and a click bursts into a ring of runes and a surge through the
-// circuitry. Bright strikes come at most three a second and every flash stays local.
+// every page. Lightning answers the scroll, up to six strikes a second, hitting a
+// potion bottle, the flowing potion, a castle's spire or a rune, and every strike
+// lights up the potion's whole stream for a moment; over a hero it strikes the
+// castle's windows. Moving the pointer throws lightning at the nearest bottle, which
+// lights up, or at a rune; a click bursts into a ring of runes and a surge through the
+// circuitry, or, on a bottle, draws lightning into it. Each bolt is a thin line with a
+// small glow, far below the area that makes a flash hazardous.
 const G = 88; // circuitry grid pitch, in CSS px
 const RUNES = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
 const RUNE_FONT = "'Apple Symbols', 'Segoe UI Historic', 'Noto Sans Runic', serif";
-const STRIKE_GAP = 330; // ms between strikes, so never more than three a second
+const STRIKE_GAP = 160; // ms between the scroll's strikes
 const LIT_MS = 900;
 
 function hash(i, j, salt) {
@@ -188,7 +191,7 @@ export function initRunes() {
       }
     }
     wctx.lineCap = "round";
-    wctx.strokeStyle = rgba(brass, 0.085);
+    wctx.strokeStyle = rgba(brass, 0.04);
     wctx.lineWidth = 1.1;
     wctx.stroke(base);
     let busy = false;
@@ -208,12 +211,12 @@ export function initRunes() {
         const y = py(j) - sy;
         if (pad(i, j)) {
           wctx.globalCompositeOperation = "source-over";
-          wctx.strokeStyle = rgba(c > 0.05 ? gold : brass, 0.16 + c * 0.75);
+          wctx.strokeStyle = rgba(c > 0.05 ? gold : brass, 0.09 + c * 0.82);
           wctx.lineWidth = 1.1;
           wctx.beginPath();
           wctx.arc(x, y, 11, 0, TAU);
           wctx.stroke();
-          wctx.fillStyle = rgba(c > 0.05 ? gold : brass, 0.22 + c * 0.78);
+          wctx.fillStyle = rgba(c > 0.05 ? gold : brass, 0.12 + c * 0.88);
           wctx.fillText(RUNES[Math.floor(hash(i, j, 7) * RUNES.length)], x, y + 0.5);
           if (c > 0.05) {
             wctx.globalCompositeOperation = "lighter";
@@ -407,14 +410,22 @@ export function initRunes() {
     const h = window.innerHeight;
     const head = potionHead();
     const spires = castleSpires().filter((s) => s.x > 16 && s.x < w - 16 && s.y > 0 && s.y < h);
+    const bottles = potionBottles().filter((b) => b.y > 0 && b.y < h);
+    const roll = Math.random();
     let target = null;
     let color = arcane;
     let castle = null;
+    let bottle = null;
     const over = heroInView();
     if (over) {
       target = heroTarget(over);
       color = mix(arcane, moon, 0.35);
-    } else if (head && (Math.random() < 0.6 || !spires.length)) {
+    } else if (bottles.length && (roll < 0.32 || (!head && !spires.length))) {
+      const b = bottles[Math.floor(Math.random() * bottles.length)];
+      target = [b.x, b.y - b.h * 0.2];
+      bottle = b.k;
+      color = mix(arcane, b.color, 0.55);
+    } else if (head && (roll < 0.68 || !spires.length)) {
       target = [head.x, head.y];
       color = mix(arcane, head.color, 0.55);
     } else if (spires.length) {
@@ -430,6 +441,9 @@ export function initRunes() {
     const from = [Math.min(w - 10, Math.max(10, target[0] + (Math.random() - 0.5) * 260)), -12];
     strike(from[0], from[1], target[0], target[1], { color, width: 1.25, life: 320, branches: 3, flare: 1.15, reach: 180, back: behind });
     if (castle) document.dispatchEvent(new CustomEvent("sc:strike", { detail: { castle } }));
+    if (bottle !== null) lightBottle(bottle);
+    // The flash shows the potion's whole course for a moment.
+    if (behind) flashPotion();
     // A crackle along the glass where the potion runs.
     if (head && behind) {
       for (let k = 0; k < 2; k += 1) {
@@ -451,7 +465,7 @@ export function initRunes() {
       const fresh = now - lastScroll > 250;
       lastY = y;
       lastScroll = now;
-      if (!motionOn() || now - lastStrike < STRIKE_GAP || (!fresh && speed < 0.5)) return;
+      if (!motionOn() || now - lastStrike < STRIKE_GAP || (!fresh && speed < 0.15)) return;
       lastStrike = now;
       scrollStrike();
     },
@@ -468,10 +482,21 @@ export function initRunes() {
       if (last) travel += Math.hypot(event.clientX - last[0], event.clientY - last[1]);
       last = [event.clientX, event.clientY];
       const now = performance.now();
-      if (travel < 90 || now - lastArc < 110) return;
+      if (travel < 60 || now - lastArc < 80) return;
       if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
       travel = 0;
       lastArc = now;
+      // The nearest bottle draws the lightning, and lights up.
+      let bottle = null;
+      for (const b of potionBottles()) {
+        const d = Math.hypot(b.x - event.clientX, b.y - event.clientY);
+        if (d < 320 && d > 20 && (!bottle || d < bottle.d)) bottle = { ...b, d };
+      }
+      if (bottle) {
+        strike(event.clientX, event.clientY, bottle.x, bottle.y - bottle.h * 0.15, { width: 0.8, life: 230, branches: 1, flare: 0.8, reach: 100, color: mix(arcane, bottle.color, 0.5) });
+        lightBottle(bottle.k);
+        return;
+      }
       const node = covered() ? null : nearest(event.clientX, event.clientY + window.scrollY, 170, true);
       if (node) {
         strike(event.clientX, event.clientY, px(node.i), py(node.j) - window.scrollY, { width: 0.7, life: 210, branches: 1, flare: 0.8, reach: 100 });
@@ -489,6 +514,19 @@ export function initRunes() {
   document.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || !motionOn()) return;
     const now = performance.now();
+    if (event.scBottle !== undefined) {
+      // A click on a bottle draws the lightning into it instead.
+      const b = potionBottles().find((item) => item.k === event.scBottle);
+      if (b) {
+        for (let k = 0; k < 5; k += 1) {
+          const a = Math.random() * TAU;
+          const r = 130 + Math.random() * 90;
+          strike(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r, b.x, b.y, { width: 0.85, life: 280, branches: 1, rune: false, reach: 80, color: mix(arcane, b.color, 0.5) });
+        }
+        lightBottle(b.k);
+      }
+      return;
+    }
     const strong = now - lastBurst > STRIKE_GAP;
     if (strong) lastBurst = now;
     const x = event.clientX;

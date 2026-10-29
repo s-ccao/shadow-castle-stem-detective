@@ -529,6 +529,7 @@ export function initLantern() {
   });
   document.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || event.pointerType !== "mouse" || !motionOn()) return;
+    if (event.scBottle !== undefined) return; // a potion bottle answers its own click
     const now = performance.now();
     const docY = event.clientY + window.scrollY;
     points.push({ x: event.clientX, y: docY, t: now, r: 320, life: 2800, a: 1 });
@@ -538,6 +539,13 @@ export function initLantern() {
     }
     kick();
     if (!event.target.closest?.(`${ACTIVE}, dialog`)) dropMarker(event, docY);
+  });
+  // The lantern potion's bottle, clicked, develops the wall around it (potion.js).
+  document.addEventListener("sc:reveal", (event) => {
+    if (!motionOn()) return;
+    const { x, y, r } = event.detail;
+    points.push({ x, y, t: performance.now(), r, life: 2600, a: 1 });
+    kick();
   });
   window.addEventListener("resize", () => {
     view = fit(wall, 1);
