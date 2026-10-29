@@ -455,7 +455,7 @@ export function initLantern() {
       g.drawImage(sprites.hot, lamp.x - 26, lamp.y - 26, 52, 52);
     }
     for (const flash of flashes) {
-      const age = (now - flash.t) / 900;
+      const age = Math.max(0, (now - flash.t) / 900);
       const burst = Math.max(0, 1 - age * 2.6);
       g.globalAlpha = burst * burst * 0.75;
       const big = 70 + age * 260;

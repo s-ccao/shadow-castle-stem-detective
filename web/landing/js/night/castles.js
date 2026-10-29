@@ -362,7 +362,7 @@ export function initCastles() {
       const y = ground - c.top + (c.far ? -H * 0.05 : 0);
       const center = x + c.width / 2;
       const focus = Math.exp(-(((center - w / 2) / (w * 0.32)) ** 2));
-      const flare = Math.max(0, 1 - (now - (state.flare.get(c.slug) || -1e9)) / 900);
+      const flare = Math.min(1, Math.max(0, 1 - (now - (state.flare.get(c.slug) || -1e9)) / 900));
       const lit = PLAYABLE.has(c.slug) ? 0.9 : 0.22 + 0.5 * focus;
       const hue = accent[c.slug];
 

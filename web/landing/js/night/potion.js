@@ -913,7 +913,7 @@ export function initPotion() {
     const lo = sy - 90;
     const hi = sy + view.h + 90;
     const end = indexAt(seg, fill);
-    const flash = Math.max(0, 1 - (now - flashAt) / 420);
+    const flash = Math.min(1, Math.max(0, 1 - (now - flashAt) / 420));
     const reach = animate && pointer.on;
     const px = pointer.x;
     const py = pointer.y + sy;
@@ -1076,8 +1076,8 @@ export function initPotion() {
     const out = segments[b.k];
     const drained = out ? Math.min(1, out.fill / (out.L || 1)) : 0;
     const level = b.level * (1 - 0.7 * drained);
-    const flash = Math.max(0, 1 - (now - b.flash) / 520);
-    const burst = Math.max(0, 1 - (now - b.burstAt) / 900);
+    const flash = Math.min(1, Math.max(0, 1 - (now - b.flash) / 520));
+    const burst = Math.min(1, Math.max(0, 1 - (now - b.burstAt) / 900));
     const color = liquidColor(b, now);
     ctx.save();
     ctx.translate(b.x, b.y - sy);

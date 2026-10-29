@@ -159,7 +159,7 @@ export function initRunes() {
     const jBottom = Math.ceil((sy + h + G) / G);
     for (let s = surges.length - 1; s >= 0; s -= 1) {
       const sg = surges[s];
-      const step = Math.floor((now - sg.t) / 60);
+      const step = Math.max(0, Math.floor((now - sg.t) / 60));
       if (step >= sg.steps.length + 15) {
         surges.splice(s, 1);
         continue;
@@ -244,7 +244,12 @@ export function initRunes() {
   function kickWall() {
     if (stopWall || !motionOn()) return;
     stopWall = addTicker((now) => {
-      const busy = drawWall(now);
+      let busy = false;
+      try {
+        busy = drawWall(now);
+      } catch (error) {
+        console.error(error); // stop cleanly, so the next strike can start it again
+      }
       if (!busy) stopWall = null;
       return busy;
     });
@@ -301,7 +306,7 @@ export function initRunes() {
   function paintBolts(g, bolts, now) {
     for (let i = bolts.length - 1; i >= 0; i -= 1) {
       const b = bolts[i];
-      const age = (now - b.t) / b.life;
+      const age = Math.max(0, (now - b.t) / b.life);
       if (age >= 1) {
         bolts.splice(i, 1);
         continue;
@@ -325,7 +330,7 @@ export function initRunes() {
   function paintFlares(g, flares, now) {
     for (let i = flares.length - 1; i >= 0; i -= 1) {
       const f = flares[i];
-      const age = (now - f.t) / 650;
+      const age = Math.max(0, (now - f.t) / 650);
       if (age >= 1) {
         flares.splice(i, 1);
         continue;
@@ -354,7 +359,7 @@ export function initRunes() {
     const live = paintBolts(g, front.bolts, now) + paintFlares(g, front.flares, now);
     for (let i = rings.length - 1; i >= 0; i -= 1) {
       const ring = rings[i];
-      const age = (now - ring.t) / 760;
+      const age = Math.max(0, (now - ring.t) / 760);
       if (age >= 1) {
         rings.splice(i, 1);
         continue;
